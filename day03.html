@@ -1,0 +1,294 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Physics Engine | Day 03</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-1: #05070b;
+      --bg-2: #0a1022;
+      --panel: rgba(9, 14, 26, 0.92);
+      --panel-2: rgba(8, 12, 22, 0.85);
+      --line: rgba(72, 196, 255, 0.25);
+      --line-strong: rgba(72, 196, 255, 0.55);
+      --glow: rgba(72, 196, 255, 0.2);
+      --accent: #48c4ff;
+      --accent-2: #4dffcd;
+      --text: #e8f1ff;
+      --muted: rgba(232, 241, 255, 0.65);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 15% 15%, rgba(72, 196, 255, 0.22), transparent 45%),
+        radial-gradient(circle at 80% 18%, rgba(77, 255, 205, 0.16), transparent 42%),
+        radial-gradient(circle at 70% 90%, rgba(86, 105, 255, 0.18), transparent 45%),
+        linear-gradient(135deg, var(--bg-1), var(--bg-2));
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(72, 196, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(72, 196, 255, 0.08) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.3;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 42px 22px 70px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .topbar a {
+      text-decoration: none;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 13px;
+      letter-spacing: 1px;
+      font-family: "Orbitron", sans-serif;
+      background: rgba(9, 16, 30, 0.8);
+      transition: color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .topbar a:hover {
+      color: var(--accent-2);
+      box-shadow: 0 0 16px rgba(77, 255, 205, 0.3);
+    }
+
+    .hero {
+      border-radius: calc(var(--radius) + 6px);
+      padding: 32px 34px;
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(9, 16, 30, 0.96), rgba(8, 13, 24, 0.86));
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), 0 0 35px var(--glow);
+      position: relative;
+      overflow: hidden;
+      animation: liftIn 0.7s ease both;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid rgba(72, 196, 255, 0.15);
+      box-shadow: inset 0 0 25px rgba(72, 196, 255, 0.08);
+      pointer-events: none;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--accent-2);
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-family: "Orbitron", sans-serif;
+      background: rgba(8, 14, 26, 0.7);
+    }
+
+    .hero h1 {
+      margin-top: 18px;
+      font-size: clamp(26px, 4vw, 42px);
+      font-family: "Orbitron", sans-serif;
+      letter-spacing: 2px;
+    }
+
+    .hero p {
+      margin-top: 14px;
+      max-width: 640px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 16px;
+    }
+
+    .hero .meta {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .meta span {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(72, 196, 255, 0.2);
+      background: rgba(10, 16, 30, 0.7);
+    }
+
+    .card-grid {
+      margin-top: 34px;
+      display: grid;
+      gap: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+
+    .card {
+      border-radius: var(--radius);
+      padding: 26px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      animation: liftIn 0.6s ease both;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(72, 196, 255, 0.12), transparent 60%);
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      border-color: var(--line-strong);
+      box-shadow: 0 22px 40px rgba(0, 0, 0, 0.5), 0 0 25px rgba(72, 196, 255, 0.3);
+    }
+
+    .card h2 {
+      font-size: 20px;
+      margin-bottom: 10px;
+      font-family: "Orbitron", sans-serif;
+      letter-spacing: 1px;
+    }
+
+    .card p {
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 18px;
+      font-size: 15px;
+    }
+
+    .card a {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: 1px solid var(--line-strong);
+      color: var(--text);
+      text-decoration: none;
+      font-family: "Orbitron", sans-serif;
+      letter-spacing: 1px;
+      background: rgba(9, 16, 30, 0.85);
+      transition: color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .card a:hover {
+      color: var(--accent-2);
+      box-shadow: 0 0 18px rgba(77, 255, 205, 0.3);
+      background: rgba(12, 22, 36, 0.95);
+    }
+
+    .soon {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(72, 196, 255, 0.3);
+      color: var(--muted);
+      font-family: "Orbitron", sans-serif;
+      letter-spacing: 1px;
+      background: rgba(9, 16, 30, 0.55);
+    }
+
+    @keyframes liftIn {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .hero {
+        padding: 26px 24px;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="badge">Episode 03</div>
+      <a href="index.html">Back to Home</a>
+    </div>
+
+    <section class="hero">
+      <span class="badge">Day 03 Simulations</span>
+      <h1>Physics Engine: Day 03</h1>
+      <p>
+        Day 03 simulations are in development. Check back soon to explore the next
+        set of interactive physics experiments.
+      </p>
+      <div class="meta">
+        <span>Instructor: Lisitha Abeysekera</span>
+        <span>0 simulations available</span>
+      </div>
+    </section>
+
+    <section class="card-grid" aria-label="Day 03 Simulations">
+      <article class="card" style="animation-delay: 0.1s;">
+        <h2>Simulations Incoming</h2>
+        <p>The next set of experiments is being prepared.</p>
+        <span class="soon">Coming Soon</span>
+      </article>
+    </section>
+  </div>
+</body>
+</html>
