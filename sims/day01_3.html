@@ -1,0 +1,273 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHYSICS ENGINE: Polygon Law Convoy</title>
+    <style>
+        body {
+            background-color: #050505;
+            color: #e0e0e0;
+            font-family: 'Consolas', 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #00e676;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            font-size: 24px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .dashboard {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        canvas {
+            background: #121212;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background-image:
+                radial-gradient(#333 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .controls {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 4px;
+            border-left: 5px solid #00e676;
+            width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .leg-control {
+            background: #222;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+
+        .leg-header {
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .leg-1 { color: #00e5ff; border-left: 3px solid #00e5ff; }
+        .leg-2 { color: #d500f9; border-left: 3px solid #d500f9; }
+        .leg-3 { color: #ff9100; border-left: 3px solid #ff9100; }
+
+        label {
+            font-size: 11px;
+            color: #888;
+            display: block;
+            margin-top: 5px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: #555;
+            height: 3px;
+            background: #333;
+            margin-bottom: 5px;
+        }
+
+        .resultant-box {
+            background: #002200;
+            border: 1px solid #00e676;
+            padding: 15px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .res-title { color: #00e676; font-weight: bold; font-size: 14px; }
+        .res-val { color: #fff; font-size: 20px; font-weight: bold; margin-top: 5px; }
+        .res-note { color: #888; font-size: 11px; margin-top: 5px; font-style: italic; }
+
+    </style>
+</head>
+<body>
+
+    <h1>Physics Engine: System 03</h1>
+    <div class="subtitle">POLYGON LAW PROTOCOL [GPS MODE]</div>
+
+    <div class="dashboard">
+        <canvas id="simCanvas" width="600" height="500"></canvas>
+
+        <div class="controls">
+
+            <div class="leg-control leg-1">
+                <div class="leg-header">LEG 01 (Blue Jeep)</div>
+                <label>Distance: <span id="valD1">100</span> m</label>
+                <input type="range" id="d1" min="0" max="200" value="100">
+                <label>Heading: <span id="valA1">0&deg;</span></label>
+                <input type="range" id="a1" min="0" max="360" value="0">
+            </div>
+
+            <div class="leg-control leg-2">
+                <div class="leg-header">LEG 02 (Purple Jeep)</div>
+                <label>Distance: <span id="valD2">80</span> m</label>
+                <input type="range" id="d2" min="0" max="200" value="80">
+                <label>Heading: <span id="valA2">60&deg;</span></label>
+                <input type="range" id="a2" min="0" max="360" value="60">
+            </div>
+
+            <div class="leg-control leg-3">
+                <div class="leg-header">LEG 03 (Orange Jeep)</div>
+                <label>Distance: <span id="valD3">50</span> m</label>
+                <input type="range" id="d3" min="0" max="200" value="50">
+                <label>Heading: <span id="valA3">135&deg;</span></label>
+                <input type="range" id="a3" min="0" max="360" value="135">
+            </div>
+
+            <div class="resultant-box">
+                <div class="res-title">HELICOPTER SHORTCUT (Resultant)</div>
+                <div class="res-val" id="resVal">0 m</div>
+                <div class="res-note">Closing Side of the Polygon</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const originX = 100;
+        const originY = 400;
+        const scale = 1.5;
+
+        const inputs = {
+            d1: document.getElementById('d1'), a1: document.getElementById('a1'),
+            d2: document.getElementById('d2'), a2: document.getElementById('a2'),
+            d3: document.getElementById('d3'), a3: document.getElementById('a3')
+        };
+
+        const displays = {
+            d1: document.getElementById('valD1'), a1: document.getElementById('valA1'),
+            d2: document.getElementById('valD2'), a2: document.getElementById('valA2'),
+            d3: document.getElementById('valD3'), a3: document.getElementById('valA3'),
+            res: document.getElementById('resVal')
+        };
+
+        const degreeSymbol = String.fromCharCode(176);
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const v1 = { d: parseInt(inputs.d1.value, 10), a: parseInt(inputs.a1.value, 10) };
+            const v2 = { d: parseInt(inputs.d2.value, 10), a: parseInt(inputs.a2.value, 10) };
+            const v3 = { d: parseInt(inputs.d3.value, 10), a: parseInt(inputs.a3.value, 10) };
+
+            displays.d1.textContent = v1.d;
+            displays.a1.textContent = v1.a + degreeSymbol;
+            displays.d2.textContent = v2.d;
+            displays.a2.textContent = v2.a + degreeSymbol;
+            displays.d3.textContent = v3.d;
+            displays.a3.textContent = v3.a + degreeSymbol;
+
+            const p0 = { x: originX, y: originY };
+            const p1 = getNextPoint(p0, v1.d, v1.a);
+            const p2 = getNextPoint(p1, v2.d, v2.a);
+            const p3 = getNextPoint(p2, v3.d, v3.a);
+
+            drawVector(p0, p1, "#00e5ff", "1");
+            drawVector(p1, p2, "#d500f9", "2");
+            drawVector(p2, p3, "#ff9100", "3");
+
+            drawResultant(p0, p3);
+
+            const totalDx = p3.x - p0.x;
+            const totalDy = p0.y - p3.y;
+            const R = Math.sqrt(totalDx * totalDx + totalDy * totalDy) / scale;
+
+            displays.res.textContent = R.toFixed(1) + " m";
+        }
+
+        function getNextPoint(start, dist, angleDeg) {
+            const angleRad = angleDeg * (Math.PI / 180);
+            return {
+                x: start.x + (dist * scale * Math.cos(angleRad)),
+                y: start.y - (dist * scale * Math.sin(angleRad))
+            };
+        }
+
+        function drawVector(from, to, color, label) {
+            ctx.beginPath();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = color;
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(to.x, to.y);
+            ctx.stroke();
+
+            drawArrowHead(from, to, color);
+
+            ctx.fillStyle = color;
+            ctx.font = "bold 12px Consolas";
+            ctx.fillText("F" + label, (from.x + to.x) / 2, (from.y + to.y) / 2 - 10);
+        }
+
+        function drawResultant(from, to) {
+            ctx.beginPath();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = "#00e676";
+            ctx.setLineDash([10, 5]);
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(to.x, to.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            drawArrowHead(from, to, "#00e676");
+
+            ctx.fillStyle = "#00e676";
+            ctx.font = "bold 16px Consolas";
+            ctx.fillText("R (Resultant)", (from.x + to.x) / 2 + 10, (from.y + to.y) / 2 + 20);
+        }
+
+        function drawArrowHead(from, to, color) {
+            const headlen = 10;
+            const dx = to.x - from.x;
+            const dy = to.y - from.y;
+            const angle = Math.atan2(dy, dx);
+
+            ctx.beginPath();
+            ctx.fillStyle = color;
+            ctx.moveTo(to.x, to.y);
+            ctx.lineTo(to.x - headlen * Math.cos(angle - Math.PI / 6), to.y - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(to.x - headlen * Math.cos(angle + Math.PI / 6), to.y - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.fill();
+        }
+
+        Object.values(inputs).forEach((input) => {
+            input.addEventListener('input', draw);
+        });
+
+        draw();
+
+    </script>
+</body>
+</html>

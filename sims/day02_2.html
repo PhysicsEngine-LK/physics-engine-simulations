@@ -1,0 +1,399 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Physics Engine: Fosbury Flop V2.3</title>
+    <style>
+        body { 
+            background: #050505; 
+            color: #e0e0e0; 
+            font-family: 'Consolas', monospace; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            margin: 0; 
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            width: min(860px, 100%);
+            text-align: center;
+            margin-bottom: 16px;
+            padding: 18px 14px;
+            border: 1px solid rgba(161, 0, 255, 0.55);
+            background: linear-gradient(180deg, rgba(25, 6, 35, 0.95), rgba(10, 6, 16, 0.9));
+            box-shadow: 0 0 30px rgba(161, 0, 255, 0.25);
+        }
+
+        .header-title {
+            color: #b000ff;
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            font-size: 20px;
+            margin-bottom: 6px;
+        }
+
+        .header-subtitle {
+            color: #d9d0df;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-size: 14px;
+        }
+
+        /* CONTAINER FOR SIDE-BY-SIDE LAYOUT */
+        .main-stage {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 50px rgba(0, 229, 255, 0.1);
+        }
+
+        /* LEFT SIDE: CANVAS */
+        .viewport {
+            position: relative;
+            border: 1px solid #333;
+            border-right: none; /* Merge with controls */
+        }
+
+        canvas { 
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%); 
+            display: block;
+        }
+
+        /* RIGHT SIDE: CONTROLS SIDEBAR */
+        .controls { 
+            background: rgba(20, 20, 20, 0.95); 
+            width: 280px; 
+            height: 450px; /* Match Canvas Height */
+            padding: 30px; 
+            box-sizing: border-box;
+            border: 1px solid #333;
+            border-left: 2px solid #00e5ff; /* Neon Divider */
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Center vertically */
+            gap: 40px;
+        }
+
+        /* --- UI ELEMENTS --- */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        label { 
+            display: flex; 
+            flex-direction: column;
+            gap: 8px;
+            color: #00e5ff; 
+            font-weight: bold; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 12px;
+        }
+
+        .value-display {
+            color: white;
+            font-size: 16px;
+        }
+
+        input[type="range"] { 
+            width: 100%; 
+            height: 6px;
+            background: #333; 
+            border-radius: 3px; 
+            outline: none; 
+            appearance: none;
+            margin-top: 10px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px; 
+            height: 20px; 
+            background: #00e5ff; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            box-shadow: 0 0 10px #00e5ff;
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* METRICS BOX */
+        .metric-box {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            padding: 25px;
+            text-align: center;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        .metric-val { font-size: 32px; font-weight: bold; color: #fff; margin-bottom: 5px; }
+        .metric-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Status Colors */
+        .status-safe { border-color: #00e676; box-shadow: 0 0 20px rgba(0, 230, 118, 0.15); }
+        .status-warn { border-color: #ff3d00; box-shadow: 0 0 20px rgba(255, 61, 0, 0.15); }
+        
+        .status-safe .metric-val { color: #00e676; }
+        .status-warn .metric-val { color: #ff3d00; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-title">Physics Engine: System 02</div>
+        <div class="header-subtitle">Fosbury Flop</div>
+    </div>
+
+    <div class="main-stage">
+        
+        <div class="viewport">
+            <canvas id="simCanvas" width="700" height="450"></canvas>
+        </div>
+
+        <div class="controls">
+            
+            <div class="control-group">
+                <label>
+                    TECHNIQUE MORPH
+                    <span id="techName" class="value-display">Scissor Kick</span>
+                </label>
+                <input type="range" id="archSlider" min="0" max="100" value="0">
+            </div>
+
+            <div class="control-group">
+                <div class="metric-box" id="cogBox">
+                    <div class="metric-val" id="cogDist">+0 cm</div>
+                    <div class="metric-label">COG vs BAR GAP</div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const slider = document.getElementById('archSlider');
+        const techName = document.getElementById('techName');
+        const cogDistDisplay = document.getElementById('cogDist');
+        const cogBox = document.getElementById('cogBox');
+
+        const barHeight = 220; 
+        const centerX = canvas.width / 2;
+        const masses = [7, 25, 30, 15, 8]; 
+
+        function getPoints(factor) {
+            const headY = barHeight - 80 + (factor * 140);   
+            const chestY = barHeight - 60 + (factor * 80);
+            const hipsY = barHeight - 30 - (factor * 20);    
+            const kneesY = barHeight + 10 + (factor * 30);
+            const feetY = barHeight + 60 + (factor * 30);
+
+            return [
+                { x: centerX - 80, y: headY },      
+                { x: centerX - 50, y: chestY },     
+                { x: centerX,      y: hipsY },      
+                { x: centerX + 50, y: kneesY },     
+                { x: centerX + 80, y: feetY }       
+            ];
+        }
+
+        function calculateCOG(points) {
+            let tx = 0, ty = 0, tm = 0;
+            points.forEach((p, i) => {
+                tx += p.x * masses[i];
+                ty += p.y * masses[i];
+                tm += masses[i];
+            });
+            return { x: tx / tm, y: ty / tm };
+        }
+
+        function drawHuman(points, factor) {
+            const head = points[0];
+            const chest = points[1];
+            const hips = points[2];
+            const knees = points[3];
+            const feet = points[4];
+
+            const side = 12 + factor * 8;
+            const arch = factor * 12;
+
+            const leftShoulder = { x: chest.x - side, y: chest.y - 8 };
+            const rightShoulder = { x: chest.x + side, y: chest.y - 6 };
+            const leftElbow = { x: chest.x - side * 1.6, y: chest.y + 8 + arch * 0.2 };
+            const rightElbow = { x: chest.x + side * 1.2, y: chest.y + 2 - arch * 0.1 };
+            const leftHand = { x: chest.x - side * 2.1, y: chest.y + 18 + arch * 0.25 };
+            const rightHand = { x: chest.x + side * 1.8, y: chest.y + 12 + arch * 0.15 };
+
+            const leftKnee = { x: knees.x - side * 0.9, y: knees.y + 6 + arch * 0.1 };
+            const rightKnee = { x: knees.x + side * 0.9, y: knees.y + 10 + arch * 0.2 };
+            const leftFoot = { x: feet.x - side * 1.2, y: feet.y + 6 + arch * 0.15 };
+            const rightFoot = { x: feet.x + side * 1.1, y: feet.y + 4 + arch * 0.2 };
+
+            const torsoWidth = 14 + factor * 4;
+            const hipWidth = 16 + factor * 5;
+
+            ctx.shadowColor = '#00e5ff';
+            ctx.shadowBlur = 20;
+            ctx.strokeStyle = '#00e5ff';
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Torso (thicker, slightly curved)
+            ctx.lineWidth = torsoWidth;
+            ctx.beginPath();
+            ctx.moveTo(head.x, head.y);
+            ctx.quadraticCurveTo(chest.x - arch * 0.4, chest.y, hips.x + arch * 0.2, hips.y);
+            ctx.stroke();
+
+            // Arms (two segments with slight bends)
+            ctx.lineWidth = 7 + factor * 1.2;
+            ctx.beginPath();
+            ctx.moveTo(leftShoulder.x, leftShoulder.y);
+            ctx.quadraticCurveTo(leftElbow.x, leftElbow.y, leftHand.x, leftHand.y);
+            ctx.moveTo(rightShoulder.x, rightShoulder.y);
+            ctx.quadraticCurveTo(rightElbow.x, rightElbow.y, rightHand.x, rightHand.y);
+            ctx.stroke();
+
+            // Legs (thicker upper leg, thinner lower leg)
+            ctx.lineWidth = hipWidth;
+            ctx.beginPath();
+            ctx.moveTo(hips.x, hips.y);
+            ctx.lineTo(leftKnee.x, leftKnee.y);
+            ctx.moveTo(hips.x, hips.y);
+            ctx.lineTo(rightKnee.x, rightKnee.y);
+            ctx.stroke();
+
+            ctx.lineWidth = 9 + factor * 1.5;
+            ctx.beginPath();
+            ctx.moveTo(leftKnee.x, leftKnee.y);
+            ctx.lineTo(leftFoot.x, leftFoot.y);
+            ctx.moveTo(rightKnee.x, rightKnee.y);
+            ctx.lineTo(rightFoot.x, rightFoot.y);
+            ctx.stroke();
+
+            // Head
+            ctx.fillStyle = '#00e5ff';
+            ctx.beginPath();
+            ctx.arc(head.x, head.y, 11, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Chest and hip mass hints
+            ctx.shadowBlur = 14;
+            ctx.fillStyle = 'rgba(0, 229, 255, 0.35)';
+            ctx.beginPath();
+            ctx.ellipse(chest.x, chest.y + 4, 10 + factor * 2, 12 + factor * 3, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(hips.x, hips.y + 4, 12 + factor * 2, 10 + factor * 2, 0.1, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const factor = slider.value / 100;
+            const points = getPoints(factor);
+            const cog = calculateCOG(points);
+
+            if(factor < 0.5) techName.innerText = "Scissor Jump";
+            else techName.innerText = "The Fosbury Arch";
+
+            // Grid
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=40) { ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); }
+            for(let i=0; i<canvas.height; i+=40) { ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); }
+            ctx.stroke();
+
+            // Status Check
+            let isUnder = cog.y > barHeight;
+            let themeColor = isUnder ? '#00e676' : '#ff3d00';
+
+            // Bar
+            ctx.shadowColor = themeColor;
+            ctx.shadowBlur = 15;
+            ctx.strokeStyle = themeColor;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, barHeight);
+            ctx.lineTo(canvas.width, barHeight);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Body (human-like pose)
+            drawHuman(points, factor);
+
+            // COG Line
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, cog.y);
+            ctx.lineTo(canvas.width, cog.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // COG Point
+            const pulse = Math.sin(Date.now() / 200) * 3;
+            ctx.shadowColor = '#d500f9';
+            ctx.shadowBlur = 15;
+            ctx.fillStyle = '#d500f9';
+            ctx.beginPath(); 
+            ctx.arc(cog.x, cog.y, 8 + pulse, 0, Math.PI*2); 
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Label
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Consolas';
+            ctx.fillText("CENTER OF GRAVITY", cog.x + 20, cog.y + 4);
+
+            // UI Update
+            if (isUnder) {
+                const gap = cog.y - barHeight;
+                
+                // Green Zone
+                ctx.fillStyle = 'rgba(0, 230, 118, 0.1)';
+                ctx.fillRect(centerX - 150, barHeight, 300, gap);
+                
+                // Arrow
+                ctx.strokeStyle = '#00e676';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(centerX + 120, barHeight);
+                ctx.lineTo(centerX + 120, cog.y);
+                ctx.stroke();
+
+                cogDistDisplay.innerText = "-" + Math.round(gap/3) + " cm"; 
+                cogBox.className = "metric-box status-safe";
+
+            } else {
+                const gap = barHeight - cog.y;
+                cogDistDisplay.innerText = "+" + Math.round(gap/3) + " cm";
+                cogBox.className = "metric-box status-warn";
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        slider.addEventListener('input', draw);
+        draw(); 
+    </script>
+</body>
+</html>

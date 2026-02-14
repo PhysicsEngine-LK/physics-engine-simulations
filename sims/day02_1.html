@@ -1,0 +1,316 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Physics Engine: Ghost Point Tracker V2.2</title>
+    <style>
+        body { 
+            background: #020406; 
+            color: #00e5ff; 
+            font-family: 'Segoe UI', monospace; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            margin: 0; 
+            height: 100vh; 
+            overflow: hidden;
+        }
+
+        .header {
+            width: min(860px, 100%);
+            text-align: center;
+            margin-bottom: 16px;
+            padding: 18px 14px;
+            border: 1px solid rgba(161, 0, 255, 0.55);
+            background: linear-gradient(180deg, rgba(25, 6, 35, 0.95), rgba(10, 6, 16, 0.9));
+            box-shadow: 0 0 30px rgba(161, 0, 255, 0.25);
+        }
+
+        .header-title {
+            color: #b000ff;
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            font-size: 20px;
+            margin-bottom: 6px;
+        }
+
+        .header-subtitle {
+            color: #d9d0df;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-size: 14px;
+        }
+        
+        .viewport {
+            position: relative;
+            border: 1px solid #333;
+            box-shadow: 0 0 50px rgba(0, 229, 255, 0.1);
+            background: radial-gradient(circle at center, #0a1018 0%, #000 100%);
+        }
+
+        canvas { display: block; }
+
+        .hud-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            background: rgba(10, 20, 30, 0.85);
+            padding: 10px 20px;
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            border-radius: 4px;
+            backdrop-filter: blur(5px);
+        }
+
+        button {
+            background: transparent;
+            color: #00e5ff;
+            border: 1px solid #00e5ff;
+            padding: 8px 20px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: rgba(0, 229, 255, 0.15);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+        }
+
+        button.active {
+            background: #00e5ff;
+            color: #000;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.6);
+        }
+
+        .hud-top {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            pointer-events: none;
+        }
+        .highlight { color: #d500f9; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-title">Physics Engine: System 01</div>
+        <div class="header-subtitle">Thor's Hammer</div>
+    </div>
+
+    <div class="viewport">
+        <canvas id="simCanvas" width="900" height="550"></canvas>
+        
+        <div class="hud-top">
+            SYSTEM: PROJECTILE TRACKER // <span class="highlight">GHOST POINT LOCK: ENGAGED</span><br>
+            OBJECT: THOR'S HAMMER
+        </div>
+
+        <div class="hud-panel">
+            <button id="launchBtn">LAUNCH</button>
+            <button id="sloMoBtn">SLO-MO</button>
+            <button id="resetBtn">RESET</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const launchBtn = document.getElementById('launchBtn');
+        const sloMoBtn = document.getElementById('sloMoBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // --- Physics Config ---
+        let isRunning = false;
+        let isSloMo = false;
+        let time = 0;
+        let gravity = 0.25; 
+        
+        // --- GROUND LEVEL CONFIG ---
+        const groundY = 500; // The floor pixel height
+        const startPos = { x: 80, y: groundY - 50 }; // Start slightly above ground
+        
+        const launchVel = { x: 6.0, y: -14 }; 
+        
+        const parts = [
+            { x: -20, y: 0, w: 60, h: 40, color: '#333', type: 'body' }, 
+            { x: 50, y: 0, w: 100, h: 8, color: '#0077be', type: 'panel' } 
+        ];
+        
+        const comOffset = { x: -8, y: 0 }; 
+
+        // State Vars
+        let objPos = { ...startPos };
+        let currentVel = { ...launchVel };
+        let rotation = 0;
+        let trail = [];
+
+        function init() {
+            draw();
+        }
+
+        function update() {
+            if (!isRunning) return;
+
+            const dt = isSloMo ? 0.2 : 1.0;
+            
+            // Physics Update
+            objPos.x += currentVel.x * dt;
+            objPos.y += currentVel.y * dt;
+            currentVel.y += gravity * dt;
+
+            rotation += 0.15 * dt;
+
+            if (time % (isSloMo ? 10 : 3) === 0) {
+                trail.push({ x: objPos.x, y: objPos.y });
+                if (trail.length > 50) trail.shift(); 
+            }
+
+            time++;
+
+            // --- GROUND COLLISION LOGIC ---
+            // If the COG hits the ground level
+            if (objPos.y >= groundY) {
+                objPos.y = groundY; // Snap to floor
+                isRunning = false;  // Stop simulation
+            }
+
+            draw();
+            if (isRunning) requestAnimationFrame(update);
+        }
+
+        function draw() {
+            ctx.fillStyle = '#05080c';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Grid
+            ctx.strokeStyle = 'rgba(0, 229, 255, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=50) { ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); }
+            for(let i=0; i<canvas.height; i+=50) { ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); }
+            ctx.stroke();
+
+            // --- DRAW THE GROUND FLOOR ---
+            ctx.beginPath();
+            ctx.strokeStyle = '#00e5ff';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#00e5ff';
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(canvas.width, groundY);
+            ctx.stroke();
+            ctx.shadowBlur = 0; // Reset glow
+            
+            // Floor Label
+            ctx.fillStyle = 'rgba(0, 229, 255, 0.5)';
+            ctx.font = '10px monospace';
+            ctx.fillText("GROUND LEVEL // Y=0", 10, groundY + 15);
+
+
+            // Draw Trail
+            if (trail.length > 1) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#d500f9'; 
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.moveTo(trail[0].x, trail[0].y);
+                for(let i=1; i<trail.length; i++) {
+                    ctx.lineTo(trail[i].x, trail[i].y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Draw Object
+            ctx.save();
+            ctx.translate(objPos.x, objPos.y);
+            ctx.rotate(rotation);
+            ctx.translate(-comOffset.x, -comOffset.y);
+
+            // Solar Panel
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#0077be';
+            ctx.fillStyle = 'rgba(0, 119, 190, 0.8)';
+            ctx.fillRect(parts[1].x - parts[1].w/2, parts[1].y - parts[1].h/2, parts[1].w, parts[1].h);
+            ctx.fillStyle = '#fff';
+            for(let i=0; i<4; i++) {
+                ctx.fillRect((parts[1].x - parts[1].w/2) + (i*25), parts[1].y - parts[1].h/2, 1, parts[1].h);
+            }
+
+            // Main Body
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#444';
+            ctx.fillRect(parts[0].x - parts[0].w/2, parts[0].y - parts[0].h/2, parts[0].w, parts[0].h);
+            ctx.strokeStyle = '#00e5ff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(parts[0].x - parts[0].w/2, parts[0].y - parts[0].h/2, parts[0].w, parts[0].h);
+            
+            ctx.fillStyle = 'red';
+            ctx.beginPath(); ctx.arc(0, 0, 2, 0, Math.PI*2); ctx.fill();
+            ctx.restore();
+
+            // Draw COG Marker
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#d500f9';
+            ctx.strokeStyle = '#d500f9';
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            ctx.arc(objPos.x, objPos.y, 10, 0, Math.PI*2);
+            ctx.moveTo(objPos.x - 15, objPos.y); ctx.lineTo(objPos.x + 15, objPos.y);
+            ctx.moveTo(objPos.x, objPos.y - 15); ctx.lineTo(objPos.x, objPos.y + 15);
+            ctx.stroke();
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px monospace';
+            ctx.fillText("CENTER OF MASS", objPos.x + 15, objPos.y - 10);
+            
+            ctx.shadowBlur = 0;
+        }
+
+        launchBtn.addEventListener('click', () => {
+            if(!isRunning) {
+                // Check if already on ground, if so, reset first
+                if (objPos.y >= groundY) {
+                    objPos = { ...startPos };
+                    currentVel = { ...launchVel };
+                    rotation = 0;
+                    trail = [];
+                    time = 0;
+                }
+                isRunning = true;
+                update();
+            }
+        });
+
+        sloMoBtn.addEventListener('click', () => {
+            isSloMo = !isSloMo;
+            sloMoBtn.classList.toggle('active');
+        });
+
+        resetBtn.addEventListener('click', () => {
+            isRunning = false;
+            objPos = { ...startPos };
+            currentVel = { ...launchVel };
+            rotation = 0;
+            trail = [];
+            time = 0;
+            draw();
+        });
+
+        init();
+    </script>
+</body>
+</html>
