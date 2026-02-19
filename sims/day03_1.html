@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine: The Magic Circle Method</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --primary: #0ea5e9; /* Blue for r */
+            --theta-color: #f97316; /* Orange for theta */
+            --accent: #facc15;
+            --success: #22c55e;
+            --force: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: var(--primary);
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            margin: 5px 0 0 0;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .canvas-wrapper {
+            background-color: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            border: 1px solid #334155;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .controls {
+            background-color: var(--panel-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid #334155;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .value-badge {
+            background: #334155;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 1.1em;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        /* Thumb Colors */
+        #sliderTheta::-webkit-slider-thumb { background: var(--theta-color); box-shadow: 0 0 10px rgba(249, 115, 22, 0.5); }
+        #sliderR::-webkit-slider-thumb { background: var(--primary); box-shadow: 0 0 10px rgba(14, 165, 233, 0.5); }
+        #magicSlider::-webkit-slider-thumb { background: var(--accent); box-shadow: 0 0 10px rgba(250, 204, 21, 0.5); }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #475569;
+            border-radius: 2px;
+        }
+
+        .action-row {
+            border-top: 2px dashed #475569;
+            margin-top: 25px;
+            padding-top: 20px;
+        }
+
+        .status-box {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            transition: all 0.3s ease;
+        }
+
+        .status-success {
+            background-color: rgba(34, 197, 94, 0.1);
+            border-color: var(--success);
+            color: var(--success);
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+        }
+
+        @media (min-width: 768px) {
+            .app-container {
+                flex-direction: row;
+                max-width: 1000px;
+            }
+            .canvas-wrapper {
+                flex: 2;
+            }
+            .controls {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>SYSTEM 07: MAGIC CIRCLE</h1>
+        <p>ස්පර්ශක ක්‍රමයෙන් ලම්බක දුර සෙවීම - <b>PHYSICS ENGINE</b></p>
+    </div>
+
+    <div class="app-container">
+        <div class="canvas-wrapper">
+            <canvas id="simCanvas" width="600" height="400"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <div class="label-row">
+                    <span style="color: var(--theta-color);">1. බලය යොදන කෝණය (&theta;)</span>
+                    <span class="value-badge" style="color: var(--theta-color);" id="valTheta">45&deg;</span>
+                </div>
+                <input type="range" id="sliderTheta" min="0" max="180" value="45">
+            </div>
+
+            <div class="control-group">
+                <div class="label-row">
+                    <span style="color: var(--primary);">2. අසව්වේ සිට දුර (r)</span>
+                    <span class="value-badge" style="color: var(--primary);" id="valR">200 m</span>
+                </div>
+                <input type="range" id="sliderR" min="0" max="350" value="200">
+            </div>
+
+            <div class="control-group action-row">
+                <div class="label-row" style="color: var(--accent);">
+                    <span>3. MAGIC කවයේ අරය</span>
+                    <span class="value-badge" style="color: var(--accent);" id="valMagic">50 m</span>
+                </div>
+                <input type="range" id="magicSlider" min="0" max="350" value="50">
+            </div>
+
+            <div class="status-box" id="statusBox">
+                කවය රේඛාවේ ස්පර්ශ කරන්න!
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // UI Elements
+        const sliderTheta = document.getElementById('sliderTheta');
+        const sliderR = document.getElementById('sliderR');
+        const magicSlider = document.getElementById('magicSlider');
+        const valTheta = document.getElementById('valTheta');
+        const valR = document.getElementById('valR');
+        const valMagic = document.getElementById('valMagic');
+        const statusBox = document.getElementById('statusBox');
+
+        // Coordinates for Pivot
+        const pivotX = 100;
+        const pivotY = 300;
+
+        function draw() {
+            // Get values
+            const thetaDeg = parseInt(sliderTheta.value);
+            const r = parseInt(sliderR.value);
+            let magicR = parseInt(magicSlider.value);
+
+            // Update Labels (Changed px to m)
+            valTheta.innerHTML = thetaDeg + '&deg;';
+            valR.innerText = r + ' m';
+            valMagic.innerText = magicR + ' m';
+
+            // Math Setup
+            const thetaRad = -thetaDeg * Math.PI / 180;
+            const appX = pivotX + r;
+            const appY = pivotY;
+
+            // Exact Perpendicular Distance
+            const exactD = Math.abs(r * Math.sin(thetaRad));
+
+            // SNAP EFFECT
+            let isHit = false;
+            if (Math.abs(magicR - exactD) < 5) {
+                magicR = exactD;
+                magicSlider.value = exactD;
+                valMagic.innerText = Math.round(exactD) + ' m'; // Changed px to m
+                isHit = true;
+            }
+
+            // Vector Math
+            const vecAx = appX - pivotX;
+            const vecAy = appY - pivotY;
+            const uFx = Math.cos(thetaRad);
+            const uFy = Math.sin(thetaRad);
+            const proj = vecAx * uFx + vecAy * uFy;
+            const tanX = appX - proj * uFx;
+            const tanY = appY - proj * uFy;
+
+            // Clear Canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Draw Ghost Line (Line of Action)
+            ctx.beginPath();
+            const lineLength = 1000;
+            ctx.moveTo(appX - lineLength * uFx, appY - lineLength * uFy);
+            ctx.lineTo(appX + lineLength * uFx, appY + lineLength * uFy);
+            ctx.strokeStyle = isHit ? 'rgba(34, 197, 94, 0.4)' : 'rgba(148, 163, 184, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 8]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 2. Draw Rod
+            ctx.beginPath();
+            ctx.moveTo(pivotX, pivotY);
+            ctx.lineTo(appX, appY);
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // Draw 'r' Label (Only if r > 0 to avoid overlapping with pivot)
+            if (r > 20) {
+                ctx.fillStyle = '#0ea5e9'; // Blue color for r
+                ctx.font = 'bold 18px sans-serif';
+                ctx.fillText('r', pivotX + (r / 2) - 5, pivotY - 15);
+            }
+
+            // 3. Draw Pivot
+            ctx.beginPath();
+            ctx.arc(pivotX, pivotY, 8, 0, Math.PI * 2);
+            ctx.fillStyle = '#f8fafc';
+            ctx.fill();
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '14px sans-serif';
+            ctx.fillText('අසව්ව', pivotX - 20, pivotY + 25);
+
+            // 4. Draw Angle Theta (θ) Marker
+            if (r > 0 && thetaDeg > 0 && thetaDeg < 180) {
+                const arcRadius = 40;
+                
+                // Draw faint horizontal extension line
+                ctx.beginPath();
+                ctx.moveTo(appX, appY);
+                ctx.lineTo(appX + 60, appY);
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Draw Arc in Orange color
+                ctx.beginPath();
+                ctx.arc(appX, appY, arcRadius, 0, thetaRad, true);
+                ctx.strokeStyle = '#f97316'; // Orange color for theta
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw 'θ' Symbol in Orange
+                const textAngle = thetaRad / 2;
+                ctx.fillStyle = '#f97316'; // Orange color for theta
+                ctx.font = 'italic bold 18px sans-serif';
+                ctx.fillText('θ', appX + (arcRadius + 15) * Math.cos(textAngle) - 5, appY + (arcRadius + 15) * Math.sin(textAngle) + 5);
+            }
+
+            // 5. Draw Force Vector
+            const fEndXPx = appX + 120 * uFx;
+            const fEndYPx = appY + 120 * uFy;
+            drawArrow(ctx, appX, appY, fEndXPx, fEndYPx, '#ef4444');
+            
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 18px sans-serif';
+            ctx.fillText('F', fEndXPx + 10, fEndYPx - 5);
+
+            // 6. Draw Magic Circle
+            if(magicR > 0) {
+                ctx.beginPath();
+                ctx.arc(pivotX, pivotY, magicR, 0, Math.PI * 2);
+                ctx.strokeStyle = isHit ? '#22c55e' : '#facc15';
+                ctx.lineWidth = isHit ? 3 : 2;
+                ctx.stroke();
+            }
+
+            // 7. Draw Tangent Details if HIT
+            if (isHit && exactD > 0) {
+                // Draw Perpendicular Line
+                ctx.beginPath();
+                ctx.moveTo(pivotX, pivotY);
+                ctx.lineTo(tanX, tanY);
+                ctx.strokeStyle = '#22c55e';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw 90 Degree Marker
+                drawRightAngle(ctx, tanX, tanY, pivotX, pivotY, appX, appY);
+
+                // Highlight Touch Point
+                ctx.beginPath();
+                ctx.arc(tanX, tanY, 5, 0, Math.PI*2);
+                ctx.fillStyle = '#22c55e';
+                ctx.fill();
+
+                // Label d
+                ctx.fillStyle = '#22c55e';
+                ctx.font = 'bold 18px sans-serif';
+                ctx.fillText('d', pivotX + (tanX - pivotX)/2 - 15, pivotY + (tanY - pivotY)/2 - 10);
+
+                // Update UI Status
+                statusBox.className = 'status-box status-success';
+                statusBox.innerHTML = '🎯 Perfect! d = ' + Math.round(exactD) + ' m';
+            } else if (isHit && exactD === 0) {
+                statusBox.className = 'status-box status-success';
+                statusBox.innerHTML = '🎯 Perfect! d = 0 m (භ්‍රමණයක් නැත)';
+            } else {
+                statusBox.className = 'status-box';
+                statusBox.innerHTML = 'කවය රේඛාවේ ස්පර්ශ කරන්න...';
+            }
+        }
+
+        // Helper: Draw Arrow
+        function drawArrow(ctx, fromX, fromY, toX, toY, color) {
+            const headlen = 15;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            
+            // If the arrow length is 0 (or almost 0), don't draw it
+            if(Math.sqrt(dx*dx + dy*dy) < 1) return;
+
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+
+        // Helper: Draw 90 degree marker
+        function drawRightAngle(ctx, cx, cy, p1x, p1y, p2x, p2y) {
+            const size = 15;
+            const ang1 = Math.atan2(p1y - cy, p1x - cx);
+            const ang2 = Math.atan2(p2y - cy, p2x - cx);
+            
+            const px1 = cx + size * Math.cos(ang1);
+            const py1 = cy + size * Math.sin(ang1);
+            const px2 = cx + size * Math.cos(ang2);
+            const py2 = cy + size * Math.sin(ang2);
+            const pCornerX = cx + size * Math.cos(ang1) + size * Math.cos(ang2);
+            const pCornerY = cy + size * Math.sin(ang1) + size * Math.sin(ang2);
+
+            ctx.beginPath();
+            ctx.moveTo(px1, py1);
+            ctx.lineTo(pCornerX, pCornerY);
+            ctx.lineTo(px2, py2);
+            ctx.strokeStyle = '#22c55e';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Event Listeners
+        sliderTheta.addEventListener('input', draw);
+        sliderR.addEventListener('input', draw);
+        magicSlider.addEventListener('input', draw);
+
+        // Initial Draw
+        draw();
+    </script>
+</body>
+</html>
