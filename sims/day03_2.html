@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine: Dynamic Coin Lift</title>
+    <style>
+        body {
+            background-color: #000000;
+            color: #f8fafc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+            justify-content: center;
+        }
+        h1 { color: #38bdf8; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
+        p { margin-bottom: 30px; color: #94a3b8; }
+        
+        .simulation-container {
+            display: flex;
+            flex-direction: row;
+            gap: 30px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            max-width: 1200px;
+        }
+
+        canvas {
+            background-color: #1e293b;
+            border: 2px solid #38bdf8;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+        }
+        
+        .controls {
+            background-color: #1e293b;
+            padding: 30px 20px;
+            border-radius: 10px;
+            width: 450px;
+            box-sizing: border-box;
+            border: 1px solid #334155;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+        
+        .slider-container { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; }
+        input[type=range] { flex-grow: 1; margin: 0 15px; cursor: pointer; }
+        
+        .data-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+            padding-top: 25px;
+            border-top: 1px dashed #475569;
+        }
+        
+        .data-box {
+            padding: 15px 10px;
+            border-radius: 8px;
+            background-color: #0f172a;
+            text-align: center;
+            font-size: 1.05em;
+            border: 1px solid #1e293b;
+        }
+        
+        .highlight-cw { color: #f43f5e; font-weight: bold; font-size: 0.9em; display:block; margin-bottom:5px; }
+        .highlight-acw { color: #a3e635; font-weight: bold; font-size: 0.9em; display:block; margin-bottom:5px; }
+        .dynamic-val { font-size: 1.3em; font-weight: bold; margin-top: 5px; display: block;}
+        .status { text-align: center; font-size: 1.2em; margin-top: 25px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Physics Engine ⚙️</h1>
+    <p><b>2006 A/L MCQ Simulation</b></p>
+
+    <div class="simulation-container">
+        <canvas id="simCanvas" width="600" height="350"></canvas>
+
+        <div class="controls">
+            <div class="slider-container">
+                <label>Applied Force (F):</label>
+                <input type="range" id="forceSlider" min="0" max="2" step="0.1" value="0.5">
+                <span id="forceVal" style="font-weight:bold; color:#f43f5e; width:60px;">0.5 Mg</span>
+            </div>
+            
+            <div class="data-panel">
+                <div class="data-box">
+                    <span class="highlight-cw">Clockwise Moment<br>(F බලයෙන් ඇති වන ඝූර්ණය)</span>
+                    <span style="font-size: 0.85em; color: #cbd5e1;" id="cwMath">F × R</span>
+                    <span class="dynamic-val" style="color:#f43f5e;" id="cwMom">0.50 MgR</span>
+                </div>
+                <div class="data-box">
+                    <span class="highlight-acw">Anti-Clockwise Moment<br>(Mg බලයෙන් ඇති වන ඝූර්ණය)</span>
+                    <span style="font-size: 0.85em; color: #cbd5e1;" id="acwMath">Mg × R</span>
+                    <span class="dynamic-val" style="color:#a3e635;" id="acwMom">1.00 MgR</span>
+                </div>
+            </div>
+            <div id="statusText" class="status">Status: Resting on ground.</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const forceSlider = document.getElementById('forceSlider');
+        const forceVal = document.getElementById('forceVal');
+        const cwMomText = document.getElementById('cwMom');
+        const acwMomText = document.getElementById('acwMom');
+        const cwMathText = document.getElementById('cwMath');
+        const acwMathText = document.getElementById('acwMath');
+        const statusText = document.getElementById('statusText');
+
+        // Visual Geometry Constants
+        const R = 80; 
+        const groundY = 280;
+        const pivotX = 350;
+        const pivotY = groundY - R; 
+
+        function draw() {
+            let k = parseFloat(forceSlider.value).toFixed(1); 
+            let kNum = parseFloat(k);
+            
+            forceVal.innerText = k + " Mg";
+            
+            // Determine Rotation Angle
+            let angle = 0;
+            if (kNum > 1.0) {
+                angle = (kNum - 1.0) * 0.5; 
+                if(angle > Math.PI/3) angle = Math.PI/3; 
+                statusText.innerHTML = "Status: 🚀 Coin is Lifting! (<span style='color:#f43f5e;'>F &gt; Mg</span>)";
+                statusText.style.color = "#38bdf8";
+            } else if (kNum === 1.0) {
+                statusText.innerHTML = "Status: ⚖️ Verge of Lifting (<span style='color:#a3e635;'>F = Mg</span>)";
+                statusText.style.color = "#a3e635";
+            } else {
+                statusText.innerHTML = "Status: 🛑 Resting securely. (<span style='color:#fbbf24;'>F &lt; Mg</span>)";
+                statusText.style.color = "#fbbf24";
+            }
+
+            // --- THE DYNAMIC MATH (Physics Engine Hack) ---
+            // d for Mg changes as R*cos(theta)
+            let dMg_multiplier = Math.cos(angle); 
+            // d for F changes as R + R*sin(theta)
+            let dF_multiplier = 1 + Math.sin(angle); 
+
+            let dynamic_CW_Mom = (kNum * dF_multiplier).toFixed(2);
+            let dynamic_ACW_Mom = (1.0 * dMg_multiplier).toFixed(2);
+
+            // Update Text Panels with dynamic math
+            cwMathText.innerHTML = k + " Mg &times; " + dF_multiplier.toFixed(2) + " R";
+            acwMathText.innerHTML = "1.0 Mg &times; " + dMg_multiplier.toFixed(2) + " R";
+            
+            cwMomText.innerText = dynamic_CW_Mom + " MgR";
+            acwMomText.innerText = dynamic_ACW_Mom + " MgR";
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Calculate Coin Center
+            let centerX = pivotX - R * Math.cos(angle);
+            let centerY = pivotY - R * Math.sin(angle);
+
+            // Draw Ground and Step
+            ctx.fillStyle = "#64748b";
+            ctx.fillRect(0, groundY, 600, 20); 
+            ctx.fillStyle = "#475569";
+            ctx.fillRect(pivotX, pivotY, 250, R+20); 
+
+            // Dashed Lines for dynamically changing 'd'
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+            ctx.lineWidth = 1.5;
+            
+            // d for F (Vertical line to force's line of action)
+            ctx.beginPath();
+            ctx.moveTo(pivotX, pivotY);
+            ctx.lineTo(pivotX, centerY - R);
+            ctx.stroke();
+            
+            // d for Mg (Horizontal line to force's line of action)
+            ctx.beginPath();
+            ctx.moveTo(pivotX, pivotY);
+            ctx.lineTo(centerX, pivotY);
+            ctx.stroke();
+            ctx.setLineDash([]); 
+
+            // Draw Coin
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, R, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(56, 189, 248, 0.2)";
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "#38bdf8";
+            ctx.stroke();
+            
+            // Crosshair
+            ctx.beginPath();
+            ctx.moveTo(centerX - R*Math.cos(angle), centerY - R*Math.sin(angle));
+            ctx.lineTo(centerX + R*Math.cos(angle), centerY + R*Math.sin(angle));
+            ctx.moveTo(centerX + R*Math.sin(angle), centerY - R*Math.cos(angle));
+            ctx.lineTo(centerX - R*Math.sin(angle), centerY + R*Math.cos(angle));
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.5)";
+            ctx.stroke();
+
+            // Center Dot
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 5, 0, Math.PI*2);
+            ctx.fillStyle = "white";
+            ctx.fill();
+
+            // Pivot Dot
+            ctx.beginPath();
+            ctx.arc(pivotX, pivotY, 6, 0, Math.PI*2);
+            ctx.fillStyle = "#f43f5e";
+            ctx.fill();
+            ctx.fillStyle = "white";
+            ctx.font = "14px Arial";
+            ctx.fillText("Pivot", pivotX + 10, pivotY - 10);
+
+            // Vector: Mg
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = "#a3e635"; 
+            ctx.fillStyle = "#a3e635";
+            drawArrow(ctx, centerX, centerY, centerX, centerY + R + 30);
+            ctx.font = "bold 16px Arial";
+            ctx.fillText("Mg", centerX + 10, centerY + R + 20);
+
+            // Vector: F 
+            ctx.strokeStyle = "#f43f5e"; 
+            ctx.fillStyle = "#f43f5e";
+            let topX = centerX;
+            let topY = centerY - R;
+            let forceLength = kNum * R; 
+            if (forceLength < 10) forceLength = 10; 
+            drawArrow(ctx, topX, topY, topX + forceLength, topY);
+            ctx.fillText("F = " + k + " Mg", topX + forceLength + 10, topY - 10);
+
+            // Dynamic 'd' Labels on Canvas
+            ctx.fillStyle = "white";
+            ctx.font = "14px Arial";
+            // Label for d(Mg)
+            ctx.fillText("d = " + dMg_multiplier.toFixed(2) + " R", pivotX - (R*dMg_multiplier)/2 - 30, pivotY + 15); 
+            // Label for d(F)
+            ctx.fillText("d = " + dF_multiplier.toFixed(2) + " R", pivotX + 10, pivotY - (R*dF_multiplier)/2); 
+        }
+
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            var headlen = 10; 
+            var dx = tox - fromx;
+            var dy = toy - fromy;
+            var angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        forceSlider.addEventListener('input', draw);
+        draw();
+    </script>
+</body>
+</html>
