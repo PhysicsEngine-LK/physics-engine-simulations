@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Physics Engine | System 01 Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;500;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-green: #39FF14;
+            --neon-red: #FF3131;
+            --ui-blue: #00f2ff;
+            --glass: rgba(15, 15, 15, 0.85);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: #050505;
+            background-image: radial-gradient(circle, #151515 1px, transparent 1px);
+            background-size: 30px 30px; /* Technical Grid */
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Branding Side */
+        .sidebar {
+            width: 320px;
+            background: var(--glass);
+            border-right: 1px solid var(--border);
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            padding: 40px 25px;
+            z-index: 10;
+        }
+
+        .brand-title {
+            font-size: 1.4em;
+            font-weight: 800;
+            letter-spacing: 4px;
+            color: var(--neon-green);
+            margin-bottom: 5px;
+        }
+
+        .brand-sub {
+            font-size: 0.7em;
+            color: #555;
+            letter-spacing: 2px;
+            margin-bottom: 40px;
+        }
+
+        .ui-group { margin-bottom: 30px; }
+        .ui-label { font-size: 0.75em; color: #888; margin-bottom: 15px; display: block; }
+        
+        /* Specialized Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: #222;
+            height: 4px;
+            border-radius: 2px;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-green);
+            cursor: pointer;
+        }
+
+        .data-readout {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #222;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.85em;
+        }
+
+        .data-row { display: flex; justify-content: space-between; margin: 8px 0; }
+        .data-row span:last-child { color: var(--ui-blue); }
+
+        /* Simulation Viewport */
+        .viewport {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #simCanvas {
+            max-width: 90%;
+            max-height: 90%;
+            filter: drop-shadow(0 0 20px rgba(0, 242, 255, 0.05));
+        }
+
+        .hud-overlay {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            text-align: right;
+            pointer-events: none;
+        }
+        
+        .sys-code { color: #333; font-size: 0.8em; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="brand-title">PHYSICS_ENGINE</div>
+        <div class="brand-sub">SYSTEM 01: LINEAR TO CIRCULAR</div>
+
+        <div class="ui-group">
+            <span class="ui-label">IMPULSE FREQUENCY ($n$)</span>
+            <input type="range" id="sides" min="5" max="150" value="5">
+            <div class="data-row" style="margin-top:10px;">
+                <span style="font-size: 0.8em;">Value:</span>
+                <span id="sideVal" style="color: var(--neon-green);">5</span>
+            </div>
+        </div>
+
+        <div class="ui-group">
+            <span class="ui-label">SYSTEM TELEMETRY</span>
+            <div class="data-readout">
+                <div class="data-row"><span>Velocity:</span><span>CONSTANT</span></div>
+                <div class="data-row"><span>$dt \to 0$:</span><span id="limitTxt">FALSE</span></div>
+                <div class="data-row"><span>Path:</span><span id="pathTxt">POLYGON</span></div>
+            </div>
+        </div>
+        
+        <p style="font-size: 0.65em; color: #444; margin-top: auto; line-height: 1.5;">
+            Visualizing Newton's First Law through discrete perpendicular impulses at regular spatial intervals.
+        </p>
+    </div>
+
+    <div class="viewport">
+        <div class="hud-overlay">
+            <div class="sys-code">REF_ID: 01_DEFLECTION_ARRAY</div>
+            <div style="color: var(--ui-blue); font-size: 0.7em;">LIVE_FEED // ACTIVE</div>
+        </div>
+        <canvas id="simCanvas" width="800" height="800"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const sideSlider = document.getElementById('sides');
+        const sideVal = document.getElementById('sideVal');
+        const limitTxt = document.getElementById('limitTxt');
+        const pathTxt = document.getElementById('pathTxt');
+
+        let centerX = 400, centerY = 400, radius = 300;
+        let globalProgress = 0, lapSpeed = 0.0015; 
+        let forceAlpha = 0, lastSegment = -1;
+
+        function getVertex(i, total) {
+            let angle = (i / total) * Math.PI * 2 - Math.PI / 2;
+            return { x: centerX + radius * Math.cos(angle), y: centerY + radius * Math.sin(angle), angle };
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let n = parseInt(sideSlider.value);
+            sideVal.innerText = n;
+            limitTxt.innerText = n > 90 ? "TRUE" : "FALSE";
+            pathTxt.innerText = n > 90 ? "CONVERGED" : "DISCRETE";
+
+            globalProgress = (globalProgress + lapSpeed) % 1;
+            let currentSeg = Math.floor(globalProgress * n);
+            let segProgress = (globalProgress * n) % 1;
+
+            if (currentSeg !== lastSegment) { forceAlpha = 1.0; lastSegment = currentSeg; }
+
+            let p1 = getVertex(currentSeg, n);
+            let p2 = getVertex((currentSeg + 1) % n, n);
+            let curX = p1.x + (p2.x - p1.x) * segProgress;
+            let curY = p1.y + (p2.y - p1.y) * segProgress;
+
+            // 1. Draw Impulse Strike (External toward Center)
+            if (forceAlpha > 0) {
+                let v = getVertex(currentSeg, n);
+                ctx.strokeStyle = `rgba(255, 49, 49, ${forceAlpha})`;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(centerX + (radius + 60) * Math.cos(v.angle), centerY + (radius + 60) * Math.sin(v.angle));
+                ctx.lineTo(v.x, v.y);
+                ctx.stroke();
+                forceAlpha -= 0.1;
+            }
+
+            // 2. Technical Path (Made more visible)
+            ctx.setLineDash([5, 10]);
+            ctx.strokeStyle = "rgba(255,255,255,0.3)"; // Increased opacity from 0.05 to 0.3
+            ctx.beginPath();
+            for(let i=0; i<=n; i++) {
+                let v = getVertex(i, n);
+                i === 0 ? ctx.moveTo(v.x, v.y) : ctx.lineTo(v.x, v.y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 3. The Particle (High Glow)
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "white";
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.arc(curX, curY, 6, 0, Math.PI*2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            requestAnimationFrame(draw);
+        }
+        sideSlider.oninput = () => { lastSegment = -1; };
+        draw();
+    </script>
+</body>
+</html>

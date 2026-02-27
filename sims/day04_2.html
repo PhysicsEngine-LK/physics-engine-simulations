@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Angular Displacement Simulation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            background-color: #000000; 
+            color: #ffffff; 
+            margin: 0;
+            padding: 0;
+            height: 100vh; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            touch-action: none; /* Prevents scrolling while dragging on mobile */
+        }
+        
+        .header { margin-bottom: 20px; }
+        /* Cyan theme for displacement */
+        h2 { color: #00e5ff; margin-bottom: 5px; font-size: 2em; } 
+        p { color: #aaaaaa; margin-top: 0; }
+        .instruction { color: #00e5ff; font-weight: bold; margin-bottom: 20px; animation: pulse 2s infinite; }
+
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: row; 
+            align-items: center;
+            justify-content: center;
+            gap: 50px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        canvas {
+            background-color: #0a0a0a;
+            border: 2px solid #333;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.15); /* Cyan glow */
+            cursor: grab;
+        }
+        canvas:active { cursor: grabbing; }
+
+        .watermark {
+            position: absolute;
+            opacity: 0.15;
+            font-size: 32px;
+            font-weight: 900;
+            pointer-events: none;
+            bottom: 20px;
+            left: 25px;
+            color: #00e5ff;
+            letter-spacing: 3px;
+        }
+
+        .controls {
+            background: #111111;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            width: 350px;
+            text-align: left;
+        }
+
+        .readout {
+            font-size: 1.4em;
+            margin: 15px 0;
+            font-family: monospace;
+            background: #000000;
+            color: #ffffff;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            text-align: center;
+        }
+
+        .highlight-rad { color: #00e5ff; font-weight: bold; border-color: #008c9e; }
+
+        hr { border: 0; border-top: 1px solid #333; margin: 20px 0; }
+
+        button {
+            background-color: #008c9e;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            width: 100%;
+            margin-top: 10px;
+            transition: background-color 0.2s;
+            font-weight: bold;
+        }
+
+        button:hover { background-color: #00abbf; }
+
+        @media (max-width: 800px) {
+            .main-content { flex-direction: column; gap: 20px; }
+            body { height: auto; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>Angular Displacement (&theta;) Simulation</h2>
+        <p>How far has the object rotated from the start?</p>
+    </div>
+
+    <p class="instruction">👉 Click and drag the blue dot around the circle!</p>
+
+    <div class="main-content">
+        <div style="position: relative;">
+            <div class="watermark">PHYSICS ENGINE</div>
+            <canvas id="simCanvas" width="400" height="400"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="readout highlight-rad">Angle (&theta;) = <span id="thetaDisplayRad">0.00</span> rad</div>
+            <div class="readout">Angle (&theta;) = <span id="thetaDisplayDeg">0</span>&deg;</div>
+            <div class="readout" style="font-size: 1em; color: #aaa;">Revolutions: <span id="revDisplay">0.00</span></div>
+            
+            <hr>
+            <button id="resetBtn">Reset to 0</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const thetaDisplayRad = document.getElementById('thetaDisplayRad');
+        const thetaDisplayDeg = document.getElementById('thetaDisplayDeg');
+        const revDisplay = document.getElementById('revDisplay');
+        const resetBtn = document.getElementById('resetBtn');
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = 160;
+
+        let angle = 0; // Total accumulated angle
+        let isDragging = false;
+        let lastMouseAngle = 0;
+
+        // --- Event Listeners for Dragging ---
+        canvas.addEventListener('mousedown', startDrag);
+        canvas.addEventListener('mousemove', drag);
+        canvas.addEventListener('mouseup', endDrag);
+        canvas.addEventListener('mouseleave', endDrag);
+        
+        // Touch support for mobile
+        canvas.addEventListener('touchstart', function(e) { startDrag(e.touches[0]); e.preventDefault(); }, {passive: false});
+        canvas.addEventListener('touchmove', function(e) { drag(e.touches[0]); e.preventDefault(); }, {passive: false});
+        canvas.addEventListener('touchend', endDrag);
+
+        resetBtn.addEventListener('click', function() {
+            angle = 0;
+            updateDisplays();
+            drawFrame();
+        });
+
+        // --- Helper Functions ---
+        function getMousePosAngle(clientEvent) {
+            const rect = canvas.getBoundingClientRect();
+            const x = clientEvent.clientX - rect.left - centerX;
+            // Invert Y because canvas Y goes down, math Y goes up
+            const y = -(clientEvent.clientY - rect.top - centerY); 
+            return Math.atan2(y, x);
+        }
+
+        function startDrag(event) {
+            isDragging = true;
+            lastMouseAngle = getMousePosAngle(event);
+        }
+
+        function drag(event) {
+            if (!isDragging) return;
+            
+            const currentMouseAngle = getMousePosAngle(event);
+            
+            // Calculate the difference in angle from the last frame
+            let delta = currentMouseAngle - lastMouseAngle;
+            
+            // Handle wrap-around problem (e.g., going from +PI to -PI instantly)
+            // If delta is huge, it means we crossed the boundary. Normalize it.
+            if (delta > Math.PI) delta -= 2 * Math.PI;
+            if (delta < -Math.PI) delta += 2 * Math.PI;
+
+            angle += delta;
+            lastMouseAngle = currentMouseAngle;
+
+            updateDisplays();
+            drawFrame();
+        }
+
+        function endDrag() {
+            isDragging = false;
+        }
+
+        function updateDisplays() {
+            // Display angle. Using Math.abs to avoid negative zero issues
+            thetaDisplayRad.textContent = angle.toFixed(2);
+            thetaDisplayDeg.textContent = (angle * (180 / Math.PI)).toFixed(0);
+            revDisplay.textContent = (angle / (2 * Math.PI)).toFixed(2);
+        }
+
+        // --- Drawing Function ---
+        function drawFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Track
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Center point
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+
+            // Reference line (0 rad)
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(centerX + radius, centerY);
+            ctx.strokeStyle = '#666';
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]); 
+
+            // Swept angle sector (Cyan theme)
+            // Note on drawing angles in canvas: it uses clockwise as positive by default.
+            // We use negative angle here to match standard math counter-clockwise convention.
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, 0, -angle, angle > 0); 
+            ctx.fillStyle = 'rgba(0, 229, 255, 0.25)'; 
+            ctx.fill();
+
+            // Current position line
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            const currentX = centerX + radius * Math.cos(angle);
+            const currentY = centerY - radius * Math.sin(angle); // Y inverted for canvas
+            ctx.lineTo(currentX, currentY);
+            ctx.strokeStyle = '#00e5ff';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Draggable Marker dot (Cyan/White)
+            ctx.beginPath();
+            ctx.arc(currentX, currentY, 12, 0, 2 * Math.PI); // Slightly bigger handle
+            ctx.fillStyle = '#ffffff'; 
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#00e5ff';
+            ctx.stroke();
+        }
+
+        // Initial draw
+        updateDisplays();
+        drawFrame();
+    </script>
+</body>
+</html>
