@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Angular Acceleration Simulation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            background-color: #000000; 
+            color: #ffffff; 
+            margin: 0;
+            padding: 0;
+            height: 100vh; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        
+        .header { margin-bottom: 20px; }
+        h2 { color: #ff9e80; margin-bottom: 5px; font-size: 2em; } 
+        p { color: #aaaaaa; margin-top: 0; }
+
+        .main-content {
+            display: flex;
+            flex-direction: row; 
+            align-items: center;
+            justify-content: center;
+            gap: 50px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        canvas {
+            background-color: #0a0a0a;
+            border: 2px solid #333;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 158, 128, 0.15); 
+        }
+
+        .watermark {
+            position: absolute;
+            opacity: 0.15;
+            font-size: 32px;
+            font-weight: 900;
+            pointer-events: none;
+            bottom: 20px;
+            left: 25px;
+            color: #ff9e80;
+            letter-spacing: 3px;
+        }
+
+        .controls {
+            background: #111111;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            width: 350px;
+            text-align: left;
+        }
+
+        .slider-container { text-align: center; }
+        input[type="range"] { width: 100%; margin: 15px 0; accent-color: #ff6e40; } 
+        .note { font-size: 0.85em; color: #888; text-align: center; margin-top: -10px; margin-bottom: 15px; font-style: italic; }
+
+        .readout {
+            font-size: 1.2em;
+            margin: 10px 0;
+            font-family: monospace;
+            background: #000000;
+            color: #ffffff;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            text-align: center;
+        }
+
+        .time-readout { color: #00ffcc; border-color: #005544; }
+        .omega-readout { color: #b388ff; border-color: #4b0082; } 
+        .highlight-rad { color: #ff99ff; font-weight: bold; }
+
+        hr { border: 0; border-top: 1px solid #333; margin: 15px 0; }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            flex: 1;
+            transition: background-color 0.2s;
+            font-weight: bold;
+        }
+
+        #playBtn { background-color: #28a745; }
+        #playBtn:hover { background-color: #218838; }
+        #playBtn.paused { background-color: #dc3545; }
+        #playBtn.paused:hover { background-color: #c82333; }
+        
+        #resetBtn { background-color: #c51162; } 
+        #resetBtn:hover { background-color: #880e4f; }
+
+        .checkbox-container {
+            margin-top: 15px;
+            color: #ccc;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+
+        @media (max-width: 800px) {
+            .main-content { flex-direction: column; gap: 20px; }
+            body { height: auto; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>Angular Acceleration (&alpha;) Simulation</h2>
+        <p>Observe how angular velocity (&omega;) increases over time when acceleration is applied.</p>
+    </div>
+
+    <div class="main-content">
+        <div style="position: relative;">
+            <div class="watermark">PHYSICS ENGINE</div>
+            <canvas id="simCanvas" width="400" height="400"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="slider-container">
+                <label style="font-size: 1.1em; font-weight: bold; color: #ddd;">Angular Accel. (&alpha;)</label>
+                <input type="range" id="alphaSlider" min="0" max="5" step="0.1" value="1.0">
+            </div>
+            
+            <div class="readout">&alpha; = <span id="alphaDisplay">1.0</span> rad s⁻²</div>
+            <div class="note">Initial velocity (&omega;₀) = 1.0 rad s⁻¹</div>
+            <hr>
+            
+            <div class="readout omega-readout">Velocity (&omega;) = <span id="omegaDisplay">1.00</span> rad s⁻¹</div>
+            <div class="readout time-readout">Time (t) = <span id="timeDisplay">0.00</span> s</div>
+            
+            <hr>
+            
+            <div class="readout highlight-rad">Angle (&theta;) = <span id="thetaDisplayRad">0.00</span> rad</div>
+            <div class="readout">Angle (&theta;) = <span id="thetaDisplayDeg">0</span>&deg;</div>
+            
+            <label class="checkbox-container">
+                <input type="checkbox" id="autoPause" checked>
+                Auto-pause every 1 second
+            </label>
+
+            <div class="button-group">
+                <button id="playBtn">Play</button>
+                <button id="resetBtn">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const alphaSlider = document.getElementById('alphaSlider');
+        const alphaDisplay = document.getElementById('alphaDisplay');
+        const omegaDisplay = document.getElementById('omegaDisplay');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const thetaDisplayRad = document.getElementById('thetaDisplayRad');
+        const thetaDisplayDeg = document.getElementById('thetaDisplayDeg');
+        const playBtn = document.getElementById('playBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const autoPauseCheckbox = document.getElementById('autoPause');
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = 160;
+
+        let totalTime = 0; 
+        let lastTime = 0; 
+        let isRunning = false; 
+        
+        // This tracks the next whole second we need to pause at
+        let targetPauseTime = 1.0; 
+        
+        const initialOmega = 1.0; 
+
+        alphaSlider.addEventListener('input', function() {
+            alphaDisplay.textContent = parseFloat(this.value).toFixed(1);
+        });
+
+        playBtn.addEventListener('click', function() {
+            isRunning = !isRunning;
+            updatePlayButton();
+            if (isRunning) {
+                lastTime = performance.now(); 
+                requestAnimationFrame(draw);
+            }
+        });
+
+        resetBtn.addEventListener('click', function() {
+            totalTime = 0;
+            targetPauseTime = 1.0; // Reset the pause target back to 1.0
+            isRunning = false;
+            updatePlayButton();
+            updateDisplays();
+            drawFrame(); 
+        });
+
+        function updatePlayButton() {
+            if (isRunning) {
+                playBtn.textContent = "Pause";
+                playBtn.classList.add("paused");
+            } else {
+                playBtn.textContent = "Play";
+                playBtn.classList.remove("paused");
+            }
+        }
+
+        function getPhysicsState() {
+            const alpha = parseFloat(alphaSlider.value);
+            const currentOmega = initialOmega + (alpha * totalTime); 
+            const currentAngle = (initialOmega * totalTime) + (0.5 * alpha * totalTime * totalTime);
+            
+            return { omega: currentOmega, angle: currentAngle };
+        }
+
+        function updateDisplays() {
+            const state = getPhysicsState();
+            timeDisplay.textContent = totalTime.toFixed(2);
+            omegaDisplay.textContent = state.omega.toFixed(2);
+            thetaDisplayRad.textContent = state.angle.toFixed(2);
+            thetaDisplayDeg.textContent = (state.angle * (180 / Math.PI)).toFixed(0);
+        }
+
+        function drawFrame() {
+            const state = getPhysicsState();
+            const angle = state.angle;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(centerX + radius, centerY);
+            ctx.strokeStyle = '#666';
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]); 
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, 0, -angle, true); 
+            ctx.fillStyle = 'rgba(255, 110, 64, 0.25)'; 
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            const currentX = centerX + radius * Math.cos(-angle);
+            const currentY = centerY + radius * Math.sin(-angle);
+            ctx.lineTo(currentX, currentY);
+            ctx.strokeStyle = '#ff6e40';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(currentX, currentY, 8, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ffffff'; 
+            ctx.fill();
+        }
+
+        function draw(timestamp) {
+            if (!isRunning) return; 
+
+            if (!lastTime) lastTime = timestamp;
+            const dt = (timestamp - lastTime) / 1000; 
+            lastTime = timestamp;
+
+            let nextTime = totalTime + dt;
+
+            // Check if we are crossing the next target pause time
+            if (autoPauseCheckbox.checked && totalTime < targetPauseTime && nextTime >= targetPauseTime) {
+                totalTime = targetPauseTime; // Snap exactly to the target time
+                targetPauseTime += 1.0;      // Set the next pause target +1 second away
+                isRunning = false;
+                updatePlayButton();
+            } else {
+                totalTime = nextTime;
+            }
+
+            updateDisplays();
+            drawFrame();
+
+            if (isRunning) {
+                requestAnimationFrame(draw);
+            }
+        }
+
+        updateDisplays();
+        drawFrame();
+    </script>
+</body>
+</html>

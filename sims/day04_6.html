@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Period, Frequency & RPM - Physics Engine</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            background-color: #000000; 
+            color: #e0e0e0; 
+            margin: 0;
+            padding: 0;
+            height: 100vh; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        
+        .header { margin-bottom: 20px; }
+        h2 { color: #00ffcc; margin-bottom: 5px; font-size: 2em; letter-spacing: 1px; } 
+        p { color: #888888; margin-top: 0; }
+
+        .main-content {
+            display: flex;
+            flex-direction: row; 
+            align-items: center;
+            justify-content: center;
+            gap: 50px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        canvas {
+            background-color: #050505; 
+            border: 2px solid #333;
+            border-radius: 50%;
+            box-shadow: 0 0 25px rgba(0, 255, 204, 0.1); 
+        }
+
+        .controls {
+            background: #0f0f0f;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #222;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+            width: 380px;
+            text-align: left;
+        }
+
+        .slider-container { text-align: center; }
+        input[type="range"] { width: 100%; margin: 15px 0; accent-color: #00ffcc; } 
+        
+        .readout-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .readout {
+            font-size: 1.1em;
+            margin: 10px 0;
+            font-family: 'Courier New', Courier, monospace;
+            background: #000000;
+            color: #ffffff;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            text-align: center;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .highlight-f { color: #00ffcc; border-color: #005544; font-weight: bold; }
+        .highlight-t { color: #b388ff; border-color: #4b0082; font-weight: bold; }
+        
+        /* New RPM Dashboard Style */
+        .dashboard-rpm { 
+            background: #1a0000; 
+            color: #ff3366; 
+            border-color: #550011; 
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .sub-text { font-size: 0.7em; color: #888; font-weight: normal; margin-top: 4px; }
+
+        .warning-box {
+            border: 1px dashed #ff3366;
+            background: rgba(255, 51, 102, 0.1);
+            color: #ff3366;
+            padding: 8px;
+            font-size: 0.85em;
+            text-align: center;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        .highlight-time { color: #ffaa00; font-size: 1.3em; border-color: #664400; flex: 1.5;}
+        
+        hr { border: 0; border-top: 1px solid #222; margin: 15px 0; }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            color: #000;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            flex: 1;
+            transition: all 0.2s;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #playBtn { background-color: #00ccaa; }
+        #playBtn:hover { background-color: #00ffcc; box-shadow: 0 0 10px rgba(0,255,204,0.4); }
+        #playBtn.paused { background-color: #cc2244; color: white;}
+        #playBtn.paused:hover { background-color: #ff3366; box-shadow: 0 0 10px rgba(255,51,102,0.4); }
+        
+        #resetBtn { background-color: #444; color: white;} 
+        #resetBtn:hover { background-color: #666; }
+
+        .checkbox-container {
+            margin-top: 15px;
+            color: #aaa;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: #00ffcc;}
+
+        @media (max-width: 800px) {
+            .main-content { flex-direction: column; gap: 20px; }
+            body { height: auto; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>Frequency (f) & Period (T)</h2>
+        <p>1 Hz = 1 rps. Beware the RPM Trap!</p>
+    </div>
+
+    <div class="main-content">
+        <canvas id="simCanvas" width="400" height="400"></canvas>
+
+        <div class="controls">
+            <div class="slider-container">
+                <label style="font-size: 1.1em; font-weight: bold; color: #ccc;">Frequency / RPS Slider</label>
+                <input type="range" id="freqSlider" min="0.1" max="3.0" step="0.1" value="1.0">
+            </div>
+            
+            <div class="readout-group">
+                <div class="readout highlight-f">
+                    <div><span id="freqDisplay">1.0</span> Hz</div>
+                    <div class="sub-text">= <span id="rpsDisplay">1.0</span> rps</div>
+                </div>
+                <div class="readout highlight-t">
+                    <div>T = <span id="periodDisplay">1.00</span> s</div>
+                    <div class="sub-text">(Time for 1 round)</div>
+                </div>
+            </div>
+
+            <div class="readout dashboard-rpm">
+                <div>Dashboard: <span id="rpmDisplay">60</span> RPM</div>
+            </div>
+            <div class="warning-box">
+                ⚠️ EXAM TRAP: Physics hates minutes!<br>Always divide RPM by 60 to get Hz (rps) before using equations!
+            </div>
+            
+            <hr>
+            
+            <div class="readout-group">
+                <div class="readout highlight-time">⏱️ <span id="timeDisplay">0.00</span> s</div>
+                <div class="readout" style="color: #ccc;">Rounds:<br><span id="rotDisplay" style="color: #fff; font-weight: bold; font-size: 1.4em;">0</span></div>
+            </div>
+            
+            <label class="checkbox-container">
+                <input type="checkbox" id="autoPause" checked>
+                Auto-pause after exactly 1 Round
+            </label>
+
+            <div class="button-group">
+                <button id="playBtn">Play</button>
+                <button id="resetBtn">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const freqSlider = document.getElementById('freqSlider');
+        const freqDisplay = document.getElementById('freqDisplay');
+        const rpsDisplay = document.getElementById('rpsDisplay');
+        const periodDisplay = document.getElementById('periodDisplay');
+        const rpmDisplay = document.getElementById('rpmDisplay');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const rotDisplay = document.getElementById('rotDisplay');
+        const playBtn = document.getElementById('playBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const autoPauseCheckbox = document.getElementById('autoPause');
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = 160;
+
+        let totalTime = 0; 
+        let lastTime = 0; 
+        let isRunning = false; 
+        let angle = 0; 
+        let targetPauseTime = 0; 
+
+        function init() {
+            updateReadouts();
+            targetPauseTime = parseFloat(periodDisplay.textContent); 
+            drawFrame();
+        }
+
+        freqSlider.addEventListener('input', function() {
+            updateReadouts();
+            if (!isRunning && totalTime === 0) {
+                targetPauseTime = parseFloat(periodDisplay.textContent);
+            }
+        });
+
+        playBtn.addEventListener('click', function() {
+            isRunning = !isRunning;
+            updatePlayButton();
+            if (isRunning) {
+                lastTime = performance.now(); 
+                requestAnimationFrame(draw);
+            }
+        });
+
+        resetBtn.addEventListener('click', function() {
+            totalTime = 0;
+            angle = 0;
+            isRunning = false;
+            updateReadouts();
+            targetPauseTime = parseFloat(periodDisplay.textContent); 
+            updatePlayButton();
+            drawFrame(); 
+        });
+
+        function updatePlayButton() {
+            if (isRunning) {
+                playBtn.textContent = "Pause";
+                playBtn.classList.add("paused");
+            } else {
+                playBtn.textContent = "Play";
+                playBtn.classList.remove("paused");
+            }
+        }
+
+        function updateReadouts() {
+            const f = parseFloat(freqSlider.value);
+            const T = 1 / f;
+            const rpm = f * 60; // Calculate RPM
+
+            freqDisplay.textContent = f.toFixed(1);
+            rpsDisplay.textContent = f.toFixed(1); // rps is exactly the same as Hz
+            periodDisplay.textContent = T.toFixed(2);
+            rpmDisplay.textContent = rpm.toFixed(0); // Show whole number for RPM
+            
+            timeDisplay.textContent = totalTime.toFixed(2);
+            
+            const rounds = Math.floor((Math.abs(angle) + 0.001) / (2 * Math.PI));
+            rotDisplay.textContent = rounds;
+        }
+
+        function drawFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // --- DRAW WATERMARK ---
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(-Math.PI / 6); 
+            ctx.font = "bold 40px 'Arial Black', sans-serif";
+            ctx.fillStyle = "rgba(255, 255, 255, 0.04)"; 
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("PHYSICS ENGINE", 0, 0);
+            ctx.restore();
+            // ----------------------
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(centerX + radius, centerY);
+            ctx.strokeStyle = '#555';
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]); 
+
+            const currentX = centerX + radius * Math.cos(-angle);
+            const currentY = centerY + radius * Math.sin(-angle);
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, 0, -angle, true); 
+            ctx.fillStyle = 'rgba(0, 255, 204, 0.15)'; 
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(currentX, currentY);
+            ctx.strokeStyle = '#00ffcc';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(currentX, currentY, 8, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ffffff'; 
+            ctx.fill();
+            ctx.strokeStyle = '#00ffcc';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        function draw(timestamp) {
+            if (!isRunning) return; 
+
+            if (!lastTime) lastTime = timestamp;
+            const dt = (timestamp - lastTime) / 1000; 
+            lastTime = timestamp;
+
+            const f = parseFloat(freqSlider.value);
+            const omega = 2 * Math.PI * f; 
+            
+            let nextTime = totalTime + dt;
+
+            if (autoPauseCheckbox.checked && totalTime < targetPauseTime && nextTime >= targetPauseTime) {
+                totalTime = targetPauseTime; 
+                angle = omega * totalTime;   
+                
+                targetPauseTime += (1 / f);  
+                isRunning = false;
+                updatePlayButton();
+            } else {
+                totalTime = nextTime;
+                angle += omega * dt;
+            }
+
+            updateReadouts();
+            drawFrame();
+
+            if (isRunning) {
+                requestAnimationFrame(draw);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

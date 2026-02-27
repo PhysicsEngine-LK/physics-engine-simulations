@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Friction & Cornering</title>
+    <style>
+        body {
+            background-color: #050510;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h2 {
+            margin: 0;
+            color: #00ffcc;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .main-container {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            position: relative;
+        }
+        canvas {
+            background-color: #020205;
+            border: 2px solid #1a3a3a;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: #111122;
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid #2a2a4a;
+            width: 280px;
+        }
+        button {
+            background: linear-gradient(45deg, #00b386, #00ffcc);
+            border: none;
+            color: #000;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.4);
+        }
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            color: #00ffcc;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        input[type="range"] {
+            accent-color: #00ffcc;
+            width: 100%;
+        }
+        .stats { 
+            background: #0a0a15; 
+            padding: 15px; 
+            border-radius: 10px; 
+            border: 1px dashed #00ffcc;
+            font-family: monospace; 
+            font-size: 14px; 
+            color: #fff;
+            line-height: 1.6;
+        }
+        .warning {
+            color: #ff3860;
+            font-weight: bold;
+            font-size: 16px;
+            text-align: center;
+            height: 24px;
+        }
+        .watermark {
+            position: absolute;
+            opacity: 0.15;
+            font-size: 32px;
+            font-weight: 900;
+            pointer-events: none;
+            bottom: 20px;
+            left: 25px;
+            color: #00ffcc;
+            letter-spacing: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>System 05: Friction & Cornering</h2>
+        <p>වාහනය පථයට ස්පර්ශීයව (නිල් ඊතලයේ දිශාවට) හැරෙන ආකාරය නිරීක්ෂණය කරන්න.</p>
+    </div>
+
+    <div class="main-container">
+        <div style="position: relative;">
+            <div class="watermark">PHYSICS ENGINE</div>
+            <canvas id="simCanvas" width="700" height="500"></canvas>
+        </div>
+
+        <div class="controls">
+            <button onclick="resetSim()">Restart Car (නැවත අරඹන්න)</button>
+            <hr style="width:100%; border:0.5px solid #2a2a4a;">
+            
+            <div class="slider-group">
+                <label>රථයේ වේගය (v): <span id="vVal">3.0</span> m/s</label>
+                <input type="range" id="speedSlider" min="1.0" max="6.0" step="0.1" value="3.0">
+            </div>
+            
+            <div class="slider-group">
+                <label>පාරේ ඝර්ෂණ සංගුණකය (&mu;): <span id="muVal">0.60</span></label>
+                <input type="range" id="muSlider" min="0.1" max="1.0" step="0.05" value="0.6">
+            </div>
+
+            <div class="stats" id="statsBox">
+                අවශ්‍ය කේන්ද්‍රාභිසාරී බලය: 0 N<br>
+                පාරේ උපරිම ඝර්ෂණය: 0 N
+            </div>
+            <div class="warning" id="warningMsg"></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Physics Constants
+        const radius = 180;
+        const cx = 350;
+        const cy = 250;
+        const g = 0.1; 
+        
+        // Car Dimensions
+        const carWidth = 26;
+        const carLength = 50;
+
+        let angle = 0;
+        let isSkidding = false;
+        let carX = 0;
+        let carY = 0;
+        let skidVx = 0;
+        let skidVy = 0;
+        let spinAngle = 0;
+
+        // DOM Elements
+        const speedSlider = document.getElementById('speedSlider');
+        const muSlider = document.getElementById('muSlider');
+        const vVal = document.getElementById('vVal');
+        const muVal = document.getElementById('muVal');
+        const statsBox = document.getElementById('statsBox');
+        const warningMsg = document.getElementById('warningMsg');
+
+        function resetSim() {
+            angle = 0;
+            spinAngle = 0;
+            isSkidding = false;
+            warningMsg.innerText = "";
+            carX = cx + radius;
+            carY = cy;
+        }
+
+        function drawArrow(fromX, fromY, toX, toY, color, label) {
+            const headlen = 14;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angleHead = Math.atan2(dy, dx);
+            
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angleHead - Math.PI / 6), toY - headlen * Math.sin(angleHead - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angleHead + Math.PI / 6), toY - headlen * Math.sin(angleHead + Math.PI / 6));
+            ctx.fillStyle = color;
+            ctx.fill();
+            
+            if(label) {
+                ctx.font = "bold 18px Arial";
+                ctx.fillStyle = color;
+                ctx.fillText(label, toX + 10, toY + 10);
+            }
+        }
+
+        function drawDetailedCar(isSkidColor) {
+            // Wheels (Black rectangles)
+            ctx.fillStyle = '#111111';
+            ctx.fillRect(-carWidth/2 - 4, -carLength/2 + 8, 5, 12);  // Front Left
+            ctx.fillRect(carWidth/2 - 1, -carLength/2 + 8, 5, 12);   // Front Right
+            ctx.fillRect(-carWidth/2 - 4, carLength/2 - 16, 5, 12);  // Rear Left
+            ctx.fillRect(carWidth/2 - 1, carLength/2 - 16, 5, 12);   // Rear Right
+
+            // Main Body (Cyan / Red if skidding)
+            ctx.fillStyle = isSkidColor ? '#ff3860' : '#00ffcc';
+            ctx.fillRect(-carWidth/2, -carLength/2, carWidth, carLength);
+
+            // Windshield
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(-carWidth/2 + 3, -carLength/2 + 12, carWidth - 6, 10);
+
+            // Rear Window
+            ctx.fillRect(-carWidth/2 + 4, carLength/2 - 10, carWidth - 8, 6);
+
+            // Headlights (White / Yellow if skidding)
+            ctx.fillStyle = isSkidColor ? '#ffcc00' : '#ffffff';
+            ctx.beginPath();
+            ctx.arc(-carWidth/2 + 6, -carLength/2 + 4, 3, 0, Math.PI*2);
+            ctx.arc(carWidth/2 - 6, -carLength/2 + 4, 3, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            let v = parseFloat(speedSlider.value);
+            let mu = parseFloat(muSlider.value);
+
+            vVal.innerText = v.toFixed(1);
+            muVal.innerText = mu.toFixed(2);
+
+            let requiredFc = (v * v) / radius;
+            let maxFriction = mu * g;
+
+            statsBox.innerHTML = `
+                අවශ්‍ය බලය (Fc): <span style="color:${requiredFc > maxFriction ? '#ff3860' : '#00ffcc'}">${(requiredFc * 1000).toFixed(0)} N</span><br>
+                උපරිම ඝර්ෂණය: <span style="color:#00ffcc">${(maxFriction * 1000).toFixed(0)} N</span>
+            `;
+
+            // Calculate tangential velocity vector components
+            let vx = -Math.sin(angle) * v;
+            let vy = Math.cos(angle) * v;
+
+            if (!isSkidding && requiredFc > maxFriction) {
+                isSkidding = true;
+                warningMsg.innerText = "ඝර්ෂණය මදි! රථය ලිස්සා යයි ⚠️";
+                
+                // Keep the tangential velocity vector for the slide
+                skidVx = vx;
+                skidVy = vy;
+                
+                // Save the exact tangent angle so it spins outward from there
+                spinAngle = Math.atan2(vy, vx) + Math.PI / 2;
+            }
+
+            // Draw Road
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = '#222233';
+            ctx.lineWidth = 64;
+            ctx.stroke();
+            
+            // Dashed Centerline
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([15, 15]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Position Logic
+            if (!isSkidding) {
+                angle += (v / radius);
+                carX = cx + radius * Math.cos(angle);
+                carY = cy + radius * Math.sin(angle);
+            } else {
+                carX += skidVx;
+                carY += skidVy;
+                spinAngle += 0.08; // Spin out of control
+            }
+
+            // --- DRAW CAR ---
+            ctx.save();
+            ctx.translate(carX, carY);
+            
+            if (!isSkidding) {
+                // Calculate the exact angle of the velocity vector
+                let headingAngle = Math.atan2(vy, vx);
+                // Rotate the car so its nose (which points UP in local coords) points along velocity
+                ctx.rotate(headingAngle + Math.PI / 2); 
+            } else {
+                ctx.rotate(spinAngle);
+            }
+            
+            drawDetailedCar(isSkidding);
+            ctx.restore();
+
+            // --- DRAW VECTORS ---
+            if (!isSkidding) {
+                // Velocity Vector (Blue arrow starting from the front of the car)
+                let displayVx = vx * 15;
+                let displayVy = vy * 15;
+                drawArrow(carX + (vx/v)*15, carY + (vy/v)*15, carX + displayVx, carY + displayVy, '#00d2ff', 'v');
+
+                // Friction / Centripetal Vector (Yellow arrow pointing to center)
+                let fx = cx - carX;
+                let fy = cy - carY;
+                let dist = Math.sqrt(fx*fx + fy*fy);
+                let scale = (requiredFc / maxFriction) * 60; 
+                if(scale > 60) scale = 60; 
+                
+                drawArrow(carX, carY, carX + (fx/dist)*scale, carY + (fy/dist)*scale, '#ffcc00', 'f');
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
