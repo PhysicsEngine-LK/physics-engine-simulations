@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Two-String System (Fixed)</title>
+    <style>
+        body {
+            background-color: #050510;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h2 { margin: 0; color: #00ffcc; text-transform: uppercase; letter-spacing: 2px; }
+        .main-container { display: flex; flex-direction: row; gap: 20px; position: relative; }
+        canvas {
+            background-color: #020205;
+            border: 2px solid #003322;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: #111122;
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid #2a2a4a;
+            width: 320px;
+        }
+        .slider-group { display: flex; flex-direction: column; gap: 8px; color: #00ffcc; font-weight: bold; font-size: 14px; }
+        input[type="range"] { accent-color: #00ffcc; width: 100%; }
+        .stats { 
+            background: #0a0a15; 
+            padding: 15px; 
+            border-radius: 10px; 
+            border: 1px dashed #00ffcc;
+            font-family: monospace; 
+            font-size: 14px; 
+            color: #fff;
+            line-height: 1.6;
+        }
+        .warning { color: #ffcc00; font-weight: bold; font-size: 14px; text-align: center; margin-top: 5px; height: 40px;}
+        .watermark {
+            position: absolute;
+            opacity: 0.15;
+            font-size: 32px;
+            font-weight: 900;
+            pointer-events: none;
+            bottom: 20px;
+            left: 25px;
+            color: #00ffcc;
+            letter-spacing: 3px;
+        }
+        button {
+            background: linear-gradient(45deg, #00ffcc, #0099ff);
+            border: none;
+            color: #000;
+            padding: 10px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        button:hover { transform: scale(1.02); }
+        .legend-color { display: inline-block; width: 10px; height: 10px; margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>2024 A/L: Two-String Rotating Mass</h2>
+        <p>කෝණික ප්‍රවේගය වෙනස් වන විට කම්බිවල ආතතිය වෙනස් වන ආකාරය බලන්න.</p>
+    </div>
+
+    <div class="main-container">
+        <div style="position: relative;">
+            <div class="watermark">PHYSICS ENGINE</div>
+            <canvas id="simCanvas" width="700" height="550"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="slider-group">
+                <label>කෝණික ප්‍රවේගය (&omega;): <span id="omegaVal">5.48</span> rad/s</label>
+                <input type="range" id="omegaSlider" min="2.00" max="8.00" step="0.01" value="5.48">
+            </div>
+
+            <div class="stats" id="statsBox">
+                <strong>පද්ධතියේ දත්ත (m=1kg):</strong><br>
+                ගුරුත්වජ ත්වරණය (g): 10 m/s&sup2;<br>
+                <hr style="border:0.5px dashed #444;">
+                <div style="font-size: 15px;">
+                    ඉහළ ආතතිය (T<sub>1</sub>): <span id="t1Val" style="color:#ff3860; font-weight:bold;">0.00</span> N<br>
+                    පහළ ආතතිය (T<sub>2</sub>): <span id="t2Val" style="color:#00ffcc; font-weight:bold;">0.00</span> N<br>
+                </div>
+                <div class="warning" id="warningMsg"></div>
+                <hr style="border:0.5px dashed #444;">
+                <div style="font-size: 13px;">
+                    <span class="legend-color" style="background:#ff3860;"></span> ඉහළ T<sub>1</sub><br>
+                    <span class="legend-color" style="background:#00ffcc;"></span> පහළ T<sub>2</sub><br>
+                    <span class="legend-color" style="background:#ffcc00;"></span> බර (mg)<br>
+                </div>
+            </div>
+            
+            <button onclick="setExamCondition()">2024 ගැටලුවේ අවස්ථාවට යන්න (T<sub>1</sub> = 2T<sub>2</sub>)</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const cx = 350; 
+        const cyCenter = 275; 
+        const g = 10.0; 
+        const m = 1.0;
+        const scale = 80; 
+        
+        const rodLength = 2.0;
+        const stringLength = 2.0;
+        const topY = cyCenter - (rodLength/2) * scale;
+        const bottomY = cyCenter + (rodLength/2) * scale;
+        
+        const r = Math.sqrt(3); 
+        const visualR = r * scale;
+
+        let time = 0;
+
+        const omegaSlider = document.getElementById('omegaSlider');
+        const omegaVal = document.getElementById('omegaVal');
+        const t1Val = document.getElementById('t1Val');
+        const t2Val = document.getElementById('t2Val');
+        const warningMsg = document.getElementById('warningMsg');
+
+        function setExamCondition() {
+            // Exact value for sqrt(30) is approx 5.4772...
+            let targetOmega = Math.sqrt(3 * g);
+            omegaSlider.value = targetOmega.toFixed(2);
+        }
+
+        function drawArrow(fromX, fromY, toX, toY, color, label, lineWidth=4) {
+            const headlen = 16; 
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angleHead = Math.atan2(dy, dx);
+            
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth; 
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angleHead - Math.PI / 6), toY - headlen * Math.sin(angleHead - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angleHead + Math.PI / 6), toY - headlen * Math.sin(angleHead + Math.PI / 6));
+            ctx.fillStyle = color;
+            ctx.fill();
+            
+            if(label) {
+                ctx.font = "bold 18px Arial"; 
+                ctx.fillStyle = color;
+                // Add a text shadow for better visibility against backgrounds
+                ctx.shadowColor = "black";
+                ctx.shadowBlur = 4;
+                ctx.fillText(label, toX + 10, toY + 15); 
+                ctx.shadowBlur = 0; // reset
+            }
+        }
+
+        function drawSlackString(x1, y1, x2, y2, color) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            let midX = (x1 + x2) / 2;
+            let midY = (y1 + y2) / 2 + 40; 
+            ctx.quadraticCurveTo(midX, midY, x2, y2);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            let omega = parseFloat(omegaSlider.value);
+            omegaVal.innerText = omega.toFixed(2);
+
+            let T1 = m * (omega*omega + g);
+            let T2 = m * (omega*omega - g);
+
+            let isSlack = false;
+            if (T2 <= 0) {
+                T2 = 0; 
+                isSlack = true;
+            }
+
+            // Display values with 1 decimal point
+            t1Val.innerText = T1.toFixed(1);
+            t2Val.innerText = T2.toFixed(1);
+
+            if (isSlack) {
+                warningMsg.innerHTML = "⚠️ &omega; &lt; &radic;g බැවින්<br>පහළ කම්බිය බුරුල් වී ඇත!";
+                warningMsg.style.color = "#ffcc00";
+            } else if (Math.abs(T1 - 2*T2) < 0.5) { // tighter tolerance
+                warningMsg.innerHTML = "✅ T<sub>1</sub> = 2T<sub>2</sub> අවස්ථාවයි!<br>(&omega; = &radic;3g)";
+                warningMsg.style.color = "#00ffcc";
+            } else {
+                warningMsg.innerHTML = "කම්බි දෙකම තද වී ඇත.";
+                warningMsg.style.color = "#ffffff";
+            }
+
+            time += omega * 0.02;
+
+            let tiltFactor = 0.25; 
+            let ballX = cx + visualR * Math.cos(time);
+            let ballY = cyCenter + visualR * tiltFactor * Math.sin(time);
+
+            // --- DRAW ENVIRONMENT ---
+            ctx.beginPath();
+            ctx.moveTo(cx, topY - 30);
+            ctx.lineTo(cx, bottomY + 30);
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            ctx.beginPath(); ctx.arc(cx, topY, 6, 0, Math.PI*2); ctx.fillStyle = '#aaa'; ctx.fill();
+            ctx.beginPath(); ctx.arc(cx, bottomY, 6, 0, Math.PI*2); ctx.fillStyle = '#aaa'; ctx.fill();
+
+            ctx.beginPath();
+            ctx.ellipse(cx, cyCenter, visualR, visualR * tiltFactor, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // --- DRAW STRINGS ---
+            ctx.beginPath();
+            ctx.moveTo(cx, topY);
+            ctx.lineTo(ballX, ballY);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            if (isSlack) {
+                drawSlackString(cx, bottomY, ballX, ballY, '#777777'); 
+            } else {
+                ctx.beginPath();
+                ctx.moveTo(cx, bottomY);
+                ctx.lineTo(ballX, ballY);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+
+            // --- DRAW BALL ---
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, 15, 0, Math.PI * 2);
+            ctx.fillStyle = '#00ffcc';
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // --- DRAW FORCES (SCALED UP FOR VISIBILITY) ---
+            let visualScaleF = 4.0; // Increased to make arrows much longer
+            
+            // Weight (mg) - Draw slightly offset to not overlap with ball center too much
+            drawArrow(ballX, ballY + 5, ballX, ballY + m*g * visualScaleF, '#ffcc00', 'mg', 5);
+
+            // T1 Vector
+            let dx1 = cx - ballX; let dy1 = topY - ballY;
+            let dist1 = Math.sqrt(dx1*dx1 + dy1*dy1);
+            let t1VecX = (dx1/dist1) * T1 * visualScaleF;
+            let t1VecY = (dy1/dist1) * T1 * visualScaleF;
+            drawArrow(ballX, ballY, ballX + t1VecX, ballY + t1VecY, '#ff3860', 'T₁');
+
+            // T2 Vector
+            if (!isSlack) {
+                let dx2 = cx - ballX; let dy2 = bottomY - ballY;
+                let dist2 = Math.sqrt(dx2*dx2 + dy2*dy2);
+                let t2VecX = (dx2/dist2) * T2 * visualScaleF;
+                let t2VecY = (dy2/dist2) * T2 * visualScaleF;
+                drawArrow(ballX, ballY, ballX + t2VecX, ballY + t2VecY, '#00ffcc', 'T₂');
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        setExamCondition();
+        animate();
+    </script>
+</body>
+</html>

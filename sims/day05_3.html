@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Smooth Cone</title>
+    <style>
+        body {
+            background-color: #050510;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h2 { margin: 0; color: #b300ff; text-transform: uppercase; letter-spacing: 2px; }
+        .main-container { display: flex; flex-direction: row; gap: 20px; position: relative; }
+        canvas {
+            background-color: #020205;
+            border: 2px solid #1f0a2a;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(179, 0, 255, 0.2);
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: #111122;
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid #2a2a4a;
+            width: 280px;
+        }
+        button {
+            background: linear-gradient(45deg, #b300ff, #ff00ff);
+            border: none;
+            color: #fff;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 10px rgba(179, 0, 255, 0.4);
+        }
+        .slider-group { display: flex; flex-direction: column; gap: 8px; color: #b300ff; font-weight: bold; font-size: 14px; }
+        input[type="range"] { accent-color: #b300ff; width: 100%; }
+        .stats { 
+            background: #0a0a15; 
+            padding: 15px; 
+            border-radius: 10px; 
+            border: 1px dashed #b300ff;
+            font-family: monospace; 
+            font-size: 14px; 
+            color: #fff;
+            line-height: 1.6;
+        }
+        .legend { font-size: 12px; margin-top: 10px; }
+        .legend-color { display: inline-block; width: 10px; height: 10px; margin-right: 5px; }
+        .watermark {
+            position: absolute;
+            opacity: 0.15;
+            font-size: 32px;
+            font-weight: 900;
+            pointer-events: none;
+            bottom: 20px;
+            left: 25px;
+            color: #b300ff;
+            letter-spacing: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>2001 A/L: Particle in a Smooth Cone</h2>
+        <p>කේන්ද්‍රාභිසාරී බලය සපයන්නේ අභිලම්භ ප්‍රතික්‍රියාවේ (R) තිරස් සංරචකය මගින් බව නිරීක්ෂණය කරන්න.</p>
+    </div>
+
+    <div class="main-container">
+        <div style="position: relative;">
+            <div class="watermark">PHYSICS ENGINE</div>
+            <canvas id="simCanvas" width="700" height="550"></canvas>
+        </div>
+
+        <div class="controls">
+            <button onclick="toggleComponents()" id="compBtn">Hide Components</button>
+            <hr style="width:100%; border:0.5px solid #2a2a4a;">
+
+            <div class="slider-group">
+                <label>වස්තුවේ වේගය (v): <span id="vVal">5.0</span> m/s</label>
+                <input type="range" id="vSlider" min="3.0" max="8.0" step="0.1" value="5.0">
+            </div>
+
+            <div class="slider-group">
+                <label>කේතුවේ කෝණය (&theta;): <span id="angleVal">30</span>&deg;</label>
+                <input type="range" id="angleSlider" min="30" max="45" step="1" value="30">
+            </div>
+
+            <div class="stats" id="statsBox">
+                <strong>Physics Data:</strong><br><br>
+                පථයේ අරය (r): <span id="rVal">0.00</span> m<br>
+                පතුලේ සිට උස (h): <span id="hVal">0.00</span> m<br>
+                <hr style="border:0.5px dashed #444;">
+                <div class="legend">
+                    <strong>සැබෑ බලයන් (Real Forces):</strong><br>
+                    <span class="legend-color" style="background:#ff3860;"></span> බර (mg)<br>
+                    <span class="legend-color" style="background:#00ffcc;"></span> අභිලම්භ ප්‍රතික්‍රියාව (R)<br><br>
+                    <div id="compLegend">
+                        <strong>R හි සංරචක (Components):</strong><br>
+                        <span class="legend-color" style="background:#ffcc00;"></span> කේන්ද්‍රාභිසාරී (R sin&theta;)<br>
+                        <span class="legend-color" style="background:#00d2ff;"></span> සිරස් උඩුකුරු (R cos&theta;)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Cone parameters
+        const cx = 350; 
+        const cyBase = 480; 
+        const g = 9.8;
+        const visualScale = 25; 
+
+        let time = 0;
+        let showComponents = true; // State for showing/hiding components
+
+        const vSlider = document.getElementById('vSlider');
+        const angleSlider = document.getElementById('angleSlider');
+        const vVal = document.getElementById('vVal');
+        const angleVal = document.getElementById('angleVal');
+        const rVal = document.getElementById('rVal');
+        const hVal = document.getElementById('hVal');
+        const compBtn = document.getElementById('compBtn');
+        const compLegend = document.getElementById('compLegend');
+
+        function toggleComponents() {
+            showComponents = !showComponents;
+            if (showComponents) {
+                compBtn.innerText = "Hide Components";
+                compLegend.style.display = "block";
+            } else {
+                compBtn.innerText = "Show Components";
+                compLegend.style.display = "none";
+            }
+        }
+
+        function drawArrow(fromX, fromY, toX, toY, color, label, isDashed = false) {
+            const headlen = 10;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angleHead = Math.atan2(dy, dx);
+            
+            ctx.beginPath();
+            if (isDashed) ctx.setLineDash([5, 5]);
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angleHead - Math.PI / 6), toY - headlen * Math.sin(angleHead - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angleHead + Math.PI / 6), toY - headlen * Math.sin(angleHead + Math.PI / 6));
+            ctx.fillStyle = color;
+            ctx.fill();
+            
+            if(label) {
+                ctx.font = "bold 14px Arial";
+                ctx.fillStyle = color;
+                ctx.fillText(label, toX + 5, toY - 5);
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            let v = parseFloat(vSlider.value);
+            let thetaDeg = parseFloat(angleSlider.value);
+            let theta = thetaDeg * Math.PI / 180;
+
+            vVal.innerText = v.toFixed(1);
+            angleVal.innerText = thetaDeg;
+
+            let r = (v * v) / (g * Math.tan(theta));
+            let h_meters = r / Math.tan(theta);
+
+            rVal.innerText = r.toFixed(2);
+            hVal.innerText = h_meters.toFixed(2);
+
+            let visualR = r * visualScale;
+            let visualH = h_meters * visualScale;
+
+            let omega = v / r;
+            time += omega * 0.05;
+
+            let tiltFactor = 0.3; 
+
+            let ballX = cx + visualR * Math.cos(time);
+            let ballY = (cyBase - visualH) + visualR * tiltFactor * Math.sin(time);
+
+            // --- DRAW CONE ---
+            let maxVisualH = 400;
+            let maxVisualR = maxVisualH * Math.tan(theta);
+            
+            ctx.beginPath();
+            ctx.moveTo(cx, cyBase);
+            ctx.lineTo(cx - maxVisualR, cyBase - maxVisualH);
+            ctx.lineTo(cx + maxVisualR, cyBase - maxVisualH);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(179, 0, 255, 0.05)';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cyBase);
+            ctx.lineTo(cx - maxVisualR, cyBase - maxVisualH);
+            ctx.moveTo(cx, cyBase);
+            ctx.lineTo(cx + maxVisualR, cyBase - maxVisualH);
+            ctx.strokeStyle = '#331a44';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.ellipse(cx, cyBase - maxVisualH, maxVisualR, maxVisualR * tiltFactor, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = '#331a44';
+            ctx.stroke();
+
+            // --- DRAW ORBIT PATH ---
+            ctx.beginPath();
+            ctx.ellipse(cx, cyBase - visualH, visualR, visualR * tiltFactor, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cyBase);
+            ctx.lineTo(cx, cyBase - maxVisualH - 20);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.stroke();
+
+            // --- DRAW BALL ---
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, 12, 0, Math.PI * 2);
+            ctx.fillStyle = '#b300ff';
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // --- DRAW FORCE VECTORS ---
+            let mgMag = 60; 
+            
+            // 1. Weight (mg)
+            drawArrow(ballX, ballY, ballX, ballY + mgMag, '#ff3860', 'mg');
+
+            // 2. Normal Reaction (R)
+            let Rmag = mgMag / Math.cos(theta);
+            let dirX = cx - ballX; 
+            let normX = dirX !== 0 ? dirX / Math.abs(dirX) : 0; 
+            let R_vecX = -Math.cos(time) * (Rmag * Math.sin(theta));
+            let R_vecY = -Rmag * Math.cos(theta); 
+
+            drawArrow(ballX, ballY, ballX + R_vecX, ballY + R_vecY, '#00ffcc', 'R');
+
+            // 3. Components of R (Dashed) - Render only if showComponents is true
+            if (showComponents) {
+                // Vertical Component (R cos theta)
+                drawArrow(ballX, ballY, ballX, ballY - mgMag, '#00d2ff', 'R cos\u03B8', true);
+
+                // Horizontal Component (R sin theta)
+                let fcMag = Rmag * Math.sin(theta);
+                drawArrow(ballX, ballY, ballX + R_vecX, ballY, '#ffcc00', 'R sin\u03B8', true);
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

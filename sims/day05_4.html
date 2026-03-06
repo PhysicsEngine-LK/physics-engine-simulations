@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Elastic Circular Motion</title>
+    <style>
+        body {
+            background-color: #050510;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h2 { margin: 0; color: #ff3366; text-transform: uppercase; letter-spacing: 2px; }
+        .main-container { display: flex; flex-direction: row; gap: 20px; position: relative; }
+        canvas {
+            background-color: #020205;
+            border: 2px solid #330a14;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.2);
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: #111122;
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid #2a2a4a;
+            width: 300px;
+        }
+        .slider-group { display: flex; flex-direction: column; gap: 8px; color: #ff3366; font-weight: bold; font-size: 14px; }
+        input[type="range"] { accent-color: #ff3366; width: 100%; }
+        .stats { 
+            background: #0a0a15; 
+            padding: 15px; 
+            border-radius: 10px; 
+            border: 1px dashed #ff3366;
+            font-family: monospace; 
+            font-size: 14px; 
+            color: #fff;
+            line-height: 1.6;
+        }
+        .highlight { color: #00ffcc; font-weight: bold; font-size: 15px; }
+        .legend-color { display: inline-block; width: 10px; height: 10px; margin-right: 5px; }
+        .watermark {
+            position: absolute;
+            opacity: 0.15;
+            font-size: 32px;
+            font-weight: 900;
+            pointer-events: none;
+            bottom: 20px;
+            left: 25px;
+            color: #ff3366;
+            letter-spacing: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>2003 A/L: Elastic String & Circular Motion</h2>
+        <p>වේගය වැඩි වන විට තන්තුවේ විතතිය (x) සහ ආවර්ත කාලය වෙනස් වන ආකාරය නිරීක්ෂණය කරන්න.</p>
+    </div>
+
+    <div class="main-container">
+        <div style="position: relative;">
+            <div class="watermark">PHYSICS ENGINE</div>
+            <canvas id="simCanvas" width="700" height="550"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="slider-group">
+                <label>වස්තුවේ වේගය (v): <span id="vVal">5.0</span> m/s</label>
+                <input type="range" id="vSlider" min="1.0" max="15.0" step="0.1" value="5.0">
+            </div>
+
+            <div class="stats" id="statsBox">
+                <strong>පද්ධතියේ දත්ත (m=1kg, k=50N/m):</strong><br><br>
+                නොඇදුනු දිග: 1.00 m<br>
+                අරය (r): <span id="rVal">0.00</span> m<br>
+                විතතිය (x): <span id="xVal" style="color:#ffcc00;">0.00</span> m<br>
+                <hr style="border:0.5px dashed #444;">
+                හුක්ගේ නියමය (T = kx): <span id="TVal">0.0</span> N<br>
+                අවශ්‍ය F; (mv&sup2;/r): <span id="FcVal">0.0</span> N<br>
+                <hr style="border:0.5px dashed #444;">
+                <span style="color:#00d2ff;">ආවර්ත කාලය (Period): <span id="periodVal" class="highlight">0.00</span> s</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Physics Constants
+        const cx = 350;
+        const cy = 275;
+        const scale = 100; // 100 pixels = 1 meter
+        
+        const m = 1.0;     // Mass (kg)
+        const k = 50.0;    // Spring constant (N/m)
+        const l0 = 1.0;    // Natural length (m)
+
+        let angle = 0;
+
+        const vSlider = document.getElementById('vSlider');
+        const vVal = document.getElementById('vVal');
+        const rVal = document.getElementById('rVal');
+        const xVal = document.getElementById('xVal');
+        const TVal = document.getElementById('TVal');
+        const FcVal = document.getElementById('FcVal');
+        const periodVal = document.getElementById('periodVal');
+
+        // Function to draw a spring/zigzag line
+        function drawSpring(x1, y1, x2, y2, coils, width, color) {
+            let dx = x2 - x1;
+            let dy = y2 - y1;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            let rotAngle = Math.atan2(dy, dx);
+
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(rotAngle);
+
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            
+            // Draw straight segment at start
+            ctx.lineTo(20, 0); 
+            
+            let springLen = dist - 40; // Leave 20px straight at both ends
+            if (springLen > 0) {
+                let step = springLen / (coils * 2);
+                for (let i = 0; i <= coils * 2; i++) {
+                    let sign = (i % 2 === 0) ? 1 : -1;
+                    let yOffset = (i === 0 || i === coils*2) ? 0 : width * sign;
+                    ctx.lineTo(20 + i * step, yOffset);
+                }
+            }
+            
+            // Draw straight segment at end
+            ctx.lineTo(dist, 0);
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            let v = parseFloat(vSlider.value);
+            vVal.innerText = v.toFixed(1);
+
+            // Physics Calculation
+            // Centripetal force = Tension
+            // m * v^2 / r = k * (r - l0)
+            // k*r^2 - k*l0*r - m*v^2 = 0
+            // Solving quadratic equation for r:
+            let a = k;
+            let b = -k * l0;
+            let c = -m * Math.pow(v, 2);
+            
+            let r = (-b + Math.sqrt(b*b - 4*a*c)) / (2*a);
+            let x = r - l0; // Extension
+            
+            let Tension = k * x;
+            let Fc = (m * v * v) / r;
+            let period = (2 * Math.PI * r) / v;
+
+            // Update DOM
+            rVal.innerText = r.toFixed(2);
+            xVal.innerText = x.toFixed(2);
+            TVal.innerText = Tension.toFixed(1);
+            FcVal.innerText = Fc.toFixed(1);
+            periodVal.innerText = period.toFixed(2);
+
+            // Animation timing
+            let omega = v / r;
+            angle -= omega * 0.016; // 60fps approx
+
+            let ballX = cx + r * scale * Math.cos(angle);
+            let ballY = cy + r * scale * Math.sin(angle);
+
+            // 1. Draw Reference Circle (Natural Length l0)
+            ctx.beginPath();
+            ctx.arc(cx, cy, l0 * scale, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Label l0
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.font = "12px Arial";
+            ctx.fillText("නොඇදුනු දිග (l₀)", cx + 10, cy - l0 * scale + 15);
+
+            // 2. Draw Actual Orbit Path
+            ctx.beginPath();
+            ctx.arc(cx, cy, r * scale, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 51, 102, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 3. Draw Spring
+            // Color shifts from green (low tension) to yellow to red (high tension)
+            let tensionRatio = Math.min(x / 1.5, 1); // Normalize against max expected extension
+            let rCol = Math.floor(255 * tensionRatio);
+            let gCol = Math.floor(255 * (1 - tensionRatio));
+            let springColor = `rgb(${rCol}, ${gCol+100}, 50)`;
+
+            drawSpring(cx, cy, ballX, ballY, 15, 8, springColor);
+
+            // 4. Draw Center Pivot
+            ctx.beginPath();
+            ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+
+            // 5. Draw Mass (Ball)
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, 15, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff3366';
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 6. Draw Extension (x) visual marker
+            let l0_X = cx + l0 * scale * Math.cos(angle);
+            let l0_Y = cy + l0 * scale * Math.sin(angle);
+            
+            ctx.beginPath();
+            ctx.moveTo(l0_X, l0_Y);
+            ctx.lineTo(ballX, ballY);
+            ctx.strokeStyle = '#ffcc00';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            
+            // Label 'x'
+            let midX = (l0_X + ballX) / 2;
+            let midY = (l0_Y + ballY) / 2;
+            ctx.fillStyle = '#ffcc00';
+            ctx.font = "bold 16px Arial";
+            ctx.fillText("x", midX + 10, midY - 10);
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
