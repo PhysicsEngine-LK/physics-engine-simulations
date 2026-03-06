@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Conical Pendulum - Physics Engine</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #00ffcc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            background: #0a0a0a;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #222;
+            box-shadow: 0 0 30px rgba(0,255,204,0.05);
+            justify-content: center;
+            max-width: 1200px;
+        }
+        canvas {
+            border: 2px solid #333;
+            border-radius: 8px;
+            background: #050505;
+        }
+        .panel { width: 380px; text-align: left; display: flex; flex-direction: column; }
+        
+        .header-title { margin-bottom: 5px; color: #00ffcc; font-size: 1.8em; text-transform: uppercase; letter-spacing: 1px;}
+        .sub-title { color: #888; margin-top: 0; margin-bottom: 20px; }
+
+        .readout-box {
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-size: 1.1em;
+        }
+        
+        .val-row { display: flex; justify-content: space-between; margin: 5px 0; border-bottom: 1px solid #222; padding-bottom: 4px;}
+        .val-row:last-child { border-bottom: none; }
+        .highlight-t { color: #ff33ff; font-weight: bold; font-size: 1.2em;} /* Period */
+        .highlight-h { color: #00ffcc; font-weight: bold; }
+
+        .vector-key { font-size: 0.85em; margin-bottom: 15px; color: #aaa; background: #111; padding: 10px; border-radius: 6px;}
+        .key-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+        .color-box { width: 12px; height: 12px; border-radius: 2px; }
+
+        .slider-group { margin-bottom: 15px; }
+        .slider-label { display: flex; justify-content: space-between; color: #ccc; font-weight: bold; font-size: 0.9em; margin-bottom: 5px;}
+        input[type="range"] { width: 100%; accent-color: #00ffcc; margin: 5px 0; }
+        
+        /* Specific slider colors for UI clarity */
+        #angleSlider { accent-color: #0088ff; }
+        #lengthSlider { accent-color: #00ffcc; }
+        #massSlider { accent-color: #ffaa00; }
+
+        button {
+            padding: 12px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: 0.2s;
+            text-transform: uppercase;
+            font-size: 1em;
+            background: #00ffcc; color: #000;
+            margin-top: 10px;
+        }
+        button:hover { background: #00ccaa; box-shadow: 0 0 10px rgba(0,255,204,0.4);}
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            color: #ccc;
+            font-size: 0.9em;
+            cursor: pointer;
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #333;
+        }
+        input[type="checkbox"] { width: 18px; height: 18px; accent-color: #ff3366; cursor: pointer;}
+        
+        .hack-alert {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 51, 153, 0.1);
+            border: 1px dashed #ff3399;
+            color: #ff3399;
+            font-size: 0.85em;
+            text-align: center;
+            border-radius: 5px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title">SYSTEM: THE CONICAL PENDULUM</h2>
+    <p class="sub-title">Resolving the Matrix of the Conical Pendulum</p>
+
+    <div class="container">
+        <canvas id="simCanvas" width="500" height="550"></canvas>
+
+        <div class="panel">
+            
+            <div class="vector-key">
+                <div class="key-item"><div class="color-box" style="background:#00ffcc"></div> Tension (T) & Components (T cos&theta;, T sin&theta;)</div>
+                <div class="key-item"><div class="color-box" style="background:#ffcc00"></div> Weight (mg)</div>
+                <div class="key-item"><div class="color-box" style="background:#444"></div> Geometry (L, h, r)</div>
+            </div>
+
+            <div class="readout-box">
+                <div class="val-row"><span>Angle (&theta;):</span> <span id="dispTheta">30&deg;</span></div>
+                <div class="val-row"><span>Radius (r):</span> <span id="dispR">1.00 m</span></div>
+                <div class="val-row"><span>Height (h = L cos&theta;):</span> <span class="highlight-h" id="dispH">1.73 m</span></div>
+                <div class="val-row"><span>Velocity (v):</span> <span id="dispV">3.14 m/s</span></div>
+                <div class="val-row" style="margin-top: 10px;"><span>Period (t = 2&pi;&radic;(h/g)):</span> <span class="highlight-t" id="dispT">2.64 s</span></div>
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-label"><span>Angle (&theta;)</span> <span id="lblTheta">30&deg;</span></div>
+                <input type="range" id="angleSlider" min="5" max="80" step="1" value="30">
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-label"><span>String Length (L)</span> <span id="lblLength">2.0 m</span></div>
+                <input type="range" id="lengthSlider" min="1.0" max="4.0" step="0.1" value="2.0">
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-label"><span>Mass (m)</span> <span id="lblMass">1.0 kg</span></div>
+                <input type="range" id="massSlider" min="0.5" max="5.0" step="0.5" value="1.0">
+            </div>
+            
+            <label class="checkbox-container">
+                <input type="checkbox" id="resolveCb" checked>
+                <strong>RESOLVE VECTORS (Show T cos&theta; & T sin&theta;)</strong>
+            </label>
+
+            <button id="playBtn">PAUSE SIMULATION</button>
+
+            <div class="hack-alert">
+                <strong>MATRIX HACK 02:</strong><br>Change the MASS slider. Does the Period (t) change? No! It only depends on height (h) and gravity (g).
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // UI Elements
+        const angleSlider = document.getElementById('angleSlider');
+        const lengthSlider = document.getElementById('lengthSlider');
+        const massSlider = document.getElementById('massSlider');
+        const resolveCb = document.getElementById('resolveCb');
+        const playBtn = document.getElementById('playBtn');
+        
+        // Displays
+        const lblTheta = document.getElementById('lblTheta');
+        const lblLength = document.getElementById('lblLength');
+        const lblMass = document.getElementById('lblMass');
+        const dispTheta = document.getElementById('dispTheta');
+        const dispR = document.getElementById('dispR');
+        const dispH = document.getElementById('dispH');
+        const dispV = document.getElementById('dispV');
+        const dispT = document.getElementById('dispT');
+
+        // Physics Constants
+        const g = 9.8; 
+        const pxPerMeter = 90; // Scale for drawing
+        const pivot = { x: canvas.width / 2, y: 50 };
+        const tilt = 0.3; // 3D perspective squish factor for the ellipse
+
+        // State Variables
+        let isRunning = true;
+        let phi = 0; // Current rotation angle of the bob in the horizontal plane
+        let lastTime = 0;
+
+        function drawArrow(x, y, dx, dy, color, label, dashed=false) {
+            const len = Math.sqrt(dx*dx + dy*dy);
+            if (len < 1) return;
+            const angle = Math.atan2(dy, dx);
+            
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            
+            ctx.beginPath();
+            if(dashed) ctx.setLineDash([4, 4]);
+            ctx.moveTo(0, 0); ctx.lineTo(len, 0);
+            ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(len, 0); ctx.lineTo(len-8, -4); ctx.lineTo(len-8, 4);
+            ctx.fillStyle = color; ctx.fill();
+            
+            ctx.fillStyle = color;
+            ctx.font = "bold 14px monospace";
+            // Keep text upright
+            ctx.translate(len + 8, 0);
+            ctx.rotate(-angle);
+            ctx.fillText(label, 0, 4);
+            ctx.restore();
+        }
+
+        function drawLine(x1, y1, x2, y2, color, dashed=false, text="", textMidOffset=0) {
+            ctx.beginPath();
+            if(dashed) ctx.setLineDash([5, 5]);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            if(text) {
+                const midX = (x1 + x2)/2;
+                const midY = (y1 + y2)/2;
+                ctx.fillStyle = color;
+                ctx.font = "14px monospace";
+                ctx.fillText(text, midX + textMidOffset, midY);
+            }
+        }
+
+        function animate(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+
+            // Get Physical Parameters
+            const thetaDeg = parseFloat(angleSlider.value);
+            const thetaRad = thetaDeg * Math.PI / 180;
+            const L = parseFloat(lengthSlider.value);
+            const m = parseFloat(massSlider.value);
+
+            // Calculate Dependent Variables (The Matrix)
+            const h = L * Math.cos(thetaRad);
+            const r = L * Math.sin(thetaRad);
+            const v = Math.sqrt(r * g * Math.tan(thetaRad));
+            const period = 2 * Math.PI * Math.sqrt(h / g);
+            const omega = 2 * Math.PI / period;
+            const Tension = (m * g) / Math.cos(thetaRad);
+
+            // Update UI Labels
+            lblTheta.innerText = thetaDeg + "\u00B0";
+            lblLength.innerText = L.toFixed(1) + " m";
+            lblMass.innerText = m.toFixed(1) + " kg";
+            
+            dispTheta.innerText = thetaDeg + "\u00B0";
+            dispR.innerText = r.toFixed(2) + " m";
+            dispH.innerText = h.toFixed(2) + " m";
+            dispV.innerText = v.toFixed(2) + " m/s";
+            dispT.innerText = period.toFixed(2) + " s";
+
+            if (isRunning) {
+                phi += omega * dt;
+            }
+
+            // --- DRAWING PHASE ---
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Watermark
+            ctx.save();
+            ctx.globalAlpha = 0.05; ctx.fillStyle = "#fff"; ctx.font = "bold 35px Arial";
+            ctx.textAlign = "center"; ctx.fillText("PHYSICS ENGINE", canvas.width/2, canvas.height/2);
+            ctx.restore();
+
+            // Screen Coordinates
+            const L_px = L * pxPerMeter;
+            const h_px = h * pxPerMeter;
+            const r_px = r * pxPerMeter;
+            
+            const center3D_X = pivot.x;
+            const center3D_Y = pivot.y + h_px;
+
+            const bobX = pivot.x + r_px * Math.cos(phi);
+            const bobY = center3D_Y + r_px * Math.sin(phi) * tilt; // 3D projection
+
+            // 1. Draw Geometry (Ellipse Path, Height, Radius)
+            // Path
+            ctx.beginPath();
+            ctx.ellipse(center3D_X, center3D_Y, r_px, r_px * tilt, 0, 0, 2 * Math.PI);
+            ctx.strokeStyle = "#222";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Height (h) line
+            drawLine(pivot.x, pivot.y, center3D_X, center3D_Y, "#444", true, "h", 10);
+            
+            // Radius (r) line (from center to bob)
+            drawLine(center3D_X, center3D_Y, bobX, bobY, "#444", true, "r", 0);
+
+            // Ceiling Line
+            ctx.beginPath(); ctx.moveTo(pivot.x - 50, pivot.y); ctx.lineTo(pivot.x + 50, pivot.y);
+            ctx.strokeStyle = "#666"; ctx.lineWidth = 3; ctx.stroke();
+
+            // Pivot Point
+            ctx.beginPath(); ctx.arc(pivot.x, pivot.y, 4, 0, Math.PI*2); ctx.fillStyle = "#fff"; ctx.fill();
+
+            // String (L)
+            drawLine(pivot.x, pivot.y, bobX, bobY, "#888", false);
+            // Label for L
+            ctx.fillStyle = "#aaa"; ctx.fillText("L", (pivot.x + bobX)/2 - 15, (pivot.y + bobY)/2 - 10);
+
+            // 2. Draw Vectors
+            const vScale = 15; // Scale forces for visualization
+            
+            // Weight (mg) - Straight down
+            drawArrow(bobX, bobY, 0, m * g * 2, "#ffcc00", "mg");
+
+            // Tension (T) - Along the string towards pivot
+            const vecTx = pivot.x - bobX;
+            const vecTy = pivot.y - bobY;
+            const lenPx = Math.sqrt(vecTx*vecTx + vecTy*vecTy);
+            // Normalize and scale by actual Tension value
+            const drawTx = (vecTx / lenPx) * Tension * 2;
+            const drawTy = (vecTy / lenPx) * Tension * 2;
+            drawArrow(bobX, bobY, drawTx, drawTy, "#00ffcc", "T");
+
+            // Resolving Vectors!
+            if (resolveCb.checked) {
+                // T cos(theta) - Vertical component (Balances mg)
+                drawArrow(bobX, bobY, 0, -m * g * 2, "#00ffcc", "T cos\u03B8", true);
+                
+                // T sin(theta) - Horizontal component (Centripetal force, points to center)
+                const centripetalForce = m * v * v / r;
+                const vecCx = center3D_X - bobX;
+                const vecCy = center3D_Y - bobY;
+                const lenCPx = Math.sqrt(vecCx*vecCx + vecCy*vecCy);
+                const drawCx = (vecCx / lenCPx) * centripetalForce * 2;
+                const drawCy = (vecCy / lenCPx) * centripetalForce * 2;
+                
+                drawArrow(bobX, bobY, drawCx, drawCy, "#ff3366", "T sin\u03B8 (Centripetal)", true);
+            }
+
+            // 3. Draw Bob (Mass changes size slightly)
+            const bobRadius = 8 + (m * 2);
+            ctx.beginPath();
+            ctx.arc(bobX, bobY, bobRadius, 0, Math.PI*2);
+            ctx.fillStyle = "#fff";
+            ctx.fill();
+            ctx.strokeStyle = "#444";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 4. Draw Angle Theta arc at pivot
+            ctx.beginPath();
+            // Start angle is straight down (PI/2), end angle is string angle
+            const stringAngle = Math.atan2(bobY - pivot.y, bobX - pivot.x);
+            ctx.arc(pivot.x, pivot.y, 40, Math.PI/2, stringAngle, stringAngle < Math.PI/2);
+            ctx.strokeStyle = "#0088ff";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = "#0088ff";
+            ctx.fillText("\u03B8", pivot.x + 10 * Math.sign(bobX - pivot.x), pivot.y + 55);
+
+
+            requestAnimationFrame(animate);
+        }
+
+        playBtn.onclick = () => {
+            isRunning = !isRunning;
+            playBtn.innerText = isRunning ? "PAUSE SIMULATION" : "RESUME SIMULATION";
+            if(isRunning) {
+                lastTime = performance.now();
+                requestAnimationFrame(animate);
+            }
+        };
+
+        // Start
+        requestAnimationFrame(animate);
+
+    </script>
+</body>
+</html>

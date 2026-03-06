@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Vertical Circle - Physics Engine</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #00ffcc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            background: #0a0a0a;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #222;
+            box-shadow: 0 0 30px rgba(0,255,204,0.05);
+            justify-content: center;
+        }
+        canvas {
+            border: 2px solid #333;
+            border-radius: 8px;
+            background: #050505;
+        }
+        .panel { width: 350px; text-align: left; display: flex; flex-direction: column; }
+        
+        .readout-box {
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-size: 1.1em;
+        }
+        
+        .val-row { display: flex; justify-content: space-between; margin: 5px 0; }
+        .val-t { color: #00ffcc; font-weight: bold; } 
+        .val-v { color: #0088ff; font-weight: bold; } 
+        .val-w { color: #ffcc00; font-weight: bold; } 
+
+        .vector-key { font-size: 0.85em; margin-bottom: 15px; color: #aaa; }
+        .key-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+        .color-box { width: 12px; height: 12px; border-radius: 2px; }
+
+        input[type="range"] { width: 100%; accent-color: #00ffcc; margin: 10px 0; }
+        
+        button {
+            padding: 15px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: 0.2s;
+            text-transform: uppercase;
+            font-size: 1.1em;
+            margin-top: 10px;
+        }
+        #launchBtn { background: #00ffcc; color: #000; }
+        #launchBtn:hover { background: #00ccaa; transform: scale(1.02); }
+        #resetBtn { background: #333; color: #fff; margin-top: 10px; }
+        #resetBtn:hover { background: #444; }
+
+        .status-alert {
+            text-align: center;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            background: rgba(0, 255, 204, 0.1);
+            color: #00ffcc;
+            border: 1px dashed #00ffcc;
+            min-height: 24px;
+        }
+        .status-slack {
+            background: rgba(255, 51, 102, 0.1);
+            color: #ff3366;
+            border-color: #ff3366;
+        }
+
+        .math-hint { font-size: 0.8em; color: #666; margin-top: 5px; text-align: center; }
+        
+        .snap-title { color: #ccc; font-size: 0.9em; margin-top: 15px; font-weight: bold; }
+        .snap-container {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        .snap-btn {
+            flex: 1;
+            padding: 10px 0;
+            font-size: 0.9em;
+            background: #111;
+            color: #00ffcc;
+            border: 1px solid #333;
+            margin-top: 0;
+        }
+        .snap-btn:hover {
+            background: #00ffcc;
+            color: #000;
+            border-color: #00ffcc;
+        }
+    </style>
+</head>
+<body>
+
+    <h2 style="margin-bottom: 5px;">VERTICAL CIRCLE: ENERGY & TENSION ENGINE</h2>
+    <p style="color: #888; margin-top: 0; margin-bottom: 20px;">Testing the Critical Velocity Matrix Hack: v_top &ge; &radic;(rg)</p>
+
+    <div class="container">
+        <canvas id="simCanvas" width="450" height="550"></canvas>
+
+        <div class="panel">
+            <div class="vector-key">
+                <div class="key-item"><div class="color-box" style="background:#00ffcc"></div> Tension (T) - Must be &ge; 0</div>
+                <div class="key-item"><div class="color-box" style="background:#0088ff"></div> Velocity (v) - Tangent</div>
+                <div class="key-item"><div class="color-box" style="background:#ffcc00"></div> Weight (W) - Constant</div>
+                <div class="key-item"><div class="color-box" style="background:#ff0000; border-radius: 50%;"></div> Projectile Path (If slack)</div>
+            </div>
+
+            <div class="readout-box">
+                <div class="val-row"><span>Speed (v):</span> <span class="val-v" id="dispV">0.00 m/s</span></div>
+                <div class="val-row"><span>Tension (T):</span> <span class="val-t" id="dispT">0.00 N</span></div>
+                <div class="val-row"><span>Height (h):</span> <span style="color:#fff;" id="dispH">0.00 m</span></div>
+            </div>
+
+            <label>Initial Launch Speed at Bottom (v₀)</label>
+            <input type="range" id="v0Slider" min="1.0" max="11.0" step="0.1" value="7.0">
+            <div style="text-align: center; font-family: monospace; font-size: 1.2em; color: #fff; margin-bottom: 10px;">
+                Launch Speed = <span id="dispV0">7.0</span> m/s
+            </div>
+            
+            <div class="snap-title">Teleport & Pause at Angle:</div>
+            <div class="snap-container">
+                <button class="snap-btn" id="btn0">0&deg;</button>
+                <button class="snap-btn" id="btn90">90&deg;</button>
+                <button class="snap-btn" id="btn180">180&deg;</button>
+                <button class="snap-btn" id="btn270">270&deg;</button>
+            </div>
+
+            <button id="launchBtn">🚀 LAUNCH BALL</button>
+            <button id="resetBtn">RESET TO BOTTOM</button>
+
+            <div id="statusBox" class="status-alert">SYSTEM READY</div>
+
+            <div class="math-hint">
+                g = 9.8 m/s² | R = 1.0 m | Mass = 1.0 kg<br>
+                Minimum Launch Speed to loop = &radic;(5gR) &approx; 7.0 m/s
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const v0Slider = document.getElementById('v0Slider');
+        const dispV0 = document.getElementById('dispV0');
+        const dispV = document.getElementById('dispV');
+        const dispT = document.getElementById('dispT');
+        const dispH = document.getElementById('dispH');
+        const statusBox = document.getElementById('statusBox');
+        const launchBtn = document.getElementById('launchBtn');
+        
+        // Physics Constants
+        const g = 9.8; 
+        const m = 1.0; 
+        const R_phys = 1.0; 
+        const pxPerMeter = 150; 
+        const R_px = R_phys * pxPerMeter;
+        const cx = canvas.width / 2;
+        const cy = 250; 
+
+        // State Variables
+        let theta = 0; 
+        let omega = 0;
+        let isRunning = false;
+        let state = 'WAITING'; 
+        let posX = cx;
+        let posY = cy + R_px;
+        let velX = 0;
+        let velY = 0;
+        let lastTime = 0;
+        
+        // NEW: Array to store the path of the projectile
+        let projectileTrail = [];
+
+        v0Slider.oninput = function() {
+            dispV0.innerText = parseFloat(this.value).toFixed(1);
+            if(state === 'WAITING') updateDraws();
+        }
+
+        function snapToAngle(targetTheta, degrees) {
+            isRunning = false;
+            projectileTrail = []; // Clear trail on snap
+            
+            const v0 = parseFloat(v0Slider.value);
+            const h = R_phys * (1 - Math.cos(targetTheta));
+            const vSq = v0*v0 - 2*g*h;
+
+            if (vSq < 0) {
+                statusBox.innerText = "🚨 LACKS ENERGY TO REACH " + degrees + "°";
+                statusBox.className = "status-alert status-slack";
+                updateDraws(); 
+                return;
+            }
+
+            theta = targetTheta;
+            omega = Math.sqrt(vSq) / R_phys; 
+            posX = cx + R_px * Math.sin(theta);
+            posY = cy + R_px * Math.cos(theta);
+
+            const vMag = Math.abs(omega * R_phys);
+            const T = (m * vMag * vMag / R_phys) + (m * g * Math.cos(theta));
+
+            // Applied Tolerance Hack (-0.1) for exact boundaries
+            if (T < -0.1 && Math.cos(theta) < 0) {
+                state = 'SLACK';
+                statusBox.innerText = "🚨 SLACKED AT " + degrees + "° (T < 0)";
+                statusBox.className = "status-alert status-slack";
+                velX = R_phys * omega * Math.cos(theta);
+                velY = -R_phys * omega * Math.sin(theta);
+                projectileTrail.push({x: posX, y: posY}); // Start trail
+                launchBtn.innerText = "RESUME (AS PROJECTILE)";
+            } else {
+                state = 'CIRCULAR';
+                statusBox.innerText = "⏸️ PAUSED AT " + degrees + "°";
+                statusBox.className = "status-alert";
+                launchBtn.innerText = "RESUME";
+            }
+            updateDraws();
+        }
+
+        document.getElementById('btn0').onclick = () => snapToAngle(0, 0);
+        document.getElementById('btn90').onclick = () => snapToAngle(Math.PI / 2, 90);
+        document.getElementById('btn180').onclick = () => snapToAngle(Math.PI, 180);
+        document.getElementById('btn270').onclick = () => snapToAngle(3 * Math.PI / 2, 270);
+
+        function drawVector(x, y, vx, vy, color, label, scale = 10) {
+            const len = Math.sqrt(vx*vx + vy*vy) * scale;
+            if (len < 2) return;
+            const angle = Math.atan2(vy, vx);
+            
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0); ctx.lineTo(len, 0);
+            ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(len, 0); ctx.lineTo(len-8, -4); ctx.lineTo(len-8, 4);
+            ctx.fillStyle = color; ctx.fill();
+            ctx.restore();
+        }
+
+        function updateDraws() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.globalAlpha = 0.05; ctx.fillStyle = "#fff"; ctx.font = "bold 35px Arial";
+            ctx.textAlign = "center"; ctx.fillText("PHYSICS ENGINE", cx, cy);
+            ctx.restore();
+
+            ctx.beginPath();
+            ctx.arc(cx, cy, R_px, 0, Math.PI*2);
+            ctx.strokeStyle = "#333";
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI*2); ctx.fillStyle = "#fff"; ctx.fill();
+
+            // NEW: Draw Red Dotted Projectile Trail
+            if (projectileTrail.length > 1) {
+                ctx.beginPath();
+                ctx.moveTo(projectileTrail[0].x, projectileTrail[0].y);
+                for (let i = 1; i < projectileTrail.length; i++) {
+                    ctx.lineTo(projectileTrail[i].x, projectileTrail[i].y);
+                }
+                ctx.strokeStyle = "#ff0000"; // Red
+                ctx.lineWidth = 3;
+                ctx.setLineDash([6, 6]); // Dotted
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            if (state === 'WAITING' || state === 'CIRCULAR') {
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(posX, posY);
+                ctx.strokeStyle = "#555";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            ctx.beginPath();
+            ctx.arc(posX, posY, 12, 0, Math.PI*2);
+            ctx.fillStyle = "#fff";
+            ctx.fill();
+
+            if (state === 'WAITING' || state === 'CIRCULAR') {
+                const vMag = Math.abs(omega * R_phys);
+                drawVector(posX, posY, 0, 1, "#ffcc00", "mg", m * g * 3);
+                
+                const T = (m * vMag * vMag / R_phys) + (m * g * Math.cos(theta));
+                const tx = cx - posX;
+                const ty = cy - posY;
+                const tMagPx = Math.sqrt(tx*tx + ty*ty);
+                
+                // Only draw Tension vector if it's positive
+                if (T > 0) {
+                    drawVector(posX, posY, tx/tMagPx, ty/tMagPx, "#00ffcc", "T", T * 3);
+                }
+
+                const vx = Math.cos(theta);
+                const vy = -Math.sin(theta);
+                drawVector(posX, posY, vx * Math.sign(omega || 1), vy * Math.sign(omega || 1), "#0088ff", "v", vMag * 10);
+                
+                dispV.innerText = vMag.toFixed(2) + " m/s";
+                dispT.innerText = Math.max(0, T).toFixed(2) + " N"; // Don't show negative tension
+                dispH.innerText = (R_phys - R_phys * Math.cos(theta)).toFixed(2) + " m";
+            } else if (state === 'SLACK') {
+                drawVector(posX, posY, 0, 1, "#ffcc00", "mg", m * g * 3); 
+                const vMag = Math.sqrt(velX*velX + velY*velY);
+                drawVector(posX, posY, velX, velY, "#0088ff", "v", 10);
+                
+                dispV.innerText = vMag.toFixed(2) + " m/s";
+                dispT.innerText = "0.00 N (SLACK)";
+            }
+        }
+
+        function animate(timestamp) {
+            if (!isRunning) return;
+            if (!lastTime) lastTime = timestamp;
+            
+            const dt = 0.016; 
+            lastTime = timestamp;
+
+            if (state === 'CIRCULAR') {
+                const alpha = (-g / R_phys) * Math.sin(theta);
+                omega += alpha * dt;
+                theta += omega * dt;
+
+                posX = cx + R_px * Math.sin(theta);
+                posY = cy + R_px * Math.cos(theta); 
+
+                const vMag = Math.abs(omega * R_phys);
+                const T = (m * vMag * vMag / R_phys) + (m * g * Math.cos(theta));
+
+                // The Epsilon Hack (-0.1 Tolerance)
+                if (T < -0.1 && Math.cos(theta) < 0) { 
+                    state = 'SLACK';
+                    statusBox.innerText = "🚨 STRING SLACKED! (Matrix Failed)";
+                    statusBox.className = "status-alert status-slack";
+                    
+                    velX = R_phys * omega * Math.cos(theta);
+                    velY = -R_phys * omega * Math.sin(theta);
+                    
+                    projectileTrail.push({x: posX, y: posY}); // Start trailing
+                    
+                    isRunning = false; 
+                    launchBtn.innerText = "RESUME (AS PROJECTILE)";
+                }
+            } else if (state === 'SLACK') {
+                velY += g * dt;
+                posX += velX * dt * pxPerMeter;
+                posY += velY * dt * pxPerMeter;
+                
+                projectileTrail.push({x: posX, y: posY}); // Add point to trail
+                
+                if (posY > canvas.height + 50) {
+                    isRunning = false;
+                    launchBtn.innerText = "RESET TO TRY AGAIN";
+                }
+            }
+
+            updateDraws();
+            if(isRunning) requestAnimationFrame(animate);
+        }
+
+        launchBtn.onclick = () => {
+            if (state === 'WAITING') {
+                const v0 = parseFloat(v0Slider.value);
+                theta = 0; 
+                omega = v0 / R_phys; 
+                state = 'CIRCULAR';
+                statusBox.innerText = "🟢 SYSTEM RUNNING";
+                statusBox.className = "status-alert";
+                posX = cx;
+                posY = cy + R_px;
+                projectileTrail = []; // Clear old trail
+                
+                isRunning = true;
+                launchBtn.innerText = "PAUSE";
+                lastTime = performance.now();
+                requestAnimationFrame(animate);
+            } else if (state === 'CIRCULAR' || state === 'SLACK') {
+                isRunning = !isRunning;
+                if (state === 'CIRCULAR') {
+                    launchBtn.innerText = isRunning ? "PAUSE" : "RESUME";
+                } else if (state === 'SLACK') {
+                    launchBtn.innerText = isRunning ? "PAUSE" : "RESUME (AS PROJECTILE)";
+                }
+                
+                if (isRunning) {
+                    lastTime = performance.now();
+                    requestAnimationFrame(animate);
+                }
+            }
+        };
+
+        document.getElementById('resetBtn').onclick = () => {
+            isRunning = false;
+            state = 'WAITING';
+            theta = 0;
+            omega = 0;
+            posX = cx;
+            posY = cy + R_px;
+            projectileTrail = []; // Clear trail on reset
+            
+            statusBox.innerText = "SYSTEM READY";
+            statusBox.className = "status-alert";
+            dispV.innerText = "0.00 m/s";
+            dispT.innerText = "0.00 N";
+            dispH.innerText = "0.00 m";
+            launchBtn.innerText = "🚀 LAUNCH BALL";
+            updateDraws();
+        };
+
+        // Init draw
+        updateDraws();
+    </script>
+</body>
+</html>
