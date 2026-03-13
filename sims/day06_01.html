@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine | Advanced Angular Momentum</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap');
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #0b0c10;
+            color: #c5c6c7;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #66fcf1;
+            margin: 0;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px rgba(102, 252, 241, 0.5);
+        }
+
+        .header p {
+            color: #45a29e;
+            font-size: 1.2rem;
+            margin: 5px 0 0 0;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 30px;
+            background: #1f2833;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+            border: 1px solid #45a29e;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .simulation-area {
+            position: relative;
+        }
+
+        canvas {
+            background-color: #0b0c10;
+            border-radius: 15px;
+            border: 2px solid #45a29e;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(102, 252, 241, 0.2);
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 15px;
+            width: 320px;
+        }
+
+        .control-box {
+            background: #0b0c10;
+            padding: 15px;
+            border-radius: 15px;
+            border: 1px solid #45a29e;
+        }
+
+        .control-box label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.1rem;
+            color: #66fcf1;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: #1f2833;
+            height: 8px;
+            border-radius: 5px;
+            outline: none;
+            margin-bottom: 5px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #66fcf1;
+            cursor: pointer;
+            box-shadow: 0 0 10px #66fcf1;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .metric-card {
+            background: #0b0c10;
+            padding: 12px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 3px solid;
+            text-align: center;
+        }
+
+        #metric-L { border-color: #4caf50; grid-column: span 2;} /* Full width for L */
+        #metric-I { border-color: #00bcd4; }
+        #metric-W { border-color: #ff4500; }
+        #metric-E { border-color: #e91e63; grid-column: span 2;} /* Full width for Energy */
+
+        .metric-title {
+            font-size: 0.9rem;
+            color: #a0a0b5;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #fff;
+            font-family: monospace;
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+
+        #playBtn {
+            background: #66fcf1;
+            color: #0b0c10;
+            box-shadow: 0 0 15px rgba(102, 252, 241, 0.4);
+        }
+
+        #playBtn:hover {
+            background: #45a29e;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Physics Engine | Pro</h1>
+        <p>කෝණික ගම්‍යතා සංස්ථිතිය (Conservation of Angular Momentum)</p>
+    </div>
+
+    <div class="main-container">
+        <div class="simulation-area">
+            <canvas id="simCanvas" width="500" height="500"></canvas>
+        </div>
+
+        <div class="controls">
+            
+            <div class="btn-container">
+                <button id="playBtn">▶ Play Engine</button>
+            </div>
+
+            <div class="control-box">
+                <label>
+                    <span>අරය (Radius - r)</span>
+                    <span id="radiusDisplay">150 m</span>
+                </label>
+                <input type="range" id="radiusSlider" min="40" max="200" value="150">
+                
+                <label style="margin-top: 15px;">
+                    <span>ස්කන්ධය (Mass - m)</span>
+                    <span id="massDisplay">10 kg</span>
+                </label>
+                <input type="range" id="massSlider" min="1" max="50" value="10">
+            </div>
+
+            <div class="metrics">
+                <div class="metric-card" id="metric-L">
+                    <span class="metric-title">ගම්‍යතාව (L = Iω)</span>
+                    <span class="metric-value" id="val-L" style="color:#4caf50;">150,000 (නියතයකි)</span>
+                </div>
+                <div class="metric-card" id="metric-I">
+                    <span class="metric-title">අවස්ථිතිය (I)</span>
+                    <span class="metric-value" id="val-I">0.00</span>
+                </div>
+                <div class="metric-card" id="metric-W">
+                    <span class="metric-title">ප්‍රවේගය (ω)</span>
+                    <span class="metric-value" id="val-W">0.00</span>
+                </div>
+                <div class="metric-card" id="metric-E">
+                    <span class="metric-title">භ්‍රමණ චාලක ශක්තිය (E = ½Iω²)</span>
+                    <span class="metric-value" id="val-E" style="color:#e91e63;">0.00 J</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const radiusSlider = document.getElementById('radiusSlider');
+        const massSlider = document.getElementById('massSlider');
+        const playBtn = document.getElementById('playBtn');
+
+        // Physics Engine Core Variables
+        const initial_L = 150000; // Constant Angular Momentum
+        let isPlaying = false;
+        let angle = 0;
+
+        // UI Displays
+        const valI = document.getElementById('val-I');
+        const valW = document.getElementById('val-W');
+        const valE = document.getElementById('val-E');
+        const radiusDisplay = document.getElementById('radiusDisplay');
+        const massDisplay = document.getElementById('massDisplay');
+
+        // Center coordinates
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+
+        playBtn.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            if (isPlaying) {
+                playBtn.innerText = "⏸ Pause Engine";
+                playBtn.style.background = "#ff4500";
+                playBtn.style.color = "#fff";
+                playBtn.style.boxShadow = "0 0 15px rgba(255, 69, 0, 0.4)";
+            } else {
+                playBtn.innerText = "▶ Play Engine";
+                playBtn.style.background = "#66fcf1";
+                playBtn.style.color = "#0b0c10";
+                playBtn.style.boxShadow = "0 0 15px rgba(102, 252, 241, 0.4)";
+            }
+        });
+
+        radiusSlider.addEventListener('input', (e) => {
+            radiusDisplay.innerText = `${e.target.value} m`;
+        });
+        
+        massSlider.addEventListener('input', (e) => {
+            massDisplay.innerText = `${e.target.value} kg`;
+        });
+
+        function updatePhysics() {
+            // 1. Get Values
+            const r = parseInt(radiusSlider.value);
+            const m = parseInt(massSlider.value);
+
+            // 2. Calculate I (I = 2 * m * r^2)
+            const I = 2 * m * (r * r);
+
+            // 3. Calculate Omega (w = L / I)
+            const omega = initial_L / I;
+            
+            // 4. Calculate Kinetic Energy (E = 0.5 * I * w^2)
+            const energy = 0.5 * I * (omega * omega);
+
+            // 5. Update UI
+            valI.innerText = Math.round(I).toLocaleString();
+            valW.innerText = omega.toFixed(3);
+            valE.innerText = Math.round(energy).toLocaleString() + " J";
+
+            return { r, m, I, omega };
+        }
+
+        function draw() {
+            const physics = updatePhysics();
+
+            // MOTION BLUR EFFECT
+            ctx.fillStyle = 'rgba(11, 12, 16, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw center grid
+            ctx.strokeStyle = 'rgba(69, 162, 158, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 50, 0, Math.PI*2);
+            ctx.arc(cx, cy, 100, 0, Math.PI*2);
+            ctx.arc(cx, cy, 150, 0, Math.PI*2);
+            ctx.arc(cx, cy, 200, 0, Math.PI*2);
+            ctx.stroke();
+
+            // Update angle if playing
+            if (isPlaying) {
+                angle += physics.omega * 0.05; 
+            }
+
+            // Draw the rotating system
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(angle);
+
+            // Draw connecting rod
+            ctx.beginPath();
+            ctx.moveTo(-physics.r, 0);
+            ctx.lineTo(physics.r, 0);
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#c5c6c7';
+            ctx.lineCap = "round";
+            ctx.stroke();
+            
+            // Map mass value to a visual size (radius of the circles)
+            // min mass=1 -> size=8, max mass=50 -> size=25
+            const visualSize = 8 + (physics.m / 50) * 17;
+
+            // Draw Mass 1 (Cyan outline)
+            ctx.beginPath();
+            ctx.arc(-physics.r, 0, visualSize, 0, Math.PI * 2);
+            ctx.fillStyle = '#66fcf1';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#66fcf1';
+            ctx.fill();
+
+            // Draw Mass 2 (Orange outline)
+            ctx.beginPath();
+            ctx.arc(physics.r, 0, visualSize, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff4500';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ff4500';
+            ctx.fill();
+
+            ctx.restore(); // Reset translation/rotation
+
+            // Draw Center Pivot
+            ctx.beginPath();
+            ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+            ctx.fillStyle = '#1f2833';
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#66fcf1';
+            ctx.stroke();
+
+            // Draw dynamic Omega Indicator
+            if (isPlaying) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, 25, angle, angle + Math.PI, false);
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#ff4500';
+                ctx.stroke();
+                
+                // Arrow head
+                ctx.save();
+                ctx.translate(cx + 25 * Math.cos(angle + Math.PI), cy + 25 * Math.sin(angle + Math.PI));
+                ctx.rotate(angle + Math.PI + Math.PI/2);
+                ctx.beginPath();
+                ctx.moveTo(-5, 10);
+                ctx.lineTo(0, 0);
+                ctx.lineTo(5, 10);
+                ctx.fillStyle = '#ff4500';
+                ctx.fill();
+                ctx.restore();
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        draw();
+    </script>
+</body>
+</html>
