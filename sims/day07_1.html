@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Pure Rolling Simulation</title>
+    <style>
+        body {
+            background-color: #0f0f13;
+            color: #00ffcc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+        p {
+            color: #888;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #1a1a24;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #333;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.1);
+        }
+        canvas {
+            background-color: #111;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid #444;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .toggle-btn {
+            background-color: #222;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .toggle-btn.active.trans { background-color: #ff3366; color: white; border-color: #ff3366; }
+        .toggle-btn.active.rot { background-color: #33ccff; color: white; border-color: #33ccff; }
+        .toggle-btn.active.res { background-color: #00ffcc; color: black; border-color: #00ffcc; }
+        
+        .info-panel {
+            background: #222;
+            padding: 15px;
+            border-radius: 5px;
+            width: 100%;
+            max-width: 760px;
+            color: #ddd;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        .highlight { color: #00ffcc; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Physics Engine</h1>
+    <p>ලිස්සීමකින් තොරව පෙරළීම (Pure Rolling Velocity Distribution)</p>
+
+    <div class="container">
+        <canvas id="simCanvas" width="800" height="300"></canvas>
+
+        <div class="controls">
+            <button class="toggle-btn trans active" onclick="toggleMode('trans')">1. රේඛීය ප්‍රවේගය (v)</button>
+            <button class="toggle-btn rot active" onclick="toggleMode('rot')">2. භ්‍රමණ ප්‍රවේගය (rω)</button>
+            <button class="toggle-btn res active" onclick="toggleMode('res')">3. මුළු ප්‍රවේගය (v + rω)</button>
+        </div>
+
+        <div class="info-panel" id="infoText">
+            </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // State variables
+        let showTrans = true;
+        let showRot = true;
+        let showRes = true;
+
+        // Physics variables
+        const radius = 60;
+        let cx = 100;
+        const cy = 200;
+        let v = 2; // Linear velocity
+        let omega = v / radius; // Pure rolling condition
+        let angle = 0;
+
+        function toggleMode(mode) {
+            if (mode === 'trans') {
+                showTrans = !showTrans;
+                document.querySelector('.trans').classList.toggle('active');
+            } else if (mode === 'rot') {
+                showRot = !showRot;
+                document.querySelector('.rot').classList.toggle('active');
+            } else if (mode === 'res') {
+                showRes = !showRes;
+                document.querySelector('.res').classList.toggle('active');
+            }
+            updateInfoPanel();
+        }
+
+        function updateInfoPanel() {
+            const panel = document.getElementById('infoText');
+            if (showRes && !showTrans && !showRot) {
+                panel.innerHTML = `<strong>සම්ප්‍රයුක්ත ප්‍රවේගය (Pure Rolling):</strong> ස්පර්ශ ලක්ෂ්‍යය නිශ්චලයි (<span class="highlight">v=0</span>). කේන්ද්‍රය <span class="highlight">v</span> ප්‍රවේගයෙන් යයි. ඉහළම ලක්ෂ්‍යය කේන්ද්‍රය මෙන් දෙගුණයක වේගයෙන් යයි (<span class="highlight">2v</span>).`;
+            } else if (showTrans && !showRot && !showRes) {
+                panel.innerHTML = `<strong>රේඛීය චලිතය පමණක්:</strong> රෝදයේ සෑම ලක්ෂ්‍යයක්ම එකම <span class="highlight">v</span> ප්‍රවේගයකින් ඉදිරියට ඇදෙයි. (ලිස්සා යාම)`;
+            } else if (showRot && !showTrans && !showRes) {
+                panel.innerHTML = `<strong>භ්‍රමණ චලිතය පමණක්:</strong> කේන්ද්‍රය නිශ්චලයි. ඉහළම ලක්ෂ්‍යය ඉදිරියටත් (<span class="highlight">rω</span>), පහළම ලක්ෂ්‍යය පිටුපසටත් (<span class="highlight">rω</span>) ගමන් කරයි. (එකම තැන කැරකීම)`;
+            } else {
+                panel.innerHTML = `<strong>පෙරළීමේ මායාව:</strong> ලිස්සීමකින් තොරව පෙරළීම යනු <span style="color:#ff3366">රේඛීය චලිතයේත්</span>, <span style="color:#33ccff">භ්‍රමණ චලිතයේත්</span> එකතුවයි.`;
+            }
+        }
+
+        function drawArrow(fromx, fromy, tox, toy, color, label, yOffsetForLabel = 0) {
+            const headlen = 10;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const arrowAngle = Math.atan2(dy, dx);
+            
+            // Draw a Dot for zero velocity
+            if (Math.abs(dx) < 0.1 && Math.abs(dy) < 0.1) {
+                ctx.beginPath();
+                ctx.arc(fromx, fromy, 6, 0, Math.PI*2);
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.fillStyle = "#fff";
+                ctx.font = "bold 15px Arial";
+                ctx.fillText(label, fromx - 12, fromy + 25);
+                return;
+            }
+
+            // Draw line
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            // Draw arrow head
+            ctx.lineTo(tox - headlen * Math.cos(arrowAngle - Math.PI / 6), toy - headlen * Math.sin(arrowAngle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(arrowAngle + Math.PI / 6), toy - headlen * Math.sin(arrowAngle + Math.PI / 6));
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Label positioning logic
+            ctx.fillStyle = color;
+            ctx.font = "bold 15px Arial";
+            if (dx > 0) {
+                ctx.fillText(label, tox + 5, toy + 5 + yOffsetForLabel); 
+            } else {
+                ctx.fillText(label, tox - 25, toy + 5 + yOffsetForLabel); 
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Ground
+            ctx.beginPath();
+            ctx.moveTo(0, cy + radius + 1);
+            ctx.lineTo(canvas.width, cy + radius + 1);
+            ctx.strokeStyle = "#555";
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Update physics
+            cx += v;
+            angle += omega;
+            if (cx > canvas.width + radius) {
+                cx = -radius; 
+            }
+
+            // Draw Wheel
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(angle);
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Draw spokes
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(radius * Math.cos(i * Math.PI/2), radius * Math.sin(i * Math.PI/2));
+                ctx.strokeStyle = "#444";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            const vScale = 30; // Scale factor for arrows
+
+            // Exact Base Points (Top, Center, Bottom)
+            const pTop = { x: cx, y: cy - radius };
+            const pCenter = { x: cx, y: cy };
+            const pBottom = { x: cx, y: cy + radius };
+
+            // Draw Anchor Dots
+            ctx.fillStyle = "#ffffff";
+            [pTop, pCenter, pBottom].forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // EXACT OVERLAP LOGIC (Drawn in order from longest to shortest so all are visible)
+
+            // 1. Resultant Velocity (v + rω) - CYAN (Longest, draw first)
+            if (showRes) {
+                drawArrow(pTop.x, pTop.y, pTop.x + (2*v) * vScale, pTop.y, "#00ffcc", "2v", -15); // Label shifted up slightly
+                drawArrow(pCenter.x, pCenter.y, pCenter.x + v * vScale, pCenter.y, "#00ffcc", "v", -15); 
+                drawArrow(pBottom.x, pBottom.y, pBottom.x, pBottom.y, "#00ffcc", "v=0"); 
+            }
+
+            // 2. Translational Velocity (v) - RED
+            if (showTrans) {
+                drawArrow(pTop.x, pTop.y, pTop.x + v * vScale, pTop.y, "#ff3366", "v", 15); // Label shifted down slightly
+                drawArrow(pCenter.x, pCenter.y, pCenter.x + v * vScale, pCenter.y, "#ff3366", "v", 15); 
+                drawArrow(pBottom.x, pBottom.y, pBottom.x + v * vScale, pBottom.y, "#ff3366", "v", 15); 
+            }
+
+            // 3. Rotational Velocity (rω) - BLUE
+            if (showRot) {
+                // Since Top rω perfectly overlaps Top v, we draw it too. The label is shifted further down.
+                drawArrow(pTop.x, pTop.y, pTop.x + v * vScale, pTop.y, "#33ccff", "rω", 30); 
+                drawArrow(pBottom.x, pBottom.y, pBottom.x - v * vScale, pBottom.y, "#33ccff", "rω", -15); 
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        updateInfoPanel();
+        animate();
+    </script>
+</body>
+</html>
