@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Physics Engine - 2007 A/L</title>
+    <style>
+        body { 
+            background: #050508; color: #00ffcc; font-family: 'Segoe UI', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; height: 100vh;
+        }
+        h1 { text-transform: uppercase; letter-spacing: 5px; color: #fff; margin: 10px 0; text-shadow: 0 0 10px #00ffcc; }
+        .brand { color: #555; font-size: 12px; margin-bottom: 20px; letter-spacing: 3px; }
+        
+        .main-wrapper {
+            display: flex; gap: 30px; align-items: flex-start; background: rgba(255,255,255,0.02);
+            padding: 25px; border-radius: 20px; border: 1px solid #1a1a1a; box-shadow: 0 0 50px rgba(0,255,204,0.03);
+        }
+
+        .canvas-container {
+            position: relative;
+        }
+
+        .bird-view-caption {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #ffcc00;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid #ffcc00;
+        }
+
+        .watermark {
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            color: rgba(255, 255, 255, 0.16);
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            pointer-events: none;
+            text-shadow: 0 0 12px rgba(0, 255, 204, 0.15);
+            user-select: none;
+        }
+
+        canvas { 
+            background: radial-gradient(circle, #1a1a24 0%, #050508 100%); 
+            border: 2px solid #222; border-radius: 15px; box-shadow: 0 0 30px rgba(0,255,204,0.05);
+        }
+        
+        .control-panel { display: flex; flex-direction: column; gap: 20px; width: 260px; padding: 10px; }
+        
+        .control-section {
+            display: flex; flex-direction: column; gap: 12px; background: rgba(0,0,0,0.3);
+            padding: 15px; border-radius: 10px; border: 1px solid #333;
+        }
+
+        .toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .control-block { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        
+        button { 
+            background: #111; color: #ff3366; border: 1px solid #ff3366; padding: 12px; 
+            border-radius: 6px; cursor: pointer; transition: 0.2s; font-weight: bold; width: 100%; font-size: 13px;
+        }
+        button.ccw { color: #00ffcc; border-color: #00ffcc; }
+        button:hover { background: #222; }
+        button.active { transform: scale(0.95); opacity: 0.8; }
+        
+        .label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
+        
+        #stabilityInfo { 
+            margin-top: 10px; font-weight: bold; font-size: 14px; padding: 15px;
+            background: #111; border-radius: 5px; border-left: 4px solid #00ffcc; text-align: center; transition: 0.3s;
+        }
+        .desc { font-size: 11px; color: #aaa; line-height: 1.5; text-align: justify; }
+        .highlight { color: #00ffcc; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>2007 A/L PHYSICS SIMULATION</h1>
+
+    <div class="main-wrapper">
+        <div class="canvas-container">
+            <div class="bird-view-caption">[ BIRD'S-EYE VIEW ]</div>
+            <canvas id="labCanvas" width="700" height="500"></canvas>
+            <div class="watermark">Physics Engine</div>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-section">
+                <span class="label">Main System (Blue)</span>
+                <button id="mainDir" class="ccw" onclick="toggle('main')">CCW ↺</button>
+            </div>
+            
+            <div class="control-section">
+                <span class="label">Mechanical Satellites (Red)</span>
+                <div class="toggle-grid">
+                    <div class="control-block"><span class="label">P</span><button id="pDir" class="ccw" onclick="toggle('p')">CCW ↺</button></div>
+                    <div class="control-block"><span class="label">Q</span><button id="qDir" class="ccw" onclick="toggle('q')">CCW ↺</button></div>
+                    <div class="control-block"><span class="label">R</span><button id="rDir" class="ccw" onclick="toggle('r')">CCW ↺</button></div>
+                    <div class="control-block"><span class="label">S</span><button id="sDir" class="ccw" onclick="toggle('s')">CCW ↺</button></div>
+                </div>
+            </div>
+
+            <div id="stabilityInfo">STATUS: <span style="color:#00ffcc">GYRO-LOCKED</span></div>
+            <div class="desc">
+                * <span class="highlight">Professor's Logic:</span> ස්ථායිතාව රඳා පවතින්නේ මුළු කෝණික ගම්‍යතාවය (Total L) මතයි. සියලුම කොටස් එකම දිශාවට භ්‍රමණය වන විට L උපරිම වී පද්ධතියේ ස්ථායිතාවය උපරිම වේ.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('labCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let dirs = { main: 1, p: 1, q: 1, r: 1, s: 1 };
+        let angles = { main: 0, sub: 0 };
+        let wobbleAmp = 0;
+        let totalL = 0;
+
+        function toggle(key) {
+            dirs[key] *= -1;
+            const btn = document.getElementById(key + 'Dir');
+            if(dirs[key] === 1) {
+                btn.innerHTML = "CCW ↺";
+                btn.className = "ccw active";
+            } else {
+                btn.innerHTML = "CW ↻";
+                btn.className = "cw active";
+            }
+            calculateStability();
+            setTimeout(() => btn.classList.remove('active'), 150);
+        }
+
+        function calculateStability() {
+            let sumL = (dirs.main * 4) + dirs.p + dirs.q + dirs.r + dirs.s;
+            totalL = sumL; 
+            
+            let magL = Math.abs(sumL);
+            const info = document.getElementById('stabilityInfo');
+            
+            if(magL === 8) {
+                wobbleAmp = 0; 
+                info.innerHTML = "STATUS: <span style='color:#00ffcc'>GYRO-LOCKED (MAX L)</span>";
+                info.parentElement.style.borderColor = "#00ffcc";
+            } else if (magL >= 4) {
+                wobbleAmp = 3; 
+                info.innerHTML = "STATUS: <span style='color:#ffcc00'>MODERATE RIGIDITY</span>";
+                info.parentElement.style.borderColor = "#ffcc00";
+            } else {
+                wobbleAmp = 8; 
+                info.innerHTML = "STATUS: <span style='color:#ff3366'>CRITICAL WOBBLE (LOW L)</span>";
+                info.parentElement.style.borderColor = "#ff3366";
+            }
+        }
+
+        function drawComplexSatellite(x, y, dir, label) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angles.sub * dir);
+            
+            ctx.strokeStyle = "#444"; ctx.lineWidth = 1; ctx.beginPath();
+            ctx.moveTo(-25, -25); ctx.lineTo(25, -25); ctx.lineTo(25, 25); ctx.lineTo(-25, 25); ctx.closePath(); ctx.stroke();
+
+            ctx.save();
+            ctx.lineWidth = 0.5;
+            for(let i=0; i<8; i++) {
+                ctx.rotate(Math.PI/4);
+                ctx.strokeStyle = "#1a1a1a";
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(20, 0); ctx.stroke();
+                ctx.fillStyle = "#111";
+                ctx.beginPath(); ctx.arc(22 * Math.cos(i * Math.PI/4), 22 * Math.sin(i * Math.PI/4), 3, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.restore();
+
+            ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI*2); ctx.fillStyle = "#111"; ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.strokeStyle = "#444"; ctx.stroke();
+
+            ctx.save();
+            ctx.rotate(dir * angles.sub * 1.5); 
+            ctx.strokeStyle = dir === 1 ? "#00ffcc" : "#ff3366";
+            ctx.lineWidth = 3;
+            for(let i=0; i<3; i++) {
+                ctx.rotate((2 * Math.PI) / 3);
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(dir * 18, 0); ctx.stroke();
+                ctx.beginPath(); ctx.arc(dir * 18, 0, 3, 0, Math.PI*2); ctx.fillStyle = ctx.strokeStyle; ctx.fill();
+            }
+            ctx.restore();
+
+            ctx.beginPath(); ctx.arc(0, 0, 2, 0, Math.PI*2); ctx.fillStyle = "#444"; ctx.fill();
+
+            ctx.fillStyle = "#fff"; ctx.font = "bold 13px Courier New"; ctx.fillText(label, -5, 55);
+            ctx.restore();
+        }
+
+        function drawLVector() {
+            if(totalL === 0) return;
+            
+            let vecLength = Math.abs(totalL) * 15;
+            // RIGHT HAND RULE APPLIED: 
+            // totalL > 0 (CCW) -> Thumb Up (dirY = -1 in canvas)
+            // totalL < 0 (CW) -> Thumb Down (dirY = 1 in canvas)
+            let dirY = totalL > 0 ? -1 : 1; 
+            
+            ctx.save();
+            ctx.strokeStyle = "#ff00ff"; 
+            ctx.fillStyle = "#ff00ff";
+            ctx.lineWidth = 6;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#ff00ff";
+            ctx.globalAlpha = 0.8;
+
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, dirY * vecLength);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, dirY * (vecLength + 10));
+            ctx.lineTo(-8, dirY * (vecLength - 5));
+            ctx.lineTo(8, dirY * (vecLength - 5));
+            ctx.fill();
+
+            ctx.font = "bold 16px Arial";
+            ctx.fillText("L-Total", 15, dirY * (vecLength/2));
+            ctx.restore();
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Decrementing angles to match standard CCW math logic
+            angles.main -= 0.012;
+            angles.sub -= 0.06;
+
+            const wobbleX = Math.sin(Date.now() * 0.02) * wobbleAmp;
+            const wobbleY = Math.cos(Date.now() * 0.015) * (wobbleAmp * 0.5);
+
+            ctx.save();
+            ctx.translate(canvas.width/2 + wobbleX, canvas.height/2 + wobbleY);
+
+            ctx.fillStyle = "#111";
+            ctx.fillRect(-8, -220, 16, 440);
+
+            drawLVector();
+
+            ctx.save();
+            ctx.rotate(angles.main * dirs.main); 
+            
+            ctx.strokeStyle = "#0066ff";
+            ctx.fillStyle = "#0066ff";
+            ctx.lineWidth = 3;
+            ctx.setLineDash([10, 15]);
+            ctx.beginPath(); ctx.arc(0, 0, 70, 0, Math.PI*2); ctx.stroke();
+            ctx.setLineDash([]);
+            
+            for(let i=0; i<4; i++) {
+                ctx.rotate(Math.PI/2);
+                ctx.beginPath();
+                if (dirs.main === 1) { 
+                    // CCW visual -> Point UP at right edge
+                    ctx.moveTo(70, -8); 
+                    ctx.lineTo(63, 6); 
+                    ctx.lineTo(77, 6);
+                } else { 
+                    // CW visual -> Point DOWN at right edge
+                    ctx.moveTo(70, 8); 
+                    ctx.lineTo(63, -6); 
+                    ctx.lineTo(77, -6);
+                }
+                ctx.fill();
+            }
+            ctx.restore();
+
+            ctx.rotate(angles.main * dirs.main);
+            ctx.strokeStyle = "#1a1a1a";
+            ctx.lineWidth = 5;
+            ctx.beginPath(); ctx.moveTo(-250, 0); ctx.lineTo(250, 0); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, -180); ctx.lineTo(0, 180); ctx.stroke();
+
+            drawComplexSatellite(250, 0, dirs.p, "P");
+            drawComplexSatellite(0, -180, dirs.q, "Q");
+            drawComplexSatellite(-250, 0, dirs.r, "R");
+            drawComplexSatellite(0, 180, dirs.s, "S");
+
+            ctx.restore();
+            requestAnimationFrame(animate);
+        }
+
+        calculateStability(); 
+        animate();
+    </script>
+</body>
+</html>
