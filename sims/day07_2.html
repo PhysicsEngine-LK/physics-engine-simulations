@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - PRO Dashboard</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Roboto+Mono:wght@400;700&display=swap');
+
+        :root {
+            --bg-color: #0b0c10;
+            --panel-bg: rgba(31, 40, 51, 0.7);
+            --accent-cyan: #66fcf1;
+            --accent-teal: #45a29e;
+            --text-main: #c5c6c7;
+            --text-light: #ffffff;
+            --danger: #ff3366;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at top right, #1a232c 0%, transparent 40%),
+                              radial-gradient(circle at bottom left, #121c22 0%, transparent 40%);
+            color: var(--text-main);
+            font-family: 'Rajdhani', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 3vh 2vw;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: var(--accent-cyan);
+            font-size: clamp(2rem, 4vw, 2.5rem);
+            letter-spacing: 4px;
+            margin: 0;
+            text-shadow: 0 0 15px rgba(102, 252, 241, 0.4);
+        }
+
+        .subtitle {
+            font-family: 'Roboto Mono', monospace;
+            color: var(--accent-teal);
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .dashboard {
+            display: flex;
+            flex-direction: row; 
+            gap: 20px;
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(102, 252, 241, 0.1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 1300px;
+        }
+
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 250px;
+            flex-shrink: 0;
+        }
+
+        .canvas-container {
+            flex-grow: 1;
+            display: flex;
+            min-width: 0;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            background: #0b0c10;
+            border-radius: 10px;
+            border: 1px solid #333;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .buttons {
+            display: flex;
+            flex-direction: column; 
+            gap: 10px;
+        }
+
+        .telemetry {
+            display: flex;
+            flex-direction: column; 
+            gap: 8px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.85rem;
+        }
+
+        .stat-box {
+            background: rgba(0,0,0,0.4);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border-left: 3px solid var(--accent-cyan);
+        }
+
+        .stat-value {
+            color: var(--text-light);
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        button {
+            background: linear-gradient(45deg, var(--accent-teal), var(--accent-cyan));
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 252, 241, 0.2);
+            width: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 252, 241, 0.4);
+            filter: brightness(1.1);
+        }
+
+        button.reset {
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--text-main);
+            box-shadow: none;
+        }
+
+        button.reset:hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-light);
+            border-color: var(--text-light);
+        }
+
+        .leaderboard-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: auto; 
+        }
+
+        .rank-card {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #333;
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center; 
+            gap: 15px;
+            transition: 0.3s;
+            font-size: 1rem;
+        }
+
+        .rank-card.finished {
+            border-color: var(--accent-cyan);
+            background: rgba(102, 252, 241, 0.05);
+            transform: scale(1.02);
+        }
+
+        .rank-pos {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #555;
+            min-width: 30px;
+        }
+
+        .rank-card.finished .rank-pos {
+            color: var(--accent-cyan);
+        }
+
+        @media (max-width: 950px) {
+            .dashboard {
+                flex-direction: column;
+            }
+            .side-panel {
+                width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+            .control-panel, .leaderboard-container {
+                flex: 1;
+                min-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>PHYSICS ENGINE</h1>
+        <div class="subtitle">System Module: Kinematic Drive (පෙරළීමේ තරගය)</div>
+    </div>
+
+    <div class="dashboard">
+        
+        <div class="side-panel">
+            <div class="control-panel">
+                <div class="buttons">
+                    <button onclick="startRace()" id="startBtn">▶ Start Engine</button>
+                    <button onclick="resetRace()" class="reset">⟲ System Reset</button>
+                </div>
+                <div class="telemetry">
+                    <div class="stat-box">
+                        ආනතිය (Angle)<br><span class="stat-value">15.0°</span>
+                    </div>
+                    <div class="stat-box">
+                        ගුරුත්වය (g)<br><span class="stat-value">9.8 m/s²</span>
+                    </div>
+                    <div class="stat-box">
+                        Status<br><span class="stat-value" id="statusText" style="color: var(--accent-teal)">STANDBY</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="leaderboard-container" id="leaderboard">
+                <div class="rank-card" id="card-0"><div class="rank-pos">--</div>ඝන ගෝලය</div>
+                <div class="rank-card" id="card-1"><div class="rank-pos">--</div>ඝන සිලින්ඩරය</div>
+                <div class="rank-card" id="card-2"><div class="rank-pos">--</div>කුහර ගෝලය</div>
+                <div class="rank-card" id="card-3"><div class="rank-pos">--</div>වළල්ල</div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="raceCanvas" width="960" height="600"></canvas>
+        </div>
+
+    </div>
+
+    <script>
+        const canvas = document.getElementById('raceCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const g = 9.8; 
+        const thetaDeg = 15;
+        const theta = thetaDeg * (Math.PI / 180);
+        const radius = 24;
+        
+        const startX = 60;
+        const startY = 80;
+        const trackLengthPixels = 750;
+        const verticalSpacing = 90;
+        
+        let animationId;
+        let isRacing = false;
+
+        let objects = [
+            { id: 0, name: "ඝන ගෝලය", c: 0.4, color: "#ff2a5f", d: 0, v: 0 },
+            { id: 1, name: "ඝන සිලින්ඩරය", c: 0.5, color: "#00d2ff", d: 0, v: 0 },
+            { id: 2, name: "කුහර ගෝලය", c: 0.67, color: "#ffcc00", d: 0, v: 0 },
+            { id: 3, name: "වළල්ල", c: 1.0, color: "#b84dff", d: 0, v: 0 }
+        ];
+
+        let finishOrder = [];
+
+        function drawGrid() {
+            ctx.strokeStyle = "rgba(255,255,255,0.03)";
+            ctx.lineWidth = 1;
+            for(let i=0; i<canvas.width; i+=40) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+            }
+            for(let i=0; i<canvas.height; i+=40) {
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+
+            let cosT = Math.cos(theta);
+            let sinT = Math.sin(theta);
+
+            // Draw the tracks
+            for(let i=0; i<4; i++) {
+                let yOffset = i * verticalSpacing;
+                
+                ctx.beginPath();
+                ctx.moveTo(startX, startY + yOffset);
+                ctx.lineTo(startX + trackLengthPixels * cosT, startY + yOffset + trackLengthPixels * sinT);
+                ctx.strokeStyle = "rgba(102, 252, 241, 0.2)";
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                let fx = startX + trackLengthPixels * cosT;
+                let fy = startY + yOffset + trackLengthPixels * sinT;
+                ctx.beginPath();
+                ctx.moveTo(fx, fy - 20);
+                ctx.lineTo(fx, fy + 20);
+                ctx.strokeStyle = objects[i].color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = "rgba(255,255,255,0.9)";
+                ctx.font = "bold 15px Arial";
+                ctx.textAlign = "left";
+                ctx.fillText(objects[i].name, startX, startY + yOffset - 42);
+
+                ctx.fillStyle = "rgba(255,255,255,0.5)";
+                ctx.font = "13px 'Roboto Mono'";
+                ctx.fillText(`I = ${objects[i].c}mr²`, startX, startY + yOffset - 25);
+            }
+
+            // Draw the objects
+            objects.forEach((obj, i) => {
+                let yOffset = i * verticalSpacing;
+                let cx = startX + obj.d * cosT;
+                let cy = startY + yOffset + obj.d * sinT - radius;
+                let angle = obj.d / radius;
+
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(angle);
+
+                if (obj.id === 0) {
+                    // 1. SOLID SPHERE
+                    let grad = ctx.createRadialGradient(-radius/3, -radius/3, 2, 0, 0, radius);
+                    grad.addColorStop(0, "#ffffff");
+                    grad.addColorStop(0.3, obj.color);
+                    grad.addColorStop(1, "#000000");
+
+                    ctx.beginPath();
+                    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = "rgba(255,255,255,0.8)";
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                } else if (obj.id === 1) {
+                    // 2. SOLID CYLINDER (Flat face with spinning lighting)
+                    let grad = ctx.createLinearGradient(-radius, -radius, radius, radius);
+                    grad.addColorStop(0, "#ffffff");
+                    grad.addColorStop(0.4, obj.color);
+                    grad.addColorStop(1, "#111111");
+
+                    ctx.beginPath();
+                    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+
+                    // Inner rim detail
+                    ctx.beginPath();
+                    ctx.arc(0, 0, radius - 4, 0, Math.PI * 2);
+                    ctx.strokeStyle = "rgba(0,0,0,0.4)";
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                    ctx.strokeStyle = "rgba(255,255,255,0.8)";
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                } else if (obj.id === 2) {
+                    // 3. HOLLOW SPHERE (Dark cavity in the center)
+                    let grad = ctx.createRadialGradient(0, 0, radius * 0.2, 0, 0, radius);
+                    grad.addColorStop(0, "#1a1a1a"); 
+                    grad.addColorStop(0.6, obj.color);
+                    grad.addColorStop(1, "#000000");
+
+                    ctx.beginPath();
+                    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = "rgba(255,255,255,0.8)";
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                } else if (obj.id === 3) {
+                    // 4. RING (Empty center, thick band)
+                    ctx.beginPath();
+                    ctx.arc(0, 0, radius - 4, 0, Math.PI * 2);
+                    ctx.strokeStyle = obj.color;
+                    ctx.lineWidth = 8;
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                    ctx.strokeStyle = "rgba(255,255,255,0.8)";
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.arc(0, 0, radius - 8, 0, Math.PI * 2);
+                    ctx.strokeStyle = "rgba(255,255,255,0.5)";
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+
+                // Rotation indicator line
+                ctx.beginPath();
+                if (obj.id === 3) {
+                    ctx.moveTo(radius - 8, 0); // Start at inner edge for ring
+                } else {
+                    ctx.moveTo(0, 0); // Start at center for solid objects
+                }
+                ctx.lineTo(radius, 0);
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Center dot (Skip for the ring since it is empty)
+                if (obj.id !== 3) {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = "#fff";
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            });
+        }
+
+        function update() {
+            if (!isRacing) return;
+            let allFinished = true;
+
+            objects.forEach(obj => {
+                if (obj.d < trackLengthPixels) {
+                    allFinished = false;
+                    let a = (g * Math.sin(theta)) / (1 + obj.c) * 8; 
+                    obj.v += a * 0.016; 
+                    obj.d += obj.v;
+
+                    if (obj.d >= trackLengthPixels) {
+                        obj.d = trackLengthPixels;
+                        if (!finishOrder.includes(obj.id)) {
+                            finishOrder.push(obj.id);
+                            updateDashboard(obj.id, finishOrder.length);
+                        }
+                    }
+                }
+            });
+
+            draw();
+
+            if (!allFinished) {
+                animationId = requestAnimationFrame(update);
+            } else {
+                isRacing = false;
+                document.getElementById('statusText').innerText = "RACE COMPLETE";
+                document.getElementById('statusText').style.color = "var(--accent-cyan)";
+                document.getElementById('startBtn').innerText = "Race Finished";
+            }
+        }
+
+        function updateDashboard(objId, rank) {
+            let card = document.getElementById(`card-${objId}`);
+            card.classList.add("finished");
+            card.querySelector('.rank-pos').innerText = `#${rank}`;
+            if(rank === 1) card.style.borderColor = "#ffcc00"; 
+        }
+
+        function startRace() {
+            if (!isRacing && finishOrder.length === 0) {
+                isRacing = true;
+                document.getElementById('statusText').innerText = "EXECUTING...";
+                document.getElementById('statusText').style.color = "var(--danger)";
+                document.getElementById('startBtn').innerText = "Running...";
+                update();
+            }
+        }
+
+        function resetRace() {
+            isRacing = false;
+            cancelAnimationFrame(animationId);
+            objects.forEach(obj => {
+                obj.d = 0;
+                obj.v = 0;
+                let card = document.getElementById(`card-${obj.id}`);
+                card.classList.remove("finished");
+                card.style.borderColor = "#333";
+                card.querySelector('.rank-pos').innerText = "--";
+            });
+            finishOrder = [];
+            document.getElementById('statusText').innerText = "STANDBY";
+            document.getElementById('statusText').style.color = "var(--accent-teal)";
+            document.getElementById('startBtn').innerText = "▶ Start Engine";
+            draw();
+        }
+
+        draw();
+    </script>
+</body>
+</html>
