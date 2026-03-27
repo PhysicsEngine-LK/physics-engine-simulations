@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satellite Angular Momentum Simulation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .main-wrapper {
+            display: flex;
+            flex-direction: row;
+            gap: 30px;
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            align-items: stretch;
+            flex-wrap: wrap; /* Helps with smaller screens */
+        }
+        .canvas-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 24px;
+            text-align: center;
+        }
+        canvas {
+            background-color: #020617;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            width: 300px;
+            gap: 20px;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        button {
+            padding: 12px 15px;
+            font-size: 15px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #3b82f6;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            line-height: 1.4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        button span.en { font-size: 12px; font-weight: normal; opacity: 0.9; }
+        button:hover { background-color: #2563eb; }
+        button:disabled { background-color: #475569; cursor: not-allowed; }
+        
+        .dashboard {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 8px;
+            flex-grow: 1;
+        }
+        .metric {
+            display: flex;
+            flex-direction: column;
+            font-family: monospace;
+            background: #1e293b;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 4px solid #38bdf8;
+        }
+        .metric span.label-si { font-size: 14px; color: #cbd5e1; font-family: 'Segoe UI', sans-serif;}
+        .metric span.label-en { font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; font-family: 'Segoe UI', sans-serif;}
+        .metric span.value { font-size: 22px; font-weight: bold; color: #38bdf8; }
+    </style>
+</head>
+<body>
+
+<div class="main-wrapper">
+    <div class="canvas-section">
+        <h2>PHYSICS ENGINE | 2012 A/L MCQ</h2>
+        <canvas id="simCanvas" width="500" height="400"></canvas>
+    </div>
+
+    <div class="side-panel">
+        <div class="controls">
+            <button id="btnPanels">
+                1. පැනල විවෘත කරන්න
+                <span class="en">(Open Panels)</span>
+            </button>
+            <button id="btnTorque" disabled>
+                2. ව්‍යාවර්තය (τ) යොදන්න
+                <span class="en">(Apply Torque τ)</span>
+            </button>
+            <button id="btnReset" style="background-color: #64748b;">
+                RESET
+                <span class="en">(Reset System)</span>
+            </button>
+        </div>
+
+        <div class="dashboard">
+            <div class="metric">
+                <span class="label-si">කෝණික ප්‍රවේගය (ω)</span>
+                <span class="label-en">Angular Velocity</span>
+                <span class="value" id="valOmega">0.00</span>
+            </div>
+            <div class="metric">
+                <span class="label-si">අවස්ථිති ඝූර්ණය (I)</span>
+                <span class="label-en">Moment of Inertia</span>
+                <span class="value" id="valInertia">0.00</span>
+            </div>
+            <div class="metric">
+                <span class="label-si">කෝණික ගම්‍යතාව (L)</span>
+                <span class="label-en">Angular Momentum</span>
+                <span class="value" id="valMomentum">0.00</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // UI Elements
+    const btnPanels = document.getElementById('btnPanels');
+    const btnTorque = document.getElementById('btnTorque');
+    const btnReset = document.getElementById('btnReset');
+    const valOmega = document.getElementById('valOmega');
+    const valInertia = document.getElementById('valInertia');
+    const valMomentum = document.getElementById('valMomentum');
+
+    // State Variables
+    let angle = 0;
+    let omega = 0.05;      // Initial angular velocity
+    let inertia = 100;     // Initial moment of inertia (I0)
+    let panelExtension = 0; // 0 to 1
+    let state = 'closed';  // closed, opening, open, torque
+    
+    // Constants
+    const targetPanelExtension = 1;
+    const baseInertia = 100;
+    const maxAddedInertia = 150; // Panels increase inertia when opened
+    const torqueAmount = 0.0005; // Angular acceleration per frame when torque applied
+
+    function updatePhysics() {
+        inertia = baseInertia + (maxAddedInertia * panelExtension);
+
+        if (state === 'opening') {
+            let previousInertia = inertia;
+            panelExtension += 0.01;
+            if (panelExtension >= targetPanelExtension) {
+                panelExtension = targetPanelExtension;
+                state = 'open';
+                btnTorque.disabled = false;
+            }
+            let newInertia = baseInertia + (maxAddedInertia * panelExtension);
+            omega = (previousInertia * omega) / newInertia;
+        }
+
+        if (state === 'torque') {
+            let alpha = torqueAmount; 
+            omega += alpha;
+        }
+
+        angle += omega;
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = 40;
+        const panelLength = 100 * panelExtension;
+        const panelWidth = 20;
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle);
+
+        // Draw Solar Panels
+        ctx.fillStyle = '#1e3a8a'; 
+        ctx.strokeStyle = '#60a5fa';
+        ctx.lineWidth = 2;
+        
+        if (panelExtension > 0) {
+            ctx.fillRect(radius, -panelWidth/2, panelLength, panelWidth);
+            ctx.strokeRect(radius, -panelWidth/2, panelLength, panelWidth);
+            ctx.fillRect(-radius - panelLength, -panelWidth/2, panelLength, panelWidth);
+            ctx.strokeRect(-radius - panelLength, -panelWidth/2, panelLength, panelWidth);
+        }
+
+        // Draw Central Satellite Body
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw reference line
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(radius, 0);
+        ctx.stroke();
+
+        ctx.restore();
+
+        // Draw applied torque indicator
+        if (state === 'torque') {
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius + panelLength + 20, 0, Math.PI * 1.5);
+            ctx.stroke();
+            // Arrow head
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY - (radius + panelLength + 20) - 10);
+            ctx.lineTo(centerX + 15, centerY - (radius + panelLength + 20));
+            ctx.lineTo(centerX, centerY - (radius + panelLength + 20) + 10);
+            ctx.fillStyle = '#fbbf24';
+            ctx.fill();
+        }
+    }
+
+    function updateDashboard() {
+        let angularMomentum = inertia * omega;
+        
+        valOmega.innerText = omega.toFixed(4) + " rad/s";
+        valInertia.innerText = inertia.toFixed(1) + " kg·m²";
+        valMomentum.innerText = angularMomentum.toFixed(1) + " kg·m²/s";
+    }
+
+    function loop() {
+        updatePhysics();
+        draw();
+        updateDashboard();
+        requestAnimationFrame(loop);
+    }
+
+    // Event Listeners
+    btnPanels.addEventListener('click', () => {
+        if (state === 'closed') {
+            state = 'opening';
+            btnPanels.disabled = true;
+        }
+    });
+
+    btnTorque.addEventListener('click', () => {
+        if (state === 'open') {
+            state = 'torque';
+            btnTorque.disabled = true;
+            
+            // Change button to indicate torque is active
+            btnTorque.style.backgroundColor = '#fbbf24';
+            btnTorque.style.color = '#000';
+            btnTorque.innerHTML = 'ව්‍යාවර්තය යෙදෙමින් පවතී...<span class="en">(Applying Torque...)</span>';
+        }
+    });
+
+    btnReset.addEventListener('click', () => {
+        angle = 0;
+        omega = 0.05;
+        inertia = baseInertia;
+        panelExtension = 0;
+        state = 'closed';
+        btnPanels.disabled = false;
+        
+        btnTorque.disabled = true;
+        btnTorque.style.backgroundColor = '';
+        btnTorque.style.color = '';
+        btnTorque.innerHTML = '2. ව්‍යාවර්තය (τ) යොදන්න<span class="en">(Apply Torque τ)</span>';
+    });
+
+    // Start Simulation
+    loop();
+</script>
+</body>
+</html>
