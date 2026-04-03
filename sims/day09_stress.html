@@ -1,0 +1,527 @@
+﻿<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine | Stress-Strain Simulator</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap');
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #0b0c10;
+            color: #c5c6c7;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center; 
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #66fcf1;
+            margin: 0;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px rgba(102, 252, 241, 0.5);
+        }
+
+        .header p {
+            color: #45a29e;
+            font-size: 1.2rem;
+            margin: 5px 0 0 0;
+        }
+
+        .layout-wrapper {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 30px;
+            max-width: 1200px;
+        }
+
+        .side-panel {
+            background: #1f2833;
+            padding: 25px;
+            border-radius: 20px;
+            border: 1px solid #45a29e;
+            width: 280px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+            flex-shrink: 0;
+        }
+        
+        .canvas-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .wire-area, .graph-area {
+            background-color: #0b0c10;
+            border-radius: 15px;
+            border: 2px solid #45a29e;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.9);
+            overflow: hidden;
+        }
+
+        /* Hide the graph by default */
+        .graph-area {
+            display: none; 
+        }
+
+        canvas {
+            display: block;
+        }
+        
+        .status {
+            text-align: left;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 25px;
+            color: #66fcf1;
+            min-height: 50px;
+            line-height: 1.4;
+            background: #0b0c10;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #66fcf1;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: #0b0c10;
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid #45a29e;
+        }
+
+        .controls label {
+            font-size: 1.2rem;
+            color: #66fcf1;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: #1f2833;
+            height: 10px;
+            border-radius: 5px;
+            outline: none;
+            margin-bottom: 15px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #ff4500;
+            cursor: pointer;
+            box-shadow: 0 0 15px #ff4500;
+        }
+        
+        button {
+            border: none;
+            padding: 12px 20px;
+            font-size: 1.1rem;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-release {
+            background: transparent;
+            color: #ff4500;
+            border: 2px solid #ff4500;
+            box-shadow: 0 0 10px rgba(255, 69, 0, 0.2);
+        }
+        .btn-release:hover { 
+            background: #ff4500; 
+            color: #0b0c10;
+            box-shadow: 0 0 20px rgba(255, 69, 0, 0.6);
+        }
+
+        .btn-reset {
+            background: transparent;
+            color: #45a29e;
+            border: 2px solid #45a29e;
+        }
+        .btn-reset:hover { 
+            background: #45a29e; 
+            color: #0b0c10;
+            box-shadow: 0 0 20px rgba(69, 162, 158, 0.6);
+        }
+
+        .btn-toggle-graph {
+            background: transparent;
+            color: #ffeb3b; 
+            border: 2px solid #ffeb3b;
+            margin-top: 10px;
+        }
+        .btn-toggle-graph:hover {
+            background: #ffeb3b;
+            color: #0b0c10;
+            box-shadow: 0 0 20px rgba(255, 235, 59, 0.6);
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Physics Engine | Stress-Strain Simulator</h1>
+        <p>කම්බියකට බලයක් යොදා වික්‍රියාව (Strain) සහ ප්‍රත්‍යාබලය (Stress) අතර සම්බන්ධය අධ්‍යයනය කරන්න</p>
+    </div>
+
+    <div class="layout-wrapper">
+        <div class="side-panel">
+            <div class="status" id="statusText">ද්‍රව්‍යය සාමාන්‍ය තත්ත්වයේ ඇත</div>
+            
+            <div class="controls">
+                <label for="strainSlider">විතතිය (Strain): <span id="strainVal">0</span>%</label>
+                <input type="range" id="strainSlider" min="0" max="100" value="0" step="0.5">
+                
+                <button class="btn-release" id="btnRelease">බලය මුදා හරින්න<br>(Release Force)</button>
+                <button class="btn-reset" id="btnReset">නැවත අරඹන්න<br>(Reset)</button>
+                
+                <button class="btn-toggle-graph" id="btnToggleGraph">ප්‍රස්ථාරය පෙන්වන්න<br>(Show Graph)</button>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <div class="wire-area">
+                <canvas id="wireCanvas" width="800" height="150"></canvas>
+            </div>
+            <div class="graph-area" id="graphAreaContainer">
+                <canvas id="graphCanvas" width="800" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const wireCanvas = document.getElementById('wireCanvas');
+        const wireCtx = wireCanvas.getContext('2d');
+        const graphCanvas = document.getElementById('graphCanvas');
+        const graphCtx = graphCanvas.getContext('2d');
+        
+        const slider = document.getElementById('strainSlider');
+        const strainValDisplay = document.getElementById('strainVal');
+        const statusText = document.getElementById('statusText');
+        const btnRelease = document.getElementById('btnRelease');
+        const btnReset = document.getElementById('btnReset');
+        
+        const btnToggleGraph = document.getElementById('btnToggleGraph');
+        const graphAreaContainer = document.getElementById('graphAreaContainer');
+
+        // State variables
+        let currentStrain = 0;
+        let isReleased = false;
+        let permanentStrain = 0;
+        let releasedFromStrain = 0;
+        let releasedFromStress = 0;
+        let isGraphVisible = false;
+
+        // Key Points (X = Strain, Y = Stress)
+        const points = {
+            O: {x: 0, y: 0},
+            A: {x: 20, y: 40}, // Proportional Limit
+            E: {x: 25, y: 48}, // Elastic Limit
+            B: {x: 30, y: 52}, // Yield Point
+            C: {x: 70, y: 85}, // Ultimate Stress
+            D: {x: 100, y: 60} // Breaking Point
+        };
+
+        // Graph Toggle Event Listener
+        btnToggleGraph.addEventListener('click', () => {
+            isGraphVisible = !isGraphVisible;
+            if (isGraphVisible) {
+                graphAreaContainer.style.display = 'block';
+                btnToggleGraph.innerHTML = 'ප්‍රස්ථාරය සඟවන්න<br>(Hide Graph)';
+            } else {
+                graphAreaContainer.style.display = 'none';
+                btnToggleGraph.innerHTML = 'ප්‍රස්ථාරය පෙන්වන්න<br>(Show Graph)';
+            }
+        });
+
+        function getStress(x) {
+            if (x <= points.A.x) {
+                return (points.A.y / points.A.x) * x; 
+            } else if (x <= points.B.x) {
+                let t = (x - points.A.x) / (points.B.x - points.A.x);
+                return points.A.y + (points.B.y - points.A.y) * Math.sin(t * Math.PI / 2);
+            } else if (x <= points.C.x) {
+                let t = (x - points.B.x) / (points.C.x - points.B.x);
+                return points.B.y + (points.C.y - points.B.y) * Math.sin(t * Math.PI / 2);
+            } else if (x <= points.D.x) {
+                let t = (x - points.C.x) / (points.D.x - points.C.x);
+                return points.C.y - (points.C.y - points.D.y) * (t * t);
+            }
+            return 0;
+        }
+
+        // Region text updated to match the new color zones
+        function getRegionText(x) {
+            if (x === 0 && permanentStrain === 0) return "ද්‍රව්‍යය සාමාන්‍ය තත්ත්වයේ ඇත";
+            if (isReleased) return "බලය මුදා හැර ඇත<br><span style='color:#ff9800;'>(ස්ථිර විතතියක් පවතී)</span>";
+            if (x > 0 && x <= points.A.x) return "සමානුපාතික සීමාව තුළ<br><span style='color:#00ff66;'>(හූක් නියමය පිළිපදී)</span>";
+            if (x > points.A.x && x <= points.E.x) return "ප්‍රත්‍යාස්ථ සීමාව තුළ<br><span style='color:#00ff66;'>(මුල් පිහිටීමට පැමිණිය හැක)</span>";
+            if (x > points.E.x && x <= points.B.x) return "අවනති ලක්ෂ්‍යය පසුවේ<br><span style='color:#ffeb3b;'>(යටත් වීම / Yielding)</span>";
+            if (x > points.B.x && x <= points.C.x) return "සුවිකාර්ය විරූපණය<br><span style='color:#ff9800;'>(ප්ලාස්ටික් කලාපය)</span>";
+            if (x > points.C.x && x < points.D.x) return "අවසාන කලාපය<br><span style='color:#ff4500;'>(Necking ආරම්භ වේ)</span>";
+            if (x >= points.D.x) return "<span style='color:#ff0000;'>භේදක ලක්ෂ්‍යය<br>(කම්බිය කැඩී ගියේය!)</span>";
+            return "";
+        }
+
+        function drawWire() {
+            wireCtx.clearRect(0, 0, wireCanvas.width, wireCanvas.height);
+            
+            let baseWidth = 200;
+            let currentWidth = baseWidth + (currentStrain * 4); 
+            let wireHeight = 40 - (currentStrain * 0.15); 
+            let startY = (wireCanvas.height - wireHeight) / 2;
+
+            // Wall Clamp
+            wireCtx.fillStyle = '#1f2833'; 
+            wireCtx.fillRect(20, 20, 20, 110);
+            wireCtx.strokeStyle = '#45a29e';
+            wireCtx.strokeRect(20, 20, 20, 110);
+            
+            // Wire Color
+            wireCtx.fillStyle = '#c5c6c7'; 
+
+            if (currentStrain >= points.D.x) {
+                wireCtx.fillRect(40, startY, currentWidth / 2 - 20, wireHeight);
+                wireCtx.fillRect(40 + currentWidth / 2 + 20, startY, currentWidth / 2 - 20, wireHeight);
+                
+                wireCtx.fillStyle = '#ff4500';
+                wireCtx.font = "bold 24px Rajdhani";
+                wireCtx.fillText("💥", 40 + currentWidth / 2 - 12, startY + wireHeight/2 + 8);
+            } 
+            else if (currentStrain > points.C.x) {
+                let neckFactor = (currentStrain - points.C.x) / (points.D.x - points.C.x);
+                let neckDepth = wireHeight * 0.4 * neckFactor;
+
+                wireCtx.beginPath();
+                wireCtx.moveTo(40, startY);
+                wireCtx.lineTo(40 + currentWidth/2 - 40, startY);
+                wireCtx.quadraticCurveTo(40 + currentWidth/2, startY + neckDepth, 40 + currentWidth/2 + 40, startY);
+                wireCtx.lineTo(40 + currentWidth, startY);
+                wireCtx.lineTo(40 + currentWidth, startY + wireHeight);
+                wireCtx.lineTo(40 + currentWidth/2 + 40, startY + wireHeight);
+                wireCtx.quadraticCurveTo(40 + currentWidth/2, startY + wireHeight - neckDepth, 40 + currentWidth/2 - 40, startY + wireHeight);
+                wireCtx.lineTo(40, startY + wireHeight);
+                wireCtx.fill();
+            } 
+            else {
+                wireCtx.fillRect(40, startY, currentWidth, wireHeight);
+            }
+        }
+
+        function drawGraph() {
+            graphCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+            
+            const marginX = 60;
+            const marginY = 40;
+            const graphWidth = graphCanvas.width - marginX - 40;
+            const graphHeight = graphCanvas.height - marginY - 40;
+            
+            // Draw Axes
+            graphCtx.strokeStyle = '#45a29e';
+            graphCtx.lineWidth = 2;
+            graphCtx.beginPath();
+            graphCtx.moveTo(marginX, marginY);
+            graphCtx.lineTo(marginX, graphCanvas.height - marginY); 
+            graphCtx.lineTo(graphCanvas.width - 20, graphCanvas.height - marginY); 
+            graphCtx.stroke();
+
+            // Axis Labels
+            graphCtx.fillStyle = '#66fcf1';
+            graphCtx.font = 'bold 16px Rajdhani';
+            graphCtx.fillText("ප්‍රත්‍යාබලය (Stress)", marginX - 50, marginY - 15);
+            graphCtx.fillText("වික්‍රියාව (Strain)", graphCanvas.width - 130, graphCanvas.height - 15);
+
+            const mapX = (val) => marginX + (val / 100) * graphWidth;
+            const mapY = (val) => (graphCanvas.height - marginY) - (val / 100) * graphHeight;
+
+            // Full base curve (Faded Background Curve)
+            graphCtx.strokeStyle = 'rgba(69, 162, 158, 0.3)';
+            graphCtx.lineWidth = 3;
+            graphCtx.beginPath();
+            graphCtx.moveTo(mapX(0), mapY(0));
+            for (let x = 0; x <= 100; x++) {
+                graphCtx.lineTo(mapX(x), mapY(getStress(x)));
+            }
+            graphCtx.stroke();
+
+            // ==========================================
+            // NEW: Segmented Color Curve Drawing
+            // ==========================================
+            if (!isReleased) {
+                graphCtx.lineWidth = 4;
+                graphCtx.shadowBlur = 10;
+
+                // Helper to draw a specific segment with a specific color
+                const drawSegment = (startX, endX, color) => {
+                    if (startX >= endX) return;
+                    graphCtx.strokeStyle = color;
+                    graphCtx.shadowColor = color;
+                    graphCtx.beginPath();
+                    graphCtx.moveTo(mapX(startX), mapY(getStress(startX)));
+                    
+                    // Loop by 0.5 to match the slider step
+                    for (let x = startX; x <= endX; x += 0.5) {
+                        graphCtx.lineTo(mapX(x), mapY(getStress(x)));
+                    }
+                    // Ensure the exact end point is connected
+                    graphCtx.lineTo(mapX(endX), mapY(getStress(endX)));
+                    graphCtx.stroke();
+                };
+
+                // Draw each region if the strain has reached it
+                if (currentStrain > 0) {
+                    drawSegment(0, Math.min(currentStrain, points.E.x), '#00ff66'); // Green (O to E)
+                }
+                if (currentStrain > points.E.x) {
+                    drawSegment(points.E.x, Math.min(currentStrain, points.B.x), '#ffeb3b'); // Yellow (E to B)
+                }
+                if (currentStrain > points.B.x) {
+                    drawSegment(points.B.x, Math.min(currentStrain, points.C.x), '#ff9800'); // Orange (B to C)
+                }
+                if (currentStrain > points.C.x) {
+                    drawSegment(points.C.x, Math.min(currentStrain, points.D.x), '#ff4500'); // Red (C to D)
+                }
+
+                graphCtx.shadowBlur = 0; // Reset shadow
+
+                // Current indicator white dot
+                graphCtx.fillStyle = '#ffffff';
+                graphCtx.beginPath();
+                graphCtx.arc(mapX(currentStrain), mapY(getStress(currentStrain)), 7, 0, Math.PI * 2);
+                graphCtx.fill();
+            }
+
+            // Release logic (Dotted line for permanent set)
+            if (isReleased && permanentStrain > 0) {
+                graphCtx.strokeStyle = '#ff9800';
+                graphCtx.setLineDash([5, 5]);
+                graphCtx.lineWidth = 2;
+                graphCtx.beginPath();
+                graphCtx.moveTo(mapX(releasedFromStrain), mapY(releasedFromStress));
+                graphCtx.lineTo(mapX(permanentStrain), mapY(0));
+                graphCtx.stroke();
+                graphCtx.setLineDash([]);
+
+                // Permanent strain orange dot
+                graphCtx.fillStyle = '#ff9800';
+                graphCtx.shadowBlur = 10;
+                graphCtx.shadowColor = '#ff9800';
+                graphCtx.beginPath();
+                graphCtx.arc(mapX(permanentStrain), mapY(0), 6, 0, Math.PI * 2);
+                graphCtx.fill();
+                graphCtx.shadowBlur = 0;
+                
+                // Label
+                graphCtx.font = 'bold 14px Rajdhani';
+                graphCtx.fillText("ස්ථිර විතතිය", mapX(permanentStrain) - 35, mapY(0) + 25);
+            }
+
+            // Highlight key points (A, E, B, C, D)
+            const drawLabel = (pt, name) => {
+                graphCtx.fillStyle = '#c5c6c7';
+                graphCtx.beginPath();
+                graphCtx.arc(mapX(pt.x), mapY(pt.y), 4, 0, Math.PI * 2);
+                graphCtx.fill();
+                graphCtx.font = 'bold 14px Rajdhani';
+                graphCtx.fillText(name, mapX(pt.x) - 10, mapY(pt.y) - 15);
+            };
+
+            drawLabel(points.A, "A");
+            drawLabel(points.E, "E");
+            drawLabel(points.B, "B");
+            drawLabel(points.C, "C");
+            if(currentStrain >= 100) drawLabel(points.D, "D (කැඩී යයි)");
+        }
+
+        function updateSimulation() {
+            strainValDisplay.innerText = parseFloat(currentStrain).toFixed(1);
+            statusText.innerHTML = getRegionText(currentStrain); 
+            
+            if (currentStrain >= 100 || isReleased) {
+                slider.disabled = true;
+            } else {
+                slider.disabled = false;
+            }
+
+            drawWire();
+            // Only redraw graph if visible (saves performance)
+            if (isGraphVisible) {
+                drawGraph();
+            }
+        }
+
+        // When the graph becomes visible, draw it immediately
+        btnToggleGraph.addEventListener('click', () => {
+            if (isGraphVisible) {
+                drawGraph();
+            }
+        });
+
+        slider.addEventListener('input', (e) => {
+            currentStrain = parseFloat(e.target.value);
+            isReleased = false;
+            permanentStrain = 0;
+            updateSimulation();
+        });
+
+        btnRelease.addEventListener('click', () => {
+            if (currentStrain === 0 || isReleased || currentStrain >= 100) return;
+
+            releasedFromStrain = currentStrain;
+            releasedFromStress = getStress(currentStrain);
+
+            if (currentStrain <= points.E.x) {
+                permanentStrain = 0;
+                currentStrain = 0; 
+                slider.value = 0;
+                isReleased = false; 
+            } else {
+                isReleased = true;
+                permanentStrain = releasedFromStrain - (releasedFromStress / 2);
+                currentStrain = permanentStrain; 
+            }
+            updateSimulation();
+        });
+
+        btnReset.addEventListener('click', () => {
+            currentStrain = 0;
+            slider.value = 0;
+            isReleased = false;
+            permanentStrain = 0;
+            slider.disabled = false;
+            updateSimulation();
+        });
+
+        // Initialize state
+        updateSimulation();
+        
+        // Ensure graph is drawn once hidden, so if user clicks show, it's ready
+        drawGraph();
+    </script>
+</body>
+</html>
