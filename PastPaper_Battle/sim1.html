@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Physics Engine | The Proportionality Lab</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap');
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #0b0c10;
+            color: #c5c6c7;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #66fcf1;
+            margin: 0;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px rgba(102, 252, 241, 0.5);
+        }
+
+        .header p {
+            color: #45a29e;
+            font-size: 1.2rem;
+            margin: 5px 0 0 0;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 20px;
+            background: #1f2833;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+            border: 1px solid #45a29e;
+            width: 100%;
+            max-width: 1000px;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .controls {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .control-group {
+            background: #0b0c10;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #66fcf1;
+        }
+
+        .control-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.1rem;
+            color: #fff;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .val-highlight {
+            color: #ff4500;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: #1f2833;
+            height: 8px;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #66fcf1;
+            cursor: pointer;
+            box-shadow: 0 0 10px #66fcf1;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            background: #1f2833;
+            color: #66fcf1;
+            border: 1px solid #45a29e;
+            border-radius: 5px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: bold;
+            outline: none;
+        }
+
+        .canvas-container {
+            position: relative;
+            background-color: #0b0c10;
+            border-radius: 15px;
+            border: 2px solid #45a29e;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.9);
+            width: 300px;
+            height: 500px;
+            display: flex;
+            justify-content: center;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .dashboard {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .metric-card {
+            background: #0b0c10;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #45a29e;
+        }
+
+        .equation-box {
+            font-size: 1.5rem;
+            color: #a0a0b5;
+            font-family: monospace;
+            margin-bottom: 10px;
+        }
+
+        .equation-box span {
+            color: #66fcf1;
+        }
+
+        .final-result {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #ffeb3b;
+            text-shadow: 0 0 15px rgba(255, 235, 59, 0.5);
+            margin: 10px 0;
+        }
+
+        .ratio-alert {
+            background: rgba(255, 69, 0, 0.2);
+            border: 1px solid #ff4500;
+            padding: 15px;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1.2rem;
+            text-align: center;
+            display: none;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 5px #ff4500; }
+            50% { box-shadow: 0 0 20px #ff4500; }
+            100% { box-shadow: 0 0 5px #ff4500; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Physics Engine | Proportionality Lab</h1>
+        <p>විතතියේ අනුපාත ලොජික් එක (e = Fl / AY)</p>
+    </div>
+
+    <div class="main-container">
+        
+        <div class="controls">
+            <div class="control-group">
+                <label><span>බාහිර බලය (F)</span> <span class="val-highlight" id="lbl-F">1000 N</span></label>
+                <input type="range" id="slider-F" min="100" max="5000" step="100" value="1000">
+            </div>
+
+            <div class="control-group">
+                <label><span>මුල් දිග (l)</span> <span class="val-highlight" id="lbl-L">2.0 m</span></label>
+                <input type="range" id="slider-L" min="1.0" max="10.0" step="0.5" value="2.0">
+            </div>
+
+            <div class="control-group" style="border-left-color: #ff4500;">
+                <label><span>කම්බියේ අරය (r)</span> <span class="val-highlight" id="lbl-R">1.0 mm</span></label>
+                <input type="range" id="slider-R" min="0.5" max="5.0" step="0.5" value="1.0">
+                <div style="font-size: 0.9rem; color: #a0a0b5; margin-top: 5px; text-align: right;">හරස්කඩ (A) = <span id="lbl-A">3.14</span> mm²</div>
+            </div>
+
+            <div class="control-group">
+                <label><span>ද්‍රව්‍යය (Material - Y)</span></label>
+                <select id="select-Y">
+                    <option value="200">වානේ (Steel) - 200 GPa</option>
+                    <option value="120">තඹ (Copper) - 120 GPa</option>
+                    <option value="70">ඇලුමිනියම් (Al) - 70 GPa</option>
+                    <option value="2">රබර් (Rubber) - 2 GPa</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="simCanvas" width="300" height="500"></canvas>
+        </div>
+
+        <div class="dashboard">
+            <div class="metric-card">
+                <div style="color:#a0a0b5; font-size:1.2rem; margin-bottom:10px;">විතතිය (Extension - e)</div>
+                <div class="equation-box">
+                    e = (F × l) / (A × Y)
+                </div>
+                <div class="final-result" id="val-E">0.000 mm</div>
+            </div>
+
+            <div class="ratio-alert" id="ratio-alert">
+                🔥 <b>Physics Engine Hack:</b><br>
+                අරය 2 ගුණයක් වූ විට හරස්කඩ (A) 4 ගුණයක් වේ. එබැවින් විතතිය 1/4 කින් අඩු වේ!
+            </div>
+            
+            <div class="metric-card" style="border-color: #ff9800;">
+                <div style="color:#ff9800; font-size:1.1rem; margin-bottom:10px;">දෘශ්‍යමාන ලොජික් (Visual Logic)</div>
+                <div style="text-align: left; font-size: 1.1rem; line-height: 1.6;">
+                    • <b>F වැඩි වන විට:</b> e වැඩි වේ (e ∝ F)<br>
+                    • <b>l වැඩි වන විට:</b> ඇදෙන දුනු ගණන වැඩියි, e වැඩි වේ (e ∝ l)<br>
+                    • <b>r වැඩි වන විට:</b> කම්බිය මහතයි, e සීඝ්‍රයෙන් අඩු වේ (e ∝ 1/r²)<br>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Inputs
+        const s_F = document.getElementById('slider-F');
+        const s_L = document.getElementById('slider-L');
+        const s_R = document.getElementById('slider-R');
+        const select_Y = document.getElementById('select-Y');
+
+        // Labels
+        const l_F = document.getElementById('lbl-F');
+        const l_L = document.getElementById('lbl-L');
+        const l_R = document.getElementById('lbl-R');
+        const l_A = document.getElementById('lbl-A');
+        const v_E = document.getElementById('val-E');
+        const alertBox = document.getElementById('ratio-alert');
+
+        let initial_E = 0;
+
+        function updatePhysics() {
+            let F = parseFloat(s_F.value);
+            let L = parseFloat(s_L.value);
+            let R = parseFloat(s_R.value);
+            let Y_GPa = parseFloat(select_Y.value);
+
+            // Update Labels
+            l_F.innerText = F + " N";
+            l_L.innerText = L.toFixed(1) + " m";
+            l_R.innerText = R.toFixed(1) + " mm";
+
+            // Calculate Area in mm^2
+            let Area_mm2 = Math.PI * Math.pow(R, 2);
+            l_A.innerText = Area_mm2.toFixed(2);
+
+            // Calculation Logic
+            // F in N, L in m, R in mm (R*10^-3 m), Y in GPa (Y*10^9 Pa)
+            // e = (F * L) / ( pi * (R*10^-3)^2 * Y*10^9 )  -> result in meters
+            // e (in mm) = e_meters * 1000
+            let Y_Pa = Y_GPa * 1e9;
+            let Area_m2 = Math.PI * Math.pow(R * 1e-3, 2);
+            let e_meters = (F * L) / (Area_m2 * Y_Pa);
+            let e_mm = e_meters * 1000;
+
+            v_E.innerText = e_mm.toFixed(3) + " mm";
+
+            // Trigger Alert if Radius goes to 2.0 or 4.0 to show the 1/4 logic
+            if(R === 2.0 || R === 4.0) {
+                alertBox.style.display = "block";
+            } else {
+                alertBox.style.display = "none";
+            }
+
+            draw(L, R, e_mm, F);
+        }
+
+        function draw(L, R, e_mm, F) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const topY = 40;
+            
+            // Map logic to visual scale
+            // Max L is 10. Let's make 10m = 300px visual length.
+            let visualL = (L / 10) * 300; 
+            
+            // Max R is 5. Max visual width is 40px.
+            let visualW = (R / 5) * 40;
+            if(visualW < 2) visualW = 2; // min thickness
+
+            // Make visual extension exaggerated so it's clearly visible (multiply by a factor)
+            // e_mm can be very small. Let's scale it so 1mm = 10px stretch.
+            let visualE = e_mm * 10;
+            if(visualE > 150) visualE = 150; // cap it
+
+            // Draw Clamp
+            ctx.fillStyle = '#45a29e';
+            ctx.fillRect(centerX - 40, topY - 20, 80, 20);
+            ctx.fillRect(centerX - 60, topY - 30, 120, 10); // ceiling
+            
+            // Draw Wire (Original Length)
+            ctx.fillStyle = '#c5c6c7';
+            ctx.fillRect(centerX - visualW/2, topY, visualW, visualL);
+
+            // Draw Extended part (highlighted)
+            if (visualE > 0) {
+                ctx.fillStyle = 'rgba(255, 69, 0, 0.7)'; // Orange stretch
+                ctx.fillRect(centerX - visualW/2, topY + visualL, visualW, visualE);
+            }
+
+            // Draw Weight at the bottom
+            let bottomY = topY + visualL + visualE;
+            let weightSize = 20 + (F / 5000) * 30; // Weight size changes with Force
+            
+            ctx.beginPath();
+            ctx.rect(centerX - weightSize/2, bottomY, weightSize, weightSize);
+            ctx.fillStyle = '#1f2833';
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#66fcf1';
+            ctx.stroke();
+
+            // Label for F
+            ctx.fillStyle = '#66fcf1';
+            ctx.font = 'bold 14px Rajdhani';
+            ctx.textAlign = 'center';
+            ctx.fillText("F", centerX, bottomY + weightSize/2 + 5);
+
+            // Visual Extention Line & Label
+            if(visualE > 2) {
+                ctx.strokeStyle = '#ff4500';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(centerX + visualW/2 + 10, topY + visualL);
+                ctx.lineTo(centerX + visualW/2 + 20, topY + visualL);
+                ctx.moveTo(centerX + visualW/2 + 10, bottomY);
+                ctx.lineTo(centerX + visualW/2 + 20, bottomY);
+                ctx.moveTo(centerX + visualW/2 + 15, topY + visualL);
+                ctx.lineTo(centerX + visualW/2 + 15, bottomY);
+                ctx.stroke();
+
+                ctx.fillStyle = '#ff4500';
+                ctx.textAlign = 'left';
+                ctx.fillText("e", centerX + visualW/2 + 25, topY + visualL + visualE/2 + 5);
+            }
+        }
+
+        // Event Listeners
+        s_F.addEventListener('input', updatePhysics);
+        s_L.addEventListener('input', updatePhysics);
+        s_R.addEventListener('input', updatePhysics);
+        select_Y.addEventListener('input', updatePhysics);
+
+        // Initial Call
+        updatePhysics();
+    </script>
+</body>
+</html>
