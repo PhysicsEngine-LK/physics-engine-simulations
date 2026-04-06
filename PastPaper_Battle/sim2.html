@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Physics Engine | Graph Comparisons</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap');
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #0b0c10;
+            color: #c5c6c7;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #66fcf1;
+            margin: 0;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px rgba(102, 252, 241, 0.5);
+        }
+
+        .header p {
+            color: #45a29e;
+            font-size: 1.2rem;
+            margin: 5px 0 0 0;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 20px;
+            background: #1f2833;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+            border: 1px solid #45a29e;
+            width: 100%;
+            max-width: 1100px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .visual-area {
+            display: flex;
+            gap: 20px;
+        }
+
+        .canvas-box {
+            background-color: #0b0c10;
+            border-radius: 15px;
+            border: 2px solid #45a29e;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.9);
+            position: relative;
+        }
+
+        .controls-area {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .wire-panel {
+            background: #0b0c10;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .wire-a { border-left: 5px solid #00e5ff; }
+        .wire-b { border-left: 5px solid #ff9100; }
+
+        .wire-panel h3 {
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+            font-size: 1.2rem;
+        }
+        .wire-a h3 { color: #00e5ff; }
+        .wire-b h3 { color: #ff9100; }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        select, input[type="range"] {
+            background: #1f2833;
+            color: #fff;
+            border: 1px solid #45a29e;
+            border-radius: 5px;
+            padding: 5px;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: bold;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 6px;
+            width: 120px;
+        }
+        
+        .wire-a input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%; background: #00e5ff; cursor: pointer;
+        }
+        .wire-b input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%; background: #ff9100; cursor: pointer;
+        }
+
+        .force-slider-box {
+            background: rgba(255, 69, 0, 0.1);
+            border: 1px solid #ff4500;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .force-slider-box input {
+            width: 90%;
+            margin-top: 10px;
+        }
+        .force-slider-box input::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 25px; height: 25px; border-radius: 50%; background: #ff4500; cursor: pointer;
+            box-shadow: 0 0 15px #ff4500;
+        }
+
+        .logic-box {
+            background: #0b0c10;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #4caf50;
+            color: #4caf50;
+            font-size: 1.1rem;
+        }
+
+        .logic-box span { font-family: monospace; font-size: 1.3rem; font-weight: bold; color: #fff;}
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Physics Engine | Graph Battles</h1>
+        <p>බල-විතති (F-e) ප්‍රස්තාර සංසන්දනය: බෑවුම (Gradient) = YA / l</p>
+    </div>
+
+    <div class="main-container">
+        
+        <div class="visual-area">
+            <div class="canvas-box">
+                <canvas id="wiresCanvas" width="200" height="400"></canvas>
+            </div>
+            <div class="canvas-box">
+                <canvas id="graphCanvas" width="450" height="400"></canvas>
+            </div>
+        </div>
+
+        <div class="controls-area">
+            
+            <div class="force-slider-box">
+                <label style="font-size: 1.2rem; color: #ff4500; font-weight: bold;">යොදන බලය (F) = <span id="lbl-F">0</span> N</label>
+                <input type="range" id="slider-F" min="0" max="1000" step="10" value="0">
+            </div>
+
+            <div class="wire-panel wire-a">
+                <h3>කම්බිය A (Wire A)</h3>
+                <div class="control-row">
+                    <label>ද්‍රව්‍යය (Y):</label>
+                    <select id="sel-Ya">
+                        <option value="200">වානේ (200 GPa)</option>
+                        <option value="120">තඹ (120 GPa)</option>
+                        <option value="70">Al (70 GPa)</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <label>දිග (l) = <span id="lbl-La">2.0</span> m</label>
+                    <input type="range" id="slide-La" min="1.0" max="5.0" step="0.5" value="2.0">
+                </div>
+                <div class="control-row">
+                    <label>අරය (r) = <span id="lbl-Ra">1.0</span> mm</label>
+                    <input type="range" id="slide-Ra" min="0.5" max="3.0" step="0.5" value="1.0">
+                </div>
+                <div style="font-size: 0.9rem; color: #00e5ff;">බෑවුම (Gradient) A = <span id="grad-A">0</span></div>
+            </div>
+
+            <div class="wire-panel wire-b">
+                <h3>කම්බිය B (Wire B)</h3>
+                <div class="control-row">
+                    <label>ද්‍රව්‍යය (Y):</label>
+                    <select id="sel-Yb">
+                        <option value="200">වානේ (200 GPa)</option>
+                        <option value="120" selected>තඹ (120 GPa)</option>
+                        <option value="70">Al (70 GPa)</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <label>දිග (l) = <span id="lbl-Lb">2.0</span> m</label>
+                    <input type="range" id="slide-Lb" min="1.0" max="5.0" step="0.5" value="2.0">
+                </div>
+                <div class="control-row">
+                    <label>අරය (r) = <span id="lbl-Rb">1.0</span> mm</label>
+                    <input type="range" id="slide-Rb" min="0.5" max="3.0" step="0.5" value="1.0">
+                </div>
+                <div style="font-size: 0.9rem; color: #ff9100;">බෑවුම (Gradient) B = <span id="grad-B">0</span></div>
+            </div>
+
+            <div class="logic-box">
+                F = <span>(YA/l)</span> e <br>
+                ප්‍රස්තාරයේ බෑවුම වැඩි නම්, කම්බිය දෘඩයි (ඇදෙනවා අඩුයි).
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const wCtx = document.getElementById('wiresCanvas').getContext('2d');
+        const gCtx = document.getElementById('graphCanvas').getContext('2d');
+
+        // Elements
+        const F_slide = document.getElementById('slider-F');
+        const F_lbl = document.getElementById('lbl-F');
+
+        const Ya_sel = document.getElementById('sel-Ya'), La_slide = document.getElementById('slide-La'), Ra_slide = document.getElementById('slide-Ra');
+        const Yb_sel = document.getElementById('sel-Yb'), Lb_slide = document.getElementById('slide-Lb'), Rb_slide = document.getElementById('slide-Rb');
+        
+        const La_lbl = document.getElementById('lbl-La'), Ra_lbl = document.getElementById('lbl-Ra'), gradA_lbl = document.getElementById('grad-A');
+        const Lb_lbl = document.getElementById('lbl-Lb'), Rb_lbl = document.getElementById('lbl-Rb'), gradB_lbl = document.getElementById('grad-B');
+
+        function calc(F, Y_GPa, L, R_mm) {
+            let Y = Y_GPa * 1e9;
+            let A = Math.PI * Math.pow(R_mm * 1e-3, 2);
+            let gradient = (Y * A) / L; // F/e in N/m
+            let e_meters = F / gradient;
+            let e_mm = e_meters * 1000;
+            return { e_mm: e_mm, gradient: gradient };
+        }
+
+        function updateSystem() {
+            let F = parseFloat(F_slide.value);
+            F_lbl.innerText = F;
+
+            // Wire A data
+            let Ya = parseFloat(Ya_sel.value);
+            let La = parseFloat(La_slide.value);
+            let Ra = parseFloat(Ra_slide.value);
+            La_lbl.innerText = La.toFixed(1); Ra_lbl.innerText = Ra.toFixed(1);
+            let dataA = calc(F, Ya, La, Ra);
+            gradA_lbl.innerText = (dataA.gradient / 1e6).toFixed(2) + " x 10⁶ N/m";
+
+            // Wire B data
+            let Yb = parseFloat(Yb_sel.value);
+            let Lb = parseFloat(Lb_slide.value);
+            let Rb = parseFloat(Rb_slide.value);
+            Lb_lbl.innerText = Lb.toFixed(1); Rb_lbl.innerText = Rb.toFixed(1);
+            let dataB = calc(F, Yb, Lb, Rb);
+            gradB_lbl.innerText = (dataB.gradient / 1e6).toFixed(2) + " x 10⁶ N/m";
+
+            drawWires(La, Ra, dataA.e_mm, Lb, Rb, dataB.e_mm, F);
+            drawGraph(F, dataA.gradient, dataB.gradient);
+        }
+
+        function drawWires(La, Ra, ea, Lb, Rb, eb, F) {
+            wCtx.clearRect(0, 0, 200, 400);
+            const topY = 30;
+
+            // Clamp
+            wCtx.fillStyle = '#45a29e';
+            wCtx.fillRect(20, topY-10, 160, 10);
+
+            let drawWire = (x, L, R, e, color) => {
+                let visL = (L/5) * 250;
+                let visW = Math.max(2, (R/3) * 15);
+                let visE = e * 20; // exaggerate extension for visibility
+                if(visE > 80) visE = 80;
+
+                // Wire
+                wCtx.fillStyle = color;
+                wCtx.fillRect(x - visW/2, topY, visW, visL);
+                // Extension
+                wCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                wCtx.fillRect(x - visW/2, topY + visL, visW, visE);
+
+                // Weight
+                if (F > 0) {
+                    wCtx.beginPath();
+                    wCtx.arc(x, topY + visL + visE + 10, 10, 0, Math.PI*2);
+                    wCtx.fillStyle = '#ff4500';
+                    wCtx.fill();
+                }
+            };
+
+            drawWire(60, La, Ra, ea, '#00e5ff');
+            drawWire(140, Lb, Rb, eb, '#ff9100');
+        }
+
+        function drawGraph(currentF, gradA, gradB) {
+            gCtx.clearRect(0, 0, 450, 400);
+            let pad = 50;
+            let w = 450 - pad*2;
+            let h = 400 - pad*2;
+
+            // Axes
+            gCtx.strokeStyle = '#c5c6c7';
+            gCtx.lineWidth = 2;
+            gCtx.beginPath();
+            gCtx.moveTo(pad, pad-20); gCtx.lineTo(pad, pad+h); gCtx.lineTo(pad+w+20, pad+h);
+            gCtx.stroke();
+
+            gCtx.fillStyle = '#c5c6c7';
+            gCtx.font = "14px Rajdhani";
+            gCtx.fillText("විතතිය (e) / mm", pad + w/2 - 30, pad + h + 40);
+            gCtx.save(); gCtx.translate(pad - 35, pad + h/2 + 30); gCtx.rotate(-Math.PI/2);
+            gCtx.fillText("බලය (F) / N", 0, 0); gCtx.restore();
+
+            // Fixed scaling: Max F = 1000N, Max e = 2.0 mm
+            let maxF = 1000;
+            let maxE = 2.0;
+
+            let mapX = (e) => pad + (e / maxE) * w;
+            let mapY = (F) => pad + h - (F / maxF) * h;
+
+            // Draw Lines function
+            let drawLine = (grad, color, label) => {
+                let e_at_maxF = maxF / grad * 1000; // in mm
+                gCtx.strokeStyle = color;
+                gCtx.lineWidth = 3;
+                gCtx.beginPath();
+                gCtx.moveTo(mapX(0), mapY(0));
+                
+                // Plot line
+                let plotE = Math.min(e_at_maxF, maxE);
+                let plotF = grad * (plotE/1000);
+                gCtx.lineTo(mapX(plotE), mapY(plotF));
+                gCtx.stroke();
+
+                gCtx.fillStyle = color;
+                gCtx.fillText(label, mapX(plotE) + 5, mapY(plotF));
+
+                // Draw current point
+                if (currentF > 0) {
+                    let curE = (currentF / grad) * 1000;
+                    if(curE <= maxE) {
+                        gCtx.beginPath();
+                        gCtx.arc(mapX(curE), mapY(currentF), 5, 0, Math.PI*2);
+                        gCtx.fillStyle = '#fff';
+                        gCtx.fill();
+                        gCtx.stroke();
+                    }
+                }
+            };
+
+            // Draw grid lines for force
+            if(currentF > 0) {
+                gCtx.strokeStyle = 'rgba(255, 69, 0, 0.3)';
+                gCtx.setLineDash([5, 5]);
+                gCtx.beginPath();
+                gCtx.moveTo(pad, mapY(currentF));
+                gCtx.lineTo(pad+w, mapY(currentF));
+                gCtx.stroke();
+                gCtx.setLineDash([]);
+            }
+
+            drawLine(gradB, '#ff9100', 'B');
+            drawLine(gradA, '#00e5ff', 'A');
+        }
+
+        // Listeners
+        [F_slide, Ya_sel, La_slide, Ra_slide, Yb_sel, Lb_slide, Rb_slide].forEach(el => {
+            el.addEventListener('input', updateSystem);
+        });
+
+        updateSystem();
+    </script>
+</body>
+</html>
