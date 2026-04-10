@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Poiseuille's Full Equation</title>
+    <style>
+        :root {
+            --primary: #00d2ff;
+            --accent: #eab308; /* Yellow */
+            --danger: #ef4444; /* Red */
+            --bg: #0f172a;
+            --panel-bg: #1e293b;
+            --text: #f8fafc;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--panel-bg);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin-top: 0;
+            font-size: 26px;
+            letter-spacing: 1px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 15px;
+            margin-bottom: 20px;
+        }
+        canvas {
+            background: #050b14;
+            border-radius: 8px;
+            border: 2px solid #334155;
+            width: 100%;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
+            margin-bottom: 20px;
+        }
+        .controls {
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            background: #1e293b;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+        .control-group.inverse {
+            border-left: 4px solid var(--danger);
+        }
+        .control-group label {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+            display: flex;
+            justify-content: space-between;
+        }
+        .control-group span {
+            color: #fff;
+            font-size: 16px;
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+        .control-group.inverse input[type="range"] {
+            accent-color: var(--danger);
+        }
+        .readout {
+            grid-column: span 2;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent);
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px dashed var(--accent);
+            margin-top: 10px;
+            transition: all 0.2s ease;
+        }
+        .equation {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 26px;
+            margin-right: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🔥 PHYSICS ENGINE : ZERO SLIP</h1>
+    <div class="subtitle">PHASE 3: පොයිසෙල්ගේ සමීකරණය (Poiseuille's Full Equation)</div>
+    
+    <canvas id="simCanvas" width="850" height="300"></canvas>
+    
+    <div class="controls">
+        <div class="control-group">
+            <label>නළයේ අරය (a): <span id="aVal">2.0</span></label>
+            <input type="range" id="sliderA" min="1" max="3" step="0.1" value="2.0">
+        </div>
+        <div class="control-group">
+            <label>පීඩන අන්තරය (Δp): <span id="pVal">3.0</span></label>
+            <input type="range" id="sliderP" min="1" max="5" step="0.1" value="3.0">
+        </div>
+        
+        <div class="control-group inverse">
+            <label>දුස්ස්‍රාවීතාව (η): <span id="etaVal">2.0</span></label>
+            <input type="range" id="sliderEta" min="1" max="5" step="0.1" value="2.0">
+        </div>
+        <div class="control-group inverse">
+            <label>නළයේ දිග (l): <span id="lVal">4.0</span></label>
+            <input type="range" id="sliderL" min="2" max="6" step="0.1" value="4.0">
+        </div>
+
+        <div class="readout" id="flowReadout">
+            <span class="equation">V/t ∝ (a⁴·Δp) / (η·l)</span> = <span id="finalVal">12.0</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const sliderA = document.getElementById('sliderA');
+    const sliderP = document.getElementById('sliderP');
+    const sliderEta = document.getElementById('sliderEta');
+    const sliderL = document.getElementById('sliderL');
+    
+    const aVal = document.getElementById('aVal');
+    const pVal = document.getElementById('pVal');
+    const etaVal = document.getElementById('etaVal');
+    const lVal = document.getElementById('lVal');
+    const finalVal = document.getElementById('finalVal');
+    const flowReadout = document.getElementById('flowReadout');
+    
+    let particles = [];
+    const numParticles = 500;
+
+    // Initialize particles
+    for(let i = 0; i < numParticles; i++) {
+        particles.push({
+            xNorm: Math.random(), // 0 to 1 along the pipe length
+            yNorm: Math.random() * 2 - 1, // -1 to +1 across the radius
+            size: Math.random() * 2 + 1.5,
+            color: `hsl(${190 + Math.random() * 30}, 100%, 70%)` // Cyan fluid
+        });
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Get values
+        let a = parseFloat(sliderA.value);
+        let p = parseFloat(sliderP.value);
+        let eta = parseFloat(sliderEta.value);
+        let l = parseFloat(sliderL.value);
+        
+        // Update text displays
+        aVal.innerText = a.toFixed(1);
+        pVal.innerText = p.toFixed(1);
+        etaVal.innerText = eta.toFixed(1);
+        lVal.innerText = l.toFixed(1);
+        
+        // Equation: Flow Rate proportional to (a^4 * p) / (eta * l)
+        let flowRate = (Math.pow(a, 4) * p) / (eta * l);
+        finalVal.innerText = flowRate.toFixed(2);
+        
+        // Visual mappings
+        let pipeLengthPx = l * 120; // Length changes visual width
+        let radiusPx = a * 25;      // Radius changes visual height
+        
+        let startX = (canvas.width - pipeLengthPx) / 2;
+        let centerY = canvas.height / 2;
+        let topY = centerY - radiusPx;
+        let bottomY = centerY + radiusPx;
+
+        // Visual effects based on pressure and viscosity
+        // High pressure = brighter color. High viscosity = darker/thicker look
+        let bgOpacity = 0.3 + (eta * 0.1); 
+        
+        // 1. Draw Pipe Interior
+        ctx.fillStyle = `rgba(15, 23, 42, ${bgOpacity})`;
+        ctx.fillRect(startX, topY, pipeLengthPx, radiusPx * 2);
+        
+        // 2. Draw Pipe Walls
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(startX, topY);
+        ctx.lineTo(startX + pipeLengthPx, topY);
+        ctx.moveTo(startX, bottomY);
+        ctx.lineTo(startX + pipeLengthPx, bottomY);
+        ctx.stroke();
+
+        // 3. Flow Rate Glow Effect
+        if(flowRate > 25) {
+            flowReadout.style.boxShadow = "0 0 30px rgba(234, 179, 8, 0.6)";
+            flowReadout.style.borderColor = "#fef08a";
+        } else {
+            flowReadout.style.boxShadow = "none";
+            flowReadout.style.borderColor = "var(--accent)";
+        }
+
+        // Convert flow rate to pixel speed first, then normalize by current pipe length.
+        // This avoids short pipes appearing slower just because they span fewer pixels.
+        let pixelSpeed = Math.sqrt(flowRate) * 1.2;
+
+        // 4. Animate Particles
+        particles.forEach(pt => {
+            // Velocity profile: parabolic (fastest in center, 0 at walls)
+            let profileSpeed = 1 - Math.pow(pt.yNorm, 2); 
+            
+            // Move particle along normalized x-axis with length compensation
+            pt.xNorm += (pixelSpeed * profileSpeed) / pipeLengthPx;
+
+            // Loop back to start
+            if(pt.xNorm > 1) {
+                pt.xNorm = 0;
+                pt.yNorm = Math.random() * 2 - 1; // Randomize height on respawn
+            }
+
+            // Draw only if inside the pipe
+            if(Math.abs(pt.yNorm) <= 1) {
+                let pxX = startX + (pt.xNorm * pipeLengthPx);
+                let pxY = centerY + (pt.yNorm * radiusPx);
+                
+                // Color intensity changes with pressure
+                let hue = 190 + (p * 5); 
+                ctx.fillStyle = `hsl(${hue}, 100%, 65%)`;
+                
+                ctx.beginPath();
+                ctx.arc(pxX, pxY, pt.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+
+        requestAnimationFrame(draw);
+    }
+
+    draw();
+</script>
+
+</body>
+</html>

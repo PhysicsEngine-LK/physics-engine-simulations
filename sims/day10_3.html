@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Terminal Velocity</title>
+    <style>
+        :root {
+            --primary: #00d2ff;
+            --accent: #facc15; /* Yellow */
+            --danger: #ef4444; /* Red */
+            --success: #22c55e; /* Green */
+            --bg: #0f172a;
+            --panel-bg: #1e293b;
+            --text: #f8fafc;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--panel-bg);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin-top: 0;
+            font-size: 26px;
+            letter-spacing: 1px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 15px;
+            margin-bottom: 20px;
+        }
+        .sim-area {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .tank-container {
+            flex: 1;
+            background: #050b14;
+            border-radius: 8px;
+            border: 2px solid #334155;
+            position: relative;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
+            display: flex;
+            justify-content: center;
+        }
+        .graph-container {
+            flex: 2;
+            background: #050b14;
+            border-radius: 8px;
+            border: 2px solid #334155;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
+        }
+        canvas {
+            display: block;
+        }
+        .controls {
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: center;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .control-group label {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+            display: flex;
+            justify-content: space-between;
+        }
+        .control-group span {
+            color: var(--primary);
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+        .btn-panel {
+            grid-column: span 2;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: white;
+        }
+        #dropBtn {
+            background: var(--success);
+        }
+        #dropBtn:hover {
+            background: #16a34a;
+        }
+        #resetBtn {
+            background: #475569;
+        }
+        #resetBtn:hover {
+            background: #334155;
+        }
+        .status-bar {
+            grid-column: span 2;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+            background: #334155;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .status-accel { color: #facc15; }
+        .status-term { color: #22c55e; text-shadow: 0 0 10px rgba(34, 197, 94, 0.5); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🔥 PHYSICS ENGINE : ZERO SLIP</h1>
+    <div class="subtitle">ආන්ත ප්‍රවේගය සහ ස්ටෝක්ස්ගේ නියමය (Terminal Velocity)</div>
+    
+    <div class="sim-area">
+        <div class="tank-container">
+            <canvas id="tankCanvas" width="200" height="350"></canvas>
+        </div>
+        
+        <div class="graph-container">
+            <canvas id="graphCanvas" width="600" height="350"></canvas>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <div class="control-group">
+            <label>ගෝලයේ අරය (a): <span id="aVal">2.0</span></label>
+            <input type="range" id="sliderA" min="1" max="4" step="0.5" value="2.0">
+        </div>
+        <div class="control-group">
+            <label>ද්‍රවයේ දුස්ස්‍රාවීතාව (η): <span id="etaVal">3.0</span></label>
+            <input type="range" id="sliderEta" min="1" max="5" step="0.5" value="3.0">
+        </div>
+        
+        <div class="status-bar" id="statusBar">
+            තත්වය: සූදානම්...
+        </div>
+
+        <div class="btn-panel">
+            <button id="dropBtn">මුදාහරින්න (Drop)</button>
+            <button id="resetBtn">නැවත සකසන්න (Reset)</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const tankCanvas = document.getElementById('tankCanvas');
+    const ctxT = tankCanvas.getContext('2d');
+    const graphCanvas = document.getElementById('graphCanvas');
+    const ctxG = graphCanvas.getContext('2d');
+    
+    const sliderA = document.getElementById('sliderA');
+    const sliderEta = document.getElementById('sliderEta');
+    const aVal = document.getElementById('aVal');
+    const etaVal = document.getElementById('etaVal');
+    
+    const dropBtn = document.getElementById('dropBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const statusBar = document.getElementById('statusBar');
+
+    // Physics Variables
+    let isDropping = false;
+    let time = 0;
+    let yPos = 40;
+    let velocity = 0;
+    let dataPoints = []; // Stores {t, v}
+    
+    // Fixed Visual Force Constants
+    const W_LEN = 60; // Weight arrow length (Fixed)
+    const U_LEN = 15; // Upthrust arrow length (Fixed)
+    const MAX_F_LEN = W_LEN - U_LEN; // F must reach 45 to balance W
+
+    function resetSim() {
+        isDropping = false;
+        time = 0;
+        yPos = 40;
+        velocity = 0;
+        dataPoints = [];
+        statusBar.innerHTML = "තත්වය: සූදානම්...";
+        statusBar.className = "status-bar";
+        draw();
+    }
+
+    dropBtn.addEventListener('click', () => {
+        if(!isDropping) {
+            resetSim();
+            isDropping = true;
+            animationLoop();
+        }
+    });
+
+    resetBtn.addEventListener('click', resetSim);
+
+    function drawArrow(ctx, fromx, fromy, tox, toy, label, color) {
+        let headlen = 8; 
+        let dx = tox - fromx;
+        let dy = toy - fromy;
+        let angle = Math.atan2(dy, dx);
+        
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 3;
+        
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+
+        ctx.font = "bold 16px Arial";
+        ctx.fillText(label, tox + 10, toy + (dy>0 ? 5 : -5));
+    }
+
+    function draw() {
+        // --- 1. UPDATE VALUES ---
+        let a = parseFloat(sliderA.value);
+        let eta = parseFloat(sliderEta.value);
+        aVal.innerText = a.toFixed(1);
+        etaVal.innerText = eta.toFixed(1);
+
+        // Terminal Velocity Calculation (v ∝ a² / η)
+        let vTerm = (a * a) / eta * 1.5; 
+
+        // --- 2. DRAW TANK ---
+        ctxT.clearRect(0, 0, tankCanvas.width, tankCanvas.height);
+        
+        // Fluid Background
+        ctxT.fillStyle = 'rgba(58, 123, 213, 0.2)';
+        ctxT.fillRect(0, 0, tankCanvas.width, tankCanvas.height);
+
+        let ballRadius = a * 6;
+        let centerX = tankCanvas.width / 2;
+
+        // Draw Ball
+        ctxT.fillStyle = '#64748b'; // Slate color
+        ctxT.beginPath();
+        ctxT.arc(centerX, yPos, ballRadius, 0, Math.PI * 2);
+        ctxT.fill();
+        ctxT.strokeStyle = '#fff';
+        ctxT.lineWidth = 2;
+        ctxT.stroke();
+
+        // Calculate dynamic F length based on current velocity
+        let fLen = MAX_F_LEN * (velocity / vTerm);
+        if(fLen > MAX_F_LEN) fLen = MAX_F_LEN; // Cap it
+
+        // Draw Force Arrows
+        drawArrow(ctxT, centerX, yPos + ballRadius, centerX, yPos + ballRadius + W_LEN, "W", "#ef4444"); // Down (Red)
+        drawArrow(ctxT, centerX - 12, yPos - ballRadius, centerX - 12, yPos - ballRadius - U_LEN, "U", "#3b82f6"); // Up (Blue)
+        
+        if (fLen > 1) {
+            drawArrow(ctxT, centerX + 12, yPos - ballRadius, centerX + 12, yPos - ballRadius - fLen, "F", "#facc15"); // Drag (Yellow)
+        }
+
+        // --- 3. DRAW GRAPH ---
+        ctxG.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+        
+        // Axes
+        ctxG.strokeStyle = '#94a3b8';
+        ctxG.lineWidth = 2;
+        ctxG.beginPath();
+        ctxG.moveTo(40, 20); // Y axis
+        ctxG.lineTo(40, 310);
+        ctxG.lineTo(580, 310); // X axis
+        ctxG.stroke();
+
+        // Labels
+        ctxG.fillStyle = '#cbd5e1';
+        ctxG.font = "italic 16px Arial";
+        ctxG.fillText("v", 20, 30);
+        ctxG.fillText("t", 570, 330);
+
+        // Plot Data Points
+        if (dataPoints.length > 0) {
+            ctxG.strokeStyle = '#00d2ff';
+            ctxG.lineWidth = 3;
+            ctxG.beginPath();
+            
+            // Map data to canvas coordinates
+            let xScale = 500 / 200; // Assuming max time 200 ticks
+            let yScale = 250 / 15;  // Assuming max vTerm ~ 15
+            
+            for(let i = 0; i < dataPoints.length; i++) {
+                let px = 40 + (dataPoints[i].t * xScale);
+                let py = 310 - (dataPoints[i].v * yScale);
+                if (i === 0) ctxG.moveTo(px, py);
+                else ctxG.lineTo(px, py);
+            }
+            ctxG.stroke();
+
+            // Draw v0 (Terminal Velocity) dashed line
+            let v0_y = 310 - (vTerm * yScale);
+            ctxG.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctxG.lineWidth = 2;
+            ctxG.setLineDash([5, 5]);
+            ctxG.beginPath();
+            ctxG.moveTo(40, v0_y);
+            ctxG.lineTo(580, v0_y);
+            ctxG.stroke();
+            ctxG.setLineDash([]);
+            
+            ctxG.fillStyle = '#22c55e';
+            ctxG.font = "bold 14px Arial";
+            ctxG.fillText("v₀", 15, v0_y + 5);
+        }
+    }
+
+    function animationLoop() {
+        if(!isDropping) return;
+
+        let a = parseFloat(sliderA.value);
+        let eta = parseFloat(sliderEta.value);
+        let vTerm = (a * a) / eta * 1.5; 
+
+        // Physics Integration (Smooth approach to vTerm)
+        let acceleration = (vTerm - velocity) * 0.05; 
+        velocity += acceleration;
+        yPos += velocity * 0.3; // Visual falling speed
+        time += 1;
+
+        // Loop ball position if it goes off screen, but keep velocity
+        if(yPos > tankCanvas.height + 20) {
+            yPos = 0; 
+        }
+
+        // Store data for graph (limit to max width)
+        if(time <= 200) {
+            dataPoints.push({t: time, v: velocity});
+        }
+
+        // Status Update
+        if(velocity >= vTerm * 0.99) {
+            statusBar.innerHTML = "තත්වය: සමතුලිතයි (F + U = W) → ත්වරණය ශුන්‍ය වේ.";
+            statusBar.className = "status-bar status-term";
+        } else {
+            statusBar.innerHTML = "තත්වය: ත්වරණය වේ... (F අගය වැඩි වෙමින් පවතී)";
+            statusBar.className = "status-bar status-accel";
+        }
+
+        draw();
+        requestAnimationFrame(animationLoop);
+    }
+
+    // Initial Draw
+    sliderA.addEventListener('input', draw);
+    sliderEta.addEventListener('input', draw);
+    draw();
+
+</script>
+
+</body>
+</html>
