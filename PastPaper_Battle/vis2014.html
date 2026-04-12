@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>දුස්ස්‍රාවී බලය අනුකරණය - Physics Engine</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #0d0d0d;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 168, 255, 0.15);
+            max-width: 700px;
+            width: 100%;
+            border: 1px solid #333;
+        }
+        h2 {
+            text-align: center;
+            margin-top: 0;
+            color: #ffffff;
+            letter-spacing: 1px;
+        }
+        canvas {
+            background: #000000;
+            border: 1px solid #333;
+            border-radius: 8px;
+            display: block;
+            margin: 0 auto 20px auto;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: #aaaaaa;
+        }
+        span {
+            color: #00a8ff;
+            font-family: monospace;
+            font-size: 1.1em;
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: #00a8ff;
+        }
+        .outputs {
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #00a8ff;
+            font-family: monospace;
+            font-size: 1.1em;
+        }
+        .outputs div {
+            margin-bottom: 5px;
+            color: #cccccc;
+        }
+        .total {
+            font-weight: bold;
+            color: #ff3f34 !important;
+            font-size: 1.2em;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>දුස්ස්‍රාවී බලය අනුකරණය</h2>
+    
+    <canvas id="simCanvas" width="600" height="300"></canvas>
+
+    <div class="controls">
+        <div class="control-group" style="grid-column: span 2;">
+            <label for="plateY">තහඩුවේ සිරස් පිහිටීම (ඉහළ සිට): <span id="plateYVal">0.008</span> m</label>
+            <input type="range" id="plateY" min="0.002" max="0.014" step="0.001" value="0.008">
+        </div>
+        <div class="control-group">
+            <label for="velocity">තහඩුවේ ප්‍රවේගය (v): <span id="velVal">0.02</span> m/s</label>
+            <input type="range" id="velocity" min="0.005" max="0.05" step="0.001" value="0.02">
+        </div>
+        <div class="control-group">
+            <label for="viscosity">තරලයේ දුස්ස්‍රාවීතාව (η): <span id="viscVal">0.072</span> Pa·s</label>
+            <input type="range" id="viscosity" min="0.01" max="0.15" step="0.001" value="0.072">
+        </div>
+    </div>
+
+    <div class="outputs">
+        <div id="outTop">ඉහළ ස්තරයෙන් ඇති කරන බලය (F_top): 0.072 N</div>
+        <div id="outBot">පහළ ස්තරයෙන් ඇති කරන බලය (F_bot): 0.072 N</div>
+        <div class="total" id="outTotal">මුළු ඇදීමේ බලය (F_total): 0.144 N</div>
+    </div>
+</div>
+
+<script>
+    // Constants from the problem
+    const H = 0.016; 
+    const A = 0.4;   
+
+    // DOM Elements
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const sliders = {
+        y: document.getElementById('plateY'),
+        v: document.getElementById('velocity'),
+        eta: document.getElementById('viscosity')
+    };
+    const displays = {
+        y: document.getElementById('plateYVal'),
+        v: document.getElementById('velVal'),
+        eta: document.getElementById('viscVal')
+    };
+    const outputs = {
+        top: document.getElementById('outTop'),
+        bot: document.getElementById('outBot'),
+        total: document.getElementById('outTotal')
+    };
+
+    const margin = 40;
+    const topY = margin;
+    const botY = canvas.height - margin;
+    const pxPerMeter = (canvas.height - margin * 2) / H;
+
+    // Draw an arrow function
+    function drawArrow(x0, y0, x1, y1) {
+        const headlen = 8; 
+        const angle = Math.atan2(y1 - y0, x1 - x0);
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
+        ctx.lineTo(x1 - headlen * Math.cos(angle - Math.PI / 6), y1 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 - headlen * Math.cos(angle + Math.PI / 6), y1 - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    function updateSimulation() {
+        const y = parseFloat(sliders.y.value);
+        const v = parseFloat(sliders.v.value);
+        const eta = parseFloat(sliders.eta.value);
+
+        displays.y.innerText = y.toFixed(3);
+        displays.v.innerText = v.toFixed(3);
+        displays.eta.innerText = eta.toFixed(3);
+
+        const d_top = y;
+        const d_bot = H - y;
+        
+        const F_top = eta * A * (v / d_top);
+        const F_bot = eta * A * (v / d_bot);
+        const F_total = F_top + F_bot;
+
+        outputs.top.innerText = `ඉහළ ස්තරයෙන් ඇති කරන බලය (F_top): ${F_top.toFixed(4)} N`;
+        outputs.bot.innerText = `පහළ ස්තරයෙන් ඇති කරන බලය (F_bot): ${F_bot.toFixed(4)} N`;
+        outputs.total.innerText = `මුළු ඇදීමේ බලය (F_total): ${F_total.toFixed(4)} N`;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw boundaries (White/Grey for dark mode)
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#888';
+        ctx.beginPath();
+        ctx.moveTo(margin, topY); ctx.lineTo(canvas.width - margin, topY); 
+        ctx.moveTo(margin, botY); ctx.lineTo(canvas.width - margin, botY); 
+        ctx.stroke();
+
+        // Draw Plate (Neon Cyan)
+        const platePxY = topY + (y * pxPerMeter);
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = '#00a8ff';
+        ctx.beginPath();
+        ctx.moveTo(margin + 20, platePxY);
+        ctx.lineTo(canvas.width - margin - 20, platePxY);
+        ctx.stroke();
+
+        // Draw Plate Velocity Arrow (Neon Red)
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#ff3f34';
+        const vScale = 4000; 
+        const plateVLen = v * vScale;
+        drawArrow(margin + 50, platePxY, margin + 50 + plateVLen, platePxY);
+        ctx.fillStyle = '#ff3f34';
+        ctx.font = "14px sans-serif";
+        ctx.fillText("තහඩුව (v)", margin + 60 + plateVLen, platePxY - 8);
+
+        // Draw Velocity Gradients (Dimmer lines for background vectors)
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#4cd137'; // Neon green for fluid vectors
+        
+        const numTopArrows = Math.max(3, Math.floor(d_top * 1000));
+        for (let i = 1; i < numTopArrows; i++) {
+            let frac = i / numTopArrows;
+            let currentY = topY + frac * (platePxY - topY);
+            let currentV = frac * plateVLen;
+            drawArrow(margin + 50, currentY, margin + 50 + currentV, currentY);
+        }
+
+        const numBotArrows = Math.max(3, Math.floor(d_bot * 1000));
+        for (let i = 1; i < numBotArrows; i++) {
+            let frac = i / numBotArrows;
+            let currentY = botY - frac * (botY - platePxY);
+            let currentV = frac * plateVLen;
+            drawArrow(margin + 50, currentY, margin + 50 + currentV, currentY);
+        }
+    }
+
+    sliders.y.addEventListener('input', updateSimulation);
+    sliders.v.addEventListener('input', updateSimulation);
+    sliders.eta.addEventListener('input', updateSimulation);
+
+    updateSimulation();
+</script>
+
+</body>
+</html>
