@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>තනි ස්තරයක දුස්ස්‍රාවී බලය අනුකරණය - Physics Engine</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #0d0d0d;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 168, 255, 0.15);
+            max-width: 700px;
+            width: 100%;
+            border: 1px solid #333;
+        }
+        h2 {
+            text-align: center;
+            margin-top: 0;
+            color: #ffffff;
+            letter-spacing: 1px;
+        }
+        canvas {
+            background: #000000;
+            border: 1px solid #333;
+            border-radius: 8px;
+            display: block;
+            margin: 0 auto 20px auto;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 0.95em;
+            color: #aaaaaa;
+        }
+        span {
+            color: #00a8ff;
+            font-family: monospace;
+            font-size: 1.1em;
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: #00a8ff;
+        }
+        .outputs {
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ff3f34;
+            font-family: monospace;
+            font-size: 1.2em;
+            text-align: center;
+        }
+        .total {
+            font-weight: bold;
+            color: #ff3f34;
+        }
+        .formula {
+            color: #4cd137;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>තනි ස්තරයක දුස්ස්‍රාවී බලය</h2>
+    
+    <canvas id="simCanvas" width="600" height="350"></canvas>
+
+    <div class="controls">
+        <div class="control-group">
+            <label for="velocity">පෙට්ටියේ ප්‍රවේගය (v): <span id="velVal">2.0</span> m/s</label>
+            <input type="range" id="velocity" min="0.1" max="5.0" step="0.1" value="2.0">
+        </div>
+        <div class="control-group">
+            <label for="thickness">තරල පටලයේ ඝනකම (d): <span id="thickVal">0.05</span> m</label>
+            <input type="range" id="thickness" min="0.01" max="0.15" step="0.01" value="0.05">
+        </div>
+        <div class="control-group">
+            <label for="viscosity">තරලයේ දුස්ස්‍රාවීතාව (η): <span id="viscVal">0.10</span> Pa·s</label>
+            <input type="range" id="viscosity" min="0.01" max="0.50" step="0.01" value="0.10">
+        </div>
+    </div>
+
+    <div class="outputs">
+        <div class="formula">F = (η × A × v) / d</div>
+        <div class="total" id="outTotal">යෙදිය යුතු තිරස් බලය (F): 2.00 N</div>
+        <div style="font-size: 0.8em; color: #888; margin-top: 5px;">(ස්පර්ශ වර්ගඵලය A = 0.5 m² ලෙස උපකල්පනය කර ඇත)</div>
+    </div>
+</div>
+
+<script>
+    // Constants
+    const A = 0.5; // Area in m^2
+
+    // DOM Elements
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const sliders = {
+        v: document.getElementById('velocity'),
+        d: document.getElementById('thickness'),
+        eta: document.getElementById('viscosity')
+    };
+    const displays = {
+        v: document.getElementById('velVal'),
+        d: document.getElementById('thickVal'),
+        eta: document.getElementById('viscVal')
+    };
+    const outTotal = document.getElementById('outTotal');
+
+    // Drawing coordinates
+    const groundY = 300; 
+    const marginX = 50;
+    const pxPerMeter = 1000; // Scaling factor for thickness (d)
+    const vScale = 60;       // Visual scaling factor for velocity arrows
+
+    function drawArrow(x0, y0, x1, y1) {
+        const headlen = 8; 
+        const angle = Math.atan2(y1 - y0, x1 - x0);
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
+        ctx.lineTo(x1 - headlen * Math.cos(angle - Math.PI / 6), y1 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 - headlen * Math.cos(angle + Math.PI / 6), y1 - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    function updateSimulation() {
+        const v = parseFloat(sliders.v.value);
+        const d = parseFloat(sliders.d.value);
+        const eta = parseFloat(sliders.eta.value);
+
+        // Update labels
+        displays.v.innerText = v.toFixed(1);
+        displays.d.innerText = d.toFixed(2);
+        displays.eta.innerText = eta.toFixed(2);
+
+        // Physics Calculation: F = (eta * A * v) / d
+        const F = (eta * A * v) / d;
+        outTotal.innerText = `යෙදිය යුතු තිරස් බලය (F): ${F.toFixed(2)} N`;
+
+        // Clear Canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw Ground
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#888';
+        ctx.beginPath();
+        ctx.moveTo(10, groundY); 
+        ctx.lineTo(canvas.width - 10, groundY); 
+        ctx.stroke();
+        
+        // Add ground hash marks for visual effect
+        ctx.lineWidth = 2;
+        for(let i = 20; i < canvas.width - 10; i += 20) {
+            ctx.beginPath();
+            ctx.moveTo(i, groundY);
+            ctx.lineTo(i - 10, groundY + 15);
+            ctx.stroke();
+        }
+
+        // Calculate Block Position
+        const gapPx = d * pxPerMeter;
+        const blockBottomY = groundY - gapPx;
+
+        // Draw Fluid Area (Subtle background)
+        ctx.fillStyle = 'rgba(76, 209, 55, 0.1)'; // Faint green tint
+        ctx.fillRect(marginX, blockBottomY, canvas.width - (marginX * 2), gapPx);
+
+        // Draw Block
+        const blockHeight = 60;
+        const blockWidth = 180;
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(marginX, blockBottomY - blockHeight, blockWidth, blockHeight);
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#00a8ff'; // Neon Cyan block border
+        ctx.strokeRect(marginX, blockBottomY - blockHeight, blockWidth, blockHeight);
+        
+        // Draw Block Label
+        ctx.fillStyle = '#00a8ff';
+        ctx.font = "16px sans-serif";
+        ctx.fillText("පෙට්ටිය (Block)", marginX + 35, blockBottomY - (blockHeight / 2) + 5);
+
+        // Draw Block Velocity Arrow (Neon Red)
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#ff3f34';
+        const plateVLen = v * vScale;
+        drawArrow(marginX + blockWidth, blockBottomY - (blockHeight / 2), marginX + blockWidth + plateVLen, blockBottomY - (blockHeight / 2));
+        ctx.fillStyle = '#ff3f34';
+        ctx.font = "bold 16px sans-serif";
+        ctx.fillText(`v = ${v.toFixed(1)}`, marginX + blockWidth + plateVLen + 10, blockBottomY - (blockHeight / 2) + 5);
+
+        // Draw Velocity Gradient (Neon Green)
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#4cd137'; 
+        
+        // Number of arrows depends on the visual gap to make it look consistent
+        const numArrows = Math.max(4, Math.floor(gapPx / 15)); 
+        
+        for (let i = 1; i <= numArrows; i++) {
+            let frac = i / numArrows;
+            let currentY = groundY - frac * gapPx;
+            let currentV = frac * plateVLen;
+            drawArrow(marginX + 20, currentY, marginX + 20 + currentV, currentY);
+        }
+
+        // Draw thickness label 'd'
+        ctx.strokeStyle = '#aaaaaa';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(marginX - 15, groundY);
+        ctx.lineTo(marginX - 15, blockBottomY);
+        ctx.stroke();
+        
+        // Top and bottom caps for 'd' line
+        ctx.beginPath();
+        ctx.moveTo(marginX - 20, groundY); ctx.lineTo(marginX - 10, groundY);
+        ctx.moveTo(marginX - 20, blockBottomY); ctx.lineTo(marginX - 10, blockBottomY);
+        ctx.stroke();
+
+        ctx.fillStyle = '#aaaaaa';
+        ctx.font = "14px monospace";
+        ctx.fillText("d", marginX - 30, groundY - (gapPx / 2) + 5);
+    }
+
+    // Event Listeners
+    sliders.v.addEventListener('input', updateSimulation);
+    sliders.d.addEventListener('input', updateSimulation);
+    sliders.eta.addEventListener('input', updateSimulation);
+
+    // Initial render
+    updateSimulation();
+</script>
+
+</body>
+</html>
