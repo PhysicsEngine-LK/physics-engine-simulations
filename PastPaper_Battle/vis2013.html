@@ -3,113 +3,242 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>තනි ස්තරයක දුස්ස්‍රාවී බලය අනුකරණය - Physics Engine</title>
+    <title>Physics Engine | Viscous Drag</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap');
+
         body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background-color: #0d0d0d;
-            color: #e0e0e0;
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #0b0c10;
+            color: #c5c6c7;
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 20px;
+            margin: 0;
         }
-        .container {
-            background: #1a1a1a;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 168, 255, 0.15);
-            max-width: 700px;
-            width: 100%;
-            border: 1px solid #333;
-        }
-        h2 {
+
+        .header {
             text-align: center;
-            margin-top: 0;
-            color: #ffffff;
-            letter-spacing: 1px;
-        }
-        canvas {
-            background: #000000;
-            border: 1px solid #333;
-            border-radius: 8px;
-            display: block;
-            margin: 0 auto 20px auto;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
-        }
-        .controls {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
             margin-bottom: 20px;
         }
+
+        .header h1 {
+            color: #66fcf1;
+            margin: 0;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 15px rgba(102, 252, 241, 0.5);
+        }
+
+        .header p {
+            color: #45a29e;
+            font-size: 1.2rem;
+            margin: 5px 0 0 0;
+        }
+
+        /* 2-Column Layout Container */
+        .container {
+            background: #1f2833;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+            max-width: 1150px; /* Increased width to hold both columns */
+            width: 100%;
+            border: 1px solid #45a29e;
+            display: flex;
+            flex-direction: row; /* Set to row for side-by-side layout */
+            flex-wrap: wrap;
+            gap: 25px;
+            align-items: stretch;
+        }
+
+        /* Left Side: Canvas & Controls */
+        .left-panel {
+            flex: 2;
+            min-width: 650px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Right Side: Outputs */
+        .right-panel {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        canvas {
+            background-color: #0b0c10;
+            border-radius: 12px;
+            border: 2px solid #45a29e;
+            display: block;
+            width: 100%;
+            max-width: 700px;
+            height: auto;
+            margin: 0 auto;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(102, 252, 241, 0.1);
+        }
+
+        .controls-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            background: #0b0c10;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #333;
+        }
+
         .control-group {
             display: flex;
             flex-direction: column;
         }
+
         label {
             font-weight: bold;
-            margin-bottom: 5px;
-            font-size: 0.95em;
-            color: #aaaaaa;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            color: #66fcf1;
+            display: flex;
+            justify-content: space-between;
         }
-        span {
-            color: #00a8ff;
+
+        span.val-display {
+            color: #ff4500;
             font-family: monospace;
-            font-size: 1.1em;
+            font-size: 1.2rem;
+            text-shadow: 0 0 5px rgba(255, 69, 0, 0.5);
         }
+
         input[type="range"] {
             width: 100%;
-            accent-color: #00a8ff;
+            -webkit-appearance: none;
+            background: #1f2833;
+            height: 8px;
+            border-radius: 5px;
+            outline: none;
         }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #66fcf1;
+            cursor: pointer;
+            box-shadow: 0 0 15px #66fcf1;
+            transition: 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* Updated Outputs Section */
         .outputs {
-            background: #111;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #ff3f34;
-            font-family: monospace;
-            font-size: 1.2em;
+            background: rgba(255, 69, 0, 0.05);
+            padding: 30px 20px;
+            border-radius: 12px;
+            border-top: 5px solid #ff4500;
+            border-bottom: 5px solid #ff4500;
             text-align: center;
+            height: 100%; /* Stretch to fill right panel */
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Center content vertically */
+            align-items: center;
+            box-sizing: border-box;
+            box-shadow: inset 0 0 50px rgba(255, 69, 0, 0.1);
         }
-        .total {
-            font-weight: bold;
-            color: #ff3f34;
-        }
+
         .formula {
-            color: #4cd137;
-            font-size: 0.9em;
-            margin-bottom: 8px;
+            color: #45a29e;
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            font-family: monospace;
+            letter-spacing: 2px;
+            background: #0b0c10;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        .total-wrapper {
+            margin-bottom: 20px;
+        }
+
+        .total-title {
+            color: #c5c6c7;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .total-val {
+            font-size: 3.5rem; /* Larger text for the right side */
+            font-weight: bold;
+            color: #ffeb3b;
+            text-shadow: 0 0 20px rgba(255, 235, 59, 0.5);
+            font-family: monospace;
+            line-height: 1;
+        }
+
+        .sub-text {
+            font-size: 1rem;
+            color: #a0a0b5;
+            margin-top: 20px;
+            max-width: 80%;
+            line-height: 1.5;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>තනි ස්තරයක දුස්ස්‍රාවී බලය</h2>
-    
-    <canvas id="simCanvas" width="600" height="350"></canvas>
-
-    <div class="controls">
-        <div class="control-group">
-            <label for="velocity">පෙට්ටියේ ප්‍රවේගය (v): <span id="velVal">2.0</span> m/s</label>
-            <input type="range" id="velocity" min="0.1" max="5.0" step="0.1" value="2.0">
-        </div>
-        <div class="control-group">
-            <label for="thickness">තරල පටලයේ ඝනකම (d): <span id="thickVal">0.05</span> m</label>
-            <input type="range" id="thickness" min="0.01" max="0.15" step="0.01" value="0.05">
-        </div>
-        <div class="control-group">
-            <label for="viscosity">තරලයේ දුස්ස්‍රාවීතාව (η): <span id="viscVal">0.10</span> Pa·s</label>
-            <input type="range" id="viscosity" min="0.01" max="0.50" step="0.01" value="0.10">
-        </div>
+    <div class="header">
+        <h1>Physics Engine | Pro</h1>
+        <p>තනි ස්තරයක දුස්ස්‍රාවී බලය 2014 A/L (Viscous Drag on a Single Layer)</p>
     </div>
 
-    <div class="outputs">
-        <div class="formula">F = (η × A × v) / d</div>
-        <div class="total" id="outTotal">යෙදිය යුතු තිරස් බලය (F): 2.00 N</div>
-        <div style="font-size: 0.8em; color: #888; margin-top: 5px;">(ස්පර්ශ වර්ගඵලය A = 0.5 m² ලෙස උපකල්පනය කර ඇත)</div>
+    <div class="container">
+        
+        <div class="left-panel">
+            <canvas id="simCanvas" width="700" height="350"></canvas>
+
+            <div class="controls-panel">
+                <div class="control-group">
+                    <label for="velocity">ප්‍රවේගය (v) <span class="val-display" id="velVal">2.0 m/s</span></label>
+                    <input type="range" id="velocity" min="0.1" max="5.0" step="0.1" value="2.0">
+                </div>
+                <div class="control-group">
+                    <label for="thickness">ඝනකම (d) <span class="val-display" id="thickVal" style="color:#4caf50;">0.05 m</span></label>
+                    <input type="range" id="thickness" min="0.01" max="0.15" step="0.01" value="0.05">
+                </div>
+                <div class="control-group">
+                    <label for="viscosity">දුස්ස්‍රාවීතාව (η) <span class="val-display" id="viscVal" style="color:#b026ff;">0.10 Pa·s</span></label>
+                    <input type="range" id="viscosity" min="0.01" max="0.50" step="0.01" value="0.10">
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="outputs">
+                <div class="formula">F = (η × A × v) / d</div>
+                
+                <div class="total-wrapper">
+                    <div class="total-title">යෙදිය යුතු බලය (F)</div>
+                    <div class="total-val" id="outTotalVal">2.00 N</div>
+                </div>
+
+                <div class="sub-text">(ස්පර්ශ වර්ගඵලය A = 0.5 m² ලෙස උපකල්පනය කර ඇත)</div>
+            </div>
+        </div>
+
     </div>
-</div>
 
 <script>
     // Constants
@@ -129,16 +258,16 @@
         d: document.getElementById('thickVal'),
         eta: document.getElementById('viscVal')
     };
-    const outTotal = document.getElementById('outTotal');
+    const outTotalVal = document.getElementById('outTotalVal');
 
     // Drawing coordinates
     const groundY = 300; 
-    const marginX = 50;
-    const pxPerMeter = 1000; // Scaling factor for thickness (d)
-    const vScale = 60;       // Visual scaling factor for velocity arrows
+    const marginX = 80;
+    const pxPerMeter = 1000; 
+    const vScale = 50;       
 
     function drawArrow(x0, y0, x1, y1) {
-        const headlen = 8; 
+        const headlen = 10; 
         const angle = Math.atan2(y1 - y0, x1 - x0);
         ctx.beginPath();
         ctx.moveTo(x0, y0);
@@ -149,78 +278,102 @@
         ctx.stroke();
     }
 
+    function drawGrid() {
+        ctx.strokeStyle = 'rgba(69, 162, 158, 0.1)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= canvas.width; i += 40) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+        }
+        for (let j = 0; j <= canvas.height; j += 40) {
+            ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke();
+        }
+    }
+
     function updateSimulation() {
         const v = parseFloat(sliders.v.value);
         const d = parseFloat(sliders.d.value);
         const eta = parseFloat(sliders.eta.value);
 
         // Update labels
-        displays.v.innerText = v.toFixed(1);
-        displays.d.innerText = d.toFixed(2);
-        displays.eta.innerText = eta.toFixed(2);
+        displays.v.innerText = `${v.toFixed(1)} m/s`;
+        displays.d.innerText = `${d.toFixed(2)} m`;
+        displays.eta.innerText = `${eta.toFixed(2)} Pa·s`;
 
-        // Physics Calculation: F = (eta * A * v) / d
+        // Physics Calculation
         const F = (eta * A * v) / d;
-        outTotal.innerText = `යෙදිය යුතු තිරස් බලය (F): ${F.toFixed(2)} N`;
+        outTotalVal.innerText = `${F.toFixed(2)} N`; // Updated right panel value
 
-        // Clear Canvas
+        // Clear Canvas & Draw Grid
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Draw Ground
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = '#888';
-        ctx.beginPath();
-        ctx.moveTo(10, groundY); 
-        ctx.lineTo(canvas.width - 10, groundY); 
-        ctx.stroke();
-        
-        // Add ground hash marks for visual effect
-        ctx.lineWidth = 2;
-        for(let i = 20; i < canvas.width - 10; i += 20) {
-            ctx.beginPath();
-            ctx.moveTo(i, groundY);
-            ctx.lineTo(i - 10, groundY + 15);
-            ctx.stroke();
-        }
+        drawGrid();
 
         // Calculate Block Position
         const gapPx = d * pxPerMeter;
         const blockBottomY = groundY - gapPx;
 
-        // Draw Fluid Area (Subtle background)
-        ctx.fillStyle = 'rgba(76, 209, 55, 0.1)'; // Faint green tint
-        ctx.fillRect(marginX, blockBottomY, canvas.width - (marginX * 2), gapPx);
+        // Draw Fluid Gradient Area
+        const gradient = ctx.createLinearGradient(0, blockBottomY, 0, groundY);
+        gradient.addColorStop(0, 'rgba(102, 252, 241, 0.2)');
+        gradient.addColorStop(1, 'rgba(11, 12, 16, 0.8)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(marginX, blockBottomY, 400, gapPx);
 
-        // Draw Block
-        const blockHeight = 60;
-        const blockWidth = 180;
-        ctx.fillStyle = '#1a1a1a';
-        ctx.fillRect(marginX, blockBottomY - blockHeight, blockWidth, blockHeight);
+        // Draw Ground (Technical look)
         ctx.lineWidth = 3;
-        ctx.strokeStyle = '#00a8ff'; // Neon Cyan block border
+        ctx.strokeStyle = '#c5c6c7';
+        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        ctx.moveTo(20, groundY); 
+        ctx.lineTo(canvas.width - 20, groundY); 
+        ctx.stroke();
+        
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#45a29e';
+        for(let i = 30; i < canvas.width - 20; i += 25) {
+            ctx.beginPath();
+            ctx.moveTo(i, groundY);
+            ctx.lineTo(i - 15, groundY + 15);
+            ctx.stroke();
+        }
+
+        // Draw Block (Neon Cyberpunk style)
+        const blockHeight = 50;
+        const blockWidth = 200;
+        ctx.fillStyle = '#1f2833';
+        ctx.fillRect(marginX, blockBottomY - blockHeight, blockWidth, blockHeight);
+        
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#66fcf1'; 
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#66fcf1';
         ctx.strokeRect(marginX, blockBottomY - blockHeight, blockWidth, blockHeight);
         
-        // Draw Block Label
-        ctx.fillStyle = '#00a8ff';
-        ctx.font = "16px sans-serif";
-        ctx.fillText("පෙට්ටිය (Block)", marginX + 35, blockBottomY - (blockHeight / 2) + 5);
+        // Reset Shadow for Text
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#66fcf1';
+        ctx.font = "bold 16px Rajdhani";
+        ctx.fillText("පෙට්ටිය (Block)", marginX + 45, blockBottomY - (blockHeight / 2) + 5);
 
-        // Draw Block Velocity Arrow (Neon Red)
+        // Draw Block Velocity Arrow (Neon Orange)
         ctx.lineWidth = 4;
-        ctx.strokeStyle = '#ff3f34';
+        ctx.strokeStyle = '#ff4500';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#ff4500';
         const plateVLen = v * vScale;
         drawArrow(marginX + blockWidth, blockBottomY - (blockHeight / 2), marginX + blockWidth + plateVLen, blockBottomY - (blockHeight / 2));
-        ctx.fillStyle = '#ff3f34';
-        ctx.font = "bold 16px sans-serif";
-        ctx.fillText(`v = ${v.toFixed(1)}`, marginX + blockWidth + plateVLen + 10, blockBottomY - (blockHeight / 2) + 5);
+        
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#ff4500';
+        ctx.font = "bold 18px monospace";
+        ctx.fillText(`v = ${v.toFixed(1)}`, marginX + blockWidth + plateVLen + 15, blockBottomY - (blockHeight / 2) + 6);
 
-        // Draw Velocity Gradient (Neon Green)
+        // Draw Velocity Gradient Arrows (Neon Cyan)
         ctx.lineWidth = 2;
-        ctx.strokeStyle = '#4cd137'; 
+        ctx.strokeStyle = '#00e5ff'; 
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = '#00e5ff';
         
-        // Number of arrows depends on the visual gap to make it look consistent
-        const numArrows = Math.max(4, Math.floor(gapPx / 15)); 
-        
+        const numArrows = Math.max(4, Math.floor(gapPx / 20)); 
         for (let i = 1; i <= numArrows; i++) {
             let frac = i / numArrows;
             let currentY = groundY - frac * gapPx;
@@ -229,22 +382,24 @@
         }
 
         // Draw thickness label 'd'
-        ctx.strokeStyle = '#aaaaaa';
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#a0a0b5';
         ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
         ctx.beginPath();
-        ctx.moveTo(marginX - 15, groundY);
-        ctx.lineTo(marginX - 15, blockBottomY);
+        ctx.moveTo(marginX - 25, groundY);
+        ctx.lineTo(marginX - 25, blockBottomY);
         ctx.stroke();
+        ctx.setLineDash([]);
         
-        // Top and bottom caps for 'd' line
         ctx.beginPath();
-        ctx.moveTo(marginX - 20, groundY); ctx.lineTo(marginX - 10, groundY);
-        ctx.moveTo(marginX - 20, blockBottomY); ctx.lineTo(marginX - 10, blockBottomY);
+        ctx.moveTo(marginX - 35, groundY); ctx.lineTo(marginX - 15, groundY);
+        ctx.moveTo(marginX - 35, blockBottomY); ctx.lineTo(marginX - 15, blockBottomY);
         ctx.stroke();
 
-        ctx.fillStyle = '#aaaaaa';
-        ctx.font = "14px monospace";
-        ctx.fillText("d", marginX - 30, groundY - (gapPx / 2) + 5);
+        ctx.fillStyle = '#4caf50';
+        ctx.font = "bold 16px monospace";
+        ctx.fillText("d", marginX - 45, groundY - (gapPx / 2) + 5);
     }
 
     // Event Listeners
