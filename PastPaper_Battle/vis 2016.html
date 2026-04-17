@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Viscous Flow - Physics Engine</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #00ffcc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            background: #0a0a0a;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #222;
+            box-shadow: 0 0 30px rgba(0,255,204,0.05);
+            justify-content: center;
+            max-width: 1200px;
+        }
+        canvas {
+            border: 2px solid #333;
+            border-radius: 8px;
+            background: #050505;
+        }
+        .panel { 
+            width: 380px; 
+            text-align: left; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .header-title { margin-bottom: 5px; color: #00ffcc; font-size: 1.8em; text-transform: uppercase; letter-spacing: 1px;}
+        .sub-title { color: #888; margin-top: 0; margin-bottom: 20px; }
+
+        .readout-box {
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-size: 1.1em;
+            color: #fff;
+        }
+        
+        .ui-label { font-size: 0.85em; color: #aaa; display: block; margin-bottom: 10px; font-weight: bold; text-transform: uppercase; font-family: 'Segoe UI', sans-serif;}
+        .val-row { display: flex; justify-content: space-between; margin: 8px 0; border-bottom: 1px solid #222; padding-bottom: 4px;}
+        .val-row:last-child { border-bottom: none; }
+        
+        .val-v { color: #0088ff; font-weight: bold; } /* Velocity Blue */
+        .val-p { color: #ff3366; font-weight: bold; } /* Pressure Red */
+
+        .slider-group { margin-bottom: 15px; }
+        .slider-label { display: flex; justify-content: space-between; color: #ccc; font-weight: bold; font-size: 0.9em; margin-bottom: 5px; font-family: 'Segoe UI', sans-serif;}
+        input[type="range"] { width: 100%; accent-color: #00ffcc; margin: 5px 0; cursor: pointer; }
+
+        /* Pressure Meter */
+        .pressure-bg { width: 100%; height: 10px; background: #222; border-radius: 5px; margin-top: 15px; overflow: hidden; border: 1px solid #333;}
+        #pressureBar { height: 100%; width: 10%; background: #ff3366; transition: width 0.1s, background 0.2s; box-shadow: 0 0 10px #ff3366; }
+
+        .math-proof {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(0, 255, 204, 0.05);
+            border: 1px dashed #00ffcc;
+            color: #00ffcc;
+            font-size: 0.9em;
+            text-align: center;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        
+        .math-hint { font-size: 0.85em; color: #888; margin-top: 15px; text-align: center; line-height: 1.5; }
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title">SYSTEM 03: VISCOUS FLOW</h2>
+    <p class="sub-title">Poiseuille's Law & Continuity Equation</p>
+
+    <div class="container">
+        <canvas id="simCanvas" width="700" height="500"></canvas>
+
+        <div class="panel">
+            
+            <div class="slider-group">
+                <div class="slider-label"><span>Pipe 2 Radius Ratio (r<sub>2</sub> / r<sub>1</sub>)</span></div>
+                <input type="range" id="rSlider" min="0.25" max="1.0" step="0.01" value="0.5">
+            </div>
+
+            <div class="readout-box">
+                <span class="ui-label" style="color: #0088ff;">Continuity Equation (A<sub>1</sub>v<sub>1</sub> = A<sub>2</sub>v<sub>2</sub>)</span>
+                <div class="val-row"><span style="color: #ccc;">Radius Ratio (r<sub>2</sub> / r<sub>1</sub>):</span><span id="rVal">0.50</span></div>
+                <div class="val-row"><span style="color: #ccc;">Velocity Ratio (v<sub>1</sub> / v<sub>2</sub>):</span><span class="val-v" id="vVal">0.25</span></div>
+            </div>
+
+            <div class="readout-box">
+                <span class="ui-label" style="color: #ff3366;">Poiseuille Resistance</span>
+                <div class="val-row"><span style="color: #ccc;">Pressure Ratio (&Delta;P<sub>1</sub> / &Delta;P<sub>2</sub>):</span><span class="val-p" id="pVal">0.0625</span></div>
+                <div class="pressure-bg"><div id="pressureBar"></div></div>
+            </div>
+
+            <div class="math-proof" id="proofBox">
+                Mathematical Proof:<br>
+                &Delta;P<sub>1</sub> / &Delta;P<sub>2</sub> = (v<sub>1</sub> / v<sub>2</sub>)<sup>2</sup>
+            </div>
+
+            <p class="math-hint">
+                <strong>Observe:</strong> Halving the radius (r<sub>2</sub> = 0.5) increases velocity by 4&times;, but requires 16&times; the pressure drop due to immense viscous drag.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const rSlider = document.getElementById('rSlider');
+        
+        let centerY = canvas.height / 2;
+        let junctionX = canvas.width / 2;
+        let r1_px = 120; // Visual radius of pipe 1
+        let base_v = 2.0;
+        
+        let particles = [];
+        for(let i=0; i<400; i++) {
+            particles.push(new Particle(Math.random() * canvas.width));
+        }
+
+        function Particle(startX) {
+            this.x = startX !== undefined ? startX : 0;
+            this.offsetY = (Math.random() * 2 - 1); 
+            this.y = centerY + this.offsetY * r1_px;
+            
+            this.update = function(rRatio, vRatio) {
+                if (this.x < junctionX) {
+                    this.x += base_v;
+                    this.y = centerY + this.offsetY * r1_px;
+                    
+                    // Funnel effect at the junction
+                    let dist = junctionX - this.x;
+                    if (dist < 100 && dist > 0) {
+                        let targetY = centerY + this.offsetY * (r1_px * rRatio);
+                        let lerpFactor = 1 - (dist / 100);
+                        this.y = this.y + (targetY - this.y) * lerpFactor;
+                    }
+                } else {
+                    this.x += base_v * (1 / vRatio); 
+                    this.y = centerY + this.offsetY * (r1_px * rRatio);
+                }
+                
+                if (this.x > canvas.width) {
+                    this.x = 0;
+                    this.offsetY = (Math.random() * 2 - 1);
+                }
+            };
+            
+            this.draw = function(vRatio) {
+                // Adjust color based on speed. Faster = brighter/bluer, Normal = Cyan
+                let speedFactor = this.x > junctionX ? (1/vRatio) : 1;
+                let alpha = 0.6 + (Math.min(speedFactor, 4) / 10);
+                
+                if (speedFactor > 1.5) {
+                    ctx.fillStyle = `rgba(0, 136, 255, ${alpha})`; // Blue for fast
+                } else {
+                    ctx.fillStyle = `rgba(0, 255, 204, ${alpha})`; // Cyan for normal
+                }
+                
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            };
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Watermark
+            ctx.save();
+            ctx.globalAlpha = 0.05; 
+            ctx.fillStyle = "#fff"; 
+            ctx.font = "bold 45px Arial";
+            ctx.textAlign = "center"; 
+            ctx.fillText("PHYSICS ENGINE", canvas.width / 2, canvas.height / 2);
+            ctx.restore();
+            
+            let rRatio = parseFloat(rSlider.value); 
+            
+            // Physics Equations (Ratios)
+            let vRatio = Math.pow(rRatio, 2); 
+            let pRatio = Math.pow(rRatio, 4); 
+            
+            // UI Updates
+            document.getElementById('rVal').innerText = rRatio.toFixed(2);
+            document.getElementById('vVal').innerText = vRatio.toFixed(4);
+            document.getElementById('pVal').innerText = pRatio.toFixed(4);
+            
+            let pressureVisual = Math.min(100, (1 / pRatio)); 
+            document.getElementById('pressureBar').style.width = `${pressureVisual}%`;
+
+            // Draw Pipe 1 (Left)
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, centerY - r1_px); ctx.lineTo(junctionX, centerY - r1_px);
+            ctx.moveTo(0, centerY + r1_px); ctx.lineTo(junctionX, centerY + r1_px);
+            ctx.stroke();
+
+            // Draw Junction
+            let r2_px = r1_px * rRatio;
+            ctx.beginPath();
+            ctx.moveTo(junctionX, centerY - r1_px); ctx.lineTo(junctionX + 50, centerY - r2_px);
+            ctx.moveTo(junctionX, centerY + r1_px); ctx.lineTo(junctionX + 50, centerY + r2_px);
+            ctx.stroke();
+
+            // Draw Pipe 2 (Right) - Glows pink/red under high pressure drop
+            let pipe2Glow = Math.min(1, (1 / pRatio) / 50);
+            
+            // Base color is grey (#555), transitions to neon pink/red (#ff3366)
+            let rCol = Math.round(85 + (255 - 85) * pipe2Glow);
+            let gCol = Math.round(85 + (51 - 85) * pipe2Glow);
+            let bCol = Math.round(85 + (102 - 85) * pipe2Glow);
+            
+            ctx.strokeStyle = `rgba(${rCol}, ${gCol}, ${bCol}, 1)`;
+            ctx.shadowBlur = pipe2Glow * 15;
+            ctx.shadowColor = "#ff3366";
+            
+            ctx.beginPath();
+            ctx.moveTo(junctionX + 50, centerY - r2_px); ctx.lineTo(canvas.width, centerY - r2_px);
+            ctx.moveTo(junctionX + 50, centerY + r2_px); ctx.lineTo(canvas.width, centerY + r2_px);
+            ctx.stroke();
+            ctx.shadowBlur = 0; 
+
+            // Particles
+            particles.forEach(p => {
+                p.update(rRatio, vRatio);
+                p.draw(vRatio);
+            });
+
+            requestAnimationFrame(draw);
+        }
+
+        draw();
+    </script>
+</body>
+</html>
