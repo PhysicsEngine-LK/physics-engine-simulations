@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine | The Shape Hacker V4</title>
+    <style>
+        :root {
+            --bg-dark: #0a0a0c;
+            --neon-cyan: #00f3ff;
+            --neon-purple: #b026ff;
+            --text-light: #e0e0e0;
+            --thumb-color: #00f3ff; 
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .dashboard {
+            width: 850px;
+            max-width: 95vw;
+            background: rgba(20, 20, 25, 0.85);
+            border: 1px solid rgba(176, 38, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(176, 38, 255, 0.15);
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 20px;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--neon-purple);
+            text-shadow: 0 0 10px rgba(176, 38, 255, 0.5);
+        }
+
+        .canvas-container {
+            position: relative;
+            background: #050505;
+            border-radius: 8px;
+            border: 1px solid #222;
+            overflow: hidden;
+            height: 450px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            padding: 10px 0;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #aaa;
+        }
+
+        .value-display {
+            font-weight: bold;
+            color: var(--neon-cyan);
+            font-size: 1.1rem;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--thumb-color);
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px var(--thumb-color);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #333;
+            border-radius: 2px;
+        }
+
+        .data-panel {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px dashed #444;
+            font-family: monospace;
+            font-size: 0.95rem;
+            line-height: 1.8;
+            color: #00f3ff;
+        }
+
+        .data-panel span {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <div class="header">
+            <div class="title">Phase 3 & 6: The Shape Hacker</div>
+            <div style="font-family: monospace; color: #888;">h = (2T cos θ) / (rρg)</div>
+        </div>
+        
+        <div class="canvas-container" id="canvas-container">
+            <canvas id="simCanvas"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>ද්‍රව මාධ්‍යය වෙනස් කිරීම (Liquid)</label>
+                <div class="value-display" id="liquid-name">පිරිසිදු ජලය (ආසක්ත බල වැඩියි)</div>
+                <input type="range" id="liquid-slider" min="0" max="100" value="0">
+            </div>
+
+            <div class="control-group">
+                <label>කේශික නළයේ අරය (r)</label>
+                <div class="value-display" id="radius-val">2.0 mm</div>
+                <input type="range" id="radius-slider" min="1" max="10" step="0.1" value="2.0">
+            </div>
+
+            <div class="data-panel" id="data-panel">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+        
+        const liquidSlider = document.getElementById('liquid-slider');
+        const radiusSlider = document.getElementById('radius-slider');
+        const liquidNameDisplay = document.getElementById('liquid-name');
+        const radiusDisplay = document.getElementById('radius-val');
+        const dataPanel = document.getElementById('data-panel');
+        const rootStyles = document.documentElement;
+
+        let width, height;
+
+        function resize() {
+            width = container.clientWidth;
+            height = container.clientHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function interpolateColor(color1, color2, factor) {
+            let result = color1.slice();
+            for (let i = 0; i < 3; i++) {
+                result[i] = Math.round(result[i] + factor * (color2[i] - color1[i]));
+            }
+            return `rgb(${result[0]}, ${result[1]}, ${result[2]})`;
+        }
+
+        const waterColor = [0, 243, 255]; 
+        const mercuryColor = [176, 38, 255]; 
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+
+            const liquidFactor = parseInt(liquidSlider.value) / 100; 
+            const tubeRadiusReal = parseFloat(radiusSlider.value); 
+            const tubeRadiusPx = tubeRadiusReal * 8; 
+
+            const contactAngle = liquidFactor * 140; 
+            const thetaRad = contactAngle * (Math.PI / 180);
+            const cosTheta = Math.cos(thetaRad);
+
+            const baseLevel = height * 0.7; 
+            const capillaryMultiplier = 150; 
+            let hOffset = (capillaryMultiplier * cosTheta) / tubeRadiusReal;
+            
+            let tubeLiquidLevel = baseLevel - hOffset;
+            if (tubeLiquidLevel > height - 20) tubeLiquidLevel = height - 20; 
+
+            radiusDisplay.innerText = tubeRadiusReal.toFixed(1) + " mm";
+            
+            if (liquidFactor < 0.3) liquidNameDisplay.innerText = "ජලය (ආසක්ත බල වැඩියි)";
+            else if (liquidFactor > 0.7) liquidNameDisplay.innerText = "රසදිය (සංසක්ත බල වැඩියි)";
+            else liquidNameDisplay.innerText = "අතරමැදි අවස්ථාව (Blend)";
+
+            let currentColor = interpolateColor(waterColor, mercuryColor, liquidFactor);
+            rootStyles.style.setProperty('--thumb-color', currentColor);
+
+            // Localized Data Panel
+            dataPanel.innerHTML = `
+                හැඩය: <span>${contactAngle < 90 ? 'අවතල (යටි අතට වක්‍ර වේ)' : 'උත්තල (උඩු අතට වක්‍ර වේ)'}</span><br>
+                ස්පර්ශ කෝණය (θ): <span>${Math.round(contactAngle)}°</span><br>
+                ප්‍රමුඛ බලය: <span>${contactAngle < 90 ? 'ආසක්ත බල (Adhesion)' : 'සංසක්ත බල (Cohesion)'}</span><br>
+                ප්‍රතිඵලය: <span style="color:${currentColor}; font-weight:bold;">${contactAngle < 90 ? 'කේශික උද්ගමනය ↑' : 'කේශික පාතනය ↓'}</span>
+            `;
+
+            const centerX = width / 2;
+
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 1;
+            for(let i=0; i<height; i+=30) {
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(width, i); ctx.stroke();
+            }
+
+            ctx.fillStyle = currentColor;
+            ctx.globalAlpha = 0.3;
+            ctx.fillRect(0, baseLevel, centerX - tubeRadiusPx, height - baseLevel);
+            ctx.fillRect(centerX + tubeRadiusPx, baseLevel, width - (centerX + tubeRadiusPx), height - baseLevel);
+            
+            ctx.globalAlpha = 1.0;
+            ctx.beginPath();
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = 2;
+            ctx.moveTo(0, baseLevel);
+            ctx.lineTo(centerX - tubeRadiusPx, baseLevel);
+            ctx.moveTo(centerX + tubeRadiusPx, baseLevel);
+            ctx.lineTo(width, baseLevel);
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(centerX - tubeRadiusPx, 50); ctx.lineTo(centerX - tubeRadiusPx, height - 30); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(centerX + tubeRadiusPx, 50); ctx.lineTo(centerX + tubeRadiusPx, height - 30); ctx.stroke();
+
+            ctx.fillStyle = currentColor;
+            ctx.globalAlpha = 0.8;
+            
+            const meniscusDepth = (cosTheta * tubeRadiusPx) * 0.7;
+
+            ctx.beginPath();
+            ctx.moveTo(centerX - tubeRadiusPx, height - 30); 
+            ctx.lineTo(centerX - tubeRadiusPx, tubeLiquidLevel - meniscusDepth); 
+            
+            ctx.quadraticCurveTo(
+                centerX, tubeLiquidLevel + meniscusDepth, 
+                centerX + tubeRadiusPx, tubeLiquidLevel - meniscusDepth 
+            );
+            
+            ctx.lineTo(centerX + tubeRadiusPx, height - 30); 
+            ctx.closePath();
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.moveTo(centerX - tubeRadiusPx, tubeLiquidLevel - meniscusDepth);
+            ctx.quadraticCurveTo(
+                centerX, tubeLiquidLevel + meniscusDepth, 
+                centerX + tubeRadiusPx, tubeLiquidLevel - meniscusDepth
+            );
+            ctx.stroke();
+
+            requestAnimationFrame(draw);
+        }
+
+        liquidSlider.addEventListener('input', draw);
+        radiusSlider.addEventListener('input', draw);
+
+        draw();
+    </script>
+</body>
+</html>

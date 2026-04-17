@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine | Jaeger's Method V5 (Lab Standard)</title>
+    <style>
+        :root {
+            --bg-dark: #0a0a0c;
+            --neon-cyan: #00f3ff;
+            --neon-purple: #b026ff;
+            --neon-red: #ff0055;
+            --neon-green: #00ff66;
+            --text-light: #e0e0e0;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overflow-y: auto;
+            padding: 14px 0;
+        }
+
+        .dashboard {
+            width: 1000px;
+            max-width: 95vw;
+            background: rgba(20, 20, 25, 0.85);
+            border: 1px solid rgba(0, 255, 102, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(0, 255, 102, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 255, 102, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--neon-green);
+            text-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
+        }
+
+        .canvas-container {
+            position: relative;
+            background: #050505;
+            border-radius: 8px;
+            border: 1px solid #222;
+            overflow: hidden;
+            height: 500px;
+            display: flex;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .btn {
+            background: transparent;
+            border: 2px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-shadow: 0 0 8px var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+        }
+
+        .btn:hover {
+            background: rgba(0, 243, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+        }
+
+        .btn.active {
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+            text-shadow: 0 0 8px var(--neon-red);
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.3);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 10px rgba(255, 0, 85, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(255, 0, 85, 0.6); }
+            100% { box-shadow: 0 0 10px rgba(255, 0, 85, 0.2); }
+        }
+
+        .data-panel {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px dashed #444;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            font-family: monospace;
+        }
+
+        .label { color: #aaa; }
+        .value { color: #fff; font-weight: bold; }
+        .val-cyan { color: var(--neon-cyan); }
+        .val-red { color: var(--neon-red); text-shadow: 0 0 5px var(--neon-red); }
+        .val-purple { color: var(--neon-purple); }
+
+        .toggle-hud {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 255, 102, 0.1);
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            padding: 5px 10px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-radius: 4px;
+            z-index: 10;
+        }
+        .toggle-hud:hover {
+            background: rgba(0, 255, 102, 0.3);
+        }
+
+        @media (max-width: 900px) {
+            .dashboard {
+                width: 96vw;
+                padding: 14px;
+                gap: 14px;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+
+            .canvas-container {
+                height: 420px;
+            }
+
+            .controls {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .data-row {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <div class="header">
+            <div class="title">PHYSICS ENGINE | ජේගර් ක්‍රමය (Jaeger's Method)</div>
+            <div style="font-family: monospace; color: #888;">T = (gr / 2) [hρ - h₁ρ₁]</div>
+        </div>
+        
+        <div class="canvas-container" id="canvas-container">
+            <button class="toggle-hud" id="hud-btn">HUD: ON</button>
+            <canvas id="simCanvas"></canvas>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="valve-btn">පුනීලය විවෘත කරන්න (Open Valve)</button>
+
+            <div class="data-panel" style="border-color: var(--neon-green);">
+                <div class="data-row">
+                    <span class="label">වායු පීඩනය (System Pressure):</span>
+                    <span class="value" id="pres-val">සමතුලිතයි (Balanced)</span>
+                </div>
+                <div class="data-row">
+                    <span class="label">බුබුළේ තත්ත්වය (Bubble State):</span>
+                    <span class="value val-cyan" id="bub-state">නිෂ්ක්‍රීයයි (Inactive)</span>
+                </div>
+            </div>
+
+            <div class="data-panel" style="border-color: var(--neon-purple);">
+                <div class="data-row">
+                    <span class="label">උපරිම මැනෝමීටර කියවීම (h_max):</span>
+                    <span class="value val-purple" id="h-val">0.0 mm</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+        
+        const valveBtn = document.getElementById('valve-btn');
+        const hudBtn = document.getElementById('hud-btn');
+        const presValDisplay = document.getElementById('pres-val');
+        const bubStateDisplay = document.getElementById('bub-state');
+        const hValDisplay = document.getElementById('h-val');
+
+        let width, height;
+        let valveOpen = false;
+        let showHUD = true;
+        
+        // Physics Variables
+        let pressure = 0; 
+        const MAX_PRESSURE = 100; 
+        let lastDropTime = 0;
+        let maxRecordedH = 0;
+        
+        let detachedBubbles = [];
+        let waterDrops = [];
+
+        function resize() {
+            width = container.clientWidth;
+            height = container.clientHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        valveBtn.addEventListener('click', () => {
+            valveOpen = !valveOpen;
+            if(valveOpen) {
+                valveBtn.innerText = "පුනීලය වසන්න (Close Valve)";
+                valveBtn.classList.add('active');
+            } else {
+                valveBtn.innerText = "පුනීලය විවෘත කරන්න (Open Valve)";
+                valveBtn.classList.remove('active');
+            }
+        });
+
+        hudBtn.addEventListener('click', () => {
+            showHUD = !showHUD;
+            hudBtn.innerText = showHUD ? "HUD: ON" : "HUD: OFF";
+        });
+
+        function drawHUDLabel(ctx, startX, startY, endX, endY, text) {
+            const margin = 10;
+            const safeY = Math.max(14, Math.min(height - 14, endY));
+            const safeEndX = Math.max(margin, Math.min(width - margin, endX));
+
+            ctx.font = '600 13px "Segoe UI", "Noto Sans Sinhala", sans-serif';
+            const textWidth = ctx.measureText(text).width;
+
+            let drawRight = safeEndX >= startX;
+            let textX = safeEndX + (drawRight ? 22 : -22);
+
+            if (drawRight && textX + textWidth > width - margin) {
+                drawRight = false;
+                textX = safeEndX - 22;
+            }
+
+            if (!drawRight && textX - textWidth < margin) {
+                drawRight = true;
+                textX = safeEndX + 22;
+            }
+
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(0, 255, 102, 0.7)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 2]);
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(safeEndX, safeY);
+            ctx.lineTo(safeEndX + (drawRight ? 16 : -16), safeY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#00ff66';
+            ctx.textAlign = drawRight ? 'left' : 'right';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, textX, safeY);
+        }
+
+        function draw(timestamp) {
+            ctx.clearRect(0, 0, width, height);
+
+            // --- Layout Coordinates ---
+            const flaskX = width * 0.2;
+            const flaskTop = height * 0.4;
+            const flaskBottom = height * 0.85;
+            
+            const manometerX = width * 0.55;
+            const uTop = height * 0.3;
+            const uBottom = height * 0.75;
+            const uWidth = 40;
+
+            const beakerX = width * 0.85;
+            const tubeRadius = 15;
+            const tubeBottomY = height * 0.7;
+            const liquidLevel = height * 0.45;
+
+            const pipeY = height * 0.2; 
+
+            // --- Lab Standard Physics Logic ---
+            if (valveOpen) {
+                pressure += 0.18; 
+                if (timestamp - lastDropTime > 400) {
+                    waterDrops.push({ x: flaskX, y: height * 0.3, speed: 3.5 });
+                    lastDropTime = timestamp;
+                }
+            }
+
+            let currentH = pressure * 0.5;
+
+            if (pressure >= MAX_PRESSURE) {
+                detachedBubbles.push({
+                    x: beakerX,
+                    y: tubeBottomY,
+                    radius: tubeRadius - 2, 
+                    speed: 1.5 + Math.random() * 1
+                });
+                
+                maxRecordedH = currentH.toFixed(1);
+                pressure = 15; 
+                
+                bubStateDisplay.innerText = "ගිලිහී ගියේය! (Detached!)";
+                bubStateDisplay.className = "value val-red";
+                presValDisplay.innerText = "පීඩනය පහළ වැටුණි!";
+                presValDisplay.className = "value val-red";
+            } else if (pressure > 15) {
+                let pressurePercent = (pressure / MAX_PRESSURE) * 100;
+                if (pressure > 95) {
+                    bubStateDisplay.innerText = "අරය සමාන විය! (r = R)";
+                    bubStateDisplay.className = "value val-red";
+                    presValDisplay.innerText = "උපරිම පීඩනය! (MAX PRESSURE)";
+                    presValDisplay.className = "value val-red";
+                } else {
+                    bubStateDisplay.innerText = "සෙමින් වර්ධනය වේ... (Growing)";
+                    bubStateDisplay.className = "value val-cyan";
+                    presValDisplay.innerText = `වැඩි වෙමින් පවතී: ${pressurePercent.toFixed(1)}%`;
+                    presValDisplay.className = "value";
+                }
+            } else {
+                if(!valveOpen) {
+                    bubStateDisplay.innerText = "නිෂ්ක්‍රීයයි (Inactive)";
+                    bubStateDisplay.className = "value";
+                    presValDisplay.innerText = "සමතුලිතයි (Balanced)";
+                    presValDisplay.className = "value";
+                }
+            }
+
+            hValDisplay.innerText = maxRecordedH > 0 ? `${maxRecordedH} mm` : `${currentH.toFixed(1)} mm`;
+
+            // --- DRAWING ---
+
+            // 0. Connective Piping Network
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 14;
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(flaskX + 30, flaskTop + 20); ctx.lineTo(flaskX + 30, pipeY);
+            ctx.lineTo(beakerX, pipeY); ctx.lineTo(beakerX, tubeBottomY);
+            ctx.moveTo(manometerX - uWidth/2, pipeY); ctx.lineTo(manometerX - uWidth/2, uTop);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#050505';
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.moveTo(flaskX + 30, flaskTop + 20); ctx.lineTo(flaskX + 30, pipeY);
+            ctx.lineTo(beakerX, pipeY); ctx.lineTo(beakerX, tubeBottomY);
+            ctx.moveTo(manometerX - uWidth/2, pipeY); ctx.lineTo(manometerX - uWidth/2, uTop);
+            ctx.stroke();
+
+
+            // 1. LEFT: Funnel & Conical Flask
+            ctx.fillStyle = 'rgba(0, 243, 255, 0.2)';
+            ctx.beginPath();
+            ctx.moveTo(flaskX - 60, flaskBottom);
+            ctx.lineTo(flaskX + 60, flaskBottom);
+            ctx.lineTo(flaskX + 35, flaskBottom - 80);
+            ctx.lineTo(flaskX - 35, flaskBottom - 80);
+            ctx.fill();
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(flaskX - 25, flaskTop); ctx.lineTo(flaskX - 25, flaskTop + 50);
+            ctx.lineTo(flaskX - 80, flaskBottom); ctx.lineTo(flaskX + 80, flaskBottom);
+            ctx.lineTo(flaskX + 25, flaskTop + 50); ctx.lineTo(flaskX + 25, flaskTop);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#333';
+            ctx.fillRect(flaskX - 28, flaskTop - 10, 56, 20);
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.beginPath();
+            ctx.moveTo(flaskX - 20, height * 0.05); ctx.lineTo(flaskX - 20, height * 0.15); ctx.lineTo(flaskX - 5, height * 0.2); ctx.lineTo(flaskX - 5, flaskTop + 40);
+            ctx.moveTo(flaskX + 20, height * 0.05); ctx.lineTo(flaskX + 20, height * 0.15); ctx.lineTo(flaskX + 5, height * 0.2); ctx.lineTo(flaskX + 5, flaskTop + 40);
+            ctx.stroke();
+            
+            ctx.fillStyle = 'rgba(0, 243, 255, 0.4)';
+            ctx.fillRect(flaskX - 18, height * 0.08, 36, height * 0.07);
+
+            ctx.fillStyle = valveOpen ? '#00ff66' : '#ff0055';
+            ctx.fillRect(flaskX - 25, height * 0.22, 15, 10);
+
+            ctx.fillStyle = '#00f3ff';
+            for (let i = waterDrops.length - 1; i >= 0; i--) {
+                let d = waterDrops[i];
+                d.y += d.speed;
+                ctx.beginPath();
+                ctx.arc(d.x, d.y, 4, 0, Math.PI);
+                ctx.lineTo(d.x, d.y - 8);
+                ctx.closePath();
+                ctx.fill();
+                if (d.y > flaskBottom - 80) waterDrops.splice(i, 1);
+            }
+
+
+            // 2. CENTER: Manometer (U-Tube)
+            
+            // PERFECT U-TUBE GLASS
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 14;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(manometerX - uWidth/2, uTop);
+            ctx.lineTo(manometerX - uWidth/2, uBottom);
+            // Draw counter-clockwise (true) to trace the bottom half of the circle
+            ctx.arc(manometerX, uBottom, uWidth/2, Math.PI, 0, true);
+            ctx.lineTo(manometerX + uWidth/2, uTop);
+            ctx.stroke();
+
+            // PERFECT U-TUBE LIQUID
+            let baseManoLevel = uBottom - 60;
+            // Nerfed the visual multiplier so 'h' doesn't look absurdly huge
+            let leftLevel = baseManoLevel + (pressure * 0.35); 
+            let rightLevel = baseManoLevel - (pressure * 0.35);
+
+            ctx.strokeStyle = 'rgba(176, 38, 255, 0.9)';
+            ctx.lineWidth = 8; // Narrower than the 14px glass so it stays inside
+            ctx.lineCap = 'butt';
+            ctx.beginPath();
+            ctx.moveTo(manometerX - uWidth/2, leftLevel);
+            ctx.lineTo(manometerX - uWidth/2, uBottom);
+            ctx.arc(manometerX, uBottom, uWidth/2, Math.PI, 0, true);
+            ctx.lineTo(manometerX + uWidth/2, rightLevel);
+            ctx.stroke();
+
+            // 'h' marker for Manometer
+            if (pressure > 5) {
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+                ctx.beginPath(); ctx.moveTo(manometerX - uWidth/2, leftLevel); ctx.lineTo(manometerX - uWidth - 25, leftLevel); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(manometerX + uWidth/2, rightLevel); ctx.lineTo(manometerX - uWidth - 25, rightLevel); ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.strokeStyle = '#b026ff'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(manometerX - uWidth - 15, leftLevel); ctx.lineTo(manometerX - uWidth - 15, rightLevel); ctx.stroke();
+                ctx.fillStyle = '#b026ff'; ctx.font = "bold 14px monospace";
+                ctx.fillText('h', manometerX - uWidth - 30, leftLevel - (leftLevel-rightLevel)/2 + 5);
+            }
+
+
+            // 3. RIGHT: Beaker & Capillary Tube
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(beakerX - 50, liquidLevel - 30); ctx.lineTo(beakerX - 50, height * 0.85); ctx.lineTo(beakerX + 50, height * 0.85); ctx.lineTo(beakerX + 50, liquidLevel - 30); ctx.stroke();
+            
+            ctx.fillStyle = 'rgba(0, 243, 255, 0.2)';
+            ctx.fillRect(beakerX - 48, liquidLevel, 96, height * 0.85 - liquidLevel);
+            ctx.strokeStyle = 'rgba(0, 243, 255, 0.8)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(beakerX - 48, liquidLevel); ctx.lineTo(beakerX + 48, liquidLevel); ctx.stroke();
+
+            ctx.strokeStyle = '#666'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(beakerX - 40, height * 0.85 + 5); ctx.lineTo(beakerX + 40, height * 0.85 + 5); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(beakerX - 30, height * 0.85 + 5); ctx.lineTo(beakerX + 30, height * 0.95); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(beakerX + 30, height * 0.85 + 5); ctx.lineTo(beakerX - 30, height * 0.95); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(beakerX - 40, height * 0.95); ctx.lineTo(beakerX + 40, height * 0.95); ctx.stroke();
+
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+            ctx.beginPath(); ctx.moveTo(beakerX, liquidLevel); ctx.lineTo(beakerX - 70, liquidLevel); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(beakerX, tubeBottomY); ctx.lineTo(beakerX - 70, tubeBottomY); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(beakerX - 60, liquidLevel); ctx.lineTo(beakerX - 60, tubeBottomY); ctx.stroke();
+            ctx.fillStyle = '#00f3ff'; ctx.font = "bold 14px monospace";
+            ctx.fillText('h₁', beakerX - 85, liquidLevel + (tubeBottomY-liquidLevel)/2 + 5);
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(beakerX - tubeRadius + 4, pipeY); ctx.lineTo(beakerX - tubeRadius + 4, tubeBottomY); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(beakerX + tubeRadius - 4, pipeY); ctx.lineTo(beakerX + tubeRadius - 4, tubeBottomY); ctx.stroke();
+
+            if (pressure > 0) {
+                let bulge = (pressure / MAX_PRESSURE) * (tubeRadius - 4);
+                ctx.beginPath();
+                ctx.moveTo(beakerX - tubeRadius + 4, tubeBottomY);
+                ctx.bezierCurveTo(
+                    beakerX - tubeRadius + 4, tubeBottomY + bulge * 1.5, 
+                    beakerX + tubeRadius - 4, tubeBottomY + bulge * 1.5, 
+                    beakerX + tubeRadius - 4, tubeBottomY 
+                );
+                ctx.fillStyle = '#050505'; ctx.fill();
+                ctx.strokeStyle = (pressure > 95) ? '#ff0055' : '#00f3ff'; ctx.lineWidth = 2; ctx.stroke();
+            }
+
+            for (let i = detachedBubbles.length - 1; i >= 0; i--) {
+                let b = detachedBubbles[i];
+                b.y -= b.speed; 
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#050505'; ctx.fill();
+                ctx.strokeStyle = 'rgba(0, 243, 255, 0.6)'; ctx.lineWidth = 2; ctx.stroke();
+                if (b.y < liquidLevel) detachedBubbles.splice(i, 1);
+            }
+
+            if (showHUD) {
+                drawHUDLabel(ctx, flaskX - 25, height * 0.1, flaskX - 90, height * 0.08, "බින්දු පුනීලය");
+                drawHUDLabel(ctx, flaskX - 40, flaskBottom - 40, flaskX - 110, flaskBottom - 20, "ජලය (ප්ලාස්කුව)");
+                drawHUDLabel(ctx, manometerX + uWidth/2 + 5, uBottom - 20, manometerX + uWidth/2 + 40, uBottom - 40, "මැනෝමීටරය");
+                drawHUDLabel(ctx, beakerX + tubeRadius, height * 0.35, beakerX + 60, height * 0.3, "කේශික නලය");
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

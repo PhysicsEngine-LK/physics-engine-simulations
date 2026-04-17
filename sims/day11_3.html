@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine | ගෝලීය මාවකක් හරහා පීඩන අන්තරය</title>
+    <style>
+        :root {
+            --bg-dark: #0a0a0c;
+            --neon-cyan: #00f3ff;
+            --neon-purple: #b026ff;
+            --neon-red: #ff0055;
+            --text-light: #e0e0e0;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overflow-y: auto;
+            padding: 16px 0;
+        }
+
+        .dashboard {
+            width: 900px;
+            max-width: 95vw;
+            background: rgba(20, 20, 25, 0.85);
+            border: 1px solid rgba(255, 0, 85, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(255, 0, 85, 0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 0, 85, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--neon-red);
+            text-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
+        }
+
+        .canvas-container {
+            position: relative;
+            background: #050505;
+            border-radius: 8px;
+            border: 1px solid #222;
+            overflow: hidden;
+            height: 400px;
+            display: flex;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            align-items: center;
+            padding: 10px 0;
+        }
+
+        .data-panel {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px dashed #444;
+            text-align: center;
+        }
+
+        .data-panel.cyan { border-color: var(--neon-cyan); }
+        .data-panel.purple { border-color: var(--neon-purple); }
+
+        .panel-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        /* --- New CSS Fraction Styling --- */
+        .math-equation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: monospace;
+            font-size: 1.4rem;
+            color: #fff;
+            margin: 10px 0;
+        }
+
+        .fraction {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1.2;
+        }
+
+        .numerator {
+            border-bottom: 2px solid #fff;
+            padding: 0 5px;
+        }
+
+        .denominator {
+            padding: 0 5px;
+        }
+
+        .highlight-num {
+            color: var(--neon-red);
+            border-bottom-color: var(--neon-red);
+        }
+
+        .surfaces {
+            font-size: 0.95rem;
+            color: #aaa;
+            margin-top: 10px;
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #ff0055;
+            font-weight: bold;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 8px;
+            border-radius: 2px;
+            background: var(--neon-red);
+            cursor: pointer;
+            margin-top: -10px;
+            box-shadow: 0 0 15px var(--neon-red);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #333;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <div class="header">
+            <div class="title">PHYSICS ENGINE | ගෝලීය මාවකක් හරහා පීඩන අන්තරය</div>
+            <div style="font-family: monospace; color: #888;">ΔP = 2T/r vs ΔP = 4T/r</div>
+        </div>
+        
+        <div class="canvas-container" id="canvas-container">
+            <canvas id="simCanvas"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="data-panel cyan">
+                <div class="panel-title" style="color: var(--neon-cyan)">ද්‍රවයක් තුළ වායු බුබුළක්</div>
+                
+                <div class="math-equation">
+                    <span>P₁ - P₂ =</span>
+                    <div class="fraction">
+                        <span class="numerator">2T</span>
+                        <span class="denominator">r</span>
+                    </div>
+                </div>
+
+                <div class="surfaces" id="air-surfaces">පෘෂ්ඨ 1 ක් පමණි (1 Surface)</div>
+            </div>
+
+            <div class="slider-group">
+                <label>X-Ray Slicer (හරස්කඩ බැලීම)</label>
+                <input type="range" id="slice-slider" min="0" max="100" value="0">
+            </div>
+
+            <div class="data-panel purple">
+                <div class="panel-title" style="color: var(--neon-purple)">වාතයේ ඇති සබන් බුබුළක්</div>
+                
+                <div class="math-equation">
+                    <span>P₁ - P₂ =</span>
+                    <div class="fraction">
+                        <span class="numerator highlight-num">4T</span>
+                        <span class="denominator">r</span>
+                    </div>
+                </div>
+
+                <div class="surfaces" id="soap-surfaces">පෘෂ්ඨ 2 ක් ඇත (2 Surfaces)</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+        const sliceSlider = document.getElementById('slice-slider');
+
+        let width, height;
+
+        function resize() {
+            width = container.clientWidth;
+            height = container.clientHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            
+            const sliceFactor = parseInt(sliceSlider.value) / 100; 
+            const centerY = height / 2;
+            const leftCenterX = width * 0.25;
+            const rightCenterX = width * 0.75;
+            const radius = 80;
+
+            // Text Settings for HUD Labels
+            ctx.font = 'bold 18px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // --- 1. LEFT SIDE: AIR BUBBLE IN WATER ---
+            ctx.fillStyle = 'rgba(0, 243, 255, 0.15)';
+            ctx.fillRect(0, 0, width/2, height);
+            
+            ctx.beginPath();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.moveTo(width/2, 0);
+            ctx.lineTo(width/2, height);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(leftCenterX, centerY, radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(0, 0, 0, ${1 - sliceFactor})`; 
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(leftCenterX, centerY, radius, 0, Math.PI * 2);
+            ctx.lineWidth = 4 + (sliceFactor * 4); 
+            ctx.strokeStyle = `rgba(0, 243, 255, ${0.3 + (sliceFactor * 0.7)})`;
+            ctx.stroke();
+            
+            if (sliceFactor > 0.8) {
+                ctx.strokeStyle = '#00f3ff';
+                ctx.lineWidth = 2;
+                for(let i=0; i<8; i++) {
+                    let angle = (i * 45) * Math.PI / 180;
+                    let startX = leftCenterX + Math.cos(angle) * radius;
+                    let startY = centerY + Math.sin(angle) * radius;
+                    let endX = leftCenterX + Math.cos(angle) * (radius - 15);
+                    let endY = centerY + Math.sin(angle) * (radius - 15);
+                    drawArrow(ctx, startX, startY, endX, endY);
+                }
+            }
+
+            // Draw HUD Labels (Left)
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#fff';
+            ctx.fillStyle = '#fff';
+            ctx.fillText('P₁', leftCenterX, centerY); // Inside Pressure
+            
+            ctx.shadowColor = '#00f3ff';
+            ctx.fillStyle = '#00f3ff';
+            ctx.fillText('P₂', leftCenterX - radius - 30, centerY); // Outside Pressure
+            ctx.shadowBlur = 0;
+
+
+            // --- 2. RIGHT SIDE: SOAP BUBBLE IN AIR ---
+            const outerRadius = radius;
+            const innerRadius = radius - 15; 
+
+            ctx.beginPath();
+            ctx.arc(rightCenterX, centerY, outerRadius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(176, 38, 255, ${0.2 * (1 - sliceFactor)})`; 
+            ctx.fill();
+
+            if (sliceFactor > 0) {
+                ctx.beginPath();
+                ctx.arc(rightCenterX, centerY, outerRadius, 0, Math.PI * 2);
+                ctx.arc(rightCenterX, centerY, innerRadius, 0, Math.PI * 2, true); 
+                ctx.fillStyle = `rgba(176, 38, 255, ${sliceFactor * 0.6})`;
+                ctx.fill();
+            }
+
+            ctx.beginPath();
+            ctx.arc(rightCenterX, centerY, outerRadius, 0, Math.PI * 2);
+            ctx.lineWidth = 3 + (sliceFactor * 2);
+            ctx.strokeStyle = `rgba(176, 38, 255, ${0.3 + (sliceFactor * 0.7)})`;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(rightCenterX, centerY, innerRadius, 0, Math.PI * 2);
+            ctx.lineWidth = 3 + (sliceFactor * 2);
+            ctx.strokeStyle = `rgba(176, 38, 255, ${0.3 + (sliceFactor * 0.7)})`;
+            ctx.stroke();
+
+            if (sliceFactor > 0.8) {
+                ctx.strokeStyle = '#b026ff';
+                ctx.lineWidth = 2;
+                for(let i=0; i<8; i++) {
+                    let angle = (i * 45) * Math.PI / 180;
+                    
+                    let outStartX = rightCenterX + Math.cos(angle) * outerRadius;
+                    let outStartY = centerY + Math.sin(angle) * outerRadius;
+                    let outEndX = rightCenterX + Math.cos(angle) * (outerRadius - 10);
+                    let outEndY = centerY + Math.sin(angle) * (outerRadius - 10);
+                    drawArrow(ctx, outStartX, outStartY, outEndX, outEndY);
+
+                    let inStartX = rightCenterX + Math.cos(angle) * innerRadius;
+                    let inStartY = centerY + Math.sin(angle) * innerRadius;
+                    let inEndX = rightCenterX + Math.cos(angle) * (innerRadius + 10); 
+                    let inEndY = centerY + Math.sin(angle) * (innerRadius + 10);
+                    drawArrow(ctx, inStartX, inStartY, inEndX, inEndY);
+                }
+            }
+
+            // Draw HUD Labels (Right)
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#fff';
+            ctx.fillStyle = '#fff';
+            ctx.fillText('P₁', rightCenterX, centerY); // Inside Pressure
+            
+            ctx.shadowColor = '#b026ff';
+            ctx.fillStyle = '#b026ff';
+            ctx.fillText('P₂', rightCenterX + outerRadius + 30, centerY); // Outside Pressure
+            ctx.shadowBlur = 0;
+
+            // Scanning Line visual effect
+            if (sliceFactor > 0 && sliceFactor < 1) {
+                let scanY = centerY - 150 + (sliceFactor * 300);
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(255, 0, 85, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.shadowColor = '#ff0055';
+                ctx.shadowBlur = 10;
+                ctx.moveTo(0, scanY);
+                ctx.lineTo(width, scanY);
+                ctx.stroke();
+                ctx.shadowBlur = 0; 
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        // Utility Arrow Function
+        function drawArrow(ctx, fromX, fromY, toX, toY) {
+            const headlen = 8; 
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        sliceSlider.addEventListener('input', draw);
+        draw();
+    </script>
+</body>
+</html>
