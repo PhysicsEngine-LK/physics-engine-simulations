@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Soap Bubbles - Visual Physics Engine</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #00ffcc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            background: #0a0a0a;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #222;
+            box-shadow: 0 0 30px rgba(0,255,204,0.05);
+            justify-content: center;
+            max-width: 1200px;
+            align-items: center;
+        }
+        canvas {
+            border: 2px solid #333;
+            border-radius: 8px;
+            background: #050505;
+        }
+        .panel { 
+            width: 400px; 
+            text-align: left; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .header-title { margin-bottom: 5px; color: #00ffcc; font-size: 1.8em; text-transform: uppercase; letter-spacing: 1px;}
+        .sub-title { color: #888; margin-top: 0; margin-bottom: 20px; }
+
+        button {
+            padding: 15px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: 0.2s;
+            text-transform: uppercase;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+        #valveBtn { background: #ffcc00; color: #000; }
+        #valveBtn:hover { background: #e6b800; transform: scale(1.02); }
+        #resetBtn { background: #333; color: #fff; }
+        #resetBtn:hover { background: #444; }
+
+        .math-proof {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 255, 204, 0.05);
+            border: 1px dashed #00ffcc;
+            color: #00ffcc;
+            font-size: 0.95em;
+            text-align: left;
+            border-radius: 5px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title">SYSTEM 10: PURE FLOW</h2>
+    <p class="sub-title">Visualizing the Spherical Cap Equilibrium</p>
+
+    <div class="container">
+        <canvas id="simCanvas" width="600" height="400"></canvas>
+
+        <div class="panel">
+            
+            <button id="valveBtn">🔓 OPEN VALVE (R)</button>
+            <button id="resetBtn">RESET APPARATUS</button>
+
+            <div class="math-proof">
+                <strong style="color: #fff;">The Visual Story:</strong><br><br>
+                1. <strong>Tighter Curve = Higher Pressure.</strong> The small bubble pushes its air into the large one.<br><br>
+                2. <strong>The Hemisphere Spike.</strong> The small bubble shrinks until it forms a perfect hemisphere. This is its tightest possible curve, meaning pressure is at maximum.<br><br>
+                3. <strong>The Flattening.</strong> It can't shrink inward anymore, so it flattens into a shallow "contact lens." The curve gets wider until it perfectly matches Bubble A!
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const valveBtn = document.getElementById('valveBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        let isValveOpen = false;
+        const T = 50; 
+        const a = 20; 
+        
+        let hA_init = 160; 
+        let hB_init = 65;  
+        
+        let volA, volB;
+        let hA, hB, rA, rB, pA, pB;
+        let particles = [];
+
+        function getVol(h) {
+            return (Math.PI * h / 6) * (3 * a * a + h * h);
+        }
+
+        function getHFromVol(V) {
+            let h = Math.cbrt(V); 
+            for(let i=0; i<8; i++) {
+                let f = h*h*h + 3*a*a*h - (6*V)/Math.PI;
+                let df = 3*h*h + 3*a*a;
+                h = h - f/df;
+            }
+            return h;
+        }
+
+        function initSystem() {
+            hA = hA_init;
+            hB = hB_init;
+            volA = getVol(hA);
+            volB = getVol(hB);
+            particles = [];
+            isValveOpen = false;
+            valveBtn.innerText = "🔓 OPEN VALVE (R)";
+            valveBtn.style.background = "#ffcc00";
+            valveBtn.style.color = "#000";
+        }
+
+        function updatePhysics() {
+            rA = (a*a + hA*hA) / (2*hA);
+            rB = (a*a + hB*hB) / (2*hB);
+            
+            pA = (4 * T) / rA;
+            pB = (4 * T) / rB; 
+            
+            if (isValveOpen) {
+                let pressureDiff = pB - pA;
+                
+                if (Math.abs(pressureDiff) > 0.05) {
+                    // CRANKED UP SPEED: Multiplier increased to 80 for rapid visual flow
+                    let flowRate = pressureDiff * 80; 
+                    
+                    // Saftey limit to prevent math breaking at high speeds
+                    if (flowRate > volB * 0.1) flowRate = volB * 0.1; 
+                    
+                    volB -= flowRate;
+                    volA += flowRate;
+                    
+                    hA = getHFromVol(volA);
+                    hB = getHFromVol(Math.max(0.1, volB)); 
+
+                    if (Math.random() > 0.4) {
+                        particles.push({
+                            x: canvas.width/2 + 50,
+                            y: canvas.height/2 + (Math.random() * (a*2) - a)*0.8,
+                            speed: - (pressureDiff * 3 + 2) // Faster particles
+                        });
+                    }
+                } else {
+                    valveBtn.innerText = "EQUILIBRIUM REACHED";
+                    valveBtn.style.background = "#444";
+                    valveBtn.style.color = "#00ffcc";
+                    isValveOpen = false;
+                }
+            }
+            
+            draw();
+            requestAnimationFrame(updatePhysics);
+        }
+
+        function drawArc(openingX, cy, h, r, isLeftBubble) {
+            ctx.save();
+            ctx.beginPath();
+            
+            if (isLeftBubble) {
+                ctx.rect(0, 0, openingX, canvas.height);
+                ctx.clip();
+                let centerX = openingX - h + r;
+                ctx.beginPath();
+                ctx.arc(centerX, cy, r, 0, Math.PI * 2);
+            } else {
+                ctx.rect(openingX, 0, canvas.width - openingX, canvas.height);
+                ctx.clip();
+                let centerX = openingX + h - r;
+                ctx.beginPath();
+                ctx.arc(centerX, cy, r, 0, Math.PI * 2);
+            }
+            
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+            
+            ctx.beginPath();
+            ctx.moveTo(openingX, cy - a);
+            ctx.lineTo(openingX, cy + a);
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+            ctx.stroke();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.globalAlpha = 0.05; ctx.fillStyle = "#fff"; ctx.font = "bold 45px Arial";
+            ctx.textAlign = "center"; ctx.fillText("PHYSICS ENGINE", canvas.width/2, canvas.height/2);
+            ctx.restore();
+
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            // Draw rigid connecting pipe
+            ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+            ctx.fillRect(cx - 100, cy - a, 200, a * 2);
+            ctx.strokeStyle = "#555"; ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx - 100, cy - a); ctx.lineTo(cx + 100, cy - a);
+            ctx.moveTo(cx - 100, cy + a); ctx.lineTo(cx + 100, cy + a);
+            ctx.stroke();
+
+            // Draw Valve
+            ctx.fillStyle = isValveOpen ? "#00ffcc" : "#ff3366";
+            ctx.fillRect(cx - 5, cy - 30, 10, 60);
+            ctx.fillStyle = "#fff"; ctx.font = "bold 14px Arial";
+            ctx.fillText("R", cx - 5, cy - 35);
+
+            // Draw Bubble A
+            ctx.fillStyle = "rgba(0, 136, 255, 0.2)";
+            ctx.strokeStyle = "#0088ff"; ctx.lineWidth = 3;
+            drawArc(cx - 100, cy, hA, rA, true);
+
+            // Draw Bubble B
+            ctx.fillStyle = "rgba(255, 51, 255, 0.2)";
+            ctx.strokeStyle = "#ff33ff"; ctx.lineWidth = 3;
+            drawArc(cx + 100, cy, hB, rB, false);
+
+            // Draw Particles
+            ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.speed;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI*2); ctx.fill();
+                if (p.x < cx - 100) particles.splice(i, 1);
+            }
+        }
+
+        valveBtn.onclick = () => {
+            if (!isValveOpen && valveBtn.innerText.includes("OPEN")) {
+                isValveOpen = true;
+                valveBtn.innerText = "VALVE OPEN!";
+                valveBtn.style.background = "#00ffcc";
+                valveBtn.style.color = "#000";
+            }
+        };
+
+        resetBtn.onclick = initSystem;
+
+        initSystem();
+        requestAnimationFrame(updatePhysics);
+    </script>
+</body>
+</html>
