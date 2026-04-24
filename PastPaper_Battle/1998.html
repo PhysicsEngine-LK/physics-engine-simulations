@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Physics Engine | System 04: Capillary Action</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;500;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-green: #39FF14;
+            --neon-red: #ff3131;
+            --neon-purple: #b026ff;
+            --glass: rgba(10, 10, 10, 0.9);
+        }
+
+        body {
+            background-color: #050505;
+            background-image: radial-gradient(circle, #151515 1px, transparent 1px);
+            background-size: 30px 30px;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            margin: 0; display: flex; height: 100vh; overflow: hidden;
+        }
+
+        .sidebar {
+            width: 380px; background: var(--glass); border-right: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px); padding: 40px 25px; display: flex; flex-direction: column; z-index: 10;
+        }
+
+        .brand { font-size: 1.4em; font-weight: 800; letter-spacing: 4px; color: var(--neon-blue); margin-bottom: 5px; }
+        .brand-sub { font-size: 0.7em; color: #555; letter-spacing: 2px; margin-bottom: 30px; text-transform: uppercase; }
+        
+        .ui-group { margin-bottom: 25px; }
+        .ui-label { font-size: 0.75em; color: #888; display: block; margin-bottom: 10px; text-transform: uppercase; }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: #222; height: 4px; border-radius: 2px; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%;
+            background: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); cursor: pointer;
+        }
+
+        .telemetry { background: rgba(0,0,0,0.5); padding: 20px; border-radius: 12px; border: 1px solid #222; margin-top: 10px; }
+        .data-row { display: flex; justify-content: space-between; font-size: 0.85em; margin: 12px 0; border-bottom: 1px solid #1a1a1a; padding-bottom: 5px;}
+        .data-row:last-child { border-bottom: none; }
+        .val { font-weight: bold; }
+
+        .viewport { flex-grow: 1; position: relative; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 20px; }
+        #simCanvas { border: 1px solid #222; border-radius: 8px; box-shadow: 0 0 20px rgba(0, 242, 255, 0.05); }
+        #graphCanvas { border: 1px solid #222; border-radius: 8px; background: rgba(0,0,0,0.8); }
+
+        .math-proof { font-size: 0.8em; color: var(--neon-blue); text-align: center; margin-top: 15px; padding: 10px; background: rgba(0, 242, 255, 0.05); border-radius: 8px; border: 1px solid rgba(0, 242, 255, 0.2);}
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="brand">PHYSICS_ENGINE</div>
+        <div class="brand-sub">SYSTEM 04: MENISCUS ADAPTATION</div>
+        
+        <div class="ui-group">
+            <span class="ui-label">Tube Height Above Water ($H$)</span>
+            <input type="range" id="hSlider" min="0" max="250" value="200">
+        </div>
+
+        <div class="telemetry">
+            <span class="ui-label" style="color: var(--neon-green);">System Telemetry</span>
+            <div class="data-row"><span>Max Capillary Rise ($h_{max}$):</span><span class="val">150 px</span></div>
+            <div class="data-row"><span>Current Tube Height ($H$):</span><span class="val" id="hVal">200 px</span></div>
+            <div class="data-row"><span>Water Level in Tube:</span><span class="val" id="wVal" style="color:var(--neon-blue)">150 px</span></div>
+            
+            <span class="ui-label" style="margin-top: 25px; color: var(--neon-purple);">Surface Tension Vector</span>
+            <div class="data-row"><span>Contact Angle ($\theta$):</span><span class="val" id="angleVal" style="color:var(--neon-purple)">0°</span></div>
+            <div class="data-row"><span>Vertical Multiplier ($\cos \theta$):</span><span class="val" id="cosVal" style="color:var(--neon-green)">1.000</span></div>
+        </div>
+
+        <div class="math-proof">
+            $F_{up} = W$ <br><br>
+            $2\pi r T \cos \theta = \pi r^2 H \rho g$
+        </div>
+
+        <p style="font-size: 0.65em; color: #444; margin-top: auto; line-height: 1.6;">
+            1998 Q28: As the tube drops below the natural rise height, the meniscus flattens out, reducing $\cos \theta$ to prevent an overflow geyser.
+        </p>
+    </div>
+
+    <div class="viewport">
+        <canvas id="simCanvas" width="600" height="400"></canvas>
+        <canvas id="graphCanvas" width="600" height="200"></canvas>
+    </div>
+
+    <script>
+        const simCanvas = document.getElementById('simCanvas');
+        const ctx = simCanvas.getContext('2d');
+        const graphCanvas = document.getElementById('graphCanvas');
+        const gCtx = graphCanvas.getContext('2d');
+        const hSlider = document.getElementById('hSlider');
+        
+        const H_MAX = 150; // Natural capillary rise limit
+        const WATER_LEVEL = 300; // Y coordinate of reservoir surface
+        const TUBE_RADIUS = 30;
+        const CENTER_X = 300;
+
+        function draw() {
+            // Clear Canvases
+            ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, simCanvas.width, simCanvas.height);
+            gCtx.fillStyle = '#0a0a0a'; gCtx.fillRect(0, 0, graphCanvas.width, graphCanvas.height);
+            
+            let H = parseInt(hSlider.value); // Height of tube above water level
+            
+            // --- PHYSICS LOGIC ---
+            let waterHeight = Math.min(H, H_MAX); // Water can't go higher than the tube, or its max limit
+            let cosTheta = waterHeight / H_MAX;   // The math proof: cos(theta) is proportional to height
+            let thetaRad = Math.acos(cosTheta);
+            let thetaDeg = (thetaRad * 180 / Math.PI).toFixed(1);
+
+            // --- UI UPDATES ---
+            document.getElementById('hVal').innerText = H + " px";
+            document.getElementById('wVal').innerText = waterHeight + " px";
+            document.getElementById('angleVal').innerText = thetaDeg + "°";
+            document.getElementById('cosVal').innerText = cosTheta.toFixed(3);
+
+            // --- SIMULATION DRAWING ---
+            
+            // 1. Draw Reservoir
+            ctx.fillStyle = 'rgba(0, 242, 255, 0.2)';
+            ctx.fillRect(0, WATER_LEVEL, simCanvas.width, simCanvas.height - WATER_LEVEL);
+            ctx.strokeStyle = 'rgba(0, 242, 255, 0.5)';
+            ctx.beginPath(); ctx.moveTo(0, WATER_LEVEL); ctx.lineTo(simCanvas.width, WATER_LEVEL); ctx.stroke();
+
+            // 2. Draw Tube (Glass)
+            let tubeTopY = WATER_LEVEL - H;
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(CENTER_X - TUBE_RADIUS, simCanvas.height); ctx.lineTo(CENTER_X - TUBE_RADIUS, tubeTopY);
+            ctx.moveTo(CENTER_X + TUBE_RADIUS, simCanvas.height); ctx.lineTo(CENTER_X + TUBE_RADIUS, tubeTopY);
+            ctx.stroke();
+
+            // 3. Draw Water Column Inside Tube
+            let colTopY = WATER_LEVEL - waterHeight;
+            ctx.fillStyle = 'rgba(0, 242, 255, 0.5)';
+            ctx.fillRect(CENTER_X - TUBE_RADIUS + 2, colTopY, (TUBE_RADIUS * 2) - 4, waterHeight);
+
+            // 4. Draw Meniscus
+            ctx.strokeStyle = '#00f2ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            if (cosTheta > 0.01) {
+                // Calculate arc for meniscus
+                let meniscusRadius = TUBE_RADIUS / cosTheta;
+                let arcCenterY = colTopY - meniscusRadius * Math.sin(thetaRad);
+                
+                // Draw arc depending on contact angle
+                let startAngle = Math.PI/2 - thetaRad;
+                let endAngle = Math.PI/2 + thetaRad;
+                ctx.arc(CENTER_X, arcCenterY, meniscusRadius, startAngle, endAngle);
+            } else {
+                // Flat line when H is near 0
+                ctx.moveTo(CENTER_X - TUBE_RADIUS + 2, colTopY);
+                ctx.lineTo(CENTER_X + TUBE_RADIUS - 2, colTopY);
+            }
+            ctx.stroke();
+
+            // 5. Draw Surface Tension Vectors (Purple)
+            ctx.strokeStyle = '#b026ff';
+            ctx.lineWidth = 2;
+            let vecLength = 40;
+            // Left vector
+            ctx.beginPath();
+            ctx.moveTo(CENTER_X - TUBE_RADIUS, colTopY);
+            ctx.lineTo(CENTER_X - TUBE_RADIUS + vecLength * Math.sin(thetaRad), colTopY - vecLength * Math.cos(thetaRad));
+            ctx.stroke();
+            // Right vector
+            ctx.beginPath();
+            ctx.moveTo(CENTER_X + TUBE_RADIUS, colTopY);
+            ctx.lineTo(CENTER_X + TUBE_RADIUS - vecLength * Math.sin(thetaRad), colTopY - vecLength * Math.cos(thetaRad));
+            ctx.stroke();
+
+
+            // --- GRAPH DRAWING (cos θ vs H) ---
+            gCtx.strokeStyle = '#444';
+            gCtx.beginPath();
+            gCtx.moveTo(50, 20); gCtx.lineTo(50, 160); // Y axis (cos θ)
+            gCtx.moveTo(50, 160); gCtx.lineTo(550, 160); // X axis (H)
+            gCtx.stroke();
+            
+            gCtx.fillStyle = '#666'; gCtx.font = "12px JetBrains Mono";
+            gCtx.fillText("cos θ", 10, 20);
+            gCtx.fillText("H", 560, 165);
+
+            // Draw the ideal curve
+            gCtx.strokeStyle = '#39FF14'; // Neon Green line
+            gCtx.lineWidth = 3;
+            gCtx.beginPath();
+            gCtx.moveTo(50, 160); // Origin
+            
+            // Map H_MAX to x=250 in the graph
+            let graphHMaxX = 50 + (H_MAX / 250) * 500;
+            let graphCosMaxY = 40; // Y coordinate for cos(theta) = 1
+
+            // y = mx part
+            gCtx.lineTo(graphHMaxX, graphCosMaxY);
+            // Plateau part
+            gCtx.lineTo(550, graphCosMaxY);
+            gCtx.stroke();
+
+            // Draw current H marker on the graph
+            let currentGraphX = 50 + (H / 250) * 500;
+            let currentGraphY = H < H_MAX ? 160 - (H / H_MAX) * 120 : graphCosMaxY;
+            
+            gCtx.fillStyle = '#b026ff';
+            gCtx.beginPath(); gCtx.arc(currentGraphX, currentGraphY, 6, 0, Math.PI*2); gCtx.fill();
+
+            requestAnimationFrame(draw);
+        }
+
+        hSlider.oninput = () => {};
+        draw();
+    </script>
+</body>
+</html>

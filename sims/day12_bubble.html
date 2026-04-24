@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine | Excess Pressure Pro</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap');
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #0b0c10;
+            color: #c5c6c7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #66fcf1;
+            margin: 0;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 15px rgba(102, 252, 241, 0.5);
+        }
+
+        .header p {
+            color: #45a29e;
+            font-size: 1.2rem;
+            margin: 5px 0 0 0;
+        }
+
+        .container {
+            background: #1f2833;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+            max-width: 1150px;
+            width: 100%;
+            border: 1px solid #45a29e;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 25px;
+            align-items: stretch;
+        }
+
+        .left-panel {
+            flex: 2;
+            min-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .right-panel {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        canvas {
+            background-color: #0b0c10;
+            border-radius: 12px;
+            border: 2px solid #45a29e;
+            display: block;
+            width: 100%;
+            max-width: 700px;
+            height: auto;
+            margin: 0 auto;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(102, 252, 241, 0.1);
+        }
+
+        .controls-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            background: #0b0c10;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #333;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            color: #66fcf1;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        span.val-display {
+            color: #ff4500;
+            font-family: monospace;
+            font-size: 1.2rem;
+            text-shadow: 0 0 5px rgba(255, 69, 0, 0.5);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: #1f2833;
+            height: 8px;
+            border-radius: 5px;
+            outline: none;
+            margin-top: 5px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #66fcf1;
+            cursor: pointer;
+            box-shadow: 0 0 15px #66fcf1;
+            transition: 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        select {
+            background: #1f2833;
+            color: #fff;
+            border: 1px solid #66fcf1;
+            border-radius: 5px;
+            padding: 8px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: bold;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .outputs {
+            background: rgba(255, 69, 0, 0.05);
+            padding: 30px 20px;
+            border-radius: 12px;
+            border-top: 5px solid #ff4500;
+            border-bottom: 5px solid #ff4500;
+            text-align: center;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            box-shadow: inset 0 0 50px rgba(255, 69, 0, 0.1);
+        }
+
+        .formula {
+            color: #4caf50;
+            font-size: 2rem;
+            margin-bottom: 20px;
+            font-family: monospace;
+            letter-spacing: 2px;
+            background: #0b0c10;
+            padding: 10px 30px;
+            border-radius: 8px;
+            border: 1px solid #4caf50;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.2);
+        }
+
+        .total-wrapper {
+            margin-bottom: 20px;
+        }
+
+        .total-title {
+            color: #c5c6c7;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .total-val {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #ffeb3b;
+            text-shadow: 0 0 20px rgba(255, 235, 59, 0.5);
+            font-family: monospace;
+            line-height: 1;
+        }
+
+        .logic-box {
+            background: #0b0c10;
+            border: 1px solid #45a29e;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #a0a0b5;
+            margin-top: 20px;
+            text-align: left;
+            line-height: 1.5;
+        }
+
+        .logic-box span.highlight {
+            color: #00e5ff;
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Physics Engine | Pro</h1>
+        <p>අතිරික්ත පීඩනය අනුකරණය (Excess Pressure Simulator)</p>
+    </div>
+
+    <div class="container">
+        
+        <div class="left-panel">
+            <canvas id="simCanvas" width="700" height="400"></canvas>
+
+            <div class="controls-panel">
+                <div class="control-group">
+                    <label>පද්ධතිය (System Type)</label>
+                    <select id="typeSelect">
+                        <option value="air_bubble">💧 ජලය යට වායු බුබුළ (Air Bubble in Water - 1 Surface)</option>
+                        <option value="soap_bubble">🫧 සබන් බුබුළ (Soap Bubble in Air - 2 Surfaces)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>අරය (r) <span class="val-display" id="val-R">5.0 mm</span></label>
+                    <input type="range" id="slider-R" min="1.0" max="10.0" step="0.5" value="5.0">
+                </div>
+                <div class="control-group">
+                    <label>පෘෂ්ඨික ආතතිය (T) <span class="val-display" id="val-T" style="color:#b026ff;">0.07 N/m</span></label>
+                    <input type="range" id="slider-T" min="0.01" max="0.15" step="0.01" value="0.07">
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="outputs">
+                <div class="formula" id="formulaDisplay">P = 2T / r</div>
+                
+                <div class="total-wrapper">
+                    <div class="total-title">අතිරික්ත පීඩනය (P)</div>
+                    <div class="total-val" id="val-P">28.0 Pa</div>
+                </div>
+
+                <div class="logic-box" id="logicBox">
+                    <span class="highlight">වායු බුබුළේ ලොජික් එක:</span><br>
+                    මෙහි ජලය හා වාතය ගැටෙන <b>එක් පෘෂ්ඨයක්</b> පමණි. පෘෂ්ඨික ආතතිය මගින් පෘෂ්ඨය දිගේ (ස්පර්ශකව) අදින අතර, වක්‍රතාවය නිසා එයින් බුබුළ ඇතුළට හැකිළීමට සම්ප්‍රයුක්ත බලයක් හැදේ. එය සමතුලිත කිරීමට ඇතුළත වායු පීඩනය පිටතට ක්‍රියා කළ යුතුය.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const selType = document.getElementById('typeSelect');
+    const s_R = document.getElementById('slider-R');
+    const s_T = document.getElementById('slider-T');
+    
+    const v_R = document.getElementById('val-R');
+    const v_T = document.getElementById('val-T');
+    const v_P = document.getElementById('val-P');
+    const f_Disp = document.getElementById('formulaDisplay');
+    const l_Box = document.getElementById('logicBox');
+
+    function drawGrid() {
+        ctx.strokeStyle = 'rgba(69, 162, 158, 0.1)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= canvas.width; i += 40) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+        }
+        for (let j = 0; j <= canvas.height; j += 40) {
+            ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke();
+        }
+    }
+
+    // Outward Pressure Arrows (Radial)
+    function drawRadialArrow(angle, startRadius, length, color, thickness) {
+        ctx.save();
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(startRadius, 0);
+        ctx.lineTo(startRadius + length, 0);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = thickness;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = color;
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(startRadius + length, 0);
+        ctx.lineTo(startRadius + length - 8, -5);
+        ctx.lineTo(startRadius + length - 8, 5);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // NEW: Tangential Tension Arrows (Acting ALONG the surface)
+    function drawTangentialTension(angle, radius, length, color) {
+        ctx.save();
+        ctx.rotate(angle); 
+        // Now the point on the circle is at (radius, 0).
+        // Tangent is along the Y-axis (Up and Down)
+        
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 3;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = color;
+
+        // Upward tangent pull
+        ctx.beginPath();
+        ctx.moveTo(radius, 0);
+        ctx.lineTo(radius, length);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(radius, length);
+        ctx.lineTo(radius - 5, length - 8);
+        ctx.lineTo(radius + 5, length - 8);
+        ctx.fill();
+
+        // Downward tangent pull
+        ctx.beginPath();
+        ctx.moveTo(radius, 0);
+        ctx.lineTo(radius, -length);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(radius, -length);
+        ctx.lineTo(radius - 5, -length + 8);
+        ctx.lineTo(radius + 5, -length + 8);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    function updateSimulation() {
+        const type = selType.value;
+        const R_mm = parseFloat(s_R.value);
+        const T = parseFloat(s_T.value);
+
+        v_R.innerText = R_mm.toFixed(1) + " mm";
+        v_T.innerText = T.toFixed(2) + " N/m";
+
+        const R_m = R_mm / 1000;
+        let P = 0;
+
+        if (type === 'air_bubble') {
+            P = (2 * T) / R_m;
+            f_Disp.innerText = "P = 2T / r";
+            f_Disp.style.borderColor = "#00e5ff";
+            f_Disp.style.color = "#00e5ff";
+            f_Disp.style.boxShadow = "0 0 15px rgba(0, 229, 255, 0.2)";
+            l_Box.innerHTML = `<span class="highlight" style="color:#00e5ff;">💧 වායු බුබුළේ ලොජික් එක:</span><br>මෙහි ජලය හා වාතය ගැටෙන <b>එක් පෘෂ්ඨයක්</b> පමණි. පෘෂ්ඨික ආතතිය මගින් පෘෂ්ඨය දිගේ (ස්පර්ශකව) අදින අතර, වක්‍රතාවය නිසා එයින් බුබුළ ඇතුළට හැකිළීමට සම්ප්‍රයුක්ත බලයක් හැදේ. එය සමතුලිත කිරීමට ඇතුළත වායු පීඩනය පිටතට ක්‍රියා කළ යුතුය.`;
+        } else {
+            P = (4 * T) / R_m;
+            f_Disp.innerText = "P = 4T / r";
+            f_Disp.style.borderColor = "#ff9100";
+            f_Disp.style.color = "#ff9100";
+            f_Disp.style.boxShadow = "0 0 15px rgba(255, 145, 0, 0.2)";
+            l_Box.innerHTML = `<span class="highlight" style="color:#ff9100;">🫧 සබන් බුබුළේ ලොජික් එක:</span><br>මෙහි වාතය හා ගැටෙන <b>ඇතුළත සහ පිටත ලෙස පෘෂ්ඨ 2ක්</b> ඇත. එමනිසා පෘෂ්ඨය දිගේ ඇදෙන බලය දෙගුණ වන බැවින්, එය සමතුලිත කිරීමට අවශ්‍ය අතිරික්ත පීඩනය ද <b>දෙගුණයක් (4T)</b> වේ!`;
+        }
+
+        v_P.innerText = P.toFixed(1) + " Pa";
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        if (type === 'air_bubble') {
+            ctx.fillStyle = 'rgba(0, 150, 255, 0.08)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        drawGrid();
+
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const visR = 40 + ((R_mm - 1) / 9) * 110;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+
+        if (type === 'air_bubble') {
+            ctx.beginPath();
+            ctx.arc(0, 0, visR, 0, Math.PI * 2);
+            ctx.fillStyle = '#0b0c10'; 
+            ctx.fill();
+            ctx.strokeStyle = '#00e5ff'; 
+            ctx.lineWidth = 4;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00e5ff';
+            ctx.stroke();
+        } else {
+            ctx.beginPath();
+            ctx.arc(0, 0, visR, 0, Math.PI * 2);
+            ctx.fillStyle = 'transparent';
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, visR - 6, 0, Math.PI * 2);
+            ctx.strokeStyle = '#ff9100';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#ff9100';
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, visR + 6, 0, Math.PI * 2);
+            ctx.strokeStyle = '#ff9100';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+        ctx.shadowBlur = 0;
+
+        let pLength = 15 + (P / 600) * 80; 
+        if (pLength > 100) pLength = 100;
+
+        const numArrows = 8;
+        for (let i = 0; i < numArrows; i++) {
+            let angle = (i * Math.PI * 2) / numArrows;
+            
+            // Excess Pressure pushing radially outward
+            drawRadialArrow(angle, visR - pLength - 10, pLength, '#ff4500', 4);
+            
+            // Surface Tension acting tangentially along the surface
+            let tLength = 15 + (T / 0.15) * 20;
+            let tColor = (type === 'air_bubble') ? '#00e5ff' : '#ff9100';
+            drawTangentialTension(angle + (Math.PI / numArrows), visR, tLength, tColor);
+        }
+
+        ctx.restore();
+
+        // Legend Updates
+        ctx.fillStyle = '#ff4500';
+        ctx.font = 'bold 16px Rajdhani';
+        ctx.fillText("→ අතිරික්ත පීඩනය (P)", 20, 30);
+        
+        ctx.fillStyle = (type === 'air_bubble') ? '#00e5ff' : '#ff9100';
+        // Now using a tangent-like symbol for the legend
+        ctx.fillText("↕ පෘෂ්ඨික ආතති බලය (T) - පෘෂ්ඨය දිගේ", 20, 55);
+    }
+
+    selType.addEventListener('change', updateSimulation);
+    s_R.addEventListener('input', updateSimulation);
+    s_T.addEventListener('input', updateSimulation);
+
+    updateSimulation();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine | Capillary Rise Pro</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap');
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #0b0c10;
+            color: #c5c6c7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #66fcf1;
+            margin: 0;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 15px rgba(102, 252, 241, 0.5);
+        }
+
+        .header p {
+            color: #45a29e;
+            font-size: 1.2rem;
+            margin: 5px 0 0 0;
+        }
+
+        .container {
+            background: #1f2833;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+            max-width: 1150px;
+            width: 100%;
+            border: 1px solid #45a29e;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 25px;
+            align-items: stretch;
+        }
+
+        .left-panel {
+            flex: 2;
+            min-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .right-panel {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        canvas {
+            background-color: #0b0c10;
+            border-radius: 12px;
+            border: 2px solid #45a29e;
+            display: block;
+            width: 100%;
+            max-width: 700px;
+            height: auto;
+            margin: 0 auto;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(102, 252, 241, 0.1);
+        }
+
+        .controls-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            background: #0b0c10;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #333;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            color: #66fcf1;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        span.val-display {
+            color: #ff4500;
+            font-family: monospace;
+            font-size: 1.2rem;
+            text-shadow: 0 0 5px rgba(255, 69, 0, 0.5);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: #1f2833;
+            height: 8px;
+            border-radius: 5px;
+            outline: none;
+            margin-top: 5px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #66fcf1;
+            cursor: pointer;
+            box-shadow: 0 0 15px #66fcf1;
+            transition: 0.2s;
+        }
+
+        select {
+            background: #1f2833;
+            color: #fff;
+            border: 1px solid #66fcf1;
+            border-radius: 5px;
+            padding: 8px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: bold;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .outputs {
+            background: rgba(0, 229, 255, 0.05);
+            padding: 30px 20px;
+            border-radius: 12px;
+            border-top: 5px solid #00e5ff;
+            border-bottom: 5px solid #00e5ff;
+            text-align: center;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            box-shadow: inset 0 0 50px rgba(0, 229, 255, 0.05);
+            transition: 0.3s;
+        }
+
+        .outputs.mercury-theme {
+            border-color: #ff4500;
+            background: rgba(255, 69, 0, 0.05);
+            box-shadow: inset 0 0 50px rgba(255, 69, 0, 0.05);
+        }
+
+        .formula {
+            color: #4caf50;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            font-family: monospace;
+            letter-spacing: 2px;
+            background: #0b0c10;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #4caf50;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.2);
+        }
+
+        .total-wrapper {
+            margin-bottom: 20px;
+        }
+
+        .total-title {
+            color: #c5c6c7;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .total-val {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #00e5ff;
+            text-shadow: 0 0 20px rgba(0, 229, 255, 0.5);
+            font-family: monospace;
+            line-height: 1;
+            transition: 0.3s;
+        }
+
+        .outputs.mercury-theme .total-val {
+            color: #ff4500;
+            text-shadow: 0 0 20px rgba(255, 69, 0, 0.5);
+        }
+
+        .logic-box {
+            background: #0b0c10;
+            border: 1px solid #45a29e;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #a0a0b5;
+            margin-top: 20px;
+            text-align: left;
+            line-height: 1.5;
+        }
+
+        .logic-box span.highlight {
+            color: #00e5ff;
+            font-weight: bold;
+        }
+        .outputs.mercury-theme .logic-box span.highlight {
+            color: #ff4500;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Physics Engine | Pro</h1>
+        <p>කේශික උද්ගමනය සහ අවපාතය (Capillary Rise & Fall)</p>
+    </div>
+
+    <div class="container">
+        
+        <div class="left-panel">
+            <canvas id="simCanvas" width="700" height="400"></canvas>
+
+            <div class="controls-panel">
+                <div class="control-group">
+                    <label>ද්‍රවය හා නළය (Liquid & Tube)</label>
+                    <select id="typeSelect">
+                        <option value="water">💧 ජලය සහ වීදුරු නළය (Water | θ = 0°)</option>
+                        <option value="mercury">🔴 රසදිය සහ වීදුරු නළය (Mercury | θ = 140°)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>නළයේ අරය (r) <span class="val-display" id="val-R">0.5 mm</span></label>
+                    <input type="range" id="slider-R" min="0.1" max="2.0" step="0.1" value="0.5">
+                </div>
+                <div class="control-group" style="justify-content: center; align-items: center;">
+                    <div style="font-size: 0.9rem; color: #a0a0b5; text-align: center;">
+                        ගුරුත්වජ ත්වරණය (g) = 10 m/s²<br>
+                        <span id="paramInfo">T = 0.072 N/m | ρ = 1000 kg/m³</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="outputs" id="outputsPanel">
+                <div class="formula" id="formulaDisplay">h = 2T cos(θ) / rρg</div>
+                
+                <div class="total-wrapper">
+                    <div class="total-title">උද්ගමන/අවපාත උස (h)</div>
+                    <div class="total-val" id="val-H">28.8 mm</div>
+                </div>
+
+                <div class="logic-box" id="logicBox">
+                    <span class="highlight">සමතුලිතතා ලොජික් එක:</span><br>
+                    ස්පර්ශ කෝණය (θ) කුඩා බැවින් ඉහළට අදින බලයක් (T cosθ) ක්‍රියා කරයි. නළයේ අරය (r) කුඩා වන තරමට ද්‍රව කඳේ බර අඩු බැවින්, ජලය විශාල උසකට ඉහළ නගී.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const selType = document.getElementById('typeSelect');
+    const s_R = document.getElementById('slider-R');
+    
+    const v_R = document.getElementById('val-R');
+    const v_H = document.getElementById('val-H');
+    const p_Info = document.getElementById('paramInfo');
+    const o_Panel = document.getElementById('outputsPanel');
+    const l_Box = document.getElementById('logicBox');
+
+    // Physics Constants
+    const g = 10;
+    const liquids = {
+        water: { T: 0.072, rho: 1000, theta: 0, color: 'rgba(0, 229, 255, 0.3)', stroke: '#00e5ff' },
+        mercury: { T: 0.48, rho: 13600, theta: 140, color: 'rgba(255, 69, 0, 0.8)', stroke: '#ff4500' }
+    };
+
+    function drawGrid() {
+        ctx.strokeStyle = 'rgba(69, 162, 158, 0.1)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= canvas.width; i += 40) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+        }
+        for (let j = 0; j <= canvas.height; j += 40) {
+            ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke();
+        }
+    }
+
+    function drawArrow(x0, y0, x1, y1, color, thickness) {
+        const headlen = 8; 
+        const angle = Math.atan2(y1 - y0, x1 - x0);
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = thickness;
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 - headlen * Math.cos(angle - Math.PI / 6), y1 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(x1 - headlen * Math.cos(angle + Math.PI / 6), y1 - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.fillStyle = color;
+        ctx.fill();
+    }
+
+    function updateSimulation() {
+        const type = selType.value;
+        const liq = liquids[type];
+        const R_mm = parseFloat(s_R.value);
+
+        v_R.innerText = R_mm.toFixed(1) + " mm";
+        p_Info.innerText = `T = ${liq.T} N/m | ρ = ${liq.rho} kg/m³`;
+
+        // Physics Calculation
+        const R_m = R_mm / 1000;
+        const theta_rad = liq.theta * (Math.PI / 180);
+        
+        // h = 2T cos(theta) / (r * rho * g)
+        const h_m = (2 * liq.T * Math.cos(theta_rad)) / (R_m * liq.rho * g);
+        const h_mm = h_m * 1000;
+
+        // Display height with proper sign logic (+ for rise, - for fall)
+        if(h_mm >= 0) {
+            v_H.innerText = "+" + h_mm.toFixed(1) + " mm";
+        } else {
+            v_H.innerText = h_mm.toFixed(1) + " mm";
+        }
+
+        // Update Theme and Logic Box
+        if (type === 'water') {
+            o_Panel.classList.remove('mercury-theme');
+            l_Box.innerHTML = `<span class="highlight">💧 ජලයේ ලොජික් එක:</span><br>ස්පර්ශ කෝණය (θ = 0°) කුඩා බැවින් <b>ඉහළට අදින බලයක්</b> ක්‍රියා කරයි. නළයේ අරය (r) අඩු කරන විට, ඉහළට නගින උස (Capillary Rise) විශාල ලෙස වැඩි වේ.`;
+        } else {
+            o_Panel.classList.add('mercury-theme');
+            l_Box.innerHTML = `<span class="highlight">🔴 රසදිය ලොජික් එක:</span><br>ස්පර්ශ කෝණය (θ = 140°) මහා කෝණයක් බැවින් cos(θ) ඍණ (-) වේ. එනම් පෘෂ්ඨික ආතතියෙන් <b>පහළට තෙරපන බලයක්</b> ඇති කරන බැවින් ද්‍රවය නළය තුළ පහළට බසියි (Capillary Fall).`;
+        }
+
+        // --- DRAWING LOGIC ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+
+        const cx = canvas.width / 2;
+        const baseY = 250; // Main liquid surface level
+        
+        const visR = R_mm * 40; // visual width of tube
+        let visH = h_mm * 3; 
+        if (visH > 180) visH = 180; 
+        if (visH < -80) visH = -80; // Allow it to fall visibly
+
+        // 1. Draw Main Liquid Pool
+        ctx.fillStyle = liq.color;
+        ctx.fillRect(50, baseY, 600, 150); // Pool body
+        
+        // Pool surface line
+        ctx.strokeStyle = liq.stroke;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(50, baseY);
+        ctx.lineTo(cx - visR, baseY);
+        ctx.moveTo(cx + visR, baseY);
+        ctx.lineTo(650, baseY);
+        ctx.stroke();
+
+        // 2. Clear the inside of the tube (BUG FIX: Perfectly clears the inner space)
+        ctx.clearRect(cx - visR + 2, 40, visR*2 - 4, 350);
+
+        // 3. Draw Liquid Column inside the tube correctly
+        const colTopY = baseY - visH;
+        
+        ctx.fillStyle = liq.color;
+        ctx.beginPath();
+        ctx.moveTo(cx - visR + 2, baseY + 150); // Start from bottom
+        ctx.lineTo(cx - visR + 2, colTopY); // Up to the meniscus contact point
+        
+        if (type === 'water') {
+            // Concave (U shape) dipping down
+            ctx.quadraticCurveTo(cx, colTopY + visR, cx + visR - 2, colTopY);
+        } else {
+            // Convex (Dome shape) bulging up
+            ctx.quadraticCurveTo(cx, colTopY - visR, cx + visR - 2, colTopY);
+        }
+        
+        ctx.lineTo(cx + visR - 2, baseY + 150); // Back to bottom
+        ctx.fill();
+
+        // 4. Draw Meniscus Stroke
+        ctx.strokeStyle = liq.stroke;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(cx - visR, colTopY);
+        if (type === 'water') {
+            ctx.quadraticCurveTo(cx, colTopY + visR, cx + visR, colTopY);
+        } else {
+            ctx.quadraticCurveTo(cx, colTopY - visR, cx + visR, colTopY);
+        }
+        ctx.stroke();
+
+        // 5. Draw Capillary Tube (Glass walls) over everything
+        ctx.strokeStyle = '#c5c6c7';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(cx - visR, 40);
+        ctx.lineTo(cx - visR, 380);
+        ctx.moveTo(cx + visR, 40);
+        ctx.lineTo(cx + visR, 380);
+        ctx.stroke();
+
+        // 6. Draw Forces & Labels
+        if (type === 'water') {
+            // Upward T Force Arrows
+            drawArrow(cx - visR, colTopY, cx - visR, colTopY - 40, '#00e5ff', 3);
+            drawArrow(cx + visR, colTopY, cx + visR, colTopY - 40, '#00e5ff', 3);
+            
+            ctx.fillStyle = '#00e5ff';
+            ctx.font = 'bold 14px Rajdhani';
+            ctx.fillText("T cosθ", cx + visR + 10, colTopY - 20);
+        } else {
+            // Downward T Force Arrows for Mercury (Inward & Downward tangent)
+            drawArrow(cx - visR, colTopY, cx - visR + 20, colTopY + 30, '#ff4500', 3);
+            drawArrow(cx + visR, colTopY, cx + visR - 20, colTopY + 30, '#ff4500', 3);
+            
+            ctx.fillStyle = '#ff4500';
+            ctx.font = 'bold 14px Rajdhani';
+            ctx.fillText("T cosθ", cx + visR + 10, colTopY + 20);
+        }
+
+        // Draw h dimension line
+        ctx.strokeStyle = '#a0a0b5';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(cx + visR + 10, baseY);
+        ctx.lineTo(cx + visR + 60, baseY);
+        ctx.moveTo(cx + visR + 10, colTopY);
+        ctx.lineTo(cx + visR + 60, colTopY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Double headed arrow for 'h'
+        drawArrow(cx + visR + 40, baseY, cx + visR + 40, colTopY, '#a0a0b5', 2);
+        drawArrow(cx + visR + 40, colTopY, cx + visR + 40, baseY, '#a0a0b5', 2);
+        
+        ctx.fillStyle = '#a0a0b5';
+        ctx.fillText("h", cx + visR + 50, baseY - visH/2 + 5);
+    }
+
+    selType.addEventListener('change', updateSimulation);
+    s_R.addEventListener('input', updateSimulation);
+
+    updateSimulation();
+</script>
+
+</body>
+</html>
