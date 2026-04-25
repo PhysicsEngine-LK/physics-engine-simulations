@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hydrostatic Bubble - Physics Engine</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #00ffcc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            background: #0a0a0a;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #222;
+            box-shadow: 0 0 30px rgba(0,255,204,0.05);
+            justify-content: center;
+            max-width: 1200px;
+            align-items: flex-start;
+        }
+        .canvas-wrapper {
+            position: relative;
+        }
+        canvas {
+            border: 2px solid #333;
+            border-radius: 8px;
+            background: #050505;
+        }
+        .panel { 
+            width: 350px; 
+            text-align: left; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .header-title { margin-bottom: 5px; color: #00ffcc; font-size: 1.8em; text-transform: uppercase; letter-spacing: 1px;}
+        .sub-title { color: #888; margin-top: 0; margin-bottom: 20px; }
+
+        .readout-box {
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-size: 1.05em;
+            color: #fff;
+        }
+        
+        .val-row { display: flex; justify-content: space-between; margin: 8px 0; border-bottom: 1px solid #222; padding-bottom: 4px;}
+        .val-row:last-child { border-bottom: none; }
+        
+        .alert-text { color: #ff33ff; font-weight: bold; font-size: 1.1em; text-align: center; margin-top: 10px; height: 20px;}
+
+        button {
+            padding: 15px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: 0.2s;
+            text-transform: uppercase;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+        }
+        #pumpBtn { background: #ffcc00; color: #000; }
+        #pumpBtn:hover { background: #e6b800; transform: scale(1.02); }
+
+        .slider-group { margin-bottom: 15px; }
+        .slider-label { display: flex; justify-content: space-between; color: #0088ff; font-weight: bold; font-size: 1em; margin-bottom: 5px; text-transform: uppercase;}
+        input[type="range"] { width: 100%; accent-color: #0088ff; margin: 5px 0; cursor: pointer; }
+
+        .p-bar-container { width: 100%; height: 10px; background: #222; border-radius: 4px; margin-top: 5px; overflow: hidden; display: flex; }
+        #pBarHydro { height: 100%; width: 50%; background: #0088ff; transition: width 0.1s; }
+        #pBarSurface { height: 100%; width: 10%; background: #ff33ff; transition: width 0.1s; }
+
+        .math-proof {
+            margin-top: 5px;
+            padding: 15px;
+            background: rgba(0, 255, 204, 0.05);
+            border: 1px dashed #00ffcc;
+            color: #00ffcc;
+            font-size: 0.9em;
+            text-align: left;
+            border-radius: 5px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title">SYSTEM 11: HYDROSTATIC BUBBLE</h2>
+    <p class="sub-title">1999 A/L Proof: Depth vs. Maximum Pressure</p>
+
+    <div class="container">
+        <div class="canvas-wrapper">
+            <canvas id="tankCanvas" width="400" height="450"></canvas>
+        </div>
+
+        <div class="canvas-wrapper">
+            <canvas id="graphCanvas" width="350" height="450"></canvas>
+        </div>
+
+        <div class="panel">
+            
+            <div class="slider-group">
+                <div class="slider-label"><span>Tube Depth (h)</span></div>
+                <input type="range" id="depthSlider" min="10" max="90" step="1" value="50">
+            </div>
+
+            <button id="pumpBtn">💨 PUMP AIR</button>
+
+            <div class="readout-box">
+                <div class="val-row"><span style="color: #ccc;">Current Bubble State:</span><span id="bubbleState" style="color: #fff; font-weight: bold;">Waiting...</span></div>
+                
+                <div style="margin-top: 15px; color: #888; font-size: 0.9em; display: flex; justify-content: space-between;">
+                    <span style="color:#0088ff;">■ Water Pressure</span>
+                    <span style="color:#ff33ff;">■ Surface Tension</span>
+                </div>
+                <div class="p-bar-container">
+                    <div id="pBarHydro"></div>
+                    <div id="pBarSurface"></div>
+                </div>
+                <div class="alert-text" id="alertText"></div>
+            </div>
+
+            <div class="math-proof">
+                <strong style="color: #fff;">Decoding Graph 3:</strong><br><br>
+                Total Pressure = <span style="color: #0088ff;">h&rho;g</span> + <span style="color: #ff33ff;">2T/r</span><br><br>
+                Look at the graph. The straight line proves pressure increases with depth. The <strong>positive y-intercept</strong> exists because even at zero depth, you still need pressure to fight the surface tension (2T/r) of the hemisphere!
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Canvas Contexts
+        const tCanvas = document.getElementById('tankCanvas');
+        const tCtx = tCanvas.getContext('2d');
+        const gCanvas = document.getElementById('graphCanvas');
+        const gCtx = gCanvas.getContext('2d');
+        
+        // UI Elements
+        const depthSlider = document.getElementById('depthSlider');
+        const pumpBtn = document.getElementById('pumpBtn');
+        const bubbleState = document.getElementById('bubbleState');
+        const pBarHydro = document.getElementById('pBarHydro');
+        const pBarSurface = document.getElementById('pBarSurface');
+        const alertText = document.getElementById('alertText');
+
+        // Physics Constants
+        const a = 15; // Tube radius
+        const maxHydroP = 100; // Arbitrary scale for UI
+        const maxSurfaceP = 40; // Arbitrary scale for UI
+
+        // State Variables
+        let isPumping = false;
+        let alpha = 0.05; // Growth angle of the bubble (0 to 2.2)
+        let particles = [];
+
+        function updatePhysics() {
+            let depthPercent = parseInt(depthSlider.value);
+            let tubeTipY = 100 + (depthPercent / 100) * 250; // Map slider to pixel depth
+            
+            let R, P_surf, P_hydro;
+
+            if (isPumping) {
+                alpha += 0.015; // Animation speed
+                
+                // Bubble detaches when it gets too big
+                if (alpha > 2.2) {
+                    alpha = 0.05;
+                    isPumping = false;
+                    bubbleState.innerText = "Detached & Floated Away";
+                    alertText.innerText = "";
+                    pumpBtn.innerText = "💨 PUMP AIR";
+                    pumpBtn.style.background = "#ffcc00";
+                } else {
+                    // Radius of curvature based on growth angle
+                    R = a / Math.sin(alpha);
+                    
+                    if (alpha < 1.4) {
+                        bubbleState.innerText = "Expanding (Tightening Curve)";
+                        alertText.innerText = "";
+                    } else if (alpha >= 1.4 && alpha <= 1.7) {
+                        bubbleState.innerText = "HEMISPHERE REACHED";
+                        alertText.innerText = "MAXIMUM PRESSURE! 💥";
+                    } else {
+                        bubbleState.innerText = "Expanding (Widening Curve)";
+                        alertText.innerText = "";
+                    }
+
+                    // Add air particles
+                    if (Math.random() > 0.4) {
+                        particles.push({
+                            x: tCanvas.width/2 + (Math.random() * (a*2) - a)*0.6,
+                            y: 50,
+                            speed: 6
+                        });
+                    }
+                }
+            } else {
+                R = 9999; // Flat water level inside tube
+            }
+
+            // Calculate Pressures
+            P_hydro = depthPercent; 
+            P_surf = isPumping ? (maxSurfaceP * (a / R)) : 0; 
+
+            // Update Pressure Bars
+            pBarHydro.style.width = P_hydro + "%";
+            pBarSurface.style.width = P_surf + "%";
+
+            drawTank(tubeTipY, R);
+            drawGraph(depthPercent);
+            
+            requestAnimationFrame(updatePhysics);
+        }
+
+        function drawTank(tipY, R) {
+            tCtx.clearRect(0, 0, tCanvas.width, tCanvas.height);
+
+            const cx = tCanvas.width / 2;
+
+            // Water Background
+            tCtx.fillStyle = "rgba(0, 136, 255, 0.15)";
+            tCtx.fillRect(0, 100, tCanvas.width, tCanvas.height - 100);
+            
+            // Water Surface Line
+            tCtx.beginPath();
+            tCtx.moveTo(0, 100); tCtx.lineTo(tCanvas.width, 100);
+            tCtx.strokeStyle = "#0088ff"; tCtx.lineWidth = 2; tCtx.stroke();
+
+            // Depth Indicator Line & Text
+            tCtx.beginPath();
+            tCtx.setLineDash([5, 5]);
+            tCtx.moveTo(cx + 40, 100); tCtx.lineTo(cx + 120, 100);
+            tCtx.moveTo(cx + 40, tipY); tCtx.lineTo(cx + 120, tipY);
+            tCtx.moveTo(cx + 80, 100); tCtx.lineTo(cx + 80, tipY);
+            tCtx.strokeStyle = "#fff"; tCtx.lineWidth = 1; tCtx.stroke();
+            tCtx.setLineDash([]);
+            tCtx.fillStyle = "#fff"; tCtx.font = "italic 16px Arial";
+            tCtx.fillText("h", cx + 90, 100 + (tipY - 100)/2);
+
+            // Draw Air Pump Tube
+            tCtx.fillStyle = "#111"; // Empty inside
+            tCtx.fillRect(cx - a, 0, a * 2, tipY);
+            tCtx.strokeStyle = "#fff"; tCtx.lineWidth = 4;
+            tCtx.beginPath();
+            tCtx.moveTo(cx - a, 0); tCtx.lineTo(cx - a, tipY);
+            tCtx.moveTo(cx + a, 0); tCtx.lineTo(cx + a, tipY);
+            tCtx.stroke();
+
+            // Draw Bubble
+            if (isPumping) {
+                let bcY = tipY - R * Math.cos(alpha); // Center of the bubble sphere
+                let startAngle = Math.PI/2 - alpha;
+                let endAngle = Math.PI/2 + alpha;
+
+                tCtx.beginPath();
+                tCtx.arc(cx, bcY, R, startAngle, endAngle, false);
+                tCtx.fillStyle = "#111"; // Air color
+                tCtx.fill();
+                tCtx.strokeStyle = alpha > 1.4 && alpha < 1.7 ? "#ff33ff" : "#00ffcc"; // Flash magenta at max pressure
+                tCtx.lineWidth = 3;
+                tCtx.stroke();
+            } else {
+                // Flat meniscus
+                tCtx.beginPath();
+                tCtx.moveTo(cx - a, tipY); tCtx.lineTo(cx + a, tipY);
+                tCtx.strokeStyle = "#0088ff"; tCtx.lineWidth = 2; tCtx.stroke();
+            }
+
+            // Draw Particles
+            tCtx.fillStyle = "#00ffcc";
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.y += p.speed;
+                tCtx.beginPath(); tCtx.arc(p.x, p.y, 2, 0, Math.PI*2); tCtx.fill();
+                if (p.y > tipY) particles.splice(i, 1);
+            }
+        }
+
+        function drawGraph(depth) {
+            gCtx.clearRect(0, 0, gCanvas.width, gCanvas.height);
+
+            // Grid Box
+            const pad = 40;
+            const gw = gCanvas.width - pad * 2;
+            const gh = gCanvas.height - pad * 2;
+            const originX = pad;
+            const originY = gCanvas.height - pad;
+
+            // Axes
+            gCtx.beginPath();
+            gCtx.moveTo(originX, pad - 20); gCtx.lineTo(originX, originY); gCtx.lineTo(originX + gw + 20, originY);
+            gCtx.strokeStyle = "#555"; gCtx.lineWidth = 2; gCtx.stroke();
+
+            // Labels
+            gCtx.fillStyle = "#fff"; gCtx.font = "bold 16px monospace";
+            gCtx.fillText("p (Max Pressure)", originX - 10, pad - 30);
+            gCtx.fillText("h", originX + gw + 25, originY + 5);
+            gCtx.fillText("0", originX - 15, originY + 15);
+
+            // Mathematical Line (y = mx + c)
+            // Intercept (c) represents the Hemisphere Surface Tension (2T/a) + Atm
+            const yIntercept = originY - 60; 
+            const endX = originX + gw;
+            const endY = pad + 40; // Positive slope
+
+            gCtx.beginPath();
+            gCtx.moveTo(originX, yIntercept);
+            gCtx.lineTo(endX, endY);
+            gCtx.strokeStyle = "#00ffcc"; 
+            gCtx.lineWidth = 3; 
+            gCtx.stroke();
+
+            // Draw the Y-Intercept Label
+            gCtx.fillStyle = "#ff33ff"; gCtx.font = "14px monospace";
+            gCtx.fillText("2T/r", originX - 35, yIntercept + 5);
+
+            // Plot the Current State based on Slider
+            let currentX = originX + (depth / 100) * gw;
+            // Interpolate Y along the line
+            let currentY = yIntercept + (depth / 100) * (endY - yIntercept);
+
+            // Projection Lines
+            gCtx.beginPath();
+            gCtx.setLineDash([5, 5]);
+            gCtx.moveTo(currentX, originY); gCtx.lineTo(currentX, currentY); // down to h
+            gCtx.moveTo(originX, currentY); gCtx.lineTo(currentX, currentY); // left to p
+            gCtx.strokeStyle = "rgba(255, 255, 255, 0.4)"; gCtx.lineWidth = 1.5; gCtx.stroke();
+            gCtx.setLineDash([]);
+
+            // Glowing Dot
+            gCtx.beginPath();
+            gCtx.arc(currentX, currentY, 6, 0, Math.PI*2);
+            gCtx.fillStyle = "#ffcc00";
+            gCtx.fill();
+            gCtx.shadowBlur = 10;
+            gCtx.shadowColor = "#ffcc00";
+            gCtx.fill();
+            gCtx.shadowBlur = 0; // reset
+        }
+
+        pumpBtn.onclick = () => {
+            if (!isPumping) {
+                isPumping = true;
+                alpha = 0.05; // Reset bubble
+                pumpBtn.innerText = "PUMPING...";
+                pumpBtn.style.background = "#444";
+            }
+        };
+
+        // Start Physics Loop
+        requestAnimationFrame(updatePhysics);
+    </script>
+</body>
+</html>
