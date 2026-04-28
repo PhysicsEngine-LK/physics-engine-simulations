@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Elastic Load Distribution - Physics Engine</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #00ffcc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            background: #0a0a0a;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #222;
+            box-shadow: 0 0 30px rgba(0,255,204,0.05);
+            justify-content: center;
+            max-width: 1200px;
+            align-items: flex-start;
+        }
+        .canvas-wrapper {
+            position: relative;
+            background: #050505;
+            border: 2px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+        .panel { 
+            width: 350px; 
+            text-align: left; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .header-title { margin-bottom: 5px; color: #00ffcc; font-size: 1.8em; text-transform: uppercase; letter-spacing: 1px;}
+        .sub-title { color: #888; margin-top: 0; margin-bottom: 20px; }
+
+        .readout-box {
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-size: 1.1em;
+            color: #fff;
+        }
+        
+        .val-row { display: flex; justify-content: space-between; margin: 8px 0; border-bottom: 1px solid #222; padding-bottom: 4px;}
+        .val-row:last-child { border-bottom: none; }
+        
+        .val-n { color: #ffcc00; font-weight: bold; font-size: 1.2em; } 
+        .val-dl { color: #ff33ff; font-weight: bold; font-size: 1.2em;} 
+
+        .slider-group { margin-bottom: 15px; background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333;}
+        .slider-label { display: flex; justify-content: space-between; color: #ccc; font-weight: bold; font-size: 0.9em; margin-bottom: 10px; font-family: 'Segoe UI', sans-serif;}
+        input[type="range"] { width: 100%; accent-color: #ffcc00; margin: 5px 0; cursor: pointer; }
+
+        .math-proof {
+            margin-top: 5px;
+            padding: 15px;
+            background: rgba(0, 255, 204, 0.05);
+            border: 1px dashed #00ffcc;
+            color: #00ffcc;
+            font-size: 0.9em;
+            text-align: left;
+            border-radius: 5px;
+            line-height: 1.6;
+        }
+        .highlight { color: #fff; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title">SYSTEM 12: ELASTIC LOAD MATRIX</h2>
+    <p class="sub-title">Visualizing the 2006 A/L Proof: &Delta;l vs. n</p>
+
+    <div class="container">
+        <div class="canvas-wrapper">
+            <canvas id="systemCanvas" width="400" height="400"></canvas>
+        </div>
+
+        <div class="canvas-wrapper">
+            <canvas id="graphCanvas" width="350" height="400"></canvas>
+        </div>
+
+        <div class="panel">
+            
+            <div class="slider-group">
+                <div class="slider-label"><span>Number of Pillars (n)</span> <span id="lblN" class="val-n">1</span></div>
+                <input type="range" id="nSlider" min="1" max="15" step="1" value="1">
+            </div>
+
+            <div class="readout-box">
+                <div class="val-row"><span style="color: #ccc;">Compression (&Delta;l):</span><span class="val-dl" id="valDL">100.0 &mu;m</span></div>
+                <div class="val-row"><span style="color: #ccc;">Force per Pillar:</span><span style="color: #0088ff; font-weight:bold;" id="valForce">100% W</span></div>
+            </div>
+
+            <div class="math-proof">
+                <strong style="color: #fff;">The Matrix Logic:</strong><br>
+                1. Force per pillar <span class="highlight">F = W / n</span><br>
+                2. Hooke's Law: <span class="highlight">&Delta;l = (Fl) / (AY)</span><br>
+                3. Substitute F: <span style="color:#ff33ff; font-weight:bold; font-size:1.1em;">&Delta;l = (Wl / AY) &times; (1 / n)</span><br><br>
+                Because <span class="highlight">W, l, A, Y</span> are all constants, the equation simplifies to <span style="color:#ffcc00; font-weight:bold;">y = k/x</span>.<br><br>
+                <em>Notice the graph uses discrete dots! You cannot have 2.5 pillars.</em>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const sCanvas = document.getElementById('systemCanvas');
+        const sCtx = sCanvas.getContext('2d');
+        const gCanvas = document.getElementById('graphCanvas');
+        const gCtx = gCanvas.getContext('2d');
+        
+        const nSlider = document.getElementById('nSlider');
+        const lblN = document.getElementById('lblN');
+        const valDL = document.getElementById('valDL');
+        const valForce = document.getElementById('valForce');
+
+        // Physics Constants (Arbitrary units for visualization)
+        const maxSquish = 120; // Maximum visual compression in pixels when n=1
+        const uncompressedHeight = 150; 
+        const floorY = 350;
+
+        function drawSystem(n, dl_px) {
+            sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
+
+            // Watermark
+            sCtx.save();
+            sCtx.globalAlpha = 0.05; sCtx.fillStyle = "#fff"; sCtx.font = "bold 35px Arial";
+            sCtx.textAlign = "center"; sCtx.fillText("PHYSICS ENGINE", sCanvas.width/2, sCanvas.height/2);
+            sCtx.restore();
+
+            // Draw Floor
+            sCtx.fillStyle = "#222";
+            sCtx.fillRect(20, floorY, sCanvas.width - 40, 20);
+            sCtx.strokeStyle = "#555"; sCtx.lineWidth = 2;
+            sCtx.beginPath(); sCtx.moveTo(20, floorY); sCtx.lineTo(sCanvas.width - 20, floorY); sCtx.stroke();
+
+            let currentHeight = uncompressedHeight - dl_px;
+            let blockY = floorY - currentHeight;
+
+            // Calculate pillar positions
+            let blockWidth = 300;
+            let startX = (sCanvas.width - blockWidth) / 2;
+            let pillarWidth = 10;
+            let spacing = n > 1 ? (blockWidth - pillarWidth) / (n - 1) : 0;
+
+            // Draw Pillars (Elastic compression visual)
+            for (let i = 0; i < n; i++) {
+                let px = n === 1 ? sCanvas.width/2 - pillarWidth/2 : startX + (i * spacing);
+                
+                // Color gets hotter (magenta/red) if it's squished hard
+                let stressRatio = dl_px / maxSquish;
+                let r = Math.floor(255 * stressRatio);
+                let g = Math.floor(255 * (1 - stressRatio));
+                sCtx.fillStyle = `rgb(${r}, ${g}, 200)`;
+                
+                sCtx.fillRect(px, blockY, pillarWidth, currentHeight);
+                sCtx.strokeStyle = "#000"; sCtx.lineWidth = 1; sCtx.strokeRect(px, blockY, pillarWidth, currentHeight);
+            }
+
+            // Draw Heavy Block
+            sCtx.fillStyle = "#334455";
+            sCtx.fillRect(startX, blockY - 60, blockWidth, 60);
+            sCtx.strokeStyle = "#88aacc"; sCtx.lineWidth = 3;
+            sCtx.strokeRect(startX, blockY - 60, blockWidth, 60);
+            
+            // Block text
+            sCtx.fillStyle = "#fff"; sCtx.font = "bold 20px Arial"; sCtx.textAlign = "center";
+            sCtx.fillText("HEAVY MASS (W)", sCanvas.width/2, blockY - 25);
+
+            // Draw original uncompressed reference line
+            let refY = floorY - uncompressedHeight;
+            sCtx.beginPath();
+            sCtx.setLineDash([5, 5]);
+            sCtx.moveTo(startX - 20, refY); sCtx.lineTo(startX + blockWidth + 20, refY);
+            sCtx.strokeStyle = "rgba(255, 51, 255, 0.5)"; sCtx.lineWidth = 2; sCtx.stroke();
+            sCtx.setLineDash([]);
+            
+            // Draw Delta L indicator
+            if (dl_px > 2) {
+                sCtx.beginPath();
+                sCtx.moveTo(startX - 10, refY); sCtx.lineTo(startX - 10, blockY);
+                sCtx.strokeStyle = "#ff33ff"; sCtx.lineWidth = 2; sCtx.stroke();
+                
+                // Arrows
+                sCtx.beginPath(); sCtx.moveTo(startX - 15, refY + 5); sCtx.lineTo(startX - 10, refY); sCtx.lineTo(startX - 5, refY + 5); sCtx.stroke();
+                sCtx.beginPath(); sCtx.moveTo(startX - 15, blockY - 5); sCtx.lineTo(startX - 10, blockY); sCtx.lineTo(startX - 5, blockY - 5); sCtx.stroke();
+                
+                sCtx.fillStyle = "#ff33ff"; sCtx.font = "bold 14px Arial"; sCtx.textAlign = "right";
+                sCtx.fillText("Δl", startX - 20, refY + (dl_px/2) + 5);
+            }
+        }
+
+        function drawGraph(currentN, maxN, maxDl) {
+            gCtx.clearRect(0, 0, gCanvas.width, gCanvas.height);
+
+            const pad = 40;
+            const gw = gCanvas.width - pad * 2;
+            const gh = gCanvas.height - pad * 2;
+            const originX = pad;
+            const originY = gCanvas.height - pad;
+
+            // Axes
+            gCtx.beginPath();
+            gCtx.moveTo(originX, pad - 20); gCtx.lineTo(originX, originY); gCtx.lineTo(originX + gw + 20, originY);
+            gCtx.strokeStyle = "#555"; gCtx.lineWidth = 2; gCtx.stroke();
+
+            // Labels
+            gCtx.fillStyle = "#fff"; gCtx.font = "bold 16px monospace";
+            gCtx.fillText("Δl", originX - 10, pad - 25);
+            gCtx.fillText("n", originX + gw + 20, originY + 20);
+            gCtx.fillText("0", originX - 15, originY + 15);
+
+            // Draw all possible discrete dots (1 to 15)
+            for (let i = 1; i <= maxN; i++) {
+                let px = originX + (i / maxN) * gw;
+                let py = originY - (maxSquish / i) / maxSquish * gh; // Scaled dl
+
+                gCtx.beginPath();
+                gCtx.arc(px, py, 4, 0, Math.PI*2);
+                
+                if (i === currentN) {
+                    // Highlight current point
+                    gCtx.fillStyle = "#ffcc00";
+                    gCtx.shadowBlur = 10;
+                    gCtx.shadowColor = "#ffcc00";
+                    gCtx.fill();
+                    gCtx.shadowBlur = 0;
+                    
+                    // Projection lines
+                    gCtx.beginPath();
+                    gCtx.setLineDash([4, 4]);
+                    gCtx.moveTo(px, originY); gCtx.lineTo(px, py);
+                    gCtx.moveTo(originX, py); gCtx.lineTo(px, py);
+                    gCtx.strokeStyle = "rgba(255, 204, 0, 0.5)";
+                    gCtx.stroke();
+                    gCtx.setLineDash([]);
+                } else {
+                    // Normal point
+                    gCtx.fillStyle = "rgba(0, 255, 204, 0.4)";
+                    gCtx.fill();
+                }
+            }
+        }
+
+        function update() {
+            let n = parseInt(nSlider.value);
+            
+            // Physics: dl is inversely proportional to n
+            let dl_px = maxSquish / n; 
+            
+            // UI Updates
+            lblN.innerText = n;
+            valDL.innerText = (dl_px).toFixed(1) + " μm"; // Scaled purely for reading
+            valForce.innerText = (100 / n).toFixed(1) + "% W";
+
+            drawSystem(n, dl_px);
+            drawGraph(n, parseInt(nSlider.max), maxSquish);
+        }
+
+        nSlider.addEventListener('input', update);
+        
+        // Initial draw
+        update();
+    </script>
+</body>
+</html>
