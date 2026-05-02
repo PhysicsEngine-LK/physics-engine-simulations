@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Atmospheric Compression - Physics Engine</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #00ffcc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            background: #0a0a0a;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #222;
+            box-shadow: 0 0 30px rgba(0,255,204,0.05);
+            justify-content: center;
+            max-width: 1200px;
+            align-items: flex-start;
+        }
+        .canvas-wrapper {
+            position: relative;
+            background: #050505;
+            border: 2px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+        .panel { 
+            width: 380px; 
+            text-align: left; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .header-title { margin-bottom: 5px; color: #00ffcc; font-size: 1.8em; text-transform: uppercase; letter-spacing: 1px;}
+        .sub-title { color: #888; margin-top: 0; margin-bottom: 20px; }
+
+        .readout-box {
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-size: 1.1em;
+            color: #fff;
+        }
+        
+        .val-row { display: flex; justify-content: space-between; margin: 8px 0; border-bottom: 1px solid #222; padding-bottom: 4px;}
+        .val-row:last-child { border-bottom: none; }
+        
+        .val-p0 { color: #ff33ff; font-weight: bold; font-size: 1.1em; } 
+        .val-y { color: #0088ff; font-weight: bold; font-size: 1.1em;} 
+        .val-ratio { color: #ffcc00; font-weight: bold; font-size: 1.2em;}
+
+        .slider-group { margin-bottom: 15px; background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333;}
+        .slider-label { display: flex; justify-content: space-between; color: #ccc; font-weight: bold; font-size: 0.9em; margin-bottom: 10px; font-family: 'Segoe UI', sans-serif;}
+        input[type="range"] { width: 100%; margin: 5px 0; cursor: pointer; }
+        
+        #pSlider { accent-color: #ff33ff; }
+        #ySlider { accent-color: #0088ff; }
+
+        .math-proof {
+            margin-top: 5px;
+            padding: 15px;
+            background: rgba(0, 255, 204, 0.05);
+            border: 1px dashed #00ffcc;
+            color: #00ffcc;
+            font-size: 0.95em;
+            text-align: left;
+            border-radius: 5px;
+            line-height: 1.6;
+        }
+        .highlight { color: #fff; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title">ATMOSPHERIC COMPRESSION</h2>
+    <p class="sub-title">2017 A/L Proof: Rod in Vacuum vs. Atmosphere</p>
+
+    <div class="container">
+        <!-- Physical System Canvas -->
+        <div class="canvas-wrapper">
+            <canvas id="simCanvas" width="550" height="400"></canvas>
+        </div>
+
+        <div class="panel">
+            
+            <div class="slider-group">
+                <div class="slider-label"><span style="color:#ff33ff;">Atmospheric Pressure (P₀)</span> <span id="lblP" class="val-p0">50 MPa</span></div>
+                <input type="range" id="pSlider" min="0" max="100" step="1" value="30">
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-label"><span style="color:#0088ff;">Young's Modulus (Y)</span> <span id="lblY" class="val-y">200 GPa</span></div>
+                <input type="range" id="ySlider" min="120" max="500" step="5" value="200">
+            </div>
+
+            <div class="readout-box">
+                <div class="val-row"><span style="color: #ccc;">Initial Length (L₀):</span><span style="color: #fff; font-weight:bold;">100.0 %</span></div>
+                <div class="val-row"><span style="color: #ccc;">Compressed Length (L):</span><span class="val-ratio" id="valL">85.0 %</span></div>
+                <div class="val-row"><span style="color: #ccc;">Ratio (L / L₀):</span><span class="val-ratio" id="valRatio">0.85</span></div>
+            </div>
+
+            <div class="math-proof">
+                <strong style="color: #fff;">The Matrix Logic:</strong><br>
+                1. Stress = <span class="highlight">F / A = P₀</span><br>
+                2. Strain = <span class="highlight">(L₀ - L) / L₀</span><br>
+                3. Y = Stress / Strain &rarr; <span class="highlight">Y = P₀ / [1 - (L/L₀)]</span><br>
+                4. Rearranging gives: <span style="color:#ffcc00; font-weight:bold; font-size:1.1em;">L/L₀ = 1 - (P₀ / Y)</span><br><br>
+                <em>Watch the Right Rod. As P₀ increases, the downward force arrows grow, and L shrinks!</em>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const pSlider = document.getElementById('pSlider');
+        const ySlider = document.getElementById('ySlider');
+        const lblP = document.getElementById('lblP');
+        const lblY = document.getElementById('lblY');
+        const valL = document.getElementById('valL');
+        const valRatio = document.getElementById('valRatio');
+
+        // Layout Constants
+        const floorY = 350;
+        const L0_px = 250; // Uncompressed height in pixels
+        const rodWidth = 40;
+        const vacX = 150; // Center X of Vacuum rod
+        const atmX = 400; // Center X of Atmosphere rod
+
+        function drawArrow(x, y, size) {
+            ctx.beginPath();
+            ctx.moveTo(x, y - size);
+            ctx.lineTo(x, y);
+            ctx.moveTo(x - 5, y - 5);
+            ctx.lineTo(x, y);
+            ctx.lineTo(x + 5, y - 5);
+            ctx.strokeStyle = "#ff33ff";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        function updateSimulation() {
+            let P0 = parseInt(pSlider.value);
+            let Y = parseInt(ySlider.value);
+            
+            // Mathematics: Ratio = 1 - (P0 / Y)
+            let ratio = 1 - (P0 / Y);
+            let L_px = L0_px * ratio;
+            let dL_px = L0_px - L_px;
+
+            // UI Updates
+            lblP.innerText = P0 + " Units";
+            lblY.innerText = Y + " Units";
+            valL.innerText = (ratio * 100).toFixed(1) + " %";
+            valRatio.innerText = ratio.toFixed(3);
+
+            // --- RENDER ---
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Watermark
+            ctx.save();
+            ctx.globalAlpha = 0.05; ctx.fillStyle = "#fff"; ctx.font = "bold 40px Arial";
+            ctx.textAlign = "center"; ctx.fillText("PHYSICS ENGINE", canvas.width/2, canvas.height/2);
+            ctx.restore();
+
+            // Draw Floor
+            ctx.fillStyle = "#222";
+            ctx.fillRect(30, floorY, canvas.width - 60, 20);
+            ctx.strokeStyle = "#555"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(30, floorY); ctx.lineTo(canvas.width - 30, floorY); ctx.stroke();
+            
+            // Floor hatching
+            for(let i=40; i<canvas.width-30; i+=10) {
+                ctx.beginPath(); ctx.moveTo(i, floorY); ctx.lineTo(i-10, floorY+20); ctx.strokeStyle = "#444"; ctx.stroke();
+            }
+
+            // Labels
+            ctx.fillStyle = "#fff"; ctx.font = "bold 16px Arial"; ctx.textAlign = "center";
+            ctx.fillText("VACUUM (b)", vacX, floorY + 40);
+            ctx.fillText("ATMOSPHERE (a)", atmX, floorY + 40);
+
+            // ------------------------------------------
+            // 1. LEFT ROD: VACUUM (Always L0)
+            // ------------------------------------------
+            let vacTopY = floorY - L0_px;
+            
+            // Draw Vacuum Chamber outline
+            ctx.strokeStyle = "rgba(0, 136, 255, 0.3)"; ctx.lineWidth = 2; ctx.setLineDash([5,5]);
+            ctx.strokeRect(vacX - 60, vacTopY - 30, 120, L0_px + 30);
+            ctx.setLineDash([]);
+            
+            // Draw Vacuum Rod
+            ctx.fillStyle = "#0088ff";
+            ctx.fillRect(vacX - rodWidth/2, vacTopY, rodWidth, L0_px);
+            ctx.strokeStyle = "#fff"; ctx.lineWidth = 1;
+            ctx.strokeRect(vacX - rodWidth/2, vacTopY, rodWidth, L0_px);
+
+            // L0 Label
+            ctx.beginPath();
+            ctx.moveTo(vacX - 45, floorY); ctx.lineTo(vacX - 45, vacTopY);
+            ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(vacX - 50, floorY); ctx.lineTo(vacX - 40, floorY); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(vacX - 50, vacTopY); ctx.lineTo(vacX - 40, vacTopY); ctx.stroke();
+            
+            ctx.fillStyle = "#fff"; ctx.font = "bold 16px Arial"; ctx.textAlign = "right";
+            ctx.fillText("L₀", vacX - 55, floorY - L0_px/2 + 5);
+
+            // ------------------------------------------
+            // 2. RIGHT ROD: ATMOSPHERE (Compresses)
+            // ------------------------------------------
+            let atmTopY = floorY - L_px;
+
+            // Draw "Ghost" of original height
+            ctx.fillStyle = "rgba(0, 136, 255, 0.15)";
+            ctx.fillRect(atmX - rodWidth/2, floorY - L0_px, rodWidth, dL_px);
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.2)"; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+            ctx.strokeRect(atmX - rodWidth/2, floorY - L0_px, rodWidth, dL_px);
+            ctx.setLineDash([]);
+
+            // Draw Compressed Rod
+            // Color gets slightly hotter as it compresses
+            let stressRatio = P0 / Y;
+            let rColor = Math.floor(0 + (255 * stressRatio * 2));
+            ctx.fillStyle = `rgb(${rColor}, 136, 255)`;
+            ctx.fillRect(atmX - rodWidth/2, atmTopY, rodWidth, L_px);
+            ctx.strokeStyle = "#fff"; ctx.lineWidth = 1;
+            ctx.strokeRect(atmX - rodWidth/2, atmTopY, rodWidth, L_px);
+
+            // Draw Pressure Arrows (P0)
+            if (P0 > 0) {
+                let arrowCount = Math.max(1, Math.floor(P0 / 10));
+                let spacing = rodWidth / arrowCount;
+                let startAx = (atmX - rodWidth/2) + spacing/2;
+                
+                for(let i=0; i<arrowCount; i++) {
+                    // Arrow height scales with pressure intensity
+                    drawArrow(startAx + i*spacing, atmTopY, 15 + (P0/5)); 
+                }
+                ctx.fillStyle = "#ff33ff"; ctx.font = "bold 16px Arial"; ctx.textAlign = "center";
+                ctx.fillText("P₀", atmX, atmTopY - 30 - (P0/5));
+            }
+
+            // L Label
+            ctx.beginPath();
+            ctx.moveTo(atmX - 45, floorY); ctx.lineTo(atmX - 45, atmTopY);
+            ctx.strokeStyle = "#ffcc00"; ctx.lineWidth = 2; ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(atmX - 50, floorY); ctx.lineTo(atmX - 40, floorY); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(atmX - 50, atmTopY); ctx.lineTo(atmX - 40, atmTopY); ctx.stroke();
+            
+            ctx.fillStyle = "#ffcc00"; ctx.font = "bold 16px Arial"; ctx.textAlign = "right";
+            ctx.fillText("L", atmX - 55, floorY - L_px/2 + 5);
+
+            // Delta L Label
+            if (dL_px > 5) {
+                ctx.beginPath();
+                ctx.moveTo(atmX + 45, atmTopY); ctx.lineTo(atmX + 45, floorY - L0_px);
+                ctx.strokeStyle = "#ff33ff"; ctx.lineWidth = 2; ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(atmX + 40, atmTopY); ctx.lineTo(atmX + 50, atmTopY); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(atmX + 40, floorY - L0_px); ctx.lineTo(atmX + 50, floorY - L0_px); ctx.stroke();
+                
+                ctx.fillStyle = "#ff33ff"; ctx.font = "bold 14px Arial"; ctx.textAlign = "left";
+                ctx.fillText("ΔL", atmX + 55, floorY - L0_px + dL_px/2 + 5);
+            }
+        }
+
+        pSlider.addEventListener('input', updateSimulation);
+        ySlider.addEventListener('input', updateSimulation);
+        
+        // Initial draw
+        updateSimulation();
+    </script>
+</body>
+</html>

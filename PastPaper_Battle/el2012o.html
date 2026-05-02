@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Terminal Velocity - Physics Engine</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #00ffcc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            background: #0a0a0a;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #222;
+            box-shadow: 0 0 30px rgba(0,255,204,0.05);
+            justify-content: center;
+            max-width: 1200px;
+            align-items: flex-start;
+        }
+        .canvas-wrapper {
+            position: relative;
+            background: #050505;
+            border: 2px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+        .panel { 
+            width: 350px; 
+            text-align: left; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .header-title { margin-bottom: 5px; color: #00ffcc; font-size: 1.8em; text-transform: uppercase; letter-spacing: 1px;}
+        .sub-title { color: #888; margin-top: 0; margin-bottom: 20px; }
+
+        .slider-group { margin-bottom: 15px; background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333;}
+        .slider-label { display: flex; justify-content: space-between; color: #ccc; font-weight: bold; font-size: 0.9em; margin-bottom: 10px; font-family: 'Segoe UI', sans-serif;}
+        input[type="range"] { width: 100%; margin: 5px 0; cursor: pointer; accent-color: #ffcc00;}
+
+        .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: 0.2s;
+            text-transform: uppercase;
+            font-size: 1em;
+        }
+        #startBtn { background: #ffcc00; color: #000; }
+        #startBtn:hover { background: #e6b800; transform: scale(1.02); }
+        #resetBtn { background: #333; color: #fff; }
+        #resetBtn:hover { background: #444; }
+
+        .math-proof {
+            margin-top: 5px;
+            padding: 15px;
+            background: rgba(0, 255, 204, 0.05);
+            border: 1px dashed #00ffcc;
+            color: #00ffcc;
+            font-size: 0.95em;
+            text-align: left;
+            border-radius: 5px;
+            line-height: 1.6;
+        }
+        .highlight { color: #fff; font-weight: bold; }
+        
+        .legend-item { display: flex; align-items: center; margin-bottom: 5px; font-size: 0.9em; color: #ccc;}
+        .legend-color { width: 15px; height: 3px; margin-right: 10px; display: inline-block; }
+        
+        .val-display { color: #ffcc00; font-weight: bold; font-size: 1.2em; }
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title">TERMINAL VELOCITY</h2>
+    <p class="sub-title">2012 A/L Q32 Proof: Live v-t Graph Construction</p>
+
+    <div class="container">
+        <!-- Physical System Canvas -->
+        <div class="canvas-wrapper">
+            <canvas id="tankCanvas" width="250" height="500"></canvas>
+        </div>
+
+        <!-- Graph Canvas -->
+        <div class="canvas-wrapper">
+            <canvas id="graphCanvas" width="450" height="500"></canvas>
+        </div>
+
+        <div class="panel">
+            
+            <div class="slider-group">
+                <div class="slider-label">
+                    <span style="color:#ffcc00;">ආරම්භක වේගය (v₀)</span> 
+                    <span id="lblV0" class="val-display">30 m/s</span>
+                </div>
+                <input type="range" id="v0Slider" min="0" max="50" step="1" value="30">
+            </div>
+
+            <div class="btn-group">
+                <button id="startBtn">අත් හරින්න</button>
+                <button id="resetBtn">නැවත සකසන්න</button>
+            </div>
+
+            <div class="slider-group" style="padding: 10px;">
+                <div class="legend-item"><span class="legend-color" style="background:#00ffcc;"></span> ශුද්ධ බර (W - U) - නියතයි</div>
+                <div class="legend-item"><span class="legend-color" style="background:#ff33ff;"></span> දුස්ස්‍රාවී බලය (Drag) - ප්‍රවේගයට සමානුපාතිකයි</div>
+            </div>
+
+            <div class="math-proof">
+                <strong style="color: #fff;">සජීවී නිරීක්ෂණ:</strong><br><br>
+                1. v₀ = 30 ලෙස තබා විසි කරන්න. ආරම්භයේදී Drag ඊතලය ඉතා දිගු බැවින් **මන්දනයක්** ඇති වී ප්‍රස්තාරය පහළට වක්‍ර වේ.<br><br>
+                2. v₀ = 0 ලෙස තබා අත් හරින්න. ආරම්භයේදී Drag නොමැති බැවින් **ත්වරණයක්** ඇති වී ප්‍රස්තාරය ඉහළට වක්‍ර වේ.<br><br>
+                3. v₀ = 15 ලෙස තැබූ විට කුමක් සිදුවේදැයි නිරීක්ෂණය කරන්න!
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const tCanvas = document.getElementById('tankCanvas');
+        const tCtx = tCanvas.getContext('2d');
+        const gCanvas = document.getElementById('graphCanvas');
+        const gCtx = gCanvas.getContext('2d');
+        
+        const v0Slider = document.getElementById('v0Slider');
+        const lblV0 = document.getElementById('lblV0');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // Physics State
+        let isSimulating = false;
+        let v0 = 30;
+        let v = 30;
+        let y = 40; // initial vertical position in tank
+        let time = 0;
+        let historyData = []; // To store {t, v} for the graph
+
+        // Constants
+        const v_terminal = 15;
+        const g_eff = 10; // Effective gravity (W - U) / m
+        const dt = 0.05; // Time step per frame
+        const visualScaleY = 2.5; // pixel movement per distance unit
+
+        function updateSliderLabel() {
+            v0 = parseInt(v0Slider.value);
+            lblV0.innerText = v0 + " m/s";
+            if(v0 === 0) startBtn.innerText = "අත් හරින්න (Drop)";
+            else startBtn.innerText = "විසි කරන්න (Throw)";
+            
+            if(!isSimulating && time === 0) {
+                drawTank();
+                drawGraph();
+            }
+        }
+
+        function drawVector(x, y, vy, color) {
+            if (Math.abs(vy) < 0.1) return;
+            let endY = y + vy;
+            
+            tCtx.beginPath();
+            tCtx.moveTo(x, y);
+            tCtx.lineTo(x, endY);
+            tCtx.strokeStyle = color;
+            tCtx.lineWidth = 3;
+            tCtx.stroke();
+
+            // Arrow head
+            let direction = vy > 0 ? 1 : -1;
+            tCtx.beginPath();
+            tCtx.moveTo(x, endY);
+            tCtx.lineTo(x - 6, endY - direction * 8);
+            tCtx.lineTo(x + 6, endY - direction * 8);
+            tCtx.fillStyle = color;
+            tCtx.fill();
+        }
+
+        function drawTank() {
+            tCtx.clearRect(0, 0, tCanvas.width, tCanvas.height);
+
+            // Water Background
+            tCtx.fillStyle = "rgba(0, 136, 255, 0.15)";
+            tCtx.fillRect(0, 0, tCanvas.width, tCanvas.height);
+
+            // Water Surface Waves
+            tCtx.beginPath();
+            for(let i=0; i<tCanvas.width; i+=20) {
+                tCtx.moveTo(i, 20);
+                tCtx.quadraticCurveTo(i+10, 15, i+20, 20);
+            }
+            tCtx.strokeStyle = "#0088ff"; tCtx.lineWidth = 2; tCtx.stroke();
+
+            // Draw Ball
+            let currentY = isSimulating || time > 0 ? y : 40;
+            tCtx.beginPath();
+            tCtx.arc(tCanvas.width/2, currentY, 12, 0, Math.PI*2);
+            tCtx.fillStyle = "#fff";
+            tCtx.fill();
+            tCtx.strokeStyle = "#444"; tCtx.lineWidth = 1; tCtx.stroke();
+
+            // Draw Forces
+            // Net Gravity (W - U) is constant
+            let netGravityVis = 40; 
+            // Drag is proportional to current velocity
+            let currentV = isSimulating || time > 0 ? v : v0;
+            let dragVis = - (currentV / v_terminal) * netGravityVis;
+
+            drawVector(tCanvas.width/2 - 15, currentY, netGravityVis, "#00ffcc"); // Gravity (Down)
+            drawVector(tCanvas.width/2 + 15, currentY, dragVis, "#ff33ff"); // Drag (Up)
+            
+            // Current Velocity Text
+            tCtx.fillStyle = "#ffcc00"; tCtx.font = "bold 14px Arial"; tCtx.textAlign = "center";
+            tCtx.fillText(currentV.toFixed(1) + " m/s", tCanvas.width/2, currentY - 25);
+        }
+
+        function drawGraph() {
+            gCtx.clearRect(0, 0, gCanvas.width, gCanvas.height);
+
+            const pad = 40;
+            const gw = gCanvas.width - pad * 2;
+            const gh = gCanvas.height - pad * 2;
+            const originX = pad;
+            const originY = gCanvas.height - pad;
+
+            // Draw Grid lines
+            gCtx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+            gCtx.lineWidth = 1;
+            for(let i=1; i<=5; i++) {
+                let yLine = originY - (i/5)*gh;
+                gCtx.beginPath(); gCtx.moveTo(originX, yLine); gCtx.lineTo(originX + gw, yLine); gCtx.stroke();
+            }
+
+            // Axes
+            gCtx.beginPath();
+            gCtx.moveTo(originX, pad - 20); gCtx.lineTo(originX, originY); gCtx.lineTo(originX + gw + 20, originY);
+            gCtx.strokeStyle = "#555"; gCtx.lineWidth = 2; gCtx.stroke();
+
+            // Labels
+            gCtx.fillStyle = "#fff"; gCtx.font = "bold 14px monospace";
+            gCtx.fillText("v (m/s)", originX - 10, pad - 25);
+            gCtx.fillText("t", originX + gw + 20, originY + 5);
+            gCtx.fillText("0", originX - 15, originY + 15);
+            gCtx.fillText("50", originX - 25, pad + 5);
+
+            // Draw Terminal Velocity Line (v = 15)
+            let v_term_y = originY - (15 / 50) * gh;
+            gCtx.beginPath();
+            gCtx.setLineDash([5, 5]);
+            gCtx.moveTo(originX, v_term_y);
+            gCtx.lineTo(originX + gw, v_term_y);
+            gCtx.strokeStyle = "#00ffcc";
+            gCtx.lineWidth = 2;
+            gCtx.stroke();
+            gCtx.setLineDash([]);
+            
+            gCtx.fillStyle = "#00ffcc";
+            gCtx.fillText("15 (ආන්ත වේගය)", originX + gw - 120, v_term_y - 10);
+
+            // Plot Data
+            if (historyData.length > 0) {
+                gCtx.beginPath();
+                gCtx.strokeStyle = "#ffcc00";
+                gCtx.lineWidth = 3;
+                
+                // Scale Time to fit graph (assume 10 seconds total width)
+                let maxTime = 10; 
+                
+                for(let i=0; i<historyData.length; i++) {
+                    let pt = historyData[i];
+                    let px = originX + (pt.t / maxTime) * gw;
+                    let py = originY - (pt.v / 50) * gh;
+                    
+                    if (px > originX + gw) continue; // clamp to graph area
+
+                    if (i === 0) gCtx.moveTo(px, py);
+                    else gCtx.lineTo(px, py);
+                }
+                gCtx.stroke();
+                
+                // Draw current point glow
+                let lastPt = historyData[historyData.length-1];
+                let px = originX + (lastPt.t / maxTime) * gw;
+                let py = originY - (lastPt.v / 50) * gh;
+                if (px <= originX + gw) {
+                    gCtx.beginPath(); gCtx.arc(px, py, 5, 0, Math.PI*2);
+                    gCtx.fillStyle = "#fff"; gCtx.fill();
+                    gCtx.shadowBlur = 10; gCtx.shadowColor = "#ffcc00"; gCtx.fill();
+                    gCtx.shadowBlur = 0;
+                }
+            } else {
+                // Plot starting point
+                let py = originY - (v0 / 50) * gh;
+                gCtx.beginPath(); gCtx.arc(originX, py, 5, 0, Math.PI*2);
+                gCtx.fillStyle = "#ffcc00"; gCtx.fill();
+            }
+        }
+
+        function updatePhysics() {
+            if(isSimulating) {
+                // Acceleration: a = g' * (1 - v/v_T)
+                let a = g_eff * (1 - (v / v_terminal));
+                
+                v += a * dt;
+                y += v * dt * visualScaleY;
+                time += dt;
+
+                historyData.push({t: time, v: v});
+
+                // Stop if it hits the bottom of the tank visually
+                if(y > tCanvas.height - 20 || time >= 10) {
+                    isSimulating = false;
+                    startBtn.innerText = "අවසන්";
+                    startBtn.style.background = "#444";
+                    startBtn.style.color = "#fff";
+                }
+            }
+            
+            drawTank();
+            drawGraph();
+            
+            if(isSimulating) {
+                requestAnimationFrame(updatePhysics);
+            }
+        }
+
+        startBtn.onclick = () => {
+            if (isSimulating || startBtn.innerText === "අවසන්") return;
+            v0 = parseInt(v0Slider.value);
+            v = v0;
+            y = 40;
+            time = 0;
+            historyData = [{t: 0, v: v0}];
+            isSimulating = true;
+            startBtn.innerText = "ධාවනය වේ...";
+            updatePhysics();
+        };
+
+        resetBtn.onclick = () => {
+            isSimulating = false;
+            time = 0;
+            y = 40;
+            historyData = [];
+            updateSliderLabel(); // restores button text and redraws
+            startBtn.style.background = "#ffcc00";
+            startBtn.style.color = "#000";
+        };
+
+        v0Slider.addEventListener('input', updateSliderLabel);
+        
+        // Initial Draw
+        updateSliderLabel();
+    </script>
+</body>
+</html>
