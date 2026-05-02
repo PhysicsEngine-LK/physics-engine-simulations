@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Casing & Sphere - Physics Engine v3</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #00ffcc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            background: #0a0a0a;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #222;
+            box-shadow: 0 0 30px rgba(0,255,204,0.05);
+            justify-content: center;
+            max-width: 1200px;
+            align-items: flex-start;
+        }
+        .canvas-wrapper {
+            position: relative;
+            background: #050505;
+            border: 2px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+        .panel { 
+            width: 350px; 
+            text-align: left; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .header-title { margin-bottom: 5px; color: #00ffcc; font-size: 1.8em; text-transform: uppercase; letter-spacing: 1px;}
+        .sub-title { color: #888; margin-top: 0; margin-bottom: 20px; }
+
+        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        
+        button {
+            padding: 15px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: 0.2s;
+            text-transform: uppercase;
+            font-size: 1em;
+        }
+        #dropBtn { background: #0088ff; color: #fff; }
+        #dropBtn:hover { background: #0066cc; transform: scale(1.02); }
+        
+        #releaseBtn { background: #ffcc00; color: #000; opacity: 0.5; cursor: not-allowed; }
+        #releaseBtn.ready { opacity: 1; cursor: pointer; box-shadow: 0 0 15px rgba(255,204,0,0.5); animation: pulse 1.5s infinite;}
+        #releaseBtn.ready:hover { background: #e6b800; transform: scale(1.02); }
+
+        #resetBtn { background: #333; color: #fff; }
+        #resetBtn:hover { background: #444; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .math-proof {
+            margin-top: 5px;
+            padding: 15px;
+            background: rgba(0, 255, 204, 0.05);
+            border: 1px dashed #00ffcc;
+            color: #00ffcc;
+            font-size: 0.95em;
+            text-align: left;
+            border-radius: 5px;
+            line-height: 1.6;
+        }
+        .highlight { color: #fff; font-weight: bold; }
+        
+        .legend-item { display: flex; align-items: center; margin-bottom: 5px; font-size: 0.9em; color: #ccc;}
+        .legend-color { width: 15px; height: 3px; margin-right: 10px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title">CASING & SPHERE</h2>
+    <p class="sub-title">2015 A/L Q36 Proof: Visible Deceleration Curve</p>
+
+    <div class="container">
+        <!-- Physical System Canvas -->
+        <div class="canvas-wrapper">
+            <canvas id="tankCanvas" width="250" height="500"></canvas>
+        </div>
+
+        <!-- Graph Canvas -->
+        <div class="canvas-wrapper">
+            <canvas id="graphCanvas" width="450" height="500"></canvas>
+        </div>
+
+        <div class="panel">
+            
+            <div class="btn-group">
+                <button id="dropBtn">1. හාපනය අත් හරින්න</button>
+                <button id="releaseBtn" disabled>2. බෝලය නිදහස් කරන්න</button>
+                <button id="resetBtn">නැවත සකසන්න</button>
+            </div>
+
+            <div class="slider-group" style="padding: 10px; background: #111; border-radius: 8px; border: 1px solid #333; margin-bottom: 15px;">
+                <div class="legend-item"><span class="legend-color" style="background:#00ffcc;"></span> ශුද්ධ බර (W - U)</div>
+                <div class="legend-item"><span class="legend-color" style="background:#ff33ff;"></span> දුස්ස්‍රාවී බලය (Drag)</div>
+                <div style="font-size: 0.95em; color: #ffcc00; margin-top: 10px; font-weight:bold;" id="statusText">තත්ත්වය: සූදානම්</div>
+            </div>
+
+            <div class="math-proof">
+                <strong style="color: #fff;">දැන් නිරීක්ෂණය කරන්න:</strong><br><br>
+                1. හාපනය <strong>45 m/s</strong> දක්වා වේගවත් වීමට ඉඩ හරින්න.<br><br>
+                2. කහ පැහැති බොත්තම දැල්වුණු වහාම එය ඔබන්න.<br><br>
+                3. දැන් බෝලය මත Drag ඊතලය විශාල වී, ප්‍රස්තාරය ක්‍රමයෙන් <strong>5 m/s</strong> දක්වා වක්‍රාකාරව පහළ බසින ආකාරය (Exponential Decay) ඉතා පැහැදිලිව බලාගත හැක.
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const tCanvas = document.getElementById('tankCanvas');
+        const tCtx = tCanvas.getContext('2d');
+        const gCanvas = document.getElementById('graphCanvas');
+        const gCtx = gCanvas.getContext('2d');
+        
+        const dropBtn = document.getElementById('dropBtn');
+        const releaseBtn = document.getElementById('releaseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const statusText = document.getElementById('statusText');
+
+        let phase = 0; // 0=ready, 1=casing falling, 2=sphere falling
+        let v = 0;
+        let time = 0;
+        let historyData = []; 
+        let wallOffset = 0; 
+        let particles = [];
+
+        // Constants
+        const v_term_casing = 45;
+        const v_term_sphere = 5;
+        const dt = 0.05; 
+        const maxTime = 25; // Extended time for clear viewing
+
+        function initParticles() {
+            particles = [];
+            for(let i=0; i<30; i++) {
+                particles.push({
+                    x: Math.random() * tCanvas.width,
+                    y: Math.random() * tCanvas.height,
+                    size: Math.random() * 3 + 1,
+                    speedMult: Math.random() * 0.5 + 0.5
+                });
+            }
+        }
+
+        function drawVector(x, y, vy, color) {
+            if (Math.abs(vy) < 1) return;
+            let endY = y + vy;
+            
+            tCtx.beginPath();
+            tCtx.moveTo(x, y);
+            tCtx.lineTo(x, endY);
+            tCtx.strokeStyle = color;
+            tCtx.lineWidth = 3;
+            tCtx.stroke();
+
+            let direction = vy > 0 ? 1 : -1;
+            tCtx.beginPath();
+            tCtx.moveTo(x, endY);
+            tCtx.lineTo(x - 6, endY - direction * 8);
+            tCtx.lineTo(x + 6, endY - direction * 8);
+            tCtx.fillStyle = color;
+            tCtx.fill();
+        }
+
+        function drawTank() {
+            tCtx.clearRect(0, 0, tCanvas.width, tCanvas.height);
+
+            tCtx.fillStyle = "rgba(0, 136, 255, 0.15)";
+            tCtx.fillRect(0, 0, tCanvas.width, tCanvas.height);
+
+            tCtx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+            tCtx.lineWidth = 2;
+            for(let i = -50; i < tCanvas.height + 50; i += 50) {
+                let yLine = i - (wallOffset % 50);
+                tCtx.beginPath(); tCtx.moveTo(0, yLine); tCtx.lineTo(20, yLine); tCtx.stroke();
+                tCtx.beginPath(); tCtx.moveTo(tCanvas.width, yLine); tCtx.lineTo(tCanvas.width - 20, yLine); tCtx.stroke();
+            }
+
+            tCtx.fillStyle = "rgba(255, 255, 255, 0.3)";
+            for(let p of particles) {
+                p.y -= v * dt * p.speedMult * 2.5; 
+                if (p.y < 0) { p.y = tCanvas.height; p.x = Math.random() * tCanvas.width; }
+                tCtx.beginPath(); tCtx.arc(p.x, p.y, p.size, 0, Math.PI*2); tCtx.fill();
+            }
+
+            let centerY = tCanvas.height / 2;
+
+            if (phase === 1 || phase === 0) {
+                tCtx.beginPath();
+                tCtx.arc(tCanvas.width/2, centerY, 24, 0, Math.PI*2);
+                tCtx.fillStyle = "#334455"; tCtx.fill();
+                tCtx.strokeStyle = "#88aacc"; tCtx.lineWidth = 2; tCtx.stroke();
+                
+                if (phase === 1) {
+                    let netG = 40; 
+                    let drag = - (v / v_term_casing) * netG;
+                    drawVector(tCanvas.width/2 - 30, centerY, netG, "#00ffcc"); 
+                    drawVector(tCanvas.width/2 + 30, centerY, drag, "#ff33ff"); 
+                }
+            } else if (phase === 2 || phase === 3) {
+                tCtx.beginPath();
+                tCtx.arc(tCanvas.width/2, centerY, 8, 0, Math.PI*2);
+                tCtx.fillStyle = "#fff"; tCtx.fill();
+                tCtx.strokeStyle = "#ffcc00"; tCtx.lineWidth = 2; tCtx.stroke();
+
+                let netG = 15; 
+                let drag = - (v / v_term_sphere) * netG;
+                let visualDrag = Math.max(drag, -150); // Cap arrow length
+
+                drawVector(tCanvas.width/2 - 15, centerY, netG, "#00ffcc"); 
+                drawVector(tCanvas.width/2 + 15, centerY, visualDrag, "#ff33ff"); 
+            }
+
+            tCtx.fillStyle = "#ffcc00"; tCtx.font = "bold 16px Arial"; tCtx.textAlign = "center";
+            tCtx.fillText(v.toFixed(1) + " m/s", tCanvas.width/2, centerY - 40);
+        }
+
+        function drawGraph() {
+            gCtx.clearRect(0, 0, gCanvas.width, gCanvas.height);
+
+            const pad = 40;
+            const gw = gCanvas.width - pad * 2;
+            const gh = gCanvas.height - pad * 2;
+            const originX = pad;
+            const originY = gCanvas.height - pad;
+
+            gCtx.beginPath();
+            gCtx.moveTo(originX, pad - 20); gCtx.lineTo(originX, originY); gCtx.lineTo(originX + gw + 20, originY);
+            gCtx.strokeStyle = "#555"; gCtx.lineWidth = 2; gCtx.stroke();
+
+            gCtx.fillStyle = "#fff"; gCtx.font = "bold 14px monospace";
+            gCtx.fillText("v (m/s)", originX - 10, pad - 25);
+            gCtx.fillText("t", originX + gw + 20, originY + 5);
+            gCtx.fillText("0", originX - 15, originY + 15);
+            gCtx.fillText("50", originX - 25, pad + 5);
+
+            let v_term1_y = originY - (45 / 50) * gh;
+            gCtx.beginPath(); gCtx.setLineDash([4, 4]); gCtx.moveTo(originX, v_term1_y); gCtx.lineTo(originX + gw, v_term1_y);
+            gCtx.strokeStyle = "rgba(0, 255, 204, 0.5)"; gCtx.lineWidth = 2; gCtx.stroke(); gCtx.setLineDash([]);
+            gCtx.fillStyle = "#00ffcc"; gCtx.fillText("V₀ (45 m/s)", originX + 20, v_term1_y - 8);
+
+            let v_term2_y = originY - (5 / 50) * gh;
+            gCtx.beginPath(); gCtx.setLineDash([4, 4]); gCtx.moveTo(originX, v_term2_y); gCtx.lineTo(originX + gw, v_term2_y);
+            gCtx.strokeStyle = "rgba(255, 204, 0, 0.5)"; gCtx.lineWidth = 2; gCtx.stroke(); gCtx.setLineDash([]);
+            gCtx.fillStyle = "#ffcc00"; gCtx.fillText("V₀/9 (5 m/s)", originX + 20, v_term2_y - 8);
+
+            if (historyData.length > 0) {
+                gCtx.beginPath();
+                gCtx.strokeStyle = "#ff3366";
+                gCtx.lineWidth = 3;
+                
+                for(let i=0; i<historyData.length; i++) {
+                    let pt = historyData[i];
+                    let px = originX + (pt.t / maxTime) * gw;
+                    let py = originY - (pt.v / 50) * gh;
+                    
+                    if (px > originX + gw) continue; 
+
+                    if (i === 0) gCtx.moveTo(px, py);
+                    else gCtx.lineTo(px, py);
+                }
+                gCtx.stroke();
+                
+                let lastPt = historyData[historyData.length-1];
+                let px = originX + (lastPt.t / maxTime) * gw;
+                let py = originY - (lastPt.v / 50) * gh;
+                if (px <= originX + gw) {
+                    gCtx.beginPath(); gCtx.arc(px, py, 5, 0, Math.PI*2);
+                    gCtx.fillStyle = "#fff"; gCtx.fill();
+                    gCtx.shadowBlur = 10; gCtx.shadowColor = "#ff3366"; gCtx.fill();
+                    gCtx.shadowBlur = 0;
+                }
+            }
+        }
+
+        function updatePhysics() {
+            if (phase === 1 || phase === 2) {
+                let a = 0;
+                
+                if (phase === 1) {
+                    // Casing accelerates smoothly to 45
+                    a = 15 * (1 - (v / v_term_casing)); 
+                } else if (phase === 2) {
+                    // Sphere decelerates smoothly to 5. 
+                    // Lowered the constant here from previous version for a highly visible curve!
+                    a = 2.5 * (1 - (v / v_term_sphere)); 
+                }
+
+                v += a * dt;
+                
+                if (phase === 2 && v < v_term_sphere) {
+                    v = v_term_sphere;
+                }
+
+                time += dt;
+                wallOffset += v * dt * 2.5; 
+
+                historyData.push({t: time, v: v});
+
+                if (phase === 1 && v > 44 && releaseBtn.disabled) {
+                    releaseBtn.disabled = false;
+                    releaseBtn.classList.add("ready");
+                    statusText.innerText = "හාපනය ආන්ත ප්‍රවේගයේ ඇත. බෝලය මුදා හරින්න!";
+                }
+
+                if (time >= maxTime) {
+                    phase = 3; 
+                    statusText.innerText = "අනුකරණය අවසන්.";
+                }
+            }
+            
+            drawTank();
+            drawGraph();
+            
+            if (phase === 1 || phase === 2) {
+                requestAnimationFrame(updatePhysics);
+            }
+        }
+
+        dropBtn.onclick = () => {
+            if (phase !== 0) return;
+            phase = 1;
+            dropBtn.style.background = "#444";
+            statusText.innerText = "හාපනය ත්වරණය වේ...";
+            updatePhysics();
+        };
+
+        releaseBtn.onclick = () => {
+            if (v <= 44) return;
+            let wasEnded = (phase === 3);
+            phase = 2; 
+            releaseBtn.classList.remove("ready");
+            releaseBtn.disabled = true;
+            releaseBtn.style.background = "#444";
+            releaseBtn.style.color = "#fff";
+            statusText.innerHTML = "බෝලය මුදා හැරියේය! <span style='color:#ff33ff;'>පැහැදිලි මන්දනය නිරීක්ෂණය කරන්න.</span>";
+            
+            if (wasEnded) updatePhysics();
+        };
+
+        resetBtn.onclick = () => {
+            phase = 0;
+            v = 0;
+            time = 0;
+            wallOffset = 0;
+            historyData = [];
+            
+            dropBtn.style.background = "#0088ff";
+            
+            releaseBtn.disabled = true;
+            releaseBtn.classList.remove("ready");
+            releaseBtn.style.background = "#ffcc00";
+            releaseBtn.style.color = "#000";
+            
+            statusText.innerText = "තත්ත්වය: සූදානම්";
+            
+            initParticles();
+            drawTank();
+            drawGraph();
+        };
+
+        initParticles();
+        drawTank();
+        drawGraph();
+    </script>
+</body>
+</html>

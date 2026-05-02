@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Underwater Projectile - Physics Engine v2</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #00ffcc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            background: #0a0a0a;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #222;
+            box-shadow: 0 0 30px rgba(0,255,204,0.05);
+            justify-content: center;
+            max-width: 1200px;
+            align-items: flex-start;
+        }
+        .canvas-wrapper {
+            position: relative;
+            background: #050505;
+            border: 2px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+        .panel { 
+            width: 380px; 
+            text-align: left; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .header-title { margin-bottom: 5px; color: #00ffcc; font-size: 1.8em; text-transform: uppercase; letter-spacing: 1px;}
+        .sub-title { color: #888; margin-top: 0; margin-bottom: 20px; }
+
+        .slider-group { margin-bottom: 15px; background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333;}
+        .slider-label { display: flex; justify-content: space-between; color: #ccc; font-weight: bold; font-size: 0.9em; margin-bottom: 10px; font-family: 'Segoe UI', sans-serif;}
+        input[type="range"] { width: 100%; margin: 5px 0; cursor: pointer; }
+        
+        #etaSlider { accent-color: #ff33ff; }
+        #rhoSlider { accent-color: #ffcc00; }
+
+        button {
+            padding: 15px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: 0.2s;
+            text-transform: uppercase;
+            font-size: 1.2em;
+            background: #ff3366; 
+            color: #fff;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(255, 51, 102, 0.4);
+        }
+        button:hover { background: #ff4d79; transform: scale(1.02); }
+
+        .math-proof {
+            margin-top: 5px;
+            padding: 15px;
+            background: rgba(0, 255, 204, 0.05);
+            border: 1px dashed #00ffcc;
+            color: #00ffcc;
+            font-size: 0.95em;
+            text-align: left;
+            border-radius: 5px;
+            line-height: 1.6;
+        }
+        .highlight { color: #fff; font-weight: bold; }
+        
+        /* Legends */
+        .legend-item { display: flex; align-items: center; margin-bottom: 5px; font-size: 0.9em; color: #ccc;}
+        .legend-color { width: 15px; height: 3px; margin-right: 10px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title">UNDERWATER PROJECTILE</h2>
+    <p class="sub-title">2012 A/L Q31 Proof: Drag, Upthrust & Gravity Matrix</p>
+
+    <div class="container">
+        <!-- Physical System Canvas -->
+        <div class="canvas-wrapper">
+            <canvas id="simCanvas" width="600" height="450"></canvas>
+        </div>
+
+        <div class="panel">
+            
+            <button id="fireBtn">🎯 වෙඩි තබන්න (FIRE)</button>
+
+            <div class="slider-group">
+                <div class="slider-label"><span style="color:#ff33ff;">ජලයේ දුස්ස්‍රාවිතාව (η)</span> <span id="lblEta">මධ්‍යම</span></div>
+                <input type="range" id="etaSlider" min="0" max="0.2" step="0.01" value="0.05">
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-label"><span style="color:#ffcc00;">බෝලයේ සාපේක්ෂ ඝනත්වය (ρ<sub>pb</sub> / ρ<sub>w</sub>)</span> <span id="lblRho">11.3 (ඊයම්)</span></div>
+                <input type="range" id="rhoSlider" min="0.5" max="15.0" step="0.1" value="11.3">
+            </div>
+
+            <div class="slider-group" style="padding: 10px;">
+                <div class="legend-item"><span class="legend-color" style="background:#ffcc00;"></span> බර (mg) - පහළට</div>
+                <div class="legend-item"><span class="legend-color" style="background:#00ffcc;"></span> උඩුකුරු තෙරපුම (U) - ඉහළට</div>
+                <div class="legend-item"><span class="legend-color" style="background:#ff33ff;"></span> දුස්ස්‍රාවී බලය (Drag) - චලිතයට විරුද්ධව</div>
+            </div>
+
+            <div class="math-proof">
+                <strong style="color: #fff;">සමීකරණ සත්‍යාපනය:</strong><br>
+                1. <span class="highlight">x-දිශාව:</span> a<sub>x</sub> = -(9η/2a²ρ<sub>pb</sub>) v<sub>x</sub><br>
+                2. <span class="highlight">y-දිශාව:</span> a<sub>y</sub> = (1 - ρ<sub>w</sub>/ρ<sub>pb</sub>)g - (9η/2a²ρ<sub>pb</sub>) v<sub>y</sub><br><br>
+                <em>කැන්වසයේ දකුණු පස ඇති 'නිදහස් වස්තු සටහන' දෙස බලන්න. ඝනත්වය වෙනස් කර mg ඊතලය වෙනස් වන අයුරුත්, වෙඩි තැබූ පසු Drag ඊතලය වෙනස් වන අයුරුත් නිරීක්ෂණය කරන්න.</em>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const etaSlider = document.getElementById('etaSlider');
+        const rhoSlider = document.getElementById('rhoSlider');
+        const lblEta = document.getElementById('lblEta');
+        const lblRho = document.getElementById('lblRho');
+        const fireBtn = document.getElementById('fireBtn');
+
+        // Physics Constants & Variables
+        let isFiring = false;
+        let ball = { x: 50, y: 150, vx: 0, vy: 0, radius: 8 };
+        let path = [];
+        
+        const g = 0.2; // Gravity (scaled)
+        const rho_w = 1.0; // Water density
+        const initialVelocity = 6.0;
+
+        function updateLabels() {
+            let eta = parseFloat(etaSlider.value);
+            if(eta === 0) lblEta.innerText = "ශුන්‍ය (පරිපූර්ණ තරලයක්)";
+            else if(eta < 0.05) lblEta.innerText = "අඩු";
+            else if(eta < 0.15) lblEta.innerText = "මධ්‍යම";
+            else lblEta.innerText = "ඉතා වැඩි (ඝන තෙල්)";
+
+            let rho = parseFloat(rhoSlider.value);
+            let material = "";
+            if(rho < 1) material = "(පාවෙයි)";
+            else if(rho === 1) material = "(ජලයට සමානයි)";
+            else if(rho > 10) material = "(ඊයම්/ලෝහ)";
+            else material = "(ගිලෙයි)";
+            lblRho.innerText = rho.toFixed(1) + " " + material;
+
+            // Redraw scene so static forces update when sliders move
+            if(!isFiring) drawScene();
+        }
+
+        // Modified drawVector to include text labels
+        function drawVector(startX, startY, vx, vy, color, label) {
+            let len = Math.sqrt(vx*vx + vy*vy);
+            if (len < 0.1) return;
+            
+            let endX = startX + vx;
+            let endY = startY + vy;
+            
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, endY);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Arrow head
+            let angle = Math.atan2(vy, vx);
+            ctx.beginPath();
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - 8 * Math.cos(angle - Math.PI/6), endY - 8 * Math.sin(angle - Math.PI/6));
+            ctx.lineTo(endX - 8 * Math.cos(angle + Math.PI/6), endY - 8 * Math.sin(angle + Math.PI/6));
+            ctx.fillStyle = color;
+            ctx.fill();
+
+            // Draw Text Label
+            if(label) {
+                ctx.font = "bold 14px Arial";
+                ctx.fillStyle = color;
+                // Offset text slightly past the arrowhead
+                let textX = endX + 10 * Math.cos(angle);
+                let textY = endY + 10 * Math.sin(angle);
+                
+                // Adjust text baseline so it doesn't overlap weirdly
+                ctx.textBaseline = "middle";
+                ctx.textAlign = (Math.cos(angle) > 0) ? "left" : "right";
+                if(Math.abs(Math.cos(angle)) < 0.2) ctx.textAlign = "center";
+                
+                ctx.fillText(label, textX, textY);
+            }
+        }
+
+        // Function to draw a static Free Body Diagram Box
+        function drawFBD() {
+            let fbdX = canvas.width - 120;
+            let fbdY = 120;
+            
+            // Draw FBD Box
+            ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+            ctx.fillRect(fbdX - 70, fbdY - 90, 140, 180);
+            ctx.strokeStyle = "#555"; ctx.lineWidth = 1;
+            ctx.strokeRect(fbdX - 70, fbdY - 90, 140, 180);
+
+            // Title
+            ctx.fillStyle = "#fff"; ctx.font = "bold 12px Arial"; ctx.textAlign = "center";
+            ctx.fillText("නිදහස් වස්තු සටහන (FBD)", fbdX, fbdY - 70);
+
+            // Draw Central Ball
+            ctx.beginPath();
+            ctx.arc(fbdX, fbdY, 6, 0, Math.PI*2);
+            ctx.fillStyle = "#fff";
+            ctx.fill();
+
+            // Get Current Values
+            let rho_pb = parseFloat(rhoSlider.value);
+            let eta = parseFloat(etaSlider.value);
+            
+            // Calculate Vector Lengths for FBD
+            let mg_visual = 25 * (rho_pb / 5); 
+            let u_visual = -25 * (rho_w / 5);
+            let dragX_visual = isFiring ? -ball.vx * eta * 40 : 0;
+            let dragY_visual = isFiring ? -ball.vy * eta * 40 : 0;
+
+            // Ensure mg doesn't draw outside the box if density is huge
+            if (mg_visual > 75) mg_visual = 75;
+
+            // Draw Static Vectors in FBD
+            drawVector(fbdX, fbdY, 0, mg_visual, "#ffcc00", "mg");
+            drawVector(fbdX, fbdY, 0, u_visual, "#00ffcc", "U");
+            
+            if(isFiring) {
+                drawVector(fbdX, fbdY, dragX_visual, dragY_visual, "#ff33ff", "Drag");
+            } else {
+                // Show a dashed ghost drag vector if not firing to indicate direction
+                ctx.setLineDash([3, 3]);
+                drawVector(fbdX, fbdY, -40, 0, "rgba(255, 51, 255, 0.4)", "Drag (Future)");
+                ctx.setLineDash([]);
+            }
+        }
+
+        function drawScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Water Background
+            ctx.fillStyle = "rgba(0, 136, 255, 0.15)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Water Surface Waves
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=20) {
+                ctx.moveTo(i, 20);
+                ctx.quadraticCurveTo(i+10, 15, i+20, 20);
+            }
+            ctx.strokeStyle = "#0088ff"; ctx.lineWidth = 2; ctx.stroke();
+
+            // Watermark
+            ctx.save();
+            ctx.globalAlpha = 0.08; ctx.fillStyle = "#fff"; ctx.font = "bold 40px Arial";
+            ctx.textAlign = "center"; ctx.fillText("PHYSICS ENGINE", canvas.width/2, canvas.height/2);
+            ctx.restore();
+
+            // Draw Toy Gun
+            ctx.fillStyle = "#333";
+            ctx.fillRect(10, 140, 40, 20); // barrel
+            ctx.fillRect(10, 140, 15, 35); // handle
+            ctx.fillStyle = "#ff3366";
+            ctx.fillRect(40, 142, 10, 16); // nozzle
+
+            // Draw Path
+            ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+            for(let i=0; i<path.length; i++) {
+                ctx.beginPath();
+                ctx.arc(path[i].x, path[i].y, 1.5, 0, Math.PI*2);
+                ctx.fill();
+            }
+
+            if(isFiring) {
+                // Draw Ball
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2);
+                ctx.fillStyle = "#fff";
+                ctx.fill();
+                ctx.strokeStyle = "#444"; ctx.lineWidth = 1; ctx.stroke();
+            }
+
+            // Always Draw the Free Body Diagram Panel
+            drawFBD();
+        }
+
+        function updatePhysics() {
+            if(isFiring) {
+                let eta = parseFloat(etaSlider.value);
+                let rho_pb = parseFloat(rhoSlider.value);
+                
+                let dragConstant = 2.0; 
+
+                let ax = -(dragConstant * eta * ball.vx) / rho_pb;
+                let ay = g * (1 - (rho_w / rho_pb)) - (dragConstant * eta * ball.vy) / rho_pb;
+
+                ball.vx += ax;
+                ball.vy += ay;
+                
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+
+                if(Math.random() > 0.5) {
+                    path.push({x: ball.x, y: ball.y});
+                }
+
+                if(ball.x > canvas.width || ball.y > canvas.height || ball.y < 0) {
+                    isFiring = false;
+                    fireBtn.innerText = "නැවත වෙඩි තබන්න (RELOAD)";
+                }
+            }
+            
+            drawScene();
+            
+            if(isFiring) {
+                requestAnimationFrame(updatePhysics);
+            }
+        }
+
+        fireBtn.onclick = () => {
+            ball = { x: 50, y: 150, vx: initialVelocity, vy: 0, radius: 8 };
+            path = [];
+            isFiring = true;
+            fireBtn.innerText = "ගමන් කරමින් පවතී...";
+            updatePhysics();
+        };
+
+        etaSlider.addEventListener('input', updateLabels);
+        rhoSlider.addEventListener('input', updateLabels);
+        
+        // Initialize
+        updateLabels();
+    </script>
+</body>
+</html>
