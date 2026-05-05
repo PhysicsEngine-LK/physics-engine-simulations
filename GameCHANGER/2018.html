@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine: Circuit Analysis</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: #1e293b;
+            --neon-blue: #38bdf8;
+            --neon-yellow: #fde047;
+            --neon-red: #ef4444;
+            --text-light: #f8fafc;
+            --wire-color: #64748b;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            margin-bottom: 20px;
+            text-align: center;
+            max-width: 800px;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: row;
+            gap: 30px;
+            max-width: 1200px;
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* SVG Canvas Styling */
+        .canvas-container {
+            background-color: #0b0f19;
+            border: 2px solid #334155;
+            border-radius: 12px;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 10px 30px rgba(0,0,0,0.5);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        svg {
+            width: 550px;
+            height: 380px;
+        }
+
+        .wire {
+            fill: none;
+            stroke: var(--wire-color);
+            stroke-width: 4;
+            stroke-linejoin: round;
+            stroke-linecap: round;
+        }
+
+        .node-dot {
+            fill: var(--wire-color);
+        }
+
+        .bulb-group {
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .bulb-group:hover .bulb-glass {
+            stroke: var(--neon-blue);
+            stroke-width: 3;
+        }
+
+        .bulb-glass {
+            fill: rgba(255, 255, 255, 0.05);
+            stroke: #cbd5e1;
+            stroke-width: 2;
+            transition: all 0.3s;
+        }
+
+        .bulb-glow {
+            fill: var(--neon-yellow);
+            filter: blur(8px);
+            transition: opacity 0.3s;
+        }
+
+        .bulb-filament {
+            fill: none;
+            stroke: #fcd34d;
+            stroke-width: 2;
+            transition: stroke 0.3s;
+        }
+
+        .bulb-broken .bulb-filament {
+            stroke: var(--neon-red);
+            stroke-dasharray: 4 4; /* Creates a broken line effect */
+        }
+        
+        .bulb-broken .bulb-glass {
+            stroke: var(--neon-red);
+            fill: rgba(239, 68, 68, 0.05);
+        }
+
+        .bulb-label {
+            fill: var(--text-light);
+            font-family: sans-serif;
+            font-weight: bold;
+            font-size: 16px;
+            pointer-events: none;
+        }
+
+        /* Control Panel Styling */
+        .control-panel {
+            background-color: var(--panel-bg);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 25px;
+            width: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.2em;
+            color: var(--neon-blue);
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+        }
+
+        .btn {
+            background-color: #0f172a;
+            color: var(--text-light);
+            border: 1px solid #475569;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            background-color: #334155;
+            border-color: var(--neon-blue);
+        }
+
+        .btn.active {
+            background-color: rgba(56, 189, 248, 0.1);
+            border-color: var(--neon-blue);
+            color: var(--neon-blue);
+        }
+
+        .btn-reset {
+            background-color: rgba(239, 68, 68, 0.1);
+            border-color: var(--neon-red);
+            color: #fca5a5;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .btn-reset:hover {
+            background-color: var(--neon-red);
+            color: white;
+        }
+
+        .analysis-box {
+            background-color: #0b0f19;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px dashed #475569;
+            margin-top: 10px;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        .highlight {
+            color: var(--neon-yellow);
+            font-weight: bold;
+        }
+
+        .instruction {
+            font-size: 0.85em;
+            color: #94a3b8;
+            text-align: center;
+            margin-top: -5px;
+            margin-bottom: 15px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Physics Engine // Circuit Analysis</h1>
+    <div class="subtitle">2020 A/L Physics - MCQ 26: බල්බ දැවී යාමේදී පරිපථයේ දීප්තිය වෙනස් වන ආකාරය නිරීක්ෂණය කරන්න.</div>
+
+    <div class="main-container">
+        
+        <!-- Circuit Canvas -->
+        <div class="canvas-container">
+            <svg viewBox="0 0 550 380">
+                <!-- Wires -->
+                <!-- Left main wire & Battery -->
+                <path class="wire" d="M 80 320 L 80 150"/>
+                <!-- Battery Symbol -->
+                <rect x="60" y="220" width="40" height="8" fill="#f8fafc" />
+                <rect x="70" y="240" width="20" height="4" fill="#f8fafc" />
+                <text x="40" y="235" fill="#f8fafc" font-size="18" font-weight="bold">V</text>
+                
+                <!-- Split A (Left of Bulbs 1 & 2) -->
+                <path class="wire" d="M 80 150 L 80 80 L 150 80"/>
+                <path class="wire" d="M 80 150 L 80 220 L 150 220"/>
+                <circle cx="80" cy="150" r="4" class="node-dot"/>
+
+                <!-- Join A & Split B (Middle vertical wire) -->
+                <path class="wire" d="M 190 80 L 260 80"/>
+                <path class="wire" d="M 190 220 L 260 220"/>
+                <path class="wire" d="M 260 80 L 260 220"/>
+                <circle cx="260" cy="80" r="4" class="node-dot"/>
+                <circle cx="260" cy="220" r="4" class="node-dot"/>
+
+                <!-- Top Right Branch (Bulbs 3 & 4) -->
+                <path class="wire" d="M 260 80 L 330 80"/>
+                <path class="wire" d="M 370 80 L 440 80"/>
+                <path class="wire" d="M 480 80 L 510 80"/>
+
+                <!-- Bottom Right Branch (Bulbs 5 & 6) -->
+                <path class="wire" d="M 260 220 L 330 220"/>
+                <path class="wire" d="M 370 220 L 440 220"/>
+                <path class="wire" d="M 480 220 L 510 220"/>
+
+                <!-- Right Join & Return to Battery -->
+                <path class="wire" d="M 510 80 L 510 320 L 80 320"/>
+                <circle cx="510" cy="220" r="4" class="node-dot"/>
+
+                <!-- Bulbs (Generated via JS to avoid repetition, but let's define placeholders) -->
+                <!-- Bulb 1 -->
+                <g class="bulb-group" id="b1" transform="translate(170, 80)" onclick="toggleBulb('b1')">
+                    <circle cx="0" cy="0" r="28" class="bulb-glow" id="glow-b1"/>
+                    <circle cx="0" cy="-10" r="18" class="bulb-glass"/>
+                    <rect x="-8" y="8" width="16" height="12" fill="#64748b"/>
+                    <path d="M -8 -5 Q 0 -20 8 -5" class="bulb-filament"/>
+                    <text x="0" y="-35" class="bulb-label" text-anchor="middle">1</text>
+                </g>
+
+                <!-- Bulb 2 -->
+                <g class="bulb-group" id="b2" transform="translate(170, 220)" onclick="toggleBulb('b2')">
+                    <circle cx="0" cy="0" r="28" class="bulb-glow" id="glow-b2"/>
+                    <circle cx="0" cy="-10" r="18" class="bulb-glass"/>
+                    <rect x="-8" y="8" width="16" height="12" fill="#64748b"/>
+                    <path d="M -8 -5 Q 0 -20 8 -5" class="bulb-filament"/>
+                    <text x="0" y="-35" class="bulb-label" text-anchor="middle">2</text>
+                </g>
+
+                <!-- Bulb 3 -->
+                <g class="bulb-group" id="b3" transform="translate(350, 80)" onclick="toggleBulb('b3')">
+                    <circle cx="0" cy="0" r="28" class="bulb-glow" id="glow-b3"/>
+                    <circle cx="0" cy="-10" r="18" class="bulb-glass"/>
+                    <rect x="-8" y="8" width="16" height="12" fill="#64748b"/>
+                    <path d="M -8 -5 Q 0 -20 8 -5" class="bulb-filament"/>
+                    <text x="0" y="-35" class="bulb-label" text-anchor="middle">3</text>
+                </g>
+
+                <!-- Bulb 4 -->
+                <g class="bulb-group" id="b4" transform="translate(460, 80)" onclick="toggleBulb('b4')">
+                    <circle cx="0" cy="0" r="28" class="bulb-glow" id="glow-b4"/>
+                    <circle cx="0" cy="-10" r="18" class="bulb-glass"/>
+                    <rect x="-8" y="8" width="16" height="12" fill="#64748b"/>
+                    <path d="M -8 -5 Q 0 -20 8 -5" class="bulb-filament"/>
+                    <text x="0" y="-35" class="bulb-label" text-anchor="middle">4</text>
+                </g>
+
+                <!-- Bulb 5 -->
+                <g class="bulb-group" id="b5" transform="translate(350, 220)" onclick="toggleBulb('b5')">
+                    <circle cx="0" cy="0" r="28" class="bulb-glow" id="glow-b5"/>
+                    <circle cx="0" cy="-10" r="18" class="bulb-glass"/>
+                    <rect x="-8" y="8" width="16" height="12" fill="#64748b"/>
+                    <path d="M -8 -5 Q 0 -20 8 -5" class="bulb-filament"/>
+                    <text x="0" y="-35" class="bulb-label" text-anchor="middle">5</text>
+                </g>
+
+                <!-- Bulb 6 -->
+                <g class="bulb-group" id="b6" transform="translate(460, 220)" onclick="toggleBulb('b6')">
+                    <circle cx="0" cy="0" r="28" class="bulb-glow" id="glow-b6"/>
+                    <circle cx="0" cy="-10" r="18" class="bulb-glass"/>
+                    <rect x="-8" y="8" width="16" height="12" fill="#64748b"/>
+                    <path d="M -8 -5 Q 0 -20 8 -5" class="bulb-filament"/>
+                    <text x="0" y="-35" class="bulb-label" text-anchor="middle">6</text>
+                </g>
+            </svg>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <h2>විභාග ප්‍රශ්නයේ අවස්ථා</h2>
+            <div class="instruction">(රූපයේ ඇති බල්බ මත ක්ලික් කිරීමෙන්ද ඒවා දැවී ගිය තත්වයට පත් කළ හැක)</div>
+
+            <button class="btn" id="btn-a" onclick="setScenario('A')">(A) 2 බල්බය දැවී ඇති විට</button>
+            <button class="btn" id="btn-b" onclick="setScenario('B')">(B) 2 සහ 5 බල්බ දැවී ඇති විට</button>
+            <button class="btn" id="btn-c" onclick="setScenario('C')">(C) බල්බ කිසිවක් දැවී නොමැති විට</button>
+            
+            <button class="btn btn-reset" onclick="setScenario('C')">Reset Circuit</button>
+
+            <div class="analysis-box" id="analysis">
+                <!-- Dynamic text will appear here -->
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // True means intact, False means burnt out (infinite resistance)
+        let bulbs = {
+            b1: true, b2: true,
+            b3: true, b4: true,
+            b5: true, b6: true
+        };
+
+        function toggleBulb(id) {
+            bulbs[id] = !bulbs[id];
+            
+            // Remove active states from buttons since user is manually interacting
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            
+            calculateCircuit();
+        }
+
+        function setScenario(scen) {
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            
+            if (scen === 'A') {
+                bulbs = { b1: true, b2: false, b3: true, b4: true, b5: true, b6: true };
+                document.getElementById('btn-a').classList.add('active');
+            } else if (scen === 'B') {
+                bulbs = { b1: true, b2: false, b3: true, b4: true, b5: false, b6: true };
+                document.getElementById('btn-b').classList.add('active');
+            } else if (scen === 'C') {
+                bulbs = { b1: true, b2: true, b3: true, b4: true, b5: true, b6: true };
+                document.getElementById('btn-c').classList.add('active');
+            }
+            calculateCircuit();
+        }
+
+        function calculateCircuit() {
+            // Assume V = 1 Volt, R_bulb = 1 Ohm
+            
+            // Group A (Parallel: B1, B2)
+            let gA = (bulbs.b1 ? 1 : 0) + (bulbs.b2 ? 1 : 0);
+            let rA = gA > 0 ? 1/gA : Infinity;
+
+            // Group B (Parallel of two series branches: B3-B4, B5-B6)
+            let r34 = (bulbs.b3 && bulbs.b4) ? 2 : Infinity;
+            let r56 = (bulbs.b5 && bulbs.b6) ? 2 : Infinity;
+            
+            let gB = (r34 !== Infinity ? 1/r34 : 0) + (r56 !== Infinity ? 1/r56 : 0);
+            let rB = gB > 0 ? 1/gB : Infinity;
+
+            // Total Circuit
+            let rEq = rA + rB;
+            let I_total = rEq !== Infinity ? 1 / rEq : 0;
+
+            // Voltages across groups
+            let vA = I_total * (rA !== Infinity ? rA : 0); 
+            let vB = I_total * (rB !== Infinity ? rB : 0);
+
+            // Handle edge case where one part is broken but other is fine (Current is 0, so voltages are 0 for lit logic)
+            if (rEq === Infinity) {
+                vA = 0; vB = 0;
+            }
+
+            // Calculate Power for each bulb (P = V^2 / R). R = 1 for all.
+            let powers = {
+                b1: (bulbs.b1) ? (vA * vA) : 0,
+                b2: (bulbs.b2) ? (vA * vA) : 0,
+                b3: (bulbs.b3 && bulbs.b4) ? ((vB/2) * (vB/2)) : 0, // Gets half the branch voltage
+                b4: (bulbs.b3 && bulbs.b4) ? ((vB/2) * (vB/2)) : 0,
+                b5: (bulbs.b5 && bulbs.b6) ? ((vB/2) * (vB/2)) : 0,
+                b6: (bulbs.b5 && bulbs.b6) ? ((vB/2) * (vB/2)) : 0,
+            };
+
+            updateVisuals(powers);
+        }
+
+        function updateVisuals(powers) {
+            // Max possible power in any scenario for a single bulb is 0.25 (Scenario A, Bulb 1)
+            // We use sqrt to map power to visual opacity linearly for better aesthetics
+            const maxPowerSq = Math.sqrt(0.25); 
+
+            let activePowers = [];
+
+            for (let id in bulbs) {
+                let groupEl = document.getElementById(id);
+                let glowEl = document.getElementById('glow-' + id);
+                
+                if (!bulbs[id]) {
+                    // Bulb is broken
+                    groupEl.classList.add('bulb-broken');
+                    glowEl.style.opacity = 0;
+                } else {
+                    // Bulb is physically intact
+                    groupEl.classList.remove('bulb-broken');
+                    
+                    let p = powers[id];
+                    if (p > 0) {
+                        // Bulb is glowing
+                        let normalizedOpacity = Math.sqrt(p) / maxPowerSq;
+                        glowEl.style.opacity = Math.min(1, normalizedOpacity);
+                        
+                        // Keep track of power levels for analysis text
+                        // Rounding to avoid floating point precision issues
+                        let pRound = p.toFixed(4); 
+                        if (!activePowers.includes(pRound)) {
+                            activePowers.push(pRound);
+                        }
+                    } else {
+                        // Bulb is intact but no current flows (e.g. B6 when B5 is broken)
+                        glowEl.style.opacity = 0;
+                    }
+                }
+            }
+
+            updateAnalysisText(activePowers, powers);
+        }
+
+        function updateAnalysisText(activePowers, powers) {
+            const analysisBox = document.getElementById('analysis');
+            
+            // Check if entirely broken
+            if (activePowers.length === 0) {
+                analysisBox.innerHTML = "<span style='color:#ef4444;'>පරිපථය සම්පූර්ණයෙන්ම බිඳ වැටී ඇත (Circuit completely broken).</span> කිසිදු බල්බයක් දැල්වෙන්නේ නැත.";
+                return;
+            }
+
+            let litBulbs = [];
+            for(let id in powers) {
+                if(powers[id] > 0) litBulbs.push(id.replace('b', ''));
+            }
+
+            if (activePowers.length === 1) {
+                // All lit bulbs have the SAME brightness
+                let text = `දැනට දැල්වෙන <span class='highlight'>${litBulbs.join(', ')}</span> බල්බ සියල්ලම <span class='highlight'>එකම දීප්තියකින්</span> දැල්වේ.<br><br>`;
+                
+                // Specific logic for Case B explanation
+                if (!bulbs.b2 && !bulbs.b5 && bulbs.b6) {
+                    text += "සටහන: බල්බ 6 දැවී නොමැති වුවත්, බල්බ 5 දැවී ඇති නිසා එම ශාඛාවේ ධාරාව නොගලයි. එබැවින් විභාග ගැටළුවට අනුව නිවැරදි පිළිතුර <b>(4) B සහ C පමණි</b> වේ.";
+                } else if (bulbs.b1 && bulbs.b2 && bulbs.b3 && bulbs.b4 && bulbs.b5 && bulbs.b6) {
+                    text += "මෙය (C) අවස්ථාවයි. සම්පූර්ණ පරිපථයම සමමිතික (symmetric) බැවින් සියල්ල සමාන වේ.";
+                }
+                
+                analysisBox.innerHTML = text;
+
+            } else {
+                // Different brightnesses
+                analysisBox.innerHTML = `දැල්වෙන බල්බ වල <span style='color:#ef4444;'>දීප්තිය අසමානයි</span>.<br><br>බල්බ ${litBulbs.join(', ')} දැල්වුණද, ඒවා හරහා ඇති විභව අන්තරයන් වෙනස් බැවින් දීප්තිය වෙනස් වේ (උදා: (A) අවස්ථාව).`;
+            }
+        }
+
+        // Initialize
+        setScenario('C');
+
+    </script>
+</body>
+</html>
