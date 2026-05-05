@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine: Dual Reality )</title>
+    <style>
+        body {
+            background-color: #0a0a0a;
+            color: #00ffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #00ffff;
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+        .dashboard-layout {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .control-panel {
+            background-color: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            width: 350px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+            text-align: left;
+        }
+        .toggle-column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .toggle-group {
+            display: flex;
+            gap: 10px;
+            background: #1a1a1a;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            justify-content: space-between;
+        }
+        .toggle-btn {
+            background-color: #222;
+            color: #777;
+            border: 2px solid #444;
+            padding: 8px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: 0.3s;
+            font-weight: bold;
+            text-transform: uppercase;
+            flex: 1;
+            text-align: center;
+        }
+        .toggle-btn.active-circuit {
+            background-color: #ff00ff;
+            color: #fff;
+            border-color: #ff00ff;
+            box-shadow: 0 0 10px #ff00ff;
+        }
+        .toggle-btn.active-view {
+            background-color: #00ffff;
+            color: #000;
+            border-color: #00ffff;
+            box-shadow: 0 0 10px #00ffff;
+        }
+        .slider-container {
+            margin-bottom: 20px;
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        .slider-label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            color: #aaa;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        input[type="range"] {
+            width: 75%;
+            accent-color: #00ffff;
+        }
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        .data-box {
+            background-color: #151515;
+            padding: 12px 15px;
+            border-radius: 5px;
+            border: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .data-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #ff00ff;
+            text-shadow: 0 0 8px #ff00ff;
+        }
+        .data-label {
+            font-size: 0.85em;
+            color: #aaa;
+            line-height: 1.4;
+        }
+        canvas {
+            background-color: #141414;
+            border: 2px solid #222;
+            border-radius: 12px;
+            box-shadow: inset 0 0 20px #000;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Physics Engine | Dual-Reality Override</h1>
+    
+    <div class="dashboard-layout">
+        <canvas id="simCanvas" width="750" height="400"></canvas>
+
+        <div class="control-panel">
+            <div class="toggle-column">
+                <div class="toggle-group">
+                    <button id="btn-series" class="toggle-btn active-circuit" onclick="setCircuit('series')">Series</button>
+                    <button id="btn-parallel" class="toggle-btn" onclick="setCircuit('parallel')">Parallel</button>
+                </div>
+                <div class="toggle-group">
+                    <button id="btn-electrical" class="toggle-btn active-view" onclick="setView('electrical')">Electrical</button>
+                    <button id="btn-water" class="toggle-btn" onclick="setView('water')">Water Pipe</button>
+                </div>
+            </div>
+
+            <div class="slider-container">
+                <span class="slider-label" id="lbl-source">කෝෂයේ වෝල්ටීයතාව / Battery Voltage (V):</span>
+                <div class="slider-row">
+                    <input type="range" id="voltage" min="0" max="24" value="12" step="1">
+                    <span id="v-val" style="font-size: 1.2em; font-weight: bold; color: #fff;">12</span>
+                </div>
+            </div>
+
+            <div class="data-grid">
+                <div class="data-box">
+                    <span class="data-label" id="lbl-current">මුළු ධාරාව<br>Total Current</span>
+                    <span class="data-value" id="val-i">0.00 A</span>
+                </div>
+                <div class="data-box">
+                    <span class="data-label" id="lbl-drop">බල්බයක වෝල්ටීයතාව<br>Bulb Voltage</span>
+                    <span class="data-value" id="val-vb">0.00 V</span>
+                </div>
+                <div class="data-box">
+                    <span class="data-label" id="lbl-power">බල්බයක ක්ෂමතාව<br>Bulb Power</span>
+                    <span class="data-value" id="val-p" style="color: #ffff00; text-shadow: 0 0 8px #ffff00;">0.00 W</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const vSlider = document.getElementById('voltage');
+        
+        let circuitMode = 'series'; // 'series' or 'parallel'
+        let viewMode = 'electrical'; // 'electrical' or 'water'
+        const R_base = 10; 
+
+        // --- PATH DEFINITIONS ---
+        const pSeries = [{x: 100, y: 200}, {x: 100, y: 100}, {x: 650, y: 100}, {x: 650, y: 300}, {x: 100, y: 300}, {x: 100, y: 200}];
+        const lenSeries = 2100;
+
+        const pPar1 = [{x: 100, y: 200}, {x: 100, y: 100}, {x: 375, y: 100}, {x: 375, y: 300}, {x: 100, y: 300}, {x: 100, y: 200}];
+        const lenPar1 = 1150;
+        
+        const pPar2 = [{x: 100, y: 200}, {x: 100, y: 100}, {x: 650, y: 100}, {x: 650, y: 300}, {x: 100, y: 300}, {x: 100, y: 200}];
+        const lenPar2 = 1700;
+
+        // Particles
+        let particles = [];
+        const numParticles = 90; // High density for a constant fluid look
+
+        function initParticles() {
+            particles = [];
+            let spacing = lenSeries / numParticles; // Exact mathematical spacing
+            
+            for(let i = 0; i < numParticles; i++) {
+                // Creating 3 structured "lanes" for the water view instead of random offsets
+                let laneOffset = 0;
+                if (i % 3 === 1) laneOffset = 7;
+                if (i % 3 === 2) laneOffset = -7;
+
+                particles.push({
+                    dist: i * spacing, 
+                    branch: (i % 2 === 0) ? 1 : 2, // Perfect 50/50 split alternating
+                    offset: laneOffset 
+                });
+            }
+        }
+        initParticles();
+
+        function setCircuit(mode) {
+            circuitMode = mode;
+            document.getElementById('btn-series').classList.remove('active-circuit');
+            document.getElementById('btn-parallel').classList.remove('active-circuit');
+            document.getElementById('btn-' + mode).classList.add('active-circuit');
+        }
+
+        function setView(mode) {
+            viewMode = mode;
+            document.getElementById('btn-electrical').classList.remove('active-view');
+            document.getElementById('btn-water').classList.remove('active-view');
+            document.getElementById('btn-' + mode).classList.add('active-view');
+
+            // Update Labels
+            if(mode === 'water') {
+                document.getElementById('lbl-source').innerHTML = "පොම්පයේ පීඩනය / Pump Pressure:";
+                document.getElementById('lbl-current').innerHTML = "ජල ප්‍රවාහය<br>Total Flow";
+                document.getElementById('lbl-drop').innerHTML = "පීඩන බැස්ම<br>Pressure Drop";
+                document.getElementById('lbl-power').innerHTML = "ගැලීමේ ශක්තිය<br>Flow Energy";
+            } else {
+                document.getElementById('lbl-source').innerHTML = "කෝෂයේ වෝල්ටීයතාව / Battery Voltage (V):";
+                document.getElementById('lbl-current').innerHTML = "මුළු ධාරාව<br>Total Current";
+                document.getElementById('lbl-drop').innerHTML = "බල්බයක වෝල්ටීයතාව<br>Bulb Voltage";
+                document.getElementById('lbl-power').innerHTML = "බල්බයක ක්ෂමතාව<br>Bulb Power";
+            }
+        }
+
+        function getPointOnPath(path, dist, maxDist) {
+            dist = dist % maxDist;
+            let currentLen = 0;
+            for(let i = 0; i < path.length - 1; i++) {
+                let p1 = path[i];
+                let p2 = path[i+1];
+                let segLen = Math.abs(p2.x - p1.x) + Math.abs(p2.y - p1.y);
+                if(dist <= currentLen + segLen) {
+                    let ratio = (dist - currentLen) / segLen;
+                    return { x: p1.x + (p2.x - p1.x) * ratio, y: p1.y + (p2.y - p1.y) * ratio };
+                }
+                currentLen += segLen;
+            }
+            return path[0];
+        }
+
+        function drawLoad(x, y, power) {
+            if(viewMode === 'electrical') {
+                const glow = Math.min(power * 1.5, 60); 
+                if(glow > 0) {
+                    ctx.beginPath(); ctx.arc(x, y, 20, 0, Math.PI * 2);
+                    ctx.shadowBlur = glow; ctx.shadowColor = '#ffff00';
+                    ctx.fillStyle = '#ffffaa'; ctx.fill(); ctx.shadowBlur = 0;
+                }
+                ctx.beginPath(); ctx.arc(x, y, 20, 0, Math.PI * 2);
+                ctx.strokeStyle = '#555'; ctx.lineWidth = 3; ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(x - 8, y + 5); ctx.lineTo(x - 4, y - 5); ctx.lineTo(x + 4, y - 5); ctx.lineTo(x + 8, y + 5);
+                ctx.strokeStyle = power > 0 ? '#fff' : '#444'; ctx.lineWidth = 2; ctx.stroke();
+            } else {
+                // Water Constriction
+                ctx.fillStyle = '#ffaa00';
+                ctx.fillRect(x - 20, y - 25, 40, 50);
+                ctx.fillStyle = '#141414'; // Cutout
+                let pinch = Math.max(5, 20 - (power*0.2)); 
+                ctx.fillRect(x - 20, y - pinch, 40, pinch*2);
+            }
+        }
+
+        function drawSource(x, y) {
+            if(viewMode === 'electrical') {
+                ctx.fillStyle = '#ff0055'; ctx.fillRect(x - 30, y - 50, 60, 100);
+                ctx.fillStyle = '#fff'; ctx.fillRect(x - 15, y - 60, 30, 10); 
+                ctx.font = '24px sans-serif'; ctx.fillText('+', x - 8, y - 20); ctx.fillText('-', x - 4, y + 35);
+            } else {
+                ctx.fillStyle = '#0088ff'; ctx.fillRect(x - 35, y - 45, 70, 90);
+                ctx.fillStyle = '#fff'; ctx.font = '16px sans-serif'; ctx.fillText('PUMP', x - 22, y + 5);
+            }
+        }
+
+        function draw() {
+            const V = parseFloat(vSlider.value);
+            document.getElementById('v-val').innerText = V + (viewMode === 'electrical' ? " V" : "");
+
+            let I_total, V_bulb, P_bulb;
+            let R_eq = circuitMode === 'series' ? R_base * 2 : R_base / 2;
+            
+            I_total = V / R_eq;
+            V_bulb = circuitMode === 'series' ? V / 2 : V;
+            P_bulb = V_bulb * V_bulb / R_base;
+
+            let unitI = viewMode === 'electrical' ? " A" : " u";
+            let unitV = viewMode === 'electrical' ? " V" : " p";
+            let unitP = viewMode === 'electrical' ? " W" : " e";
+
+            document.getElementById('val-i').innerText = I_total.toFixed(2) + unitI;
+            document.getElementById('val-vb').innerText = V_bulb.toFixed(2) + unitV;
+            document.getElementById('val-p').innerText = P_bulb.toFixed(2) + unitP;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Paths
+            ctx.strokeStyle = viewMode === 'electrical' ? '#333' : '#222';
+            ctx.lineWidth = viewMode === 'electrical' ? 6 : 24;
+            ctx.lineJoin = 'round';
+
+            if(circuitMode === 'series') {
+                ctx.beginPath(); ctx.moveTo(pSeries[0].x, pSeries[0].y); pSeries.forEach(p => ctx.lineTo(p.x, p.y)); ctx.stroke();
+            } else {
+                ctx.beginPath(); ctx.moveTo(pPar1[0].x, pPar1[0].y); pPar1.forEach(p => ctx.lineTo(p.x, p.y)); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(pPar2[0].x, pPar2[0].y); pPar2.forEach(p => ctx.lineTo(p.x, p.y)); ctx.stroke();
+            }
+
+            // Draw Source
+            drawSource(100, 200);
+
+            // Draw Loads
+            if(circuitMode === 'series') {
+                drawLoad(375, 100, P_bulb); 
+                drawLoad(650, 200, P_bulb); 
+            } else {
+                drawLoad(375, 200, P_bulb); 
+                drawLoad(650, 200, P_bulb); 
+            }
+
+            // Particles
+            ctx.fillStyle = viewMode === 'electrical' ? '#00ffff' : '#00aaff';
+            if(viewMode === 'electrical') { ctx.shadowBlur = 8; ctx.shadowColor = '#00ffff'; }
+
+            particles.forEach(p => {
+                let speed = circuitMode === 'series' ? I_total : I_total / 2; 
+                p.dist += (speed * 2.5); 
+                
+                let pos;
+                if(circuitMode === 'series') {
+                    pos = getPointOnPath(pSeries, p.dist, lenSeries);
+                } else {
+                    pos = p.branch === 1 ? getPointOnPath(pPar1, p.dist, lenPar1) : getPointOnPath(pPar2, p.dist, lenPar2);
+                }
+
+                ctx.beginPath();
+                let ox = 0, oy = 0;
+                if(viewMode === 'water') {
+                    if(pos.y === 100 || pos.y === 300) oy = p.offset;
+                    else if(pos.x === 100 || pos.x === 375 || pos.x === 650) ox = p.offset;
+                }
+                
+                let size = viewMode === 'electrical' ? 4 : 5;
+                ctx.arc(pos.x + ox, pos.y + oy, size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.shadowBlur = 0;
+
+            requestAnimationFrame(draw);
+        }
+
+        draw();
+    </script>
+</body>
+</html>

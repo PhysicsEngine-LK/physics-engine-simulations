@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine: Phase 5 - Internal Resistance (Pro Layout)</title>
+    <style>
+        body {
+            background-color: #050505;
+            color: #00ffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 30px 20px;
+        }
+        h1 {
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: #fff;
+        }
+        h1 span {
+            color: #ff00ff;
+            text-shadow: 0 0 15px rgba(255, 0, 255, 0.6);
+        }
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 750px 380px;
+            gap: 30px;
+            justify-content: center;
+            align-items: stretch;
+            margin: 0 auto;
+        }
+        .canvas-container {
+            background-color: #0f0f0f;
+            border: 2px solid #222;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 20px #000;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .control-panel {
+            background-color: #111;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.05);
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .slider-container {
+            margin-bottom: 15px;
+            background: #161616;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #333;
+        }
+        .slider-container.em { border-left-color: #00ffff; }
+        .slider-container.ir { border-left-color: #ff0055; }
+        .slider-container.er { border-left-color: #00ffcc; }
+        
+        .slider-label {
+            display: block;
+            margin-bottom: 12px;
+            font-size: 0.95em;
+            color: #ccc;
+            font-weight: bold;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        input[type="range"] {
+            width: 70%;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            background: #333;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .slider-container.em input[type="range"]::-webkit-slider-thumb { background: #00ffff; box-shadow: 0 0 10px #00ffff; }
+        .slider-container.ir input[type="range"]::-webkit-slider-thumb { background: #ff0055; box-shadow: 0 0 10px #ff0055; }
+        .slider-container.er input[type="range"]::-webkit-slider-thumb { background: #00ffcc; box-shadow: 0 0 10px #00ffcc; }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .data-box {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+            text-align: center;
+        }
+        .data-box.highlight {
+            grid-column: span 2;
+            border-color: #ff00ff;
+            background: linear-gradient(180deg, #1a001a 0%, #2a002a 100%);
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.1);
+        }
+        .data-value {
+            display: block;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+        .val-cyan { color: #00ffff; text-shadow: 0 0 8px rgba(0, 255, 255, 0.5); }
+        .val-red { color: #ff5555; text-shadow: 0 0 8px rgba(255, 85, 85, 0.5); }
+        .val-magenta { color: #ff00ff; text-shadow: 0 0 12px rgba(255, 0, 255, 0.6); font-size: 2em; }
+        
+        .data-label {
+            font-size: 0.85em;
+            color: #999;
+            line-height: 1.4;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Physics Engine // <span>Phase 05:</span> Internal Resistance</h1>
+    
+    <div class="dashboard-layout">
+        <div class="canvas-container">
+            <canvas id="simCanvas" width="750" height="480"></canvas>
+        </div>
+
+        <div class="control-panel">
+            <div class="sliders">
+                <div class="slider-container em">
+                    <span class="slider-label" style="color:#00ffff;">විද්‍යුත් ගාමක බලය / EMF (E):</span>
+                    <div class="slider-row">
+                        <input type="range" id="slider-E" min="0" max="24" value="12" step="1">
+                        <span id="val-E" style="font-weight:bold; color:#fff; font-size: 1.2em;">12 V</span>
+                    </div>
+                </div>
+
+                <div class="slider-container ir">
+                    <span class="slider-label" style="color:#ff5555;">අභ්‍යන්තර ප්‍රතිරෝධය / Internal Res (r):</span>
+                    <div class="slider-row">
+                        <input type="range" id="slider-r" min="0" max="8" value="2" step="0.5">
+                        <span id="val-r" style="font-weight:bold; color:#fff; font-size: 1.2em;">2.0 Ω</span>
+                    </div>
+                </div>
+
+                <div class="slider-container er">
+                    <span class="slider-label" style="color:#00ffcc;">බාහිර ප්‍රතිරෝධය / Load (R):</span>
+                    <div class="slider-row">
+                        <input type="range" id="slider-R-load" min="1" max="20" value="10" step="1">
+                        <span id="val-R" style="font-weight:bold; color:#fff; font-size: 1.2em;">10.0 Ω</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="data-grid">
+                <div class="data-box">
+                    <span class="data-label">මුළු ධාරාව<br>Total Current (I)</span>
+                    <span class="data-value val-cyan" id="out-I">0.00 A</span>
+                </div>
+                <div class="data-box">
+                    <span class="data-label">අභ්‍යන්තර බැස්ම<br>Internal Drop (Ir)</span>
+                    <span class="data-value val-red" id="out-Ir">0.00 V</span>
+                </div>
+                <div class="data-box highlight">
+                    <span class="data-label" style="color: #ffaaff;">අග්‍ර අතර වෝල්ටීයතාව / Terminal Voltage (V = E - Ir)</span>
+                    <span class="data-value val-magenta" id="out-V">0.00 V</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const sliderE = document.getElementById('slider-E');
+        const sliderr = document.getElementById('slider-r');
+        const sliderR = document.getElementById('slider-R-load');
+
+        const startX = 180, startY = 320;
+        const topY = 120, rightX = 600;
+        
+        const pathLen = (rightX - startX)*2 + (startY - topY)*2; 
+
+        let particles = [];
+        const numParticles = 60; 
+
+        function initParticles() {
+            particles = [];
+            let spacing = pathLen / numParticles;
+            for(let i=0; i<numParticles; i++) {
+                particles.push({ dist: i * spacing });
+            }
+        }
+        initParticles();
+
+        function getPointOnPath(dist) {
+            dist = dist % pathLen;
+            if(dist < (startY - topY)) return {x: startX, y: startY - dist}; 
+            let d1 = startY - topY;
+            if(dist < d1 + (rightX - startX)) return {x: startX + (dist - d1), y: topY}; 
+            let d2 = d1 + (rightX - startX);
+            if(dist < d2 + (startY - topY)) return {x: rightX, y: topY + (dist - d2)}; 
+            let d3 = d2 + (startY - topY);
+            return {x: rightX - (dist - d3), y: startY}; 
+        }
+
+        function drawDynamicResistor(cx, cy, value, maxVal, color, label, isVertical=false, power=0) {
+            let maxSpace = isVertical ? 140 : 80; 
+            let width = (value === 0) ? 0 : 30 + (value / maxVal) * (maxSpace - 30);
+
+            if (power > 0) {
+                const glow = Math.min(power * 1.5, 80);
+                if(glow > 0) {
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, width/2 + 20, 0, Math.PI * 2);
+                    ctx.shadowBlur = glow;
+                    ctx.shadowColor = color;
+                    ctx.fillStyle = `rgba(${color === '#00ffcc' ? '0, 255, 204' : '255, 0, 85'}, 0.15)`;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            if (value === 0) {
+                ctx.fillStyle = '#777';
+                ctx.font = 'bold 15px sans-serif';
+                ctx.fillText(label + ' = 0 Ω', cx - 25, cy - 20);
+                return; 
+            }
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            if (isVertical) ctx.rotate(Math.PI / 2);
+
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(-width/2, -14, width, 28);
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2.5;
+            ctx.strokeRect(-width/2, -14, width, 28);
+
+            ctx.beginPath();
+            ctx.moveTo(-width/2, 0);
+            let steps = Math.max(3, Math.floor(width / 10));
+            let stepX = width / steps;
+            for(let i=1; i<=steps; i++) {
+                let yOff = (i%2 !== 0) ? -8 : 8;
+                if(i === steps) yOff = 0;
+                ctx.lineTo(-width/2 + i*stepX, yOff);
+            }
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.fillStyle = color;
+            ctx.font = 'bold 16px sans-serif';
+            if (isVertical) {
+                ctx.fillText(label, cx + 25, cy + 5);
+            } else {
+                ctx.fillText(label, cx - 5, cy - 25);
+            }
+        }
+
+        function draw() {
+            const E = parseFloat(sliderE.value);
+            const r = parseFloat(sliderr.value);
+            const R = parseFloat(sliderR.value);
+
+            document.getElementById('val-E').innerText = E.toFixed(1) + " V";
+            document.getElementById('val-r').innerText = r.toFixed(1) + " Ω";
+            document.getElementById('val-R').innerText = R.toFixed(1) + " Ω";
+
+            let I = E / (R + r);
+            let V_drop = I * r;
+            let V_terminal = E - V_drop;
+            let P_load = I * I * R;
+
+            document.getElementById('out-I').innerText = I.toFixed(2) + " A";
+            document.getElementById('out-Ir').innerText = V_drop.toFixed(2) + " V";
+            document.getElementById('out-V').innerText = V_terminal.toFixed(2) + " V";
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // REAL BATTERY ZONE
+            ctx.fillStyle = 'rgba(255, 0, 255, 0.03)';
+            ctx.fillRect(startX - 35, startY - 45, 145, 90);
+            
+            ctx.setLineDash([8, 8]);
+            ctx.strokeStyle = '#ff00ff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(startX - 35, startY - 45, 145, 90);
+            ctx.setLineDash([]); 
+
+            ctx.fillStyle = '#ffaaff';
+            ctx.font = '14px sans-serif';
+            ctx.fillText('Real Battery', startX - 25, startY - 55);
+
+            // WIRES
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 6;
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(startX, startY); ctx.lineTo(startX, topY); 
+            ctx.lineTo(rightX, topY); ctx.lineTo(rightX, startY); 
+            ctx.lineTo(startX, startY);
+            ctx.stroke();
+
+            // EMF SOURCE
+            ctx.fillStyle = '#00ffff'; 
+            ctx.fillRect(startX - 15, startY - 15, 6, 30);
+            ctx.fillRect(startX + 5, startY - 25, 4, 50);
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 18px sans-serif'; 
+            ctx.fillText('E', startX - 10, startY + 65);
+            ctx.fillText('+', startX + 15, startY - 18);
+
+            // INTERNAL RESISTOR
+            drawDynamicResistor(startX + 70, startY, r, 8, '#ff0055', 'r', false);
+
+            // VOLTMETER
+            ctx.strokeStyle = '#ff00ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); 
+            ctx.moveTo(startX - 35, startY); ctx.lineTo(startX - 35, startY + 110); 
+            ctx.lineTo(startX + 110, startY + 110); ctx.lineTo(startX + 110, startY); 
+            ctx.stroke();
+            
+            ctx.fillStyle = '#1a001a';
+            ctx.beginPath(); ctx.arc(startX + 37.5, startY + 110, 25, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#ff00ff'; ctx.stroke();
+            ctx.fillStyle = '#ff00ff'; ctx.font = 'bold 22px sans-serif'; ctx.fillText('V', startX + 29, startY + 118);
+
+            // EXTERNAL LOAD
+            drawDynamicResistor(rightX, (startY + topY)/2, R, 20, '#00ffcc', 'R', true, P_load);
+
+            // CURRENT PARTICLES (ANTI-ALIASED FOR WAGON-WHEEL FIX)
+            ctx.fillStyle = '#00ffff';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#00ffff';
+
+            // Nyquist limit calculation: Do not jump more than ~45% of the spacing distance per frame
+            const spacing = pathLen / numParticles; 
+            const maxVisualSpeed = spacing * 0.45; 
+            
+            // Limit the visual speed so it NEVER looks like it goes backward
+            let visualSpeed = Math.min(I * 2.5, maxVisualSpeed);
+
+            particles.forEach(p => {
+                p.dist += visualSpeed; 
+                let pos = getPointOnPath(p.dist);
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.shadowBlur = 0;
+
+            requestAnimationFrame(draw);
+        }
+
+        draw();
+    </script>
+</body>
+</html>

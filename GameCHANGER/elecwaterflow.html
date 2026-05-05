@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine: Water Pipe / Circuit Sim</title>
+    <style>
+        body {
+            background-color: #0a0a0a;
+            color: #00ffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            transition: color 0.3s;
+            /* Prevent horizontal scrolling if possible, but allow if screen is very small */
+            min-width: 1100px; 
+        }
+        h1 {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #00ffff;
+            transition: text-shadow 0.3s, color 0.3s;
+            margin-bottom: 30px;
+        }
+
+        /* Container strictly forced to Side-by-Side Layout */
+        .main-container {
+            display: flex;
+            flex-direction: row; /* Forces horizontal layout */
+            justify-content: center;
+            align-items: flex-start;
+            gap: 30px;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            flex-wrap: nowrap; /* STRICTLY prevents dropping to the bottom */
+        }
+
+        canvas {
+            background-color: #141414;
+            border: 2px solid #222;
+            border-radius: 12px;
+            box-shadow: inset 0 0 20px #000;
+            flex-shrink: 0; /* Prevents canvas from shrinking */
+        }
+
+        .control-panel {
+            background-color: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 25px;
+            width: 320px; 
+            min-width: 320px; /* Forces right panel to keep its size */
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            text-align: left;
+            flex-shrink: 0;
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            width: 80%;
+            accent-color: #00ffff;
+            transition: accent-color 0.3s;
+        }
+
+        .data-readout {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ff00ff;
+            text-shadow: 0 0 8px #ff00ff;
+            margin-top: 10px;
+            padding-top: 15px;
+            border-top: 1px solid #333;
+            text-align: center;
+        }
+
+        .toggle-btn {
+            background-color: #00ffff;
+            color: #000;
+            border: none;
+            padding: 15px;
+            font-size: 1em;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            width: 100%;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+
+        .toggle-btn:hover {
+            transform: scale(1.02);
+        }
+
+        .toggle-btn.electric-mode {
+            background-color: #ffaa00;
+            box-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <h1 id="mainTitle">Physics Engine // Water Override</h1>
+    
+    <div class="main-container">
+        
+        <!-- Canvas STRICTLY on the Left -->
+        <canvas id="simCanvas" width="700" height="400"></canvas>
+
+        <!-- Control Panel STRICTLY on the Right -->
+        <div class="control-panel">
+            <div class="slider-container">
+                <label id="lbl-voltage">පොම්පයේ පීඩනය (V) / Pump:</label>
+                <div class="slider-row">
+                    <input type="range" id="voltage" min="0" max="24" value="12" step="1">
+                    <span id="v-val">12</span>
+                </div>
+            </div>
+            
+            <div class="slider-container">
+                <label id="lbl-resistance">බටයේ පටු බව (R) / Constriction:</label>
+                <div class="slider-row">
+                    <input type="range" id="resistance" min="1" max="10" value="1" step="1">
+                    <span id="r-val">1</span>
+                </div>
+            </div>
+            
+            <div class="data-readout">
+                <div id="lbl-current" style="font-size: 0.8em; margin-bottom: 5px; color:#ccc; text-shadow:none;">ජල ප්‍රවාහ වේගය (I) / Flow Rate:</div>
+                <div id="current-val" style="font-size: 1.5em;">12.00</div>
+            </div>
+            
+            <!-- Mode Switch Button -->
+            <button id="modeToggle" class="toggle-btn">⚡ විද්‍යුත් පරිපථයට මාරු වන්න<br><small>(Switch to Electric)</small></button>
+        </div>
+
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const vSlider = document.getElementById('voltage');
+        const rSlider = document.getElementById('resistance');
+        const vVal = document.getElementById('v-val');
+        const rVal = document.getElementById('r-val');
+        const iVal = document.getElementById('current-val');
+
+        const modeToggle = document.getElementById('modeToggle');
+        const mainTitle = document.getElementById('mainTitle');
+        const lblVoltage = document.getElementById('lbl-voltage');
+        const lblResistance = document.getElementById('lbl-resistance');
+        const lblCurrent = document.getElementById('lbl-current');
+
+        let isElectric = false;
+
+        modeToggle.addEventListener('click', () => {
+            isElectric = !isElectric;
+            if (isElectric) {
+                modeToggle.innerHTML = "💧 ජල පද්ධතියට මාරු වන්න<br><small>(Switch to Water)</small>";
+                modeToggle.classList.add('electric-mode');
+                
+                mainTitle.innerText = "Physics Engine // Circuit Override";
+                mainTitle.style.color = "#ffaa00";
+                mainTitle.style.textShadow = "0 0 10px #ffaa00";
+                document.body.style.color = "#ffaa00";
+                
+                lblVoltage.innerText = "වෝල්ටීයතාව (V) / Battery:";
+                lblResistance.innerText = "ප්‍රතිරෝධය (R) / Resistance:";
+                lblCurrent.innerText = "විද්‍යුත් ධාරාව (I) / Current:";
+                
+                vSlider.style.accentColor = "#ffaa00";
+                rSlider.style.accentColor = "#ffaa00";
+            } else {
+                modeToggle.innerHTML = "⚡ විද්‍යුත් පරිපථයට මාරු වන්න<br><small>(Switch to Electric)</small>";
+                modeToggle.classList.remove('electric-mode');
+                
+                mainTitle.innerText = "Physics Engine // Water Override";
+                mainTitle.style.color = "#00ffff";
+                mainTitle.style.textShadow = "0 0 10px #00ffff";
+                document.body.style.color = "#00ffff";
+                
+                lblVoltage.innerText = "පොම්පයේ පීඩනය (V) / Pump:";
+                lblResistance.innerText = "බටයේ පටු බව (R) / Constriction:";
+                lblCurrent.innerText = "ජල ප්‍රවාහ වේගය (I) / Flow Rate:";
+                
+                vSlider.style.accentColor = "#00ffff";
+                rSlider.style.accentColor = "#00ffff";
+            }
+        });
+
+        const pipeX = 100;
+        const pipeY = 100;
+        const pipeW = 500;
+        const pipeH = 200;
+
+        const numParticles = 40;
+        let particles = [];
+        const perimeter = (pipeW * 2) + (pipeH * 2);
+
+        for(let i = 0; i < numParticles; i++) {
+            particles.push({ distance: i * (perimeter / numParticles) });
+        }
+
+        function getParticlePos(d) {
+            d = d % perimeter;
+            if(d < pipeW) return { x: pipeX + d, y: pipeY }; 
+            if(d < pipeW + pipeH) return { x: pipeX + pipeW, y: pipeY + (d - pipeW) }; 
+            if(d < pipeW * 2 + pipeH) return { x: pipeX + pipeW - (d - pipeW - pipeH), y: pipeY + pipeH }; 
+            return { x: pipeX, y: pipeY + pipeH - (d - pipeW * 2 - pipeH) }; 
+        }
+
+        function draw() {
+            const V = parseFloat(vSlider.value);
+            const R = parseFloat(rSlider.value);
+            const I = V / R;
+
+            vVal.innerText = V;
+            rVal.innerText = R;
+            iVal.innerText = I.toFixed(2);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = isElectric ? '#555' : '#333';
+            ctx.lineWidth = isElectric ? 8 : 40; 
+            ctx.lineJoin = 'round';
+            ctx.strokeRect(pipeX, pipeY, pipeW, pipeH);
+
+            if (!isElectric) {
+                ctx.fillStyle = '#ff0055';
+                ctx.fillRect(pipeX - 35, pipeY + (pipeH/2) - 40, 70, 80);
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.fillText('PUMP', pipeX - 22, pipeY + (pipeH/2) + 5);
+            } else {
+                ctx.fillStyle = '#111';
+                ctx.fillRect(pipeX - 25, pipeY + (pipeH/2) - 35, 50, 70);
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(pipeX - 25, pipeY + (pipeH/2) - 35, 50, 70);
+                
+                ctx.fillStyle = '#ffaa00';
+                ctx.fillRect(pipeX - 25, pipeY + (pipeH/2) - 35, 50, 30);
+                ctx.fillStyle = '#111';
+                ctx.font = 'bold 20px sans-serif';
+                ctx.fillText('+', pipeX - 6, pipeY + (pipeH/2) - 15);
+                
+                ctx.fillStyle = '#00aaff';
+                ctx.fillRect(pipeX - 25, pipeY + (pipeH/2) + 5, 50, 30);
+                ctx.fillStyle = '#111';
+                ctx.fillText('-', pipeX - 4, pipeY + (pipeH/2) + 26);
+            }
+
+            if (!isElectric) {
+                const pinchSize = R * 1.5; 
+                ctx.fillStyle = '#ffaa00';
+                ctx.fillRect(pipeX + pipeW - 20, pipeY + (pipeH/2) - 50, 40, 100);
+                
+                ctx.fillStyle = '#141414'; 
+                ctx.fillRect(pipeX + pipeW + 20 - pinchSize, pipeY + (pipeH/2) - 50, pinchSize*2, 100);
+                ctx.fillRect(pipeX + pipeW - 20 - pinchSize*2, pipeY + (pipeH/2) - 50, pinchSize*2, 100);
+            } else {
+                ctx.fillStyle = '#141414'; 
+                ctx.fillRect(pipeX + pipeW - 10, pipeY + (pipeH/2) - 40, 20, 80); 
+                
+                ctx.strokeStyle = '#ffaa00';
+                ctx.lineWidth = 3;
+                ctx.lineJoin = 'miter';
+                ctx.beginPath();
+                
+                let startY = pipeY + (pipeH/2) - 40;
+                ctx.moveTo(pipeX + pipeW, startY);
+                
+                for(let i = 1; i <= 8; i++) {
+                    let pointX = pipeX + pipeW + ((i % 2 === 1) ? 15 : -15);
+                    let pointY = startY + (i * 10) - 5;
+                    ctx.lineTo(pointX, pointY);
+                }
+                ctx.lineTo(pipeX + pipeW, startY + 80);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = isElectric ? '#ffaa00' : '#00ffff';
+            ctx.shadowColor = isElectric ? '#ffaa00' : '#00ffff';
+            ctx.shadowBlur = isElectric ? 12 : 10;
+            
+            const radius = isElectric ? 4 : 6;
+
+            particles.forEach(p => {
+                p.distance += (I * 0.5); 
+                let pos = getParticlePos(p.distance);
+                
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.shadowBlur = 0; 
+
+            requestAnimationFrame(draw);
+        }
+
+        draw();
+    </script>
+</body>
+</html>
