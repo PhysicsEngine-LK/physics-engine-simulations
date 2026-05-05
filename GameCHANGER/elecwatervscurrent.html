@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHYSICS ENGINE - Water Analogy Simulation</title>
+    <style>
+        :root {
+            --bg-color: #121317;
+            --text-color: #ffffff;
+            --tank-border: #9aa0a6;
+            --water-color: #3b74b9;
+            --water-particle: #82baff;
+            --wire-color: #4a4d54;
+            --elec-node: #8fbdfa;
+            --elec-particle: #f4b844;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .controls {
+            background-color: #1e1f26;
+            padding: 15px 30px;
+            border-radius: 10px;
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            border: 1px solid #2d2e36;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        select, button {
+            background-color: #2d2e36;
+            color: white;
+            border: 1px solid #4a4d54;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            outline: none;
+            font-weight: bold;
+        }
+
+        button.connected {
+            background-color: #2e7d32;
+            border-color: #4ade80;
+        }
+
+        button.broken {
+            background-color: #b91c1c;
+            border-color: #f87171;
+        }
+
+        .simulation-area {
+            position: relative;
+            width: 800px;
+            height: 500px;
+            background-color: #1a1b20;
+            border-radius: 15px;
+            border: 1px solid #2d2e36;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+        }
+
+        .brand-title {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: #9aa0a6;
+            font-weight: 700;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin: 10px 0 20px 0;
+            font-weight: 600;
+        }
+
+        .pill-label {
+            border: 2px solid var(--elec-node);
+            color: white;
+            padding: 4px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            background-color: var(--bg-color);
+            position: absolute;
+        }
+
+        /* --- WATER SYSTEM --- */
+        .water-system {
+            position: relative;
+            width: 600px;
+            height: 180px;
+            margin-top: 20px;
+        }
+
+        .tank-label-a { left: 10px; top: -40px; }
+        .tank-label-b { right: 10px; top: -40px; }
+
+        .tank {
+            position: absolute;
+            bottom: 20px;
+            width: 120px;
+            height: 140px;
+            border: 4px solid var(--tank-border);
+            border-top: none;
+            display: flex;
+            align-items: flex-end;
+            background-color: #15161a;
+        }
+
+        .tank-a { left: 0; }
+        .tank-b { right: 0; }
+
+        .water {
+            width: 100%;
+            background-color: var(--water-color);
+            transition: height 0.5s ease-in-out;
+        }
+
+        .pipe {
+            position: absolute;
+            bottom: 24px;
+            left: 124px;
+            right: 124px;
+            height: 30px;
+            background-color: var(--water-color);
+            border-top: 2px solid var(--tank-border);
+            border-bottom: 2px solid var(--tank-border);
+            overflow: hidden;
+        }
+
+        /* --- FLOW ANIMATIONS --- */
+        .water-flow-layer, .wire-flow-layer {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            opacity: 0;
+        }
+
+        /* Water Pattern */
+        .water-flow-layer {
+            background: repeating-linear-gradient(
+                90deg, 
+                transparent 0px, 
+                transparent 15px, 
+                var(--water-particle) 15px, 
+                var(--water-particle) 25px
+            );
+            background-size: 40px 100%;
+        }
+
+        /* Electrical Current Pattern */
+        .wire-flow-layer {
+            background: repeating-linear-gradient(
+                90deg, 
+                transparent 0px, 
+                transparent 15px, 
+                var(--elec-particle) 15px, 
+                var(--elec-particle) 25px
+            );
+            background-size: 40px 100%;
+            border-radius: 5px;
+        }
+
+        @keyframes flowRight {
+            0% { background-position: 0px 0; }
+            100% { background-position: 40px 0; }
+        }
+
+        @keyframes flowLeft {
+            0% { background-position: 0px 0; }
+            100% { background-position: -40px 0; }
+        }
+
+        .anim-right {
+            opacity: 1;
+            animation: flowRight 1s linear infinite;
+        }
+
+        .anim-left {
+            opacity: 1;
+            animation: flowLeft 1s linear infinite;
+        }
+
+        /* --- ELECTRICAL SYSTEM --- */
+        .elec-system {
+            position: relative;
+            width: 600px;
+            height: 140px;
+            margin-top: 50px;
+        }
+
+        .node-label-a { left: 10px; bottom: -40px; }
+        .node-label-b { right: 10px; bottom: -40px; }
+
+        .wire {
+            position: absolute;
+            top: 50px;
+            left: 70px;
+            right: 70px;
+            height: 12px;
+            background-color: var(--wire-color);
+            border-radius: 5px;
+        }
+
+        .node {
+            position: absolute;
+            top: 15px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: var(--wire-color);
+            border: 6px solid var(--elec-node);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 35px;
+            font-weight: bold;
+            z-index: 2;
+        }
+
+        .node-a { left: -10px; }
+        .node-b { right: -10px; }
+
+        .arrows {
+            position: absolute;
+            top: 15px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            padding: 0 140px;
+            box-sizing: border-box;
+            color: var(--elec-node);
+            font-size: 24px;
+            font-weight: bold;
+            opacity: 0;
+        }
+
+        /* Break Gaps */
+        .gap {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            background-color: #1a1b20;
+            z-index: 3;
+            display: none;
+        }
+
+        .pipe-gap { height: 34px; bottom: 22px; }
+        .wire-gap { height: 16px; top: 48px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <div class="control-group">
+            <label style="color:#9aa0a6;">විභව/පීඩන වෙනස:</label>
+            <select id="stateSelect">
+                <option value="A>B">A > B (A වැඩියි)</option>
+                <option value="A=B">A = B (සමානයි)</option>
+                <option value="B>A">B > A (B වැඩියි)</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label style="color:#9aa0a6;">තත්වය:</label>
+            <button id="toggleBtn" class="connected">සම්බන්ධිත (Connected)</button>
+        </div>
+    </div>
+
+    <div class="simulation-area">
+        <div class="brand-title">PHYSICS ENGINE</div>
+        <h2>ජල පද්ධතිය (Water Analogy)</h2>
+        
+        <div class="water-system">
+            <div class="pill-label tank-label-a">ටැංකිය A</div>
+            <div class="pill-label tank-label-b">ටැංකිය B</div>
+            
+            <div class="tank tank-a">
+                <div class="water" id="waterA" style="height: 120px;"></div>
+            </div>
+            
+            <div class="pipe">
+                <!-- Water flow animation layer -->
+                <div class="water-flow-layer" id="waterFlow"></div>
+            </div>
+            
+            <div class="tank tank-b">
+                <div class="water" id="waterB" style="height: 30px;"></div>
+            </div>
+            
+            <div class="gap pipe-gap" id="pipeGap"></div>
+        </div>
+
+        <h2 style="margin-top: 40px;">විද්‍යුත් පරිපථය (Electrical Circuit)</h2>
+
+        <div class="elec-system">
+            <div class="pill-label node-label-a">අග්‍රය A</div>
+            <div class="pill-label node-label-b">අග්‍රය B</div>
+
+            <div class="arrows" id="arrows">
+                <div class="arrow">→</div>
+                <div class="arrow">→</div>
+                <div class="arrow">→</div>
+            </div>
+
+            <div class="wire">
+                <!-- Electrical flow animation layer -->
+                <div class="wire-flow-layer" id="elecFlow"></div>
+            </div>
+
+            <div class="node node-a" id="nodeA">+</div>
+            <div class="node node-b" id="nodeB">-</div>
+
+            <div class="gap wire-gap" id="wireGap"></div>
+        </div>
+    </div>
+
+    <script>
+        const stateSelect = document.getElementById('stateSelect');
+        const toggleBtn = document.getElementById('toggleBtn');
+        
+        const waterA = document.getElementById('waterA');
+        const waterB = document.getElementById('waterB');
+        const waterFlow = document.getElementById('waterFlow');
+        const elecFlow = document.getElementById('elecFlow');
+        
+        const nodeA = document.getElementById('nodeA');
+        const nodeB = document.getElementById('nodeB');
+        const arrows = document.getElementById('arrows');
+        const arrowIcons = document.querySelectorAll('.arrow');
+        
+        const pipeGap = document.getElementById('pipeGap');
+        const wireGap = document.getElementById('wireGap');
+
+        let isConnected = true;
+
+        function updateSimulation() {
+            const state = stateSelect.value;
+
+            // Handle connection state
+            if (!isConnected) {
+                pipeGap.style.display = 'block';
+                wireGap.style.display = 'block';
+                
+                // Stop flow
+                waterFlow.className = 'water-flow-layer';
+                elecFlow.className = 'wire-flow-layer';
+                arrows.style.opacity = '0';
+                return;
+            } else {
+                pipeGap.style.display = 'none';
+                wireGap.style.display = 'none';
+            }
+
+            // Reset classes before assigning new ones
+            waterFlow.className = 'water-flow-layer';
+            elecFlow.className = 'wire-flow-layer';
+
+            // Handle States
+            if (state === 'A>B') {
+                waterA.style.height = '120px';
+                waterB.style.height = '30px';
+                
+                nodeA.innerText = '+';
+                nodeB.innerText = '-';
+                
+                // Start right flow
+                waterFlow.classList.add('anim-right');
+                elecFlow.classList.add('anim-right');
+                
+                arrows.style.opacity = '1';
+                arrowIcons.forEach(a => a.innerText = '→');
+
+            } else if (state === 'B>A') {
+                waterA.style.height = '30px';
+                waterB.style.height = '120px';
+                
+                nodeA.innerText = '-';
+                nodeB.innerText = '+';
+                
+                // Start left flow
+                waterFlow.classList.add('anim-left');
+                elecFlow.classList.add('anim-left');
+                
+                arrows.style.opacity = '1';
+                arrowIcons.forEach(a => a.innerText = '←');
+
+            } else if (state === 'A=B') {
+                waterA.style.height = '75px';
+                waterB.style.height = '75px';
+                
+                nodeA.innerText = '0';
+                nodeB.innerText = '0';
+                
+                // Stop flow
+                arrows.style.opacity = '0';
+            }
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            isConnected = !isConnected;
+            if (isConnected) {
+                toggleBtn.innerText = 'සම්බන්ධිත (Connected)';
+                toggleBtn.className = 'connected';
+            } else {
+                toggleBtn.innerText = 'විවෘත/කැඩුණු (Broken)';
+                toggleBtn.className = 'broken';
+            }
+            updateSimulation();
+        });
+
+        stateSelect.addEventListener('change', updateSimulation);
+
+        // Run initially
+        updateSimulation();
+    </script>
+</body>
+</html>
