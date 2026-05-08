@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Infinite Ladder Simulator</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #app-container {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.6);
+            width: 850px;
+            text-align: center;
+        }
+        h2 {
+            color: #58a6ff;
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        p.subtitle {
+            color: #8b949e;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        svg {
+            background-color: #0d1117;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 1px solid #30363d;
+            width: 100%;
+            height: 350px;
+        }
+        
+        /* Circuit Elements */
+        .wire { stroke: #8b949e; stroke-width: 3; fill: none; transition: opacity 0.5s; }
+        .resistor { fill: #161b22; stroke: #ff7b72; stroke-width: 3; transition: opacity 0.5s; }
+        .text { fill: #c9d1d9; font-size: 16px; font-weight: bold; font-family: monospace; transition: opacity 0.5s;}
+        .text-sub { font-size: 12px; }
+        .node { fill: #8b949e; transition: opacity 0.5s; }
+
+        /* Highlight Boxes */
+        .box-unit { stroke: #58a6ff; stroke-width: 2; fill: rgba(88, 166, 255, 0.1); stroke-dasharray: 8,4; opacity: 0; transition: opacity 0.5s; rx: 8px; }
+        .box-inf { stroke: #bc8cff; stroke-width: 2; fill: rgba(188, 140, 255, 0.1); stroke-dasharray: 8,4; opacity: 0; transition: opacity 0.5s; rx: 8px; }
+        .label-inf { fill: #bc8cff; font-size: 18px; font-weight: bold; opacity: 0; transition: opacity 0.5s; font-family: monospace;}
+
+        /* Req Substitute */
+        .req-sub { stroke: #3fb950; stroke-width: 3; fill: #161b22; }
+        .req-wire { stroke: #3fb950; stroke-width: 3; fill: none; }
+        .req-text { fill: #3fb950; font-size: 18px; font-weight: bold; font-family: monospace; }
+        .sub-group { opacity: 0; transition: opacity 0.5s; }
+
+        /* Visibility Classes for Logic */
+        .fade-out { opacity: 0.1; }
+        .hide { opacity: 0; }
+        .show { opacity: 1; }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            gap: 10px;
+        }
+        button {
+            background-color: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #363b42;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+            flex: 1;
+            transition: 0.3s;
+        }
+        button:hover { background-color: #30363d; border-color: #8b949e; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button.active-btn { background-color: #58a6ff; color: #0d1117; border-color: #58a6ff; }
+        
+        #equation-box {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #0d1117;
+            border: 1px dashed #30363d;
+            border-radius: 8px;
+            font-size: 22px;
+            color: #7ee787;
+            font-family: monospace;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <h2>Master Key 4: Infinite Ladder</h2>
+    <p class="subtitle">අනන්ත ජාල සුළු කිරීමේ පියවර 3 සජීවීව නරඹන්න.</p>
+
+    <svg viewBox="0 0 800 350">
+        <rect id="box-unit" class="box-unit" x="60" y="50" width="180" height="250" />
+        <rect id="box-inf" class="box-inf" x="250" y="50" width="450" height="250" />
+        <text id="label-inf" class="label-inf" x="420" y="40">R<tspan class="text-sub">eq</tspan> (ඉතිරි අනන්තය)</text>
+
+        <circle cx="50" cy="100" r="5" class="node"/>
+        <text x="30" y="105" class="text">A</text>
+        <circle cx="50" cy="250" r="5" class="node"/>
+        <text x="30" y="255" class="text">B</text>
+
+        <g id="stage-1">
+            <line x1="50" y1="100" x2="100" y2="100" class="wire" />
+            <rect x="100" y="85" width="60" height="30" class="resistor" />
+            <text x="120" y="105" class="text">R<tspan class="text-sub">1</tspan></text>
+            <line x1="160" y1="100" x2="220" y2="100" class="wire" />
+            <line x1="220" y1="100" x2="220" y2="140" class="wire" />
+            <rect x="205" y="140" width="30" height="70" class="resistor" />
+            <text x="245" y="180" class="text">R<tspan class="text-sub">2</tspan></text>
+            <line x1="220" y1="210" x2="220" y2="250" class="wire" />
+            <line x1="50" y1="250" x2="220" y2="250" class="wire" />
+            <circle cx="220" cy="100" r="4" class="node"/>
+            <circle cx="220" cy="250" r="4" class="node"/>
+        </g>
+
+        <g id="infinite-tail">
+            <line x1="220" y1="100" x2="270" y2="100" class="wire" />
+            <rect x="270" y="85" width="60" height="30" class="resistor" />
+            <text x="290" y="105" class="text">R<tspan class="text-sub">1</tspan></text>
+            <line x1="330" y1="100" x2="390" y2="100" class="wire" />
+            
+            <line x1="390" y1="100" x2="390" y2="140" class="wire" />
+            <rect x="375" y="140" width="30" height="70" class="resistor" />
+            <text x="415" y="180" class="text">R<tspan class="text-sub">2</tspan></text>
+            <line x1="390" y1="210" x2="390" y2="250" class="wire" />
+            
+            <line x1="220" y1="250" x2="390" y2="250" class="wire" />
+            <circle cx="390" cy="100" r="4" class="node"/>
+            <circle cx="390" cy="250" r="4" class="node"/>
+
+            <line x1="390" y1="100" x2="440" y2="100" class="wire" />
+            <rect x="440" y="85" width="60" height="30" class="resistor" />
+            <text x="460" y="105" class="text">R<tspan class="text-sub">1</tspan></text>
+            <line x1="500" y1="100" x2="560" y2="100" class="wire" />
+            
+            <line x1="560" y1="100" x2="560" y2="140" class="wire" />
+            <rect x="545" y="140" width="30" height="70" class="resistor" />
+            <text x="585" y="180" class="text">R<tspan class="text-sub">2</tspan></text>
+            <line x1="560" y1="210" x2="560" y2="250" class="wire" />
+            
+            <line x1="390" y1="250" x2="560" y2="250" class="wire" />
+            
+            <line x1="560" y1="100" x2="620" y2="100" class="wire" />
+            <line x1="560" y1="250" x2="620" y2="250" class="wire" />
+            <text x="640" y="105" class="text" style="font-size:24px;">. . .</text>
+            <text x="640" y="255" class="text" style="font-size:24px;">. . .</text>
+        </g>
+
+        <g id="req-substitute" class="sub-group">
+            <line x1="220" y1="100" x2="350" y2="100" class="req-wire" />
+            <line x1="350" y1="100" x2="350" y2="140" class="req-wire" />
+            <rect x="335" y="140" width="30" height="70" class="req-sub" />
+            <text x="375" y="180" class="req-text">R<tspan class="text-sub">eq</tspan></text>
+            <line x1="350" y1="210" x2="350" y2="250" class="req-wire" />
+            <line x1="220" y1="250" x2="350" y2="250" class="req-wire" />
+        </g>
+    </svg>
+
+    <div class="controls">
+        <button id="btn1" onclick="step1()">Step 1: පුනරාවර්තන ඒකකය</button>
+        <button id="btn2" onclick="step2()">Step 2: අනන්තය වෙන් කරමු</button>
+        <button id="btn3" onclick="step3()">Step 3: R<sub>eq</sub> ආදේශය</button>
+        <button id="btnReset" onclick="resetSim()" style="flex: 0.5; background-color: #da3633; border-color: #da3633;">Reset</button>
+    </div>
+
+    <div id="equation-box">
+        R<sub>eq</sub> = R<sub>1</sub> + ( R<sub>2</sub> || R<sub>eq</sub> )
+    </div>
+
+</div>
+
+<script>
+    function step1() {
+        document.getElementById('box-unit').classList.add('show');
+        document.getElementById('btn1').classList.add('active-btn');
+    }
+
+    function step2() {
+        if(!document.getElementById('btn1').classList.contains('active-btn')) step1();
+        document.getElementById('box-inf').classList.add('show');
+        document.getElementById('label-inf').classList.add('show');
+        document.getElementById('infinite-tail').classList.add('fade-out');
+        document.getElementById('btn2').classList.add('active-btn');
+    }
+
+    function step3() {
+        if(!document.getElementById('btn2').classList.contains('active-btn')) step2();
+        // Hide the infinite tail completely
+        document.getElementById('infinite-tail').classList.add('hide');
+        document.getElementById('box-inf').classList.remove('show');
+        document.getElementById('label-inf').classList.remove('show');
+        
+        // Show the Req Substitute
+        document.getElementById('req-substitute').classList.add('show');
+        
+        // Show the equation
+        document.getElementById('equation-box').style.opacity = '1';
+        document.getElementById('btn3').classList.add('active-btn');
+    }
+
+    function resetSim() {
+        // Remove all applied classes
+        document.getElementById('box-unit').classList.remove('show');
+        document.getElementById('box-inf').classList.remove('show');
+        document.getElementById('label-inf').classList.remove('show');
+        
+        document.getElementById('infinite-tail').classList.remove('fade-out');
+        document.getElementById('infinite-tail').classList.remove('hide');
+        
+        document.getElementById('req-substitute').classList.remove('show');
+        document.getElementById('equation-box').style.opacity = '0';
+
+        // Reset Buttons
+        document.getElementById('btn1').classList.remove('active-btn');
+        document.getElementById('btn2').classList.remove('active-btn');
+        document.getElementById('btn3').classList.remove('active-btn');
+    }
+</script>
+
+</body>
+</html>

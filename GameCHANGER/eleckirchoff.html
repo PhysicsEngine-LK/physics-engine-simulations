@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Wheatstone Bridge - Physics Engine v3</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #00ffcc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            background: #0a0a0a;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #222;
+            box-shadow: 0 0 30px rgba(0,255,204,0.05);
+            justify-content: center;
+            max-width: 1200px;
+            align-items: flex-start;
+        }
+        .canvas-wrapper {
+            position: relative;
+            background: #050505;
+            border: 2px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+        .panel { 
+            width: 380px; 
+            text-align: left; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .header-title { margin-bottom: 5px; color: #00ffcc; font-size: 1.8em; text-transform: uppercase; letter-spacing: 1px;}
+        .sub-title { color: #888; margin-top: 0; margin-bottom: 20px; }
+
+        .slider-group { margin-bottom: 12px; background: #111; padding: 12px; border-radius: 8px; border: 1px solid #333;}
+        .slider-label { display: flex; justify-content: space-between; color: #ccc; font-weight: bold; font-size: 0.95em; margin-bottom: 8px;}
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #0088ff; }
+
+        .status-box {
+            margin-top: 10px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: 0.3s;
+            border: 2px solid #444;
+        }
+
+        .status-balanced { background: rgba(0, 255, 204, 0.1); color: #00ffcc; border-color: #00ffcc; box-shadow: 0 0 15px rgba(0,255,204,0.2);}
+        .status-unbalanced { background: rgba(255, 51, 102, 0.1); color: #ff3366; border-color: #ff3366; }
+
+        .math-proof {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 255, 204, 0.05);
+            border: 1px dashed #00ffcc;
+            color: #ccc;
+            font-size: 0.95em;
+            text-align: left;
+            border-radius: 5px;
+            line-height: 1.6;
+        }
+        .highlight { color: #fff; font-weight: bold; font-size: 1.1em; }
+        
+        button {
+            padding: 10px; border: none; font-weight: bold; cursor: pointer; border-radius: 5px;
+            background: #ffcc00; color: #000; margin-top: 10px; text-transform: uppercase;
+        }
+        button:hover { background: #e6b800; transform: scale(1.02); }
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title">SYSTEM 17: WHEATSTONE BRIDGE V3</h2>
+    <p class="sub-title">Absolute Voltage & Particle Flow Visualization</p>
+
+    <div class="container">
+        <div class="canvas-wrapper">
+            <canvas id="circuitCanvas" width="550" height="450"></canvas>
+        </div>
+
+        <div class="panel">
+            
+            <div class="slider-group">
+                <div class="slider-label"><span>R₁ (ඉහළ-වම්)</span> <span id="lblR1">10 &Omega;</span></div>
+                <input type="range" id="r1Slider" min="1" max="50" step="1" value="10">
+            </div>
+            <div class="slider-group">
+                <div class="slider-label"><span>R₂ (ඉහළ-දකුණු)</span> <span id="lblR2">20 &Omega;</span></div>
+                <input type="range" id="r2Slider" min="1" max="50" step="1" value="20">
+            </div>
+            <div class="slider-group">
+                <div class="slider-label"><span>R₃ (පහළ-වම්)</span> <span id="lblR3">10 &Omega;</span></div>
+                <input type="range" id="r3Slider" min="1" max="50" step="1" value="10">
+            </div>
+            <div class="slider-group">
+                <div class="slider-label"><span>R₄ (පහළ-දකුණු)</span> <span id="lblR4">20 &Omega;</span></div>
+                <input type="range" id="r4Slider" min="1" max="50" step="1" value="20">
+            </div>
+
+            <div id="statusBox" class="status-box status-balanced">
+                තුලිතයි! (Balanced)
+            </div>
+
+            <div class="math-proof" id="mathProof">
+                </div>
+
+            <button onclick="randomize()">අහඹු අගයන් (Randomize)</button>
+
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const sliders = {
+            r1: document.getElementById('r1Slider'),
+            r2: document.getElementById('r2Slider'),
+            r3: document.getElementById('r3Slider'),
+            r4: document.getElementById('r4Slider')
+        };
+        const labels = {
+            r1: document.getElementById('lblR1'),
+            r2: document.getElementById('lblR2'),
+            r3: document.getElementById('lblR3'),
+            r4: document.getElementById('lblR4')
+        };
+        
+        const statusBox = document.getElementById('statusBox');
+        const mathProof = document.getElementById('mathProof');
+
+        let isBalanced = false;
+        const R5 = 50; // Central Resistor
+        const V_in = 100; // Voltage source
+        
+        const nodes = {
+            L: {x: 100, y: 225}, 
+            T: {x: 275, y: 75},  
+            B: {x: 275, y: 375}, 
+            R: {x: 450, y: 225}  
+        };
+
+        function getCircuitValues() {
+            return {
+                r1: parseInt(sliders.r1.value),
+                r2: parseInt(sliders.r2.value),
+                r3: parseInt(sliders.r3.value),
+                r4: parseInt(sliders.r4.value)
+            };
+        }
+
+        // Nodal Analysis using Kirchhoff's Laws
+        function solveCircuit(v) {
+            let G1 = 1/v.r1, G2 = 1/v.r2, G3 = 1/v.r3, G4 = 1/v.r4, G5 = 1/R5;
+            let D = (G1 + G2 + G5)*(G3 + G4 + G5) - (G5*G5);
+            let VA = (V_in * G1 * (G3 + G4 + G5) + V_in * G3 * G5) / D;
+            let VB = ((G1 + G2 + G5) * V_in * G3 + G5 * V_in * G1) / D;
+            
+            return {
+                VA: VA, VB: VB,
+                I1: (V_in - VA)/v.r1,
+                I2: VA/v.r2,
+                I3: (V_in - VB)/v.r3,
+                I4: VB/v.r4,
+                I5: (VA - VB)/R5  // Positive means A to B
+            };
+        }
+
+        function updateUI() {
+            let v = getCircuitValues();
+            labels.r1.innerHTML = v.r1 + " &Omega;";
+            labels.r2.innerHTML = v.r2 + " &Omega;";
+            labels.r3.innerHTML = v.r3 + " &Omega;";
+            labels.r4.innerHTML = v.r4 + " &Omega;";
+
+            let cross1 = v.r1 * v.r4;
+            let cross2 = v.r2 * v.r3;
+            
+            isBalanced = (cross1 === cross2);
+            let solved = solveCircuit(v);
+
+            if(isBalanced) {
+                statusBox.className = "status-box status-balanced";
+                statusBox.innerHTML = "අනුපාත සමානයි! (V<sub>A</sub> = V<sub>B</sub>)<br>තුලිත වීට්ස්ටන් සේතුවකි.";
+                let Req = ((v.r1 + v.r2)*(v.r3 + v.r4)) / (v.r1 + v.r2 + v.r3 + v.r4);
+                
+                mathProof.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span style="color:#00ffcc">V<sub>A</sub> = ${solved.VA.toFixed(1)} V</span>
+                        <span style="color:#00ffcc">V<sub>B</sub> = ${solved.VB.toFixed(1)} V</span>
+                    </div>
+                    විභවයන් සමාන බැවින් R₅ හරහා <span style="color:#ff3366;">ධාරාවක් නොගලයි.</span> එය කපා ඉවත් කළ හැක.<br><br>
+                    <span class="highlight">R_eq</span> = (R₁+R₂) || (R₃+R₄) = ${Req.toFixed(2)} &Omega;
+                `;
+            } else {
+                statusBox.className = "status-box status-unbalanced";
+                statusBox.innerHTML = "අසමතුලිතයි! (Unbalanced)<br>මැද ප්‍රතිරෝධයෙන් ධාරාවක් ගලයි.";
+                
+                let currentDir = solved.I5 > 0 ? "A සිට B දක්වා (පහළට)" : "B සිට A දක්වා (ඉහළට)";
+                
+                // Explain WHY it flows that way
+                let higherNode = solved.I5 > 0 ? `V<sub>A</sub> (${solved.VA.toFixed(1)}V) > V<sub>B</sub> (${solved.VB.toFixed(1)}V)` : `V<sub>B</sub> (${solved.VB.toFixed(1)}V) > V<sub>A</sub> (${solved.VA.toFixed(1)}V)`;
+                
+                mathProof.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span style="color:#0088ff">V<sub>A</sub> = ${solved.VA.toFixed(1)} V</span>
+                        <span style="color:#0088ff">V<sub>B</sub> = ${solved.VB.toFixed(1)} V</span>
+                    </div>
+                    විභවයන් අසමාන වේ. <br><span class="highlight">${higherNode}</span><br><br>
+                    ධාරාව නිතරම වැඩි විභවයේ සිට අඩු විභවයට ගලන බැවින්, හරස් ධාරාව <span class="highlight" style="color:#ff3366">${currentDir}</span> ගලයි. 
+                `;
+            }
+        }
+
+        // Draw unambiguous moving particles
+        function drawParticleFlow(x1, y1, x2, y2, current, isCentral) {
+            if (Math.abs(current) < 0.001) return;
+            
+            // Base speed multiplier
+            let speed = Math.abs(current) * 0.003; 
+            let time = performance.now();
+            let numParticles = 6;
+            
+            ctx.fillStyle = isCentral ? "#ff3366" : "#ffcc00";
+            
+            for(let i=0; i<numParticles; i++) {
+                // Calculate phase (0.0 to 1.0)
+                let phase = ((time * speed) + (i / numParticles)) % 1.0;
+                
+                // If current is negative, particles move from x2 to x1
+                if (current < 0) {
+                    phase = 1.0 - phase;
+                }
+                
+                let px = x1 + (x2 - x1) * phase;
+                let py = y1 + (y2 - y1) * phase;
+                
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, Math.PI*2);
+                ctx.fill();
+                
+                // Adding a little glow
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = ctx.fillStyle;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function drawComponent(x1, y1, x2, y2, label, val, current, isCentral, isBalancedCheck) {
+            // 1. Draw Wire
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = isBalancedCheck ? "rgba(0, 255, 204, 0.3)" : "rgba(255, 255, 255, 0.15)";
+            if(isCentral && isBalancedCheck) {
+                ctx.setLineDash([5, 5]); 
+            }
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 2. Draw Moving Particles
+            if (!isBalancedCheck || (!isCentral && isBalancedCheck)) {
+                drawParticleFlow(x1, y1, x2, y2, current, isCentral);
+                
+                // Draw a solid Directional Arrow in the middle for extra clarity
+                if (Math.abs(current) > 0.001) {
+                    let dx = x2 - x1, dy = y2 - y1;
+                    let angle = Math.atan2(dy, dx);
+                    if (current < 0) angle += Math.PI; 
+
+                    let ax = x1 + dx * 0.25;
+                    let ay = y1 + dy * 0.25;
+
+                    ctx.save();
+                    ctx.translate(ax, ay);
+                    ctx.rotate(angle);
+                    ctx.beginPath();
+                    ctx.moveTo(-8, -8);
+                    ctx.lineTo(8, 0);
+                    ctx.lineTo(-8, 8);
+                    ctx.fillStyle = isCentral ? "#ff3366" : "#ffcc00";
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            // 3. Draw Resistor Box
+            let mx = (x1 + x2)/2;
+            let my = (y1 + y2)/2;
+            let angleBox = Math.atan2(y2 - y1, x2 - x1);
+
+            ctx.save();
+            ctx.translate(mx, my);
+            ctx.rotate(angleBox);
+
+            ctx.fillStyle = "#111";
+            ctx.fillRect(-22, -12, 44, 24);
+
+            if (isCentral) {
+                if (isBalancedCheck) {
+                    ctx.strokeStyle = "rgba(255, 51, 102, 0.3)";
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(-22, -12, 44, 24);
+                    // Red X
+                    ctx.beginPath(); ctx.moveTo(-15,-8); ctx.lineTo(15,8); ctx.strokeStyle="#ff3366"; ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(-15,8); ctx.lineTo(15,-8); ctx.stroke();
+                } else {
+                    ctx.strokeStyle = "#ff3366";
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(-22, -12, 44, 24);
+                    ctx.shadowBlur = 10; ctx.shadowColor = "#ff3366"; ctx.strokeRect(-22, -12, 44, 24);
+                }
+            } else {
+                ctx.strokeStyle = isBalancedCheck ? "#00ffcc" : "#fff";
+                ctx.lineWidth = 2;
+                ctx.strokeRect(-22, -12, 44, 24);
+            }
+            ctx.restore();
+
+            // 4. Text Label
+            ctx.fillStyle = isCentral ? (isBalancedCheck ? "#555" : "#ff3366") : "#fff";
+            ctx.font = "bold 15px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            let tx = mx - 32 * Math.sin(angleBox);
+            let ty = my + 32 * Math.cos(angleBox);
+            ctx.fillText(label + " (" + val + "Ω)", tx, ty);
+        }
+
+        function drawCircuit() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.globalAlpha = 0.05; ctx.fillStyle = "#fff"; ctx.font = "bold 40px Arial";
+            ctx.textAlign = "center"; ctx.fillText("PHYSICS ENGINE", canvas.width/2, canvas.height/2);
+            ctx.restore();
+
+            ctx.beginPath();
+            ctx.moveTo(30, 225); ctx.lineTo(nodes.L.x, nodes.L.y);
+            ctx.moveTo(nodes.R.x, nodes.R.y); ctx.lineTo(canvas.width - 30, 225);
+            ctx.strokeStyle = isBalanced ? "#00ffcc" : "#0088ff"; ctx.lineWidth = 3; ctx.stroke();
+            
+            ctx.fillStyle = "#fff"; ctx.font = "bold 16px Arial";
+            ctx.fillText("V (100V)", 25, 210);
+            ctx.fillText("GND (0V)", canvas.width - 45, 210);
+
+            let val = getCircuitValues();
+            let solved = solveCircuit(val);
+
+            drawComponent(nodes.L.x, nodes.L.y, nodes.T.x, nodes.T.y, "R₁", val.r1, solved.I1, false, isBalanced);
+            drawComponent(nodes.T.x, nodes.T.y, nodes.R.x, nodes.R.y, "R₂", val.r2, solved.I2, false, isBalanced);
+            drawComponent(nodes.L.x, nodes.L.y, nodes.B.x, nodes.B.y, "R₃", val.r3, solved.I3, false, isBalanced);
+            drawComponent(nodes.B.x, nodes.B.y, nodes.R.x, nodes.R.y, "R₄", val.r4, solved.I4, false, isBalanced);
+            
+            drawComponent(nodes.T.x, nodes.T.y, nodes.B.x, nodes.B.y, "R₅", R5, solved.I5, true, isBalanced);
+
+            // Draw Nodes
+            for(let key in nodes) {
+                ctx.beginPath(); ctx.arc(nodes[key].x, nodes[key].y, 6, 0, Math.PI*2);
+                ctx.fillStyle = "#fff"; ctx.fill();
+            }
+            
+            // Dynamic Node Voltage Labels
+            ctx.fillStyle = "#ffcc00"; ctx.font = "bold 18px Arial";
+            ctx.fillText(`A (${solved.VA.toFixed(1)}V)`, nodes.T.x, nodes.T.y - 20);
+            ctx.fillText(`B (${solved.VB.toFixed(1)}V)`, nodes.B.x, nodes.B.y + 30);
+        }
+
+        function gameLoop() {
+            drawCircuit();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function randomize() {
+            sliders.r1.value = Math.floor(Math.random() * 5 + 1) * 10;
+            sliders.r2.value = Math.floor(Math.random() * 5 + 1) * 10;
+            sliders.r3.value = Math.floor(Math.random() * 5 + 1) * 10;
+            sliders.r4.value = Math.floor(Math.random() * 5 + 1) * 10;
+            updateUI();
+        }
+
+        for(let key in sliders) {
+            sliders[key].addEventListener('input', updateUI);
+        }
+
+        updateUI();
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
