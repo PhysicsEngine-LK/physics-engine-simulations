@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Surface Tension - Physics Engine</title>
+    <style>
+        body { background-color: #000; color: #00ffcc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .container { display: flex; flex-wrap: wrap; gap: 20px; background: #0a0a0a; padding: 25px; border-radius: 15px; border: 1px solid #222; box-shadow: 0 0 30px rgba(0,255,204,0.05); justify-content: center; max-width: 1200px; align-items: flex-start; }
+        .canvas-wrapper { position: relative; background: #050505; border: 2px solid #333; border-radius: 50%; overflow: hidden; box-shadow: 0 0 40px rgba(0, 136, 255, 0.2); }
+        canvas { display: block; }
+        .panel { width: 350px; text-align: left; display: flex; flex-direction: column; justify-content: center;}
+        .header-title { margin-bottom: 5px; color: #00ffcc; font-size: 1.8em; text-transform: uppercase; letter-spacing: 1px;}
+        .sub-title { color: #888; margin-top: 0; margin-bottom: 20px; }
+        
+        button { padding: 15px; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; transition: 0.2s; font-size: 1.1em; margin-bottom: 10px; width: 100%;}
+        #btnClean { background: #0088ff; color: #fff; }
+        #btnClean:hover { background: #0066cc; transform: scale(1.02); }
+        #btnSoap { background: #ff3366; color: #fff; }
+        #btnSoap:hover { background: #cc0033; transform: scale(1.02); }
+        #btnReset { background: #333; color: #fff; border: 1px solid #555; }
+        #btnReset:hover { background: #444; }
+
+        .explanation { margin-top: 15px; padding: 15px; background: rgba(0, 255, 204, 0.05); border: 1px dashed #555; color: #ccc; font-size: 1.0em; border-radius: 5px; line-height: 1.6; min-height: 100px;}
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title">SYSTEM: MARANGONI EFFECT</h2>
+    <p class="sub-title">2013 A/L Q44 - Surface Tension Breakdown</p>
+
+    <div class="container">
+        <div class="canvas-wrapper">
+            <canvas id="bowlCanvas" width="400" height="400"></canvas>
+        </div>
+
+        <div class="panel">
+            <button id="btnClean">👆 පිරිසිදු ඇඟිල්ල තබන්න</button>
+            <button id="btnSoap">🧼 සබන් ගෑ ඇඟිල්ල තබන්න</button>
+            <button id="btnReset">🔄 නැවත සකසන්න (Reset)</button>
+
+            <div class="explanation" id="expBox">
+                බඳුනක ජල පෘෂ්ඨය මත ගම්මිරිස් කුඩු ඉසිමින් පවතී. ඉහත බොත්තම් ඔබා සිදුවන දේ නිරීක්ෂණය කරන්න.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('bowlCanvas');
+        const ctx = canvas.getContext('2d');
+        const expBox = document.getElementById('expBox');
+
+        let particles = [];
+        const cx = 200, cy = 200;
+        const bowlRadius = 190;
+        let ringRadius = 0;
+        let isSoapy = false;
+        let fingerActive = false;
+        let fingerType = 0; // 1 = clean, 2 = soap
+        let fingerTimer = 0;
+
+        function initParticles() {
+            particles = [];
+            for(let i=0; i<400; i++) {
+                let r = Math.random() * (bowlRadius - 10);
+                let theta = Math.random() * 2 * Math.PI;
+                particles.push({
+                    x: cx + r * Math.cos(theta),
+                    y: cy + r * Math.sin(theta),
+                    vx: 0,
+                    vy: 0,
+                    size: Math.random() * 1.5 + 1.5
+                });
+            }
+            ringRadius = 0;
+            isSoapy = false;
+            fingerActive = false;
+            expBox.innerHTML = "බඳුනක ජල පෘෂ්ඨය මත ගම්මිරිස් කුඩු ඉසිමින් පවතී. ඉහත බොත්තම් ඔබා සිදුවන දේ නිරීක්ෂණය කරන්න.";
+            expBox.style.borderColor = "#555";
+        }
+
+        function triggerClean() {
+            if(isSoapy) return; // Reset needed
+            fingerActive = true;
+            fingerType = 1;
+            fingerTimer = 30; // frames to show finger
+            
+            // Jiggle
+            particles.forEach(p => {
+                p.vx += (Math.random() - 0.5) * 1;
+                p.vy += (Math.random() - 0.5) * 1;
+            });
+            
+            expBox.innerHTML = "<strong style='color:#0088ff;'>පිරිසිදු ඇඟිල්ල:</strong><br>පෘෂ්ඨික ආතතිය වෙනස් නොවේ. බලයන් සමතුලිත බැවින් ගම්මිරිස් කුඩු එලෙසම පවතී.";
+            expBox.style.borderColor = "#0088ff";
+        }
+
+        function triggerSoap() {
+            if(isSoapy) return;
+            fingerActive = true;
+            fingerType = 2;
+            fingerTimer = 30;
+            isSoapy = true;
+            ringRadius = 10; // Start expanding
+            
+            expBox.innerHTML = "<strong style='color:#ff3366;'>සබන් ගෑ ඇඟිල්ල:</strong><br>සබන් මගින් ජලයේ පෘෂ්ඨික ආතතිය එකවරම අඩු කරයි! එවිට ඈතින් ඇති පෘෂ්ඨික ආතතිය වැඩි ජලය මගින්, මැද ඇති ජලය හා ගම්මිරිස් වේගයෙන් පිටතට අදිනු ලබයි.";
+            expBox.style.borderColor = "#ff3366";
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Water
+            let grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, bowlRadius);
+            grad.addColorStop(0, "#cce6ff");
+            grad.addColorStop(1, "#80c1ff");
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.arc(cx, cy, bowlRadius, 0, Math.PI*2); ctx.fill();
+
+            // Soapy Ring Expansion
+            if(isSoapy) {
+                ringRadius += 10; // Expand fast
+                if (ringRadius < bowlRadius) {
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, ringRadius, 0, Math.PI*2);
+                    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+                    ctx.fill();
+                    ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+            }
+
+            // Draw Finger
+            if(fingerActive && fingerTimer > 0) {
+                fingerTimer--;
+                ctx.beginPath();
+                ctx.arc(cx, cy, 20, 0, Math.PI*2);
+                ctx.fillStyle = fingerType === 1 ? "rgba(0, 136, 255, 0.5)" : "rgba(255, 51, 102, 0.5)";
+                ctx.fill();
+                ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+            } else {
+                fingerActive = false;
+            }
+
+            // Update and Draw Particles
+            ctx.fillStyle = "#222"; // Pepper color
+            particles.forEach(p => {
+                // If soapy ring hits them, push them out
+                if(isSoapy) {
+                    let dx = p.x - cx;
+                    let dy = p.y - cy;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if(dist < ringRadius + 10 && dist > 10) {
+                        let force = (ringRadius - dist) * 0.5;
+                        if(force > 0) {
+                            p.vx += (dx / dist) * force;
+                            p.vy += (dy / dist) * force;
+                        }
+                    }
+                }
+
+                // Apply velocity & friction
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vx *= 0.8; // friction
+                p.vy *= 0.8;
+
+                // Constrain to bowl edge
+                let dx = p.x - cx;
+                let dy = p.y - cy;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist > bowlRadius - 5) {
+                    p.x = cx + (dx/dist) * (bowlRadius - 5);
+                    p.y = cy + (dy/dist) * (bowlRadius - 5);
+                    p.vx = 0; p.vy = 0;
+                }
+
+                // Draw
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                ctx.fill();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        document.getElementById('btnClean').onclick = triggerClean;
+        document.getElementById('btnSoap').onclick = triggerSoap;
+        document.getElementById('btnReset').onclick = initParticles;
+
+        initParticles();
+        animate();
+    </script>
+</body>
+</html>
