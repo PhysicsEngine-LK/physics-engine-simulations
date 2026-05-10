@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Capillary Tube - Physics Engine</title>
+    <style>
+        body { background-color: #000; color: #00ffcc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .container { display: flex; flex-wrap: wrap; gap: 20px; background: #0a0a0a; padding: 25px; border-radius: 15px; border: 1px solid #222; box-shadow: 0 0 30px rgba(0,255,204,0.05); justify-content: center; max-width: 1200px; align-items: flex-start; }
+        .canvas-wrapper { position: relative; background: #050505; border: 2px solid #333; border-radius: 8px; overflow: hidden; }
+        canvas { display: block; }
+        .panel { width: 350px; text-align: left; display: flex; flex-direction: column; }
+        .header-title { margin-bottom: 5px; color: #00ffcc; font-size: 1.8em; text-transform: uppercase; letter-spacing: 1px;}
+        .sub-title { color: #888; margin-top: 0; margin-bottom: 20px; }
+        .slider-group { margin-bottom: 15px; background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333;}
+        .slider-label { display: flex; justify-content: space-between; color: #ccc; font-weight: bold; font-size: 0.9em; margin-bottom: 10px;}
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #00ffcc; }
+        .math-proof { margin-top: 10px; padding: 15px; background: rgba(0, 255, 204, 0.05); border: 1px dashed #00ffcc; color: #fff; font-size: 1.05em; border-radius: 5px; line-height: 1.6; }
+        .highlight { color: #ffcc00; font-weight: bold; font-size: 1.2em; }
+        .highlight-green { color: #00ffcc; font-weight: bold; font-size: 1.2em; }
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title">SYSTEM: CAPILLARY TILT</h2>
+    <p class="sub-title">2021 A/L Q49 - Constant Vertical Height Proof</p>
+
+    <div class="container">
+        <div class="canvas-wrapper">
+            <canvas id="simCanvas" width="450" height="500"></canvas>
+        </div>
+
+        <div class="panel">
+            <div class="slider-group">
+                <div class="slider-label"><span>සිරසට කෝණය (α)</span> <span id="lblAngle">0&deg;</span></div>
+                <input type="range" id="angleSlider" min="0" max="75" step="1" value="0">
+            </div>
+
+            <div class="math-proof" id="mathOutput">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const angleSlider = document.getElementById('angleSlider');
+        const lblAngle = document.getElementById('lblAngle');
+        const mathOutput = document.getElementById('mathOutput');
+
+        const pivotX = 225;
+        const pivotY = 350; // Water surface
+        const h_real = 2.0; // cm
+        const h_px = 120;   // visual height for 2.0 cm
+
+        function drawScene() {
+            let angleDeg = parseInt(angleSlider.value);
+            let angleRad = angleDeg * Math.PI / 180;
+            
+            lblAngle.innerHTML = angleDeg + "&deg;";
+
+            // Calculate length
+            let l_real = h_real / Math.cos(angleRad);
+            let l_px = h_px / Math.cos(angleRad);
+
+            // Update Math Panel
+            let isSixty = (angleDeg === 60);
+            let valClass = isSixty ? "highlight-green" : "highlight";
+            
+            mathOutput.innerHTML = `
+                නියත සිරස් උස (h) = 2.0 cm<br><br>
+                l = h / cos(&alpha;)<br>
+                l = 2.0 / cos(${angleDeg}&deg;)<br><br>
+                නළය තුළ ජල කඳේ දිග:<br>
+                <span class="${valClass}">l = ${l_real.toFixed(2)} cm</span>
+                ${isSixty ? '<br><br><span style="color:#00ffcc;">★ විභාග ගැටලුවේ අවස්ථාව!</span>' : ''}
+            `;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Beaker & Water
+            ctx.fillStyle = "rgba(0, 136, 255, 0.2)";
+            ctx.fillRect(50, pivotY, 350, 150);
+            ctx.strokeStyle = "#888"; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(50, 150); ctx.lineTo(50, 500); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(400, 150); ctx.lineTo(400, 500); ctx.stroke();
+            
+            // Water surface line
+            ctx.strokeStyle = "#0088ff"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(50, pivotY); ctx.lineTo(400, pivotY); ctx.stroke();
+
+            // Constant Height Line
+            let topY = pivotY - h_px;
+            ctx.strokeStyle = "#00ffcc"; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
+            ctx.beginPath(); ctx.moveTo(50, topY); ctx.lineTo(400, topY); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = "#00ffcc"; ctx.font = "14px Arial"; ctx.fillText("නියත සිරස් උස (h = 2.0 cm)", 60, topY - 10);
+
+            // Vertical Axis
+            ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(pivotX, 100); ctx.lineTo(pivotX, pivotY); ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Angle Arc
+            if (angleDeg > 0) {
+                ctx.beginPath();
+                ctx.arc(pivotX, pivotY, 60, -Math.PI/2, -Math.PI/2 + angleRad);
+                ctx.strokeStyle = "#ffcc00"; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = "#ffcc00";
+                ctx.fillText(angleDeg + "°", pivotX + 15 * Math.sin(angleRad/2), pivotY - 70 * Math.cos(angleRad/2));
+            }
+
+            // Draw Capillary Tube
+            ctx.save();
+            ctx.translate(pivotX, pivotY);
+            ctx.rotate(angleRad); // Rotate to right
+
+            // Tube glass
+            ctx.fillStyle = "rgba(255,255,255,0.1)";
+            ctx.fillRect(-15, -300, 30, 450);
+            ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.lineWidth = 2;
+            ctx.strokeRect(-15, -300, 30, 450);
+
+            // Water inside tube
+            ctx.fillStyle = "rgba(0, 136, 255, 0.6)";
+            ctx.fillRect(-13, -l_px, 26, l_px + 100);
+
+            // Meniscus curve
+            ctx.beginPath();
+            ctx.arc(0, -l_px - 13, 13, 0, Math.PI, false);
+            ctx.fillStyle = "rgba(0, 136, 255, 0.6)";
+            ctx.fill();
+
+            // Length indicator (l)
+            ctx.strokeStyle = "#ffcc00"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(25, 0); ctx.lineTo(25, -l_px); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(20, 0); ctx.lineTo(30, 0); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(20, -l_px); ctx.lineTo(30, -l_px); ctx.stroke();
+            
+            ctx.save(); ctx.translate(35, -l_px/2); ctx.rotate(Math.PI/2);
+            ctx.fillStyle = "#ffcc00"; ctx.fillText("l (" + l_real.toFixed(2) + " cm)", -30, 0);
+            ctx.restore();
+
+            ctx.restore();
+        }
+
+        angleSlider.addEventListener('input', drawScene);
+        drawScene();
+    </script>
+</body>
+</html>
