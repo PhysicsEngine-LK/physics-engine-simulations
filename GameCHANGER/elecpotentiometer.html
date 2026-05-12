@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Potentiometer Simulator</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #app-container {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.6);
+            width: 850px;
+            text-align: center;
+        }
+        h2 {
+            color: #bc8cff;
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        p.subtitle {
+            color: #8b949e;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        svg {
+            background-color: #0d1117;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 1px solid #30363d;
+            width: 100%;
+            height: 380px;
+        }
+        
+        /* Circuit Elements */
+        .wire { stroke: #8b949e; stroke-width: 3; fill: none; stroke-linecap: square; }
+        
+        /* --- 3D POTENTIOMETER WIRE AB --- */
+        .wire-ab-case { stroke: #161b22; stroke-width: 10; fill: none; stroke-linecap: round; }
+        .wire-ab { stroke: #ff7b72; stroke-width: 5; fill: none; stroke-linecap: round;}
+        .text { fill: #c9d1d9; font-size: 16px; font-weight: bold; font-family: monospace; }
+        .text-sub { font-size: 12px; }
+        .node { fill: #c9d1d9; }
+
+        /* Galvanometer */
+        .galvo { fill: #161b22; stroke: #bc8cff; stroke-width: 3; }
+        
+        /* --- UPGRADED NEEDLE ANIMATION --- */
+        .needle { 
+            stroke: #ff7b72; 
+            stroke-width: 2; 
+            transform-origin: 440px 315px; 
+            transform: rotate(25deg);
+            transition: transform 0.7s cubic-bezier(0.5, 1.8, 0.5, 1), stroke 0.3s, filter 0.3s; 
+        }
+        .needle-balanced { 
+            stroke: #3fb950; 
+            stroke-width: 3; 
+            filter: drop-shadow(0 0 6px rgba(63, 185, 80, 0.8)); 
+        } 
+        
+        /* --- REALISTIC STYLED JOCKEY --- */
+        .jockey-handle { 
+            fill: #c9d1d9; 
+            stroke: #30363d; stroke-width: 1;
+            filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.5));
+        }
+        .jockey-grip { 
+            fill: #161b22; 
+            stroke: #c9d1d9; stroke-width: 0.5;
+        }
+        .jockey-tip { 
+            stroke: #c9d1d9; stroke-width: 3; stroke-linecap: round;
+        }
+        .jockey-contact { 
+            stroke: #58a6ff; stroke-width: 3; fill: none; 
+        }
+        .jockey-label { 
+            fill: #58a6ff; font-size: 14px; font-weight: bold; font-family: monospace;
+        }
+
+        /* --- FLEXIBLE DYNAMIC CYAN WIRE --- */
+        #flex-wire-path { 
+            stroke: #58a6ff; stroke-width: 3; fill: none; stroke-linecap: round; 
+            stroke-linejoin: round;
+            transition: d 0.05s ease-out; 
+        }
+
+        /* Controls Area */
+        .dashboard {
+            display: flex;
+            justify-content: space-between;
+            align-items: stretch;
+            margin-top: 20px;
+            gap: 20px;
+            text-align: left;
+        }
+        .control-panel, .data-panel {
+            background-color: #21262d;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            flex: 1;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #58a6ff;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 20px;
+            accent-color: #58a6ff;
+            cursor: pointer;
+        }
+        select {
+            width: 100%;
+            padding: 8px;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            border: 1px solid #58a6ff;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-family: monospace;
+        }
+        .highlight { color: #ff7b72; font-weight: bold; }
+        .success-text { color: #3fb950; font-weight: bold; font-size: 20px; }
+        
+        /* --- ALERT ANIMATION & GLOW --- */
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.7; text-shadow: 0 0 5px rgba(63, 185, 80, 0.3); transform: scale(1); }
+            50% { opacity: 1; text-shadow: 0 0 15px rgba(63, 185, 80, 0.9); transform: scale(1.02); }
+        }
+        #balance-alert {
+            opacity: 0;
+            color: #3fb950;
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 10px;
+            text-align: center;
+            transition: opacity 0.3s ease-out;
+        }
+        .balance-active {
+            animation: pulse-glow 1.5s infinite ease-in-out !important;
+            opacity: 1 !important;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <h2>10. විභවමාන මූලධර්මය (The Potentiometer)</h2>
+    <p class="subtitle">ස්පර්ශකය (Jockey) චලනය කර ගැල්වනෝමීටරයේ සමතුලිත ලක්ෂ්‍යය සොයාගන්න.</p>
+
+    <svg viewBox="0 0 800 380">
+        <line x1="100" y1="180" x2="100" y2="60" class="wire" />
+        <line x1="100" y1="60" x2="390" y2="60" class="wire" />
+        
+        <line x1="390" y1="40" x2="390" y2="80" stroke="#58a6ff" stroke-width="3" stroke-linecap="square" /> <line x1="410" y1="50" x2="410" y2="70" stroke="#58a6ff" stroke-width="8" stroke-linecap="square" /> <text x="400" y="30" class="text" text-anchor="middle">Driver Cell: 2.0 V</text>
+        <text x="400" y="100" class="text" fill="#8b949e" text-anchor="middle">k = 0.02 V/cm</text>
+        
+        <line x1="410" y1="60" x2="700" y2="60" class="wire" />
+        <line x1="700" y1="60" x2="700" y2="180" class="wire" />
+
+        <defs>
+            <linearGradient id="wire-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#ff9e97; stop-opacity:1" />
+                <stop offset="50%" style="stop-color:#ff7b72; stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#ff9e97; stop-opacity:1" />
+            </linearGradient>
+        </defs>
+        <line x1="100" y1="180" x2="700" y2="180" class="wire-ab-case" />
+        <line x1="100" y1="180" x2="700" y2="180" class="wire-ab" style="stroke:url(#wire-gradient);" />
+        
+        <circle cx="100" cy="180" r="5" class="node"/>
+        <text x="80" y="185" class="text" fill="#ff7b72">A</text>
+        <text x="65" y="205" class="text-sub">0 cm</text>
+        
+        <circle cx="700" cy="180" r="5" class="node"/>
+        <text x="715" y="185" class="text" fill="#ff7b72">B</text>
+        <text x="685" y="205" class="text-sub">100 cm</text>
+
+        <line x1="250" y1="180" x2="250" y2="185" stroke="#8b949e" stroke-width="2"/>
+        <line x1="400" y1="180" x2="400" y2="185" stroke="#8b949e" stroke-width="2"/>
+        <line x1="550" y1="180" x2="550" y2="185" stroke="#8b949e" stroke-width="2"/>
+        <text x="385" y="205" class="text-sub">50 cm</text>
+
+        <line x1="100" y1="180" x2="100" y2="300" class="wire" />
+        <line x1="100" y1="300" x2="230" y2="300" class="wire" />
+        
+        <line x1="230" y1="280" x2="230" y2="320" stroke="#58a6ff" stroke-width="3" stroke-linecap="square" /> <line x1="250" y1="290" x2="250" y2="310" stroke="#58a6ff" stroke-width="8" stroke-linecap="square" /> <text x="240" y="270" class="text" text-anchor="middle">E<tspan class="text-sub">x</tspan></text>
+
+        <line x1="250" y1="300" x2="415" y2="300" class="wire" />
+
+        <circle cx="440" cy="300" r="25" class="galvo" />
+        <text x="432" y="306" class="text" fill="#bc8cff">G</text>
+        <line id="g-needle" x1="440" y1="315" x2="440" y2="285" class="needle" />
+        <text x="435" y="275" class="text-sub">0</text>
+
+        <line x1="465" y1="300" x2="480" y2="300" class="wire" />
+        <circle cx="480" cy="300" r="3" class="node" />
+
+        <path id="flex-wire-path" d="M 480 300 Q 300 280 100 240" />
+
+        <g id="jockey-group" transform="translate(100, 0)">
+            <rect x="-10" y="200" width="20" height="40" class="jockey-handle" />
+            <rect x="-8" y="210" width="16" height="20" class="jockey-grip" />
+            <line x1="0" y1="198" x2="0" y2="180" class="jockey-tip" /> 
+            <circle cx="0" cy="240" r="3" fill="#58a6ff" /> 
+            <polygon points="-5,190 5,190 0,180" class="jockey-arrow" />
+            <text x="12" y="220" class="jockey-label">J</text>
+        </g>
+    </svg>
+
+    <div class="dashboard">
+        <div class="control-panel">
+            <label for="ex-select">පරීක්ෂා කරන කෝෂය (Ex):</label>
+            <select id="ex-select" onchange="updateSim()">
+                <option value="0.8">0.8 V Cell</option>
+                <option value="1.2" selected>1.2 V Cell</option>
+                <option value="1.5">1.5 V Cell</option>
+            </select>
+
+            <label style="margin-top: 15px;">ස්පර්ශකයේ පිහිටීම (Jockey Length - l): <span id="length-val" style="color:white;">0</span> cm</label>
+            <input type="range" id="length-slider" min="0" max="100" value="0" step="0.5" oninput="updateSim()">
+            
+            <div id="balance-alert">⚡ සමතුලිත ලක්ෂ්‍යය හමුවිය! (I = 0)</div>
+        </div>
+
+        <div class="data-panel">
+            <div class="data-row"><span>විභව අනුක්‍රමණය (k):</span> <span class="highlight">0.02 V/cm</span></div>
+            <div class="data-row"><span>AJ හි විභව බැස්ම (V_AJ = kl):</span> <span class="highlight" id="vaj-val">0.00 V</span></div>
+            <div class="data-row"><span>අපේක්ෂිත කෝෂය (E_x):</span> <span class="highlight" id="target-ex">1.20 V</span></div>
+            <hr style="border-color:#30363d; margin: 15px 0;">
+            <div class="data-row"><span>ගැල්වනෝමීටර ධාරාව (I):</span> <span id="current-status" style="color:#ff7b72; font-weight:bold;">ගලමින් පවතී (Deflected)</span></div>
+            <div class="data-row" style="margin-top: 10px;"><span>නිගමනය:</span> <span id="conclusion" style="color:#8b949e;">V_AJ &ne; E_x</span></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const K_GRADIENT = 0.02; // 2.0V / 100cm
+    const MIN_X = 100; // X coord of Point A
+    const PIXELS_PER_CM = 6; // (700 - 100) / 100
+
+    function updateSim() {
+        const ex = parseFloat(document.getElementById('ex-select').value);
+        const length = parseFloat(document.getElementById('length-slider').value);
+        
+        document.getElementById('target-ex').innerText = ex.toFixed(2) + " V";
+        document.getElementById('length-val').innerText = length.toFixed(1);
+
+        const v_aj = length * K_GRADIENT;
+        const delta_v = v_aj - ex; 
+
+        document.getElementById('vaj-val').innerText = v_aj.toFixed(2) + " V";
+
+        const needle = document.getElementById('g-needle');
+        const alertBox = document.getElementById('balance-alert');
+        const currentStatus = document.getElementById('current-status');
+        const conclusion = document.getElementById('conclusion');
+
+        const xj = MIN_X + (length * PIXELS_PER_CM); 
+        document.getElementById('jockey-group').setAttribute('transform', `translate(${xj}, 0)`);
+        
+        // --- DYNAMIC FLEXIBLE WIRE PATH UPDATE ---
+        const flexWirePath = document.getElementById('flex-wire-path');
+        const endX = xj;
+        const endY = 240;
+        const cpX = (480 + endX) / 2; 
+        const cpY = (300 + endY) / 2 + 30; 
+        flexWirePath.setAttribute('d', `M 480 300 Q ${cpX} ${cpY} ${endX} ${endY}`);
+
+        // Check Balance
+        if (Math.abs(delta_v) < 0.01) {
+            needle.style.transform = `rotate(0deg)`; 
+            needle.classList.add('needle-balanced');
+            alertBox.classList.add('balance-active');
+            
+            currentStatus.innerText = "I = 0 (ශුන්‍ය විස්ථාපනය)";
+            currentStatus.className = "success-text";
+            conclusion.innerHTML = `<span class="success-text">E<sub>x</sub> = kl</span>`;
+        } else {
+            let angle = delta_v * 45; 
+            if(angle > 45) angle = 45;
+            if(angle < -45) angle = -45;
+
+            needle.style.transform = `rotate(${angle}deg)`;
+            needle.classList.remove('needle-balanced');
+            alertBox.classList.remove('balance-active');
+            
+            currentStatus.innerText = "ගලමින් පවතී (Deflected)";
+            currentStatus.style.color = "#ff7b72";
+            currentStatus.className = "";
+            conclusion.innerHTML = "V<sub>AJ</sub> &ne; E<sub>x</sub>";
+        }
+    }
+
+    window.onload = updateSim;
+</script>
+
+</body>
+</html>

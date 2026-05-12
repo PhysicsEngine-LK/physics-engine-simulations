@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Potentiometer Master Lab</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        #app-container {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            width: 900px;
+        }
+        h2 {
+            color: #bc8cff;
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-align: center;
+        }
+        p.subtitle {
+            color: #8b949e;
+            font-size: 14px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        svg {
+            background-color: #090d13;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            width: 100%;
+            height: 420px;
+        }
+
+        /* Circuit SVG Styles */
+        .wire { stroke: #8b949e; stroke-width: 3; fill: none; stroke-linejoin: round; }
+        .wire-active { stroke: #ff7b72; stroke-width: 3; fill: none; }
+        .wire-ab-case { stroke: #161b22; stroke-width: 12; fill: none; stroke-linecap: round; }
+        .wire-ab { stroke: #ff7b72; stroke-width: 4; fill: none; stroke-linecap: round; transition: stroke 0.3s;}
+        
+        .component { stroke: #58a6ff; stroke-width: 3; fill: #0d1117; }
+        .resistor { stroke: #58a6ff; stroke-width: 3; fill: #161b22; }
+        .text { fill: #c9d1d9; font-size: 14px; font-weight: bold; font-family: monospace; }
+        .text-small { font-size: 11px; fill: #8b949e; }
+        .node { fill: #c9d1d9; }
+        
+        /* Galvanometer & Jockey */
+        .galvo { fill: #161b22; stroke: #bc8cff; stroke-width: 3; }
+        .needle { 
+            stroke: #3fb950; stroke-width: 3; 
+            transform-origin: 510px 335px; 
+            transition: transform 0.5s cubic-bezier(0.5, 1.8, 0.5, 1), stroke 0.3s; 
+            filter: drop-shadow(0 0 5px rgba(63, 185, 80, 0.8));
+        }
+        .needle-error { stroke: #da3633; filter: drop-shadow(0 0 5px rgba(218, 54, 51, 0.8)); }
+
+        .jockey-handle { fill: #c9d1d9; stroke: #30363d; stroke-width: 1; }
+        .jockey-tip { stroke: #c9d1d9; stroke-width: 3; stroke-linecap: round; }
+        .jockey-arrow { fill: #58a6ff; }
+        #flex-wire-path { stroke: #58a6ff; stroke-width: 3; fill: none; stroke-linecap: round; transition: d 0.2s ease-out; }
+
+        /* Dashboard & Controls */
+        .dashboard {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        .panel {
+            background-color: #21262d;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            flex: 1;
+        }
+        .panel h3 { margin-top: 0; color: #58a6ff; font-size: 16px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        
+        /* Custom Controls */
+        .control-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 14px;}
+        input[type="range"] { width: 100%; accent-color: #58a6ff; cursor: pointer; }
+        
+        .switch-btn {
+            background-color: #161b22; color: #8b949e;
+            border: 1px solid #30363d; padding: 8px 15px;
+            border-radius: 5px; cursor: pointer; font-weight: bold;
+            transition: 0.3s; width: 100%;
+        }
+        .switch-btn.active { background-color: #238636; color: #fff; border-color: #2ea043; }
+        .switch-btn.distract-active { background-color: #da3633; color: #fff; border-color: #ff7b72; }
+
+        /* Data Display */
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-family: monospace; font-size: 15px;}
+        .val { color: #ff7b72; font-weight: bold; }
+        .formula-box {
+            background-color: #0d1117; border: 1px dashed #3fb950;
+            padding: 10px; border-radius: 6px; margin-top: 15px;
+            text-align: center; font-family: monospace; font-size: 16px; color: #3fb950;
+        }
+
+        /* Popups */
+        .distract-msg {
+            color: #ff7b72; font-size: 13px; text-align: center; 
+            opacity: 0; transition: 0.3s; height: 15px; margin-top: 5px;
+        }
+        .show-msg { opacity: 1; animation: pop 0.3s ease-out; }
+        @keyframes pop { 0% { transform: scale(0.9); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        
+        .marker { stroke: #8b949e; stroke-width: 2; stroke-dasharray: 4,4; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <h2>Potentiometer Master Lab</h2>
+    <p class="subtitle">විභවමාන ගැටලු විසඳීමේ Hacks (A, B, C, D) සජීවීව අත්හදා බලන්න.</p>
+
+    <svg viewBox="0 0 900 420">
+        <line x1="100" y1="200" x2="100" y2="60" class="wire" />
+        <line x1="100" y1="60" x2="350" y2="60" class="wire" />
+        
+        <line x1="350" y1="40" x2="350" y2="80" class="component" />
+        <line x1="370" y1="50" x2="370" y2="70" class="component" style="stroke-width:8;" />
+        <text x="360" y="30" class="text" text-anchor="middle">E₀ = 4.0 V</text>
+
+        <line x1="370" y1="60" x2="500" y2="60" class="wire" />
+
+        <rect x="500" y="45" width="80" height="30" class="resistor" />
+        <text x="540" y="40" class="text" text-anchor="middle">Rₚ = <span id="rp-label">0</span> Ω</text>
+        <polygon points="540,45 535,35 545,35" fill="#58a6ff"/> <line x1="580" y1="60" x2="800" y2="60" class="wire" />
+        <line x1="800" y1="60" x2="800" y2="200" class="wire" />
+
+        <defs>
+            <linearGradient id="wire-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#ff9e97" />
+                <stop offset="50%" style="stop-color:#ff7b72" />
+                <stop offset="100%" style="stop-color:#ff9e97" />
+            </linearGradient>
+        </defs>
+        <line x1="100" y1="200" x2="800" y2="200" class="wire-ab-case" />
+        <line id="main-wire" x1="100" y1="200" x2="800" y2="200" class="wire-ab" style="stroke:url(#wire-gradient);" />
+        
+        <circle cx="100" cy="200" r="5" class="node"/>
+        <text x="80" y="205" class="text" fill="#ff7b72">A</text>
+        <text x="65" y="225" class="text-small">0 cm</text>
+        
+        <circle cx="800" cy="200" r="5" class="node"/>
+        <text x="815" y="205" class="text" fill="#ff7b72">B</text>
+        <text x="785" y="225" class="text-small">100 cm</text>
+
+        <line id="marker-l1" x1="100" y1="190" x2="100" y2="170" class="marker" style="opacity: 0;" />
+        <text id="text-l1" x="100" y="160" class="text-small" fill="#8b949e" style="opacity: 0;" text-anchor="middle">l₁</text>
+
+        <line x1="100" y1="200" x2="100" y2="320" class="wire" />
+        
+        <line x1="100" y1="290" x2="180" y2="290" class="wire" />
+        <line x1="180" y1="275" x2="180" y2="305" class="component" /> <line x1="195" y1="282" x2="195" y2="298" class="component" style="stroke-width:6;" /> <text x="187" y="265" class="text" text-anchor="middle">Eₓ = 1.5 V</text>
+        
+        <line x1="195" y1="290" x2="230" y2="290" class="wire" />
+        <rect x="230" y="280" width="40" height="20" class="resistor" /> <text x="250" y="275" class="text" text-anchor="middle">r = 2 Ω</text>
+        <line x1="270" y1="290" x2="350" y2="290" class="wire" />
+
+        <line x1="130" y1="290" x2="130" y2="360" class="wire" />
+        <line x1="130" y1="360" x2="170" y2="360" class="wire" />
+        
+        <circle cx="170" cy="360" r="3" class="node" />
+        <line id="switch-k1" x1="170" y1="360" x2="205" y2="345" class="wire" style="stroke:#58a6ff; transition: 0.3s;" /> <circle cx="210" cy="360" r="3" class="node" />
+        <text x="190" y="385" class="text-small" fill="#58a6ff">K1</text>
+        
+        <line x1="210" y1="360" x2="230" y2="360" class="wire" />
+        <rect x="230" y="350" width="40" height="20" class="resistor" /> <text x="250" y="385" class="text" text-anchor="middle">R = 8 Ω</text>
+        <line x1="270" y1="360" x2="320" y2="360" class="wire" />
+        <line x1="320" y1="360" x2="320" y2="290" class="wire" />
+
+        <line x1="350" y1="290" x2="400" y2="290" class="wire" />
+        <line x1="400" y1="290" x2="400" y2="320" class="wire" />
+
+        <rect id="distractor-box" x="380" y="320" width="40" height="20" class="resistor" style="stroke: #30363d;" />
+        <text id="distractor-txt" x="400" y="355" class="text-small" fill="#8b949e" text-anchor="middle">1 Ω (Distractor)</text>
+        <line id="bypass-wire" x1="360" y1="320" x2="360" y2="340" class="wire wire-active" />
+        <line id="bypass-wire2" x1="360" y1="340" x2="440" y2="340" class="wire wire-active" />
+        <line id="bypass-wire3" x1="440" y1="340" x2="440" y2="320" class="wire wire-active" />
+        
+        <line x1="400" y1="340" x2="400" y2="350" class="wire" />
+        <line x1="400" y1="350" x2="470" y2="350" class="wire" />
+
+        <circle cx="510" cy="350" r="30" class="galvo" />
+        <text x="500" y="357" class="text" fill="#bc8cff" style="font-size: 20px;">G</text>
+        <line id="g-needle" x1="510" y1="370" x2="510" y2="330" class="needle" />
+        <text x="506" y="320" class="text-small">0</text>
+
+        <line x1="540" y1="350" x2="560" y2="350" class="wire" />
+        <circle cx="560" cy="350" r="4" class="node" />
+
+        <path id="flex-wire-path" d="M 560 350 Q 400 320 200 250" />
+
+        <g id="jockey-group" transform="translate(100, 0)">
+            <rect x="-8" y="215" width="16" height="30" class="jockey-handle" />
+            <line x1="0" y1="215" x2="0" y2="200" class="jockey-tip" /> 
+            <circle cx="0" cy="250" r="3" fill="#58a6ff" /> 
+            <polygon points="-5,208 5,208 0,200" class="jockey-arrow" />
+            <text x="-5" y="265" class="text" fill="#58a6ff">J</text>
+        </g>
+    </svg>
+
+    <div class="dashboard">
+        <div class="panel">
+            <h3>Hack Controls</h3>
+            
+            <div class="control-group">
+                <label>Hack A & C: ප්‍රධාන ප්‍රතිරෝධය ($R_p$)</label>
+                <input type="range" id="rp-slider" min="0" max="20" value="0" step="1" oninput="updatePhysics()">
+                <div class="text-small" style="text-align: right;">0 Ω - 20 Ω</div>
+            </div>
+
+            <div class="control-group">
+                <label>Hack B: යතුර (K1)</label>
+                <button id="btn-k1" class="switch-btn" onclick="toggleK1()">විවෘතයි (OPEN)</button>
+            </div>
+
+            <div class="control-group">
+                <label>Hack D: රවට්ටන ප්‍රතිරෝධය</label>
+                <button id="btn-distract" class="switch-btn" onclick="toggleDistractor()">1 Ω ප්‍රතිරෝධය ඉවත් කර ඇත</button>
+                <div id="distract-msg" class="distract-msg">I = 0 නිසා මෙයින් බලපෑමක් නැත!</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Real-time Data (සජීවී දත්ත)</h3>
+            <div class="data-row"><span>විභව අනුක්‍රමණය ($k$):</span> <span class="val" id="val-k">0.040 V/cm</span></div>
+            <div class="data-row"><span>මනින වෝල්ටීයතාවය ($V_x$):</span> <span class="val" id="val-vx">1.50 V</span></div>
+            <div class="data-row" style="margin-top: 10px; border-top: 1px solid #30363d; padding-top: 10px;">
+                <span style="color: #58a6ff;">සමතුලිත දිග ($l$):</span> <span class="val" id="val-l" style="font-size: 20px;">37.5 cm</span>
+            </div>
+
+            <div id="formula-box" class="formula-box" style="opacity: 0.3;">
+                <div style="font-size: 13px; color: #8b949e; margin-bottom: 5px;">අභ්‍යන්තර ප්‍රතිරෝධය (r)</div>
+                r = R × (l₁ - l₂) / l₂<br>
+                <span id="calc-r">r = ?</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Physics Constants
+    const E0 = 4.0;     // Driver cell voltage
+    const Rab = 10.0;   // Resistance of wire AB
+    const L = 100.0;    // Length of AB in cm
+    const Ex = 1.5;     // Test cell EMF
+    const r = 2.0;      // Internal resistance
+    const Rshunt = 8.0; // Shunt resistor
+
+    // UI Mapping Constants
+    const MIN_X = 100;
+    const PIXELS_PER_CM = 7; // (800 - 100) / 100
+
+    // State Variables
+    let k1Closed = false;
+    let distractorActive = false;
+    let l1_memo = 0; // Remembers l1 for the formula
+
+    function toggleK1() {
+        k1Closed = !k1Closed;
+        const btn = document.getElementById('btn-k1');
+        const switchLine = document.getElementById('switch-k1');
+        
+        if (k1Closed) {
+            btn.innerText = "වසන ලදි (CLOSED)";
+            btn.classList.add('active');
+            switchLine.setAttribute('y2', '360'); // Close visual switch
+        } else {
+            btn.innerText = "විවෘතයි (OPEN)";
+            btn.classList.remove('active');
+            switchLine.setAttribute('y2', '345'); // Open visual switch
+        }
+        updatePhysics();
+    }
+
+    function toggleDistractor() {
+        distractorActive = !distractorActive;
+        const btn = document.getElementById('btn-distract');
+        const msg = document.getElementById('distract-msg');
+        const box = document.getElementById('distractor-box');
+        
+        // Bypass wires
+        const bw1 = document.getElementById('bypass-wire');
+        const bw2 = document.getElementById('bypass-wire2');
+        const bw3 = document.getElementById('bypass-wire3');
+
+        if (distractorActive) {
+            btn.innerText = "1 Ω ප්‍රතිරෝධය සක්‍රියයි";
+            btn.classList.add('distract-active');
+            box.style.stroke = "#ff7b72";
+            bw1.style.opacity = 0; bw2.style.opacity = 0; bw3.style.opacity = 0; // Cut bypass
+            
+            // Show popup msg
+            msg.classList.add('show-msg');
+            setTimeout(() => msg.classList.remove('show-msg'), 2000);
+        } else {
+            btn.innerText = "1 Ω ප්‍රතිරෝධය ඉවත් කර ඇත";
+            btn.classList.remove('distract-active');
+            box.style.stroke = "#30363d";
+            bw1.style.opacity = 1; bw2.style.opacity = 1; bw3.style.opacity = 1; // Restore bypass
+        }
+    }
+
+    function updatePhysics() {
+        // 1. Hack A: Primary Circuit & k
+        const Rp = parseFloat(document.getElementById('rp-slider').value);
+        document.getElementById('rp-label').innerText = Rp;
+        
+        const I_primary = E0 / (Rp + Rab);
+        const Vab = I_primary * Rab;
+        const k = Vab / L;
+
+        // 2. Hack B: Secondary Circuit & Vx
+        let Vx = Ex;
+        if (k1Closed) {
+            Vx = Ex * (Rshunt / (Rshunt + r)); // Terminal p.d.
+        }
+
+        // 3. Balance Length calculation
+        const l = Vx / k;
+
+        // Update Text UI
+        document.getElementById('val-k').innerText = k.toFixed(3) + " V/cm";
+        document.getElementById('val-vx').innerText = Vx.toFixed(2) + " V";
+
+        const needle = document.getElementById('g-needle');
+        const wireAb = document.getElementById('main-wire');
+        
+        if (l > 100) {
+            // Error: Out of bounds
+            document.getElementById('val-l').innerText = "Out of Range!";
+            document.getElementById('val-l').style.color = "#da3633";
+            moveJockey(105); // Move off edge
+            needle.style.transform = `rotate(45deg)`; // Max deflect right
+            needle.classList.remove('needle-balanced');
+            needle.classList.add('needle-error');
+            wireAb.style.stroke = "#30363d"; // Dim wire
+        } else {
+            // Balanced
+            document.getElementById('val-l').innerText = l.toFixed(1) + " cm";
+            document.getElementById('val-l').style.color = "#ff7b72";
+            moveJockey(l);
+            needle.style.transform = `rotate(0deg)`; // Centered
+            needle.classList.add('needle-balanced');
+            needle.classList.remove('needle-error');
+            wireAb.style.stroke = "url(#wire-gradient)";
+
+            // Formula Logic (Hack B Visuals)
+            if (!k1Closed) l1_memo = l; // Save l1 when open
+            
+            updateFormulaVisuals(l, k1Closed);
+        }
+    }
+
+    function moveJockey(l_cm) {
+        let l_clamped = l_cm > 105 ? 105 : l_cm;
+        const xj = MIN_X + (l_clamped * PIXELS_PER_CM); 
+        document.getElementById('jockey-group').setAttribute('transform', `translate(${xj}, 0)`);
+        
+        // Flexible wire physics
+        const flexWirePath = document.getElementById('flex-wire-path');
+        const endX = xj;
+        const endY = 250;
+        const cpX = (560 + endX) / 2; 
+        const cpY = (350 + endY) / 2 + 40; // Sag
+        flexWirePath.setAttribute('d', `M 560 350 Q ${cpX} ${cpY} ${endX} ${endY}`);
+    }
+
+    function updateFormulaVisuals(current_l, isClosed) {
+        const marker = document.getElementById('marker-l1');
+        const text = document.getElementById('text-l1');
+        const formulaBox = document.getElementById('formula-box');
+        
+        if (isClosed && l1_memo > 0 && l1_memo <= 100) {
+            // Show l1 marker visually on the wire
+            const x_marker = MIN_X + (l1_memo * PIXELS_PER_CM);
+            marker.setAttribute('x1', x_marker);
+            marker.setAttribute('x2', x_marker);
+            text.setAttribute('x', x_marker);
+            marker.style.opacity = 1;
+            text.style.opacity = 1;
+
+            // Highlight formula
+            formulaBox.style.opacity = 1;
+            const l1 = l1_memo.toFixed(1);
+            const l2 = current_l.toFixed(1);
+            const calc_r = (Rshunt * (l1 - l2) / l2).toFixed(1);
+            document.getElementById('calc-r').innerText = `r = 8 × (${l1} - ${l2}) / ${l2} = ${calc_r} Ω`;
+        } else {
+            marker.style.opacity = 0;
+            text.style.opacity = 0;
+            formulaBox.style.opacity = 0.3;
+            document.getElementById('calc-r').innerText = `r = ?`;
+        }
+    }
+
+    // Initialize
+    window.onload = updatePhysics;
+</script>
+
+</body>
+</html>
