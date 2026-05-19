@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - String Vibration Lab</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+        #app-container {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+            width: 900px;
+        }
+        h2 {
+            color: #bc8cff;
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-align: center;
+        }
+        p.subtitle {
+            color: #8b949e;
+            font-size: 14px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        /* Visualizer Screen */
+        .screen {
+            background-color: #090d13;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            width: 100%;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 250px;
+        }
+        svg { width: 100%; height: 100%; display: block; }
+        
+        /* SVG Elements */
+        .center-line { stroke: #30363d; stroke-width: 2; stroke-dasharray: 6,4; }
+        .string-path { stroke: #58a6ff; stroke-width: 4; fill: none; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0px 0px 8px rgba(88,166,255,0.6)); }
+        .string-shadow { stroke: #58a6ff; stroke-width: 2; fill: none; opacity: 0.2; }
+        .fixed-end { fill: #161b22; stroke: #c9d1d9; stroke-width: 3; }
+        .node-dot { fill: #ff7b72; stroke: #161b22; stroke-width: 2; }
+        
+        /* Dashboard */
+        .dashboard { display: flex; gap: 20px; }
+        .panel {
+            background-color: #21262d;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            flex: 1;
+        }
+        .panel h3 { margin-top: 0; color: #58a6ff; font-size: 16px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        
+        /* Controls */
+        .control-group { margin-bottom: 12px; }
+        label { display: flex; justify-content: space-between; margin-bottom: 6px; font-weight: bold; font-size: 13px; color: #c9d1d9;}
+        .val-badge { color: #58a6ff; font-family: monospace; font-size: 14px;}
+        input[type="range"] { width: 100%; accent-color: #58a6ff; cursor: pointer; }
+        
+        /* Harmonic Buttons */
+        .harmonic-selector {
+            display: flex; gap: 8px; margin-top: 15px; margin-bottom: 15px;
+        }
+        .n-btn {
+            flex: 1; padding: 8px; background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .n-btn.active { background: #58a6ff; color: #0d1117; border-color: #58a6ff; box-shadow: 0 0 10px rgba(88,166,255,0.4); }
+        .n-btn:hover:not(.active) { background: #161b22; border-color: #8b949e; }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        button {
+            flex: 1; padding: 10px; font-weight: bold; cursor: pointer;
+            border: 1px solid; border-radius: 5px; transition: 0.2s; font-size: 14px;
+        }
+        .btn-play { background-color: #238636; color: white; border-color: #2ea043; }
+        .btn-play:hover { background-color: #2ea043; }
+        .btn-reset { background-color: #161b22; color: #ff7b72; border-color: #ff7b72; }
+
+        /* Readouts */
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-family: monospace; font-size: 14px; color: #c9d1d9;}
+        .data-val { color: #3fb950; font-weight: bold; font-size: 18px; }
+        
+        .formula-box {
+            background-color: #0d1117; border: 1px dashed #3fb950;
+            padding: 15px; border-radius: 6px; margin-top: 15px;
+            text-align: center; font-family: monospace; font-size: 16px; color: #3fb950; line-height: 1.5;
+        }
+        .main-freq { font-size: 24px; color: #fff; display: block; margin-top: 10px; text-shadow: 0 0 10px rgba(63,185,80,0.5); }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <h2>තත් කම්පන (Vibrations in Strings)</h2>
+    <p class="subtitle">දෙකෙළවරින් සිරකළ තන්තුවක සෑදෙන ස්ථාවර තරංග, පුඩු ගණන සහ සංඛ්‍යාතය අතර සම්බන්ධය.</p>
+
+    <div class="screen">
+        <svg id="wave-svg" viewBox="0 0 800 250">
+            <line x1="50" y1="125" x2="750" y2="125" class="center-line" />
+            
+            <path id="string-envelope-up" class="string-shadow" d="" />
+            <path id="string-envelope-down" class="string-shadow" d="" />
+
+            <path id="main-string" class="string-path" d="" />
+            
+            <g id="nodes-group"></g>
+
+            <rect x="40" y="85" width="10" height="80" rx="3" class="fixed-end" />
+            <rect x="750" y="85" width="10" height="80" rx="3" class="fixed-end" />
+            
+            <text x="50" y="230" fill="#8b949e" font-family="monospace" font-size="14px">x = 0</text>
+            <text x="710" y="230" fill="#8b949e" font-family="monospace" font-size="14px">x = L</text>
+        </svg>
+    </div>
+
+    <div class="dashboard">
+        <div class="panel">
+            <h3>පාලක (Controls)</h3>
+            
+            <div class="control-group">
+                <label>ආතතිය (Tension - T): <span class="val-badge" id="val-T">50.0 N</span></label>
+                <input type="range" id="slider-T" min="10" max="200" step="1" value="50" oninput="updatePhysics()">
+            </div>
+
+            <div class="control-group">
+                <label>ඒකක දිගක ස්කන්ධය (Linear Density - m): <span class="val-badge" id="val-m">0.010 kg/m</span></label>
+                <input type="range" id="slider-m" min="0.001" max="0.05" step="0.001" value="0.01" oninput="updatePhysics()">
+            </div>
+
+            <div class="control-group">
+                <label>තන්තුවේ දිග (Length - L): <span class="val-badge" id="val-L">1.0 m</span></label>
+                <input type="range" id="slider-L" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updatePhysics()">
+            </div>
+
+            <div style="margin-top: 20px;">
+                <label style="color:#58a6ff;">පුඩු ගණන / අනුවර්තනය (n): <span id="val-n" class="val-badge" style="color:#fff;">1</span></label>
+                <div class="harmonic-selector">
+                    <button class="n-btn active" onclick="setHarmonic(1, this)">1</button>
+                    <button class="n-btn" onclick="setHarmonic(2, this)">2</button>
+                    <button class="n-btn" onclick="setHarmonic(3, this)">3</button>
+                    <button class="n-btn" onclick="setHarmonic(4, this)">4</button>
+                    <button class="n-btn" onclick="setHarmonic(5, this)">5</button>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button id="btn-play" class="btn-play" onclick="togglePlay()">Play ⏵</button>
+                <button class="btn-reset" onclick="resetSim()">Reset ↺</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>සජීවී ගණනය කිරීම් (Calculations)</h3>
+            
+            <div class="data-row"><span>තරංග ප්‍රවේගය (v = √(T/m)):</span> <span class="data-val" id="calc-v">70.7 m/s</span></div>
+            <div class="data-row"><span>තරංග ආයාමය (λ = 2L/n):</span> <span class="data-val" id="calc-lambda" style="color:#58a6ff;">2.00 m</span></div>
+            
+            <div class="formula-box">
+                f = <span style="color:#fff;">(n / 2L)</span> × √(T / m)
+                <span class="main-freq" id="calc-f">f = 35.36 Hz</span>
+                <span id="harmonic-name" style="color:#8b949e; font-size:14px; margin-top:5px; display:block;">මූලික තානය (Fundamental)</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Physics State
+    let isPlaying = false;
+    let animFrame;
+    let currentN = 1;
+    let visualTime = 0; 
+    let currentFreq = 0; // Needed to scale visual animation speed
+
+    // SVG Constants
+    const X_START = 50;
+    const X_END = 750;
+    const Y_CENTER = 125;
+    const VISUAL_WIDTH = X_END - X_START;
+    const VISUAL_AMPLITUDE = 75;
+
+    function setHarmonic(n, btnElement) {
+        currentN = n;
+        // Update active button styling
+        document.querySelectorAll('.n-btn').forEach(b => b.classList.remove('active'));
+        btnElement.classList.add('active');
+        document.getElementById('val-n').innerText = n;
+        
+        let hName = "මූලික තානය (Fundamental)";
+        if(n > 1) hName = `${n} වන අනුවර්තනය (${n-1} වන උපරිතානය)`;
+        document.getElementById('harmonic-name').innerText = hName;
+
+        updatePhysics();
+    }
+
+    function updatePhysics() {
+        const T = parseFloat(document.getElementById('slider-T').value);
+        const m = parseFloat(document.getElementById('slider-m').value);
+        const L = parseFloat(document.getElementById('slider-L').value);
+
+        // Update Labels
+        document.getElementById('val-T').innerText = T.toFixed(1) + " N";
+        document.getElementById('val-m').innerText = m.toFixed(3) + " kg/m";
+        document.getElementById('val-L').innerText = L.toFixed(1) + " m";
+
+        // Calculations
+        const v = Math.sqrt(T / m);
+        const lambda = (2 * L) / currentN;
+        const f = v / lambda; // or (currentN / (2 * L)) * Math.sqrt(T / m);
+        
+        currentFreq = f;
+
+        document.getElementById('calc-v').innerText = v.toFixed(1) + " m/s";
+        document.getElementById('calc-lambda').innerText = lambda.toFixed(2) + " m";
+        document.getElementById('calc-f').innerText = `f = ${f.toFixed(2)} Hz`;
+
+        drawStaticEnvelopes();
+        updateNodes();
+
+        if (!isPlaying) renderFrame(); // Update string position if paused
+    }
+
+    function getWaveY(xFrac, time) {
+        // xFrac is 0 to 1 along the string
+        // Spatial part: sin(n * pi * x/L). Since xFrac = x/L, it's sin(n * pi * xFrac)
+        // Temporal part: cos(w * t)
+        return Math.sin(currentN * Math.PI * xFrac) * Math.cos(time);
+    }
+
+    function drawStaticEnvelopes() {
+        let pathUp = `M ${X_START} ${Y_CENTER} `;
+        let pathDown = `M ${X_START} ${Y_CENTER} `;
+        
+        for(let px = 0; px <= VISUAL_WIDTH; px += 5) {
+            let xFrac = px / VISUAL_WIDTH;
+            let spatial = Math.sin(currentN * Math.PI * xFrac) * VISUAL_AMPLITUDE;
+            
+            pathUp += `L ${X_START + px} ${Y_CENTER - Math.abs(spatial)} `;
+            pathDown += `L ${X_START + px} ${Y_CENTER + Math.abs(spatial)} `;
+        }
+        
+        document.getElementById('string-envelope-up').setAttribute('d', pathUp);
+        document.getElementById('string-envelope-down').setAttribute('d', pathDown);
+    }
+
+    function updateNodes() {
+        const nodesGroup = document.getElementById('nodes-group');
+        nodesGroup.innerHTML = ''; // Clear existing nodes
+        
+        // Number of nodes is n + 1
+        for(let i = 0; i <= currentN; i++) {
+            let xFrac = i / currentN;
+            let px = X_START + (xFrac * VISUAL_WIDTH);
+            
+            let circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", px);
+            circle.setAttribute("cy", Y_CENTER);
+            circle.setAttribute("r", "5");
+            circle.setAttribute("class", "node-dot");
+            nodesGroup.appendChild(circle);
+        }
+    }
+
+    function renderFrame() {
+        let path = `M ${X_START} ${Y_CENTER} `;
+        
+        for(let px = 0; px <= VISUAL_WIDTH; px += 5) {
+            let xFrac = px / VISUAL_WIDTH;
+            // Get y displacement
+            let yOffset = getWaveY(xFrac, visualTime) * VISUAL_AMPLITUDE;
+            path += `L ${X_START + px} ${Y_CENTER - yOffset} `;
+        }
+        
+        document.getElementById('main-string').setAttribute('d', path);
+    }
+
+    function loop() {
+        // Scale visual animation speed based on calculated frequency
+        // We use a small multiplier so it looks realistic but doesn't strobe
+        visualTime += currentFreq * 0.005; 
+        
+        renderFrame();
+        if(isPlaying) {
+            animFrame = requestAnimationFrame(loop);
+        }
+    }
+
+    function togglePlay() {
+        isPlaying = !isPlaying;
+        const btn = document.getElementById('btn-play');
+        if (isPlaying) {
+            btn.innerText = "Pause ⏸";
+            btn.style.backgroundColor = "#ff7b72";
+            btn.style.borderColor = "#ff7b72";
+            animFrame = requestAnimationFrame(loop);
+        } else {
+            btn.innerText = "Play ⏵";
+            btn.style.backgroundColor = "#238636";
+            btn.style.borderColor = "#2ea043";
+            cancelAnimationFrame(animFrame);
+        }
+    }
+
+    function resetSim() {
+        visualTime = 0;
+        updatePhysics();
+    }
+
+    window.onload = updatePhysics;
+</script>
+
+</body>
+</html>
