@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - SHM Energy Lab V2</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+        #app-container {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            width: 1150px; /* Increased width for side-by-side layout */
+        }
+        h2 {
+            color: #bc8cff;
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-align: center;
+        }
+        p.subtitle {
+            color: #8b949e;
+            font-size: 14px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        /* Main Layout Grid */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 750px 330px; 
+            gap: 20px;
+            align-items: start;
+        }
+
+        /* Visuals Column (Left Side) */
+        .visuals-col {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .visual-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .box {
+            background-color: #090d13;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            position: relative;
+            padding: 10px;
+        }
+        .graph-box {
+            background-color: #090d13;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            padding: 10px;
+            position: relative;
+            text-align: center;
+        }
+        .watermark {
+            position: absolute;
+            z-index: 2;
+            pointer-events: none;
+            color: rgba(201, 209, 217, 0.20);
+            font-family: monospace;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .watermark-top-left {
+            left: 14px;
+            top: 12px;
+        }
+        .watermark-center {
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) rotate(-10deg);
+            opacity: 0.14;
+        }
+        .watermark-bottom-right {
+            right: 14px;
+            bottom: 12px;
+        }
+        svg { width: 100%; height: 100%; display: block; }
+        
+        /* SVG Styling */
+        .spring { stroke: #8b949e; stroke-width: 3; fill: none; stroke-linejoin: round; }
+        .mass { fill: #161b22; stroke: #3fb950; stroke-width: 3; }
+        .support { stroke: #c9d1d9; stroke-width: 4; stroke-linecap: round; }
+        .axis { stroke: #30363d; stroke-width: 2; }
+        .text-label { fill: #c9d1d9; font-size: 13px; font-weight: bold; font-family: monospace; }
+        
+        /* Graph Elements */
+        .u-curve { stroke: #58a6ff; stroke-width: 3; fill: none; } 
+        .k-curve { stroke: #ff7b72; stroke-width: 3; fill: none; stroke-dasharray: 4,4; } 
+        .e-line { stroke: #bc8cff; stroke-width: 2; fill: none; } 
+        .marker-line { stroke: #c9d1d9; stroke-width: 1.5; stroke-dasharray: 3,3; }
+        
+        /* Bars */
+        .bar-k { fill: #ff7b72; transition: height 0.05s, y 0.05s; }
+        .bar-u { fill: #58a6ff; transition: height 0.05s, y 0.05s; }
+        .bar-e { fill: #bc8cff; }
+
+        /* Controls & Data Column (Right Side) */
+        .controls-col {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .panel {
+            background-color: #21262d;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+        }
+        .panel h3 { margin-top: 0; color: #58a6ff; font-size: 16px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        
+        /* Controls */
+        .control-group { margin-bottom: 12px; }
+        label { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 13px; color: #c9d1d9;}
+        .val-badge { color: #58a6ff; font-family: monospace; font-size: 14px;}
+        input[type="range"] { width: 100%; accent-color: #58a6ff; cursor: pointer; }
+        
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button {
+            flex: 1; padding: 12px; font-weight: bold; cursor: pointer;
+            border: 1px solid; border-radius: 5px; transition: 0.2s; font-size: 14px;
+        }
+        .btn-play { background-color: #238636; color: white; border-color: #2ea043; }
+        .btn-play:hover { background-color: #2ea043; }
+        .btn-reset { background-color: #161b22; color: #ff7b72; border-color: #ff7b72; }
+        .btn-reset:hover { background-color: #ff7b72; color: #161b22; }
+
+        /* Readouts */
+        .formula-box {
+            background-color: #0d1117; border: 1px dashed #3fb950;
+            padding: 15px; border-radius: 6px; text-align: center; font-family: monospace; font-size: 16px; color: #3fb950;
+        }
+        .data-row { display: flex; justify-content: space-between; margin-top: 12px; font-family: monospace; font-size: 14px; color: #8b949e;}
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <h2>PHYSICS ENGINE - ස.අ.ච ශක්ති විපර්යාස සහ ආවර්ත කාලය</h2>
+    <p class="subtitle">චාලක හා විභව ශක්ති ප්‍රස්ථාරය සහ දෝලන කාලය කෙරෙහි ස්කන්ධයේ බලපෑම.</p>
+
+    <div class="main-layout">
+        <div class="visuals-col">
+            <div class="visual-grid">
+                <div class="box" style="height: 220px;">
+                    <svg id="spring-svg" viewBox="0 0 400 220">
+                        <text x="10" y="20" class="text-label" fill="#3fb950">දෝලන පද්ධතිය</text>
+                        <line x1="160" y1="20" x2="240" y2="20" class="support" />
+                        <path id="spring" class="spring" d="" />
+                        
+                        <rect id="mass-block" x="175" y="100" width="50" height="40" rx="4" class="mass" />
+                        <text id="mass-label" x="200" y="125" class="text-label" fill="#3fb950" text-anchor="middle">m</text>
+                        
+                        <line x1="100" y1="120" x2="300" y2="120" class="axis" stroke-dasharray="2,4" />
+                        <text x="270" y="115" class="text-label" fill="#8b949e">x = 0</text>
+                    </svg>
+                    <div class="watermark watermark-top-left">Physics Engine</div>
+                </div>
+
+                <div class="box" style="height: 220px;">
+                    <svg id="bars-svg" viewBox="0 0 400 220">
+                        <text x="10" y="20" class="text-label" fill="#bc8cff">සජීවී ශක්ති මට්ටම් (100% Scaled)</text>
+                        
+                        <rect id="bar-k" x="80" y="200" width="40" height="0" class="bar-k" />
+                        <text x="100" y="215" class="text-label" fill="#ff7b72" text-anchor="middle">K</text>
+                        
+                        <rect id="bar-u" x="180" y="200" width="40" height="0" class="bar-u" />
+                        <text x="200" y="215" class="text-label" fill="#58a6ff" text-anchor="middle">U</text>
+                        
+                        <rect id="bar-e" x="280" y="80" width="40" height="120" class="bar-e" />
+                        <text x="300" y="215" class="text-label" fill="#bc8cff" text-anchor="middle">E</text>
+
+                        <line x1="40" y1="200" x2="360" y2="200" class="axis" />
+                    </svg>
+                    <div class="watermark watermark-bottom-right">Physics Engine</div>
+                </div>
+            </div>
+
+            <div class="graph-box" style="height: 200px;">
+                <svg id="graph-svg" viewBox="0 0 850 180">
+                    <text x="10" y="20" class="text-label">ශක්ති ප්‍රස්ථාරය (Energy vs. Displacement x)</text>
+                    
+                    <line x1="425" y1="30" x2="425" y2="160" class="axis" /> 
+                    <line x1="75" y1="150" x2="775" y2="150" class="axis" /> 
+                    <text x="435" y="165" class="text-label" fill="#8b949e">0</text>
+                    <text x="750" y="165" class="text-label" fill="#8b949e">+A</text>
+                    <text x="80" y="165" class="text-label" fill="#8b949e">-A</text>
+
+                    <path id="curve-u" class="u-curve" d="" />
+                    <path id="curve-k" class="k-curve" d="" />
+                    <line id="line-e" x1="100" y1="30" x2="750" y2="30" class="e-line" />
+                    
+                    <line id="tracker-line" x1="425" y1="30" x2="425" y2="150" class="marker-line" />
+                    <circle id="dot-u" cx="425" cy="150" r="5" fill="#58a6ff" />
+                    <circle id="dot-k" cx="425" cy="30" r="5" fill="#ff7b72" />
+                    
+                    <rect x="630" y="10" width="10" height="10" fill="#58a6ff"/> <text x="645" y="20" class="text-label">විභව (U)</text>
+                    <rect x="730" y="10" width="10" height="10" fill="#ff7b72"/> <text x="745" y="20" class="text-label">චාලක (K)</text>
+                </svg>
+                <div class="watermark watermark-center">Physics Engine</div>
+            </div>
+        </div>
+
+        <div class="controls-col">
+            <div class="panel">
+                <h3>පාලක (Controls)</h3>
+                <div class="control-group">
+                    <label>ස්කන්ධය (Mass - m): <span class="val-badge" id="val-m">1.0 kg</span></label>
+                    <input type="range" id="slider-m" min="0.2" max="3.0" step="0.1" value="1.0" oninput="updatePhysics()">
+                </div>
+                <div class="control-group">
+                    <label>දුනු නියතය (Spring Constant - k): <span class="val-badge" id="val-k">40 N/m</span></label>
+                    <input type="range" id="slider-k" min="10" max="100" step="1" value="40" oninput="updatePhysics()">
+                </div>
+                <div class="control-group">
+                    <label>විස්තාරය (Amplitude - A): <span class="val-badge" id="val-a">1.0 m</span></label>
+                    <input type="range" id="slider-a" min="0.2" max="1.0" step="0.1" value="1.0" oninput="updatePhysics()">
+                </div>
+                <div class="btn-group">
+                    <button id="btn-play" class="btn-play" onclick="togglePlay()">Play ⏵</button>
+                    <button class="btn-reset" onclick="resetSim()">Reset ↺</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>ආවර්ත කාලය ගණනය (Time Period)</h3>
+                <div class="formula-box">
+                    T = 2π √(m / k) <br><br>
+                    <span id="calc-t" style="font-size: 22px; color: #fff;">T = 0.99 s</span>
+                </div>
+                
+                <div class="data-row" style="margin-top: 25px;">
+                    <span>මුළු ශක්තිය (E = ½kA²):</span> <span id="val-e" style="color:#bc8cff; font-weight:bold;">20.0 J</span>
+                </div>
+                <div class="data-row">
+                    <span>කෝණික සංඛ්‍යාතය (ω = √(k/m)):</span> <span id="val-w" style="color:#c9d1d9;">6.32 rad/s</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Physics State
+    let currentPhase = 0; 
+    let isPlaying = false;
+    let animFrame;
+
+    // UI Constants
+    const SPRING_SX = 200;
+    const SPRING_EQUIL = 120; 
+    const GRAPH_CX = 425;
+    const GRAPH_CY = 150; 
+    const BAR_MAX_HEIGHT = 120; 
+    const GRAPH_MAX_HEIGHT = 120; 
+    const GRAPH_MAX_WIDTH = 325; 
+
+    function drawSpring(yEnd) {
+        const startY = 20;
+        const coils = 12;
+        const width = 20;
+        let path = `M ${SPRING_SX} ${startY} `;
+        const h = (yEnd - startY);
+        const step = h / coils;
+        
+        for (let i = 1; i <= coils; i++) {
+            let sign = (i % 2 === 0) ? 1 : -1;
+            let px = (i === coils) ? SPRING_SX : SPRING_SX + (sign * width);
+            let py = startY + (i * step);
+            path += `L ${px} ${py} `;
+        }
+        document.getElementById('spring').setAttribute('d', path);
+    }
+
+    function updatePhysics() {
+        const m = parseFloat(document.getElementById('slider-m').value);
+        const k = parseFloat(document.getElementById('slider-k').value);
+        const A = parseFloat(document.getElementById('slider-a').value);
+
+        document.getElementById('val-m').innerText = m.toFixed(1) + " kg";
+        document.getElementById('val-k').innerText = k + " N/m";
+        document.getElementById('val-a').innerText = A.toFixed(1) + " m";
+
+        const w = Math.sqrt(k / m);
+        const T = 2 * Math.PI * Math.sqrt(m / k);
+        const E = 0.5 * k * A * A;
+
+        document.getElementById('calc-t').innerText = `T = ${T.toFixed(2)} s`;
+        document.getElementById('val-e').innerText = `${E.toFixed(1)} J`;
+        document.getElementById('val-w').innerText = `${w.toFixed(2)} rad/s`;
+
+        const boxSize = 30 + (m * 15);
+        const massBlock = document.getElementById('mass-block');
+        massBlock.setAttribute('width', boxSize);
+        massBlock.setAttribute('height', boxSize * 0.8);
+        massBlock.setAttribute('x', SPRING_SX - (boxSize/2));
+
+        drawParabolas();
+
+        if (!isPlaying) renderFrame();
+    }
+
+    function drawParabolas() {
+        let pathU = "";
+        let pathK = "";
+        
+        for(let fraction = -1.0; fraction <= 1.0; fraction += 0.05) {
+            let px = GRAPH_CX + (fraction * GRAPH_MAX_WIDTH);
+            
+            let uFraction = fraction * fraction; 
+            let kFraction = 1.0 - uFraction;
+            
+            let pyU = GRAPH_CY - (uFraction * GRAPH_MAX_HEIGHT);
+            let pyK = GRAPH_CY - (kFraction * GRAPH_MAX_HEIGHT);
+
+            if(fraction === -1.0) {
+                pathU += `M ${px} ${pyU} `;
+                pathK += `M ${px} ${pyK} `;
+            } else {
+                pathU += `L ${px} ${pyU} `;
+                pathK += `L ${px} ${pyK} `;
+            }
+        }
+        
+        let pxEnd = GRAPH_CX + GRAPH_MAX_WIDTH;
+        pathU += `L ${pxEnd} ${GRAPH_CY - GRAPH_MAX_HEIGHT}`;
+        pathK += `L ${pxEnd} ${GRAPH_CY}`;
+
+        document.getElementById('curve-u').setAttribute('d', pathU);
+        document.getElementById('curve-k').setAttribute('d', pathK);
+        
+        document.getElementById('line-e').setAttribute('x1', GRAPH_CX - GRAPH_MAX_WIDTH);
+        document.getElementById('line-e').setAttribute('x2', GRAPH_CX + GRAPH_MAX_WIDTH);
+    }
+
+    function renderFrame() {
+        const m = parseFloat(document.getElementById('slider-m').value);
+        const k = parseFloat(document.getElementById('slider-k').value);
+        const w = Math.sqrt(k / m);
+        
+        if(isPlaying) {
+            currentPhase += w * 0.025; 
+        }
+        
+        const xFraction = Math.cos(currentPhase); 
+        
+        const visualAmplitude = 70; 
+        const yPos = SPRING_EQUIL + (xFraction * visualAmplitude);
+        
+        const massBlock = document.getElementById('mass-block');
+        const boxHeight = parseFloat(massBlock.getAttribute('height'));
+        massBlock.setAttribute('y', yPos - (boxHeight/2));
+        document.getElementById('mass-label').setAttribute('y', yPos + 5);
+        drawSpring(yPos - (boxHeight/2));
+
+        const uFraction = xFraction * xFraction;
+        const kFraction = 1.0 - uFraction;
+        
+        const visualU = uFraction * BAR_MAX_HEIGHT;
+        const visualK = kFraction * BAR_MAX_HEIGHT;
+
+        document.getElementById('bar-u').setAttribute('height', visualU);
+        document.getElementById('bar-u').setAttribute('y', 200 - visualU);
+        
+        document.getElementById('bar-k').setAttribute('height', visualK);
+        document.getElementById('bar-k').setAttribute('y', 200 - visualK);
+
+        const markerX = GRAPH_CX + (xFraction * GRAPH_MAX_WIDTH);
+        
+        document.getElementById('tracker-line').setAttribute('x1', markerX);
+        document.getElementById('tracker-line').setAttribute('x2', markerX);
+        
+        document.getElementById('dot-u').setAttribute('cx', markerX);
+        document.getElementById('dot-u').setAttribute('cy', GRAPH_CY - (uFraction * GRAPH_MAX_HEIGHT));
+        
+        document.getElementById('dot-k').setAttribute('cx', markerX);
+        document.getElementById('dot-k').setAttribute('cy', GRAPH_CY - (kFraction * GRAPH_MAX_HEIGHT));
+    }
+
+    function loop() {
+        renderFrame();
+        if(isPlaying) {
+            animFrame = requestAnimationFrame(loop);
+        }
+    }
+
+    function togglePlay() {
+        isPlaying = !isPlaying;
+        const btn = document.getElementById('btn-play');
+        if (isPlaying) {
+            btn.innerText = "Pause ⏸";
+            btn.style.backgroundColor = "#ff7b72";
+            btn.style.borderColor = "#ff7b72";
+            animFrame = requestAnimationFrame(loop);
+        } else {
+            btn.innerText = "Play ⏵";
+            btn.style.backgroundColor = "#238636";
+            btn.style.borderColor = "#2ea043";
+            cancelAnimationFrame(animFrame);
+        }
+    }
+
+    function resetSim() {
+        currentPhase = 0;
+        updatePhysics();
+    }
+
+    window.onload = updatePhysics;
+</script>
+
+</body>
+</html>

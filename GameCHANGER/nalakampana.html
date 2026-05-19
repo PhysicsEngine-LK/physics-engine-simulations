@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Vertical String Lab</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+        #app-container {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+            width: 900px;
+        }
+        h2 {
+            color: #bc8cff;
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-align: center;
+        }
+        p.subtitle {
+            color: #8b949e;
+            font-size: 14px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        /* Layout Grid */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+        }
+        
+        /* Visualizer Screen */
+        .screen {
+            background-color: #090d13;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            height: 450px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            overflow: hidden;
+        }
+        svg { width: 100%; height: 100%; }
+        
+        /* SVG Elements */
+        .support-bar { stroke: #c9d1d9; stroke-width: 6; stroke-linecap: round; }
+        .string-main { stroke: #58a6ff; stroke-width: 4; fill: none; stroke-linecap: round; }
+        .string-glow { stroke: #58a6ff; stroke-width: 8; fill: none; opacity: 0.3; }
+        .axis-line { stroke: #30363d; stroke-width: 2; stroke-dasharray: 4,4; }
+        .ruler-text { fill: #8b949e; font-size: 12px; font-family: monospace; }
+        .pulse-highlight { stroke: #ff7b72; stroke-width: 6; fill: none; stroke-linecap: round; filter: drop-shadow(0 0 5px #ff7b72); }
+
+        /* Dashboard Right Panel */
+        .dashboard {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .panel {
+            background-color: #21262d;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+        }
+        .panel h3 { margin-top: 0; color: #58a6ff; font-size: 16px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        
+        /* Controls */
+        .control-group { margin-bottom: 15px; }
+        label { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 13px; color: #c9d1d9;}
+        .val-badge { color: #58a6ff; font-family: monospace; font-size: 14px;}
+        input[type="range"] { width: 100%; accent-color: #58a6ff; cursor: pointer; }
+        
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button {
+            flex: 1; padding: 12px; font-weight: bold; cursor: pointer;
+            border: 1px solid; border-radius: 5px; transition: 0.2s; font-size: 15px;
+        }
+        .btn-pulse { background-color: #238636; color: white; border-color: #2ea043; }
+        .btn-pulse:hover { background-color: #2ea043; }
+        .btn-pulse:disabled { background-color: #161b22; color: #8b949e; border-color: #30363d; cursor: not-allowed; }
+        
+        .btn-reset { background-color: #161b22; color: #ff7b72; border-color: #ff7b72; }
+        .btn-reset:hover { background-color: #ff7b72; color: #161b22; }
+
+        /* Real-time Data */
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-family: monospace; font-size: 15px;}
+        .data-val { color: #3fb950; font-weight: bold; font-size: 18px; }
+        
+        .equation-box {
+            background-color: #0d1117; border: 1px dashed #bc8cff;
+            padding: 15px; border-radius: 6px; margin-top: 15px;
+            text-align: center; font-family: monospace; font-size: 16px; color: #bc8cff; line-height: 1.6;
+        }
+        .highlight-text { font-size: 22px; color: #fff; display: block; text-shadow: 0 0 10px rgba(188,140,255,0.4); margin-top: 8px;}
+        .warning-text { color: #ff7b72; font-size: 13px; display: block; margin-top: 5px; font-weight: normal; }
+        
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <h2>සිරස් තන්තුවක තරංග (Waves in a Heavy Vertical String)</h2>
+    <p class="subtitle">තරංගයේ ප්‍රවේගය සහ කාලය කෙරෙහි ස්කන්ධයේ බලපෑමක් නොමැති බව ඔප්පු කිරීම.</p>
+
+    <div class="grid-container">
+        <div class="screen">
+            <svg id="canvas-svg" viewBox="0 0 250 450">
+                <line x1="100" y1="20" x2="150" y2="20" class="support-bar" />
+                
+                <line x1="50" y1="20" x2="50" y2="420" class="axis-line" />
+                <text x="55" y="25" class="ruler-text">x = L</text>
+                <text x="55" y="420" class="ruler-text">x = 0</text>
+                
+                <g id="ruler-marks"></g>
+
+                <line x1="125" y1="20" x2="125" y2="420" stroke="#30363d" stroke-width="2" />
+                
+                <path id="string-glow" class="string-glow" d="" />
+                
+                <path id="string-main" class="string-main" d="" />
+                
+            </svg>
+        </div>
+
+        <div class="dashboard">
+            <div class="panel">
+                <h3>පාලක (Controls)</h3>
+                
+                <div class="control-group">
+                    <label>තන්තුවේ දිග (Length - L): <span class="val-badge" id="val-L">10 m</span></label>
+                    <input type="range" id="slider-L" min="5" max="25" step="1" value="10" oninput="updateStaticPhysics()">
+                </div>
+
+                <div class="control-group">
+                    <label>තන්තුවේ ස්කන්ධය (Mass - m): <span class="val-badge" id="val-m">5.0 kg</span></label>
+                    <input type="range" id="slider-m" min="1" max="20" step="0.5" value="5" oninput="updateStaticPhysics()">
+                </div>
+
+                <div class="control-group">
+                    <label>ගුරුත්වජ ත්වරණය (Gravity - g): <span class="val-badge" id="val-g">10.0 m/s²</span></label>
+                    <input type="range" id="slider-g" min="1" max="20" step="0.1" value="10.0" oninput="updateStaticPhysics()">
+                </div>
+
+                <div class="btn-group">
+                    <button id="btn-pulse" class="btn-pulse" onclick="sendPulse()">ස්පන්දය යවන්න ⏵</button>
+                    <button class="btn-reset" onclick="resetSim()">Reset ↺</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>සජීවී දත්ත (Real-time Tracker)</h3>
+                
+                <div class="data-row"><span>පහළ සිට දුර (x):</span> <span class="data-val" id="data-x" style="color:#58a6ff;">0.0 m</span></div>
+                <div class="data-row"><span>තරංග ප්‍රවේගය (v = √gx):</span> <span class="data-val" id="data-v" style="color:#ff7b72;">0.0 m/s</span></div>
+                
+                <div class="equation-box">
+                    ඉහළට යාමට ගතවන සම්පූර්ණ කාලය <br>
+                    t = 2 √(L / g)
+                    <span class="highlight-text" id="calc-t">t = 2.00 s</span>
+                    <span class="warning-text">ස්කන්ධය (m) වෙනස් කළද කාලය වෙනස් නොවන බව නිරීක්ෂණය කරන්න.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Physics State
+    let isAnimating = false;
+    let animFrame;
+    
+    // Physics variables (Real world values)
+    let L = 10;
+    let g = 10;
+    
+    // Animation tracking
+    let currentTime = 0; // Time since pulse started
+    let totalTime = 0;   // Theoretical total time
+
+    // SVG Layout Constants
+    const Y_TOP = 20;
+    const Y_BOTTOM = 420;
+    const X_CENTER = 125;
+    const VISUAL_HEIGHT = Y_BOTTOM - Y_TOP;
+
+    function updateStaticPhysics() {
+        if(isAnimating) return; // Don't allow changing length/gravity while pulse is moving
+
+        L = parseFloat(document.getElementById('slider-L').value);
+        const m = parseFloat(document.getElementById('slider-m').value);
+        g = parseFloat(document.getElementById('slider-g').value);
+
+        // Update Labels
+        document.getElementById('val-L').innerText = L + " m";
+        document.getElementById('val-m').innerText = m.toFixed(1) + " kg";
+        document.getElementById('val-g').innerText = g.toFixed(1) + " m/s²";
+
+        // Calculate Total Time
+        totalTime = 2 * Math.sqrt(L / g);
+        document.getElementById('calc-t').innerText = `t = ${totalTime.toFixed(2)} s`;
+
+        // Update visual thickness based on mass
+        const thickness = 2 + (m * 0.4);
+        document.getElementById('string-main').setAttribute('stroke-width', thickness);
+        
+        drawStraightString();
+        drawRulerMarks();
+        
+        // Reset Tracker displays
+        document.getElementById('data-x').innerText = "0.0 m";
+        document.getElementById('data-v').innerText = "0.0 m/s";
+    }
+
+    function drawRulerMarks() {
+        const marksGroup = document.getElementById('ruler-marks');
+        marksGroup.innerHTML = '';
+        
+        // Draw 5 segments
+        for(let i=1; i<5; i++) {
+            let y = Y_BOTTOM - (VISUAL_HEIGHT * (i/5));
+            let xVal = L * (i/5);
+            
+            let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", 45);
+            line.setAttribute("y1", y);
+            line.setAttribute("x2", 55);
+            line.setAttribute("y2", y);
+            line.setAttribute("stroke", "#30363d");
+            line.setAttribute("stroke-width", "2");
+            
+            let text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute("x", 15);
+            text.setAttribute("y", y + 4);
+            text.setAttribute("fill", "#8b949e");
+            text.setAttribute("font-size", "10px");
+            text.setAttribute("font-family", "monospace");
+            text.textContent = xVal.toFixed(1) + "m";
+            
+            marksGroup.appendChild(line);
+            marksGroup.appendChild(text);
+        }
+    }
+
+    function drawStraightString() {
+        const path = `M ${X_CENTER} ${Y_TOP} L ${X_CENTER} ${Y_BOTTOM}`;
+        document.getElementById('string-main').setAttribute('d', path);
+        document.getElementById('string-glow').setAttribute('d', path);
+    }
+
+    function sendPulse() {
+        if(isAnimating) return;
+        
+        isAnimating = true;
+        currentTime = 0;
+        document.getElementById('btn-pulse').disabled = true;
+        
+        // Disable sliders that change physical dimensions
+        document.getElementById('slider-L').disabled = true;
+        document.getElementById('slider-g').disabled = true;
+        
+        animFrame = requestAnimationFrame(animatePulse);
+    }
+
+    function resetSim() {
+        isAnimating = false;
+        cancelAnimationFrame(animFrame);
+        currentTime = 0;
+        
+        document.getElementById('btn-pulse').disabled = false;
+        document.getElementById('slider-L').disabled = false;
+        document.getElementById('slider-g').disabled = false;
+        
+        updateStaticPhysics();
+    }
+
+    // Kinematics of the pulse
+    // Acceleration a = g/2 (constant upwards)
+    // Initial velocity at bottom u = 0
+    // Distance from bottom x = ut + 0.5 * a * t^2 = 0.5 * (g/2) * t^2 = 0.25 * g * t^2
+    // Velocity v = u + at = (g/2) * t
+
+    function animatePulse() {
+        if(!isAnimating) return;
+        
+        // We use a small time step for visual scaling. 
+        // Real time might be too fast (e.g. 1.4s), so we scale it visually
+        // Let's say 1 second of real physics = 60 frames = 1 second visual.
+        // Assuming 60fps, dt = 1/60 approx 0.016s per frame.
+        currentTime += 0.016; 
+        
+        if(currentTime > totalTime) {
+            currentTime = totalTime;
+            isAnimating = false;
+            document.getElementById('btn-pulse').disabled = false;
+            document.getElementById('slider-L').disabled = false;
+            document.getElementById('slider-g').disabled = false;
+        }
+
+        // 1. Calculate Real Physics Values
+        let x = 0.25 * g * currentTime * currentTime; // Distance from bottom
+        let v = (g / 2) * currentTime;                // Current velocity
+        
+        if(x > L) x = L; // Cap at top
+
+        // 2. Update Tracker Readouts
+        document.getElementById('data-x').innerText = x.toFixed(2) + " m";
+        document.getElementById('data-v').innerText = v.toFixed(2) + " m/s";
+
+        // 3. Render Visual String
+        renderWavePath(x);
+
+        if(isAnimating) {
+            animFrame = requestAnimationFrame(animatePulse);
+        }
+    }
+
+    function renderWavePath(pulseX_Real) {
+        // Convert real physical height (x) to visual Y coordinate
+        let pulseY_Visual = Y_BOTTOM - ( (pulseX_Real / L) * VISUAL_HEIGHT );
+        
+        // Width of the pulse visually (in pixels)
+        let pulseWidth = 40; 
+        let amplitude = 25; // How far it bulges sideways
+
+        let path = `M ${X_CENTER} ${Y_TOP} `;
+        
+        // Draw straight down to the pulse
+        let pulseTopY = pulseY_Visual - (pulseWidth/2);
+        let pulseBottomY = pulseY_Visual + (pulseWidth/2);
+
+        // Prevent pulse from drawing outside boundaries
+        if(pulseTopY < Y_TOP) pulseTopY = Y_TOP;
+        if(pulseBottomY > Y_BOTTOM) pulseBottomY = Y_BOTTOM;
+
+        path += `L ${X_CENTER} ${pulseTopY} `;
+        
+        // Draw the curved pulse
+        // Using a quadratic bezier curve for smooth bulge
+        path += `Q ${X_CENTER + amplitude} ${pulseY_Visual} ${X_CENTER} ${pulseBottomY} `;
+        
+        // Draw straight to bottom
+        path += `L ${X_CENTER} ${Y_BOTTOM}`;
+
+        document.getElementById('string-main').setAttribute('d', path);
+        // Add a glow exactly matching the path
+        document.getElementById('string-glow').setAttribute('d', path);
+    }
+
+    window.onload = updateStaticPhysics;
+
+</script>
+
+</body>
+</html>

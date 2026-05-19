@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Pendulum Master Lab</title>
+    <style>
+        body { background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; min-height: 100vh; }
+        #app-container { background-color: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 25px; box-shadow: 0 0 30px rgba(0,0,0,0.8); width: 900px; }
+        h2 { color: #bc8cff; text-transform: uppercase; text-align: center; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .box { background: #090d13; border: 1px solid #30363d; border-radius: 8px; height: 350px; position: relative; }
+        svg { width: 100%; height: 100%; }
+        
+        .panel { background: #21262d; padding: 20px; border-radius: 8px; border: 1px solid #30363d; }
+        .control-group { margin-bottom: 15px; }
+        label { display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; color: #c9d1d9; margin-bottom: 5px; }
+        .val-badge { color: #58a6ff; font-family: monospace; }
+        input[type="range"] { width: 100%; accent-color: #58a6ff; cursor: pointer; }
+        
+        .alert { background: #d29922; color: #000; padding: 10px; border-radius: 5px; font-weight: bold; font-size: 12px; margin-top: 10px; display: none; text-align: center;}
+        .formula-box { background: #0d1117; border: 1px dashed #bc8cff; padding: 15px; border-radius: 6px; text-align: center; font-family: monospace; color: #bc8cff; margin-top: 20px; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <h2>සරල අවලම්බය (Simple Pendulum)</h2>
+    <div class="grid">
+        <div class="box">
+            <svg viewBox="0 0 400 350">
+                <line x1="200" y1="20" x2="200" y2="20" stroke="#c9d1d9" stroke-width="4" />
+                <line x1="200" y1="20" x2="200" y2="200" id="pendulum-string" stroke="#8b949e" stroke-width="2" />
+                <circle id="pendulum-bob" cx="200" cy="200" r="15" fill="#ff7b72" />
+                <line x1="200" y1="20" x2="200" y2="250" stroke="#30363d" stroke-dasharray="4,4" />
+                <text x="210" y="40" fill="#8b949e" font-size="12">0°</text>
+            </svg>
+        </div>
+        <div class="panel">
+            <div class="control-group">
+                <label>දිග (l - m): <span class="val-badge" id="val-l">2.0 m</span></label>
+                <input type="range" id="slider-l" min="0.5" max="4.0" step="0.1" value="2.0" oninput="updatePhysics()">
+            </div>
+            <div class="control-group">
+                <label>ස්කන්ධය (m - kg): <span class="val-badge" id="val-m">1.0 kg</span></label>
+                <input type="range" id="slider-m" min="0.1" max="10.0" step="0.1" value="1.0" oninput="updatePhysics()">
+            </div>
+            <div class="control-group">
+                <label>ගුරුත්වය (g - m/s²): <span class="val-badge" id="val-g">9.8 m/s²</span></label>
+                <input type="range" id="slider-g" min="1" max="20" step="0.1" value="9.8" oninput="updatePhysics()">
+            </div>
+            <div id="mass-alert" class="alert">⚠️ ස්කන්ධය වෙනස් කළද ආවර්ත කාලය (T) වෙනස් නොවේ!</div>
+            <div class="formula-box">T = 2π√(l/g) <br><br> <span id="calc-t">T = 2.84 s</span></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let angle = 0.2; // radians
+    let time = 0;
+    
+    function updatePhysics() {
+        const l = parseFloat(document.getElementById('slider-l').value);
+        const m = parseFloat(document.getElementById('slider-m').value);
+        const g = parseFloat(document.getElementById('slider-g').value);
+        
+        document.getElementById('val-l').innerText = l.toFixed(1) + " m";
+        document.getElementById('val-m').innerText = m.toFixed(1) + " kg";
+        document.getElementById('val-g').innerText = g.toFixed(1) + " m/s²";
+        
+        const T = 2 * Math.PI * Math.sqrt(l / g);
+        document.getElementById('calc-t').innerText = `T = ${T.toFixed(2)} s`;
+        
+        // Show alert if mass is moved
+        const alert = document.getElementById('mass-alert');
+        alert.style.display = (m !== 1.0) ? 'block' : 'none';
+        
+        // Bob size visual change
+        const r = 10 + (m * 1.5);
+        document.getElementById('pendulum-bob').setAttribute('r', r);
+    }
+
+    function animate() {
+        const l = parseFloat(document.getElementById('slider-l').value);
+        const g = parseFloat(document.getElementById('slider-g').value);
+        const w = Math.sqrt(g / l);
+        
+        angle = 0.2 * Math.cos(w * time);
+        
+        const x = 200 + 180 * Math.sin(angle);
+        const y = 20 + 180 * Math.cos(angle);
+        
+        document.getElementById('pendulum-string').setAttribute('x2', x);
+        document.getElementById('pendulum-string').setAttribute('y2', y);
+        document.getElementById('pendulum-bob').setAttribute('cx', x);
+        document.getElementById('pendulum-bob').setAttribute('cy', y);
+        
+        time += 0.05;
+        requestAnimationFrame(animate);
+    }
+    
+    updatePhysics();
+    animate();
+</script>
+</body>
+</html>

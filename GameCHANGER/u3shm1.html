@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - SHM Kinematics Lab</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+        #app-container {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            width: 1150px;
+        }
+        h2 {
+            color: #bc8cff;
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-align: center;
+        }
+        p.subtitle {
+            color: #8b949e;
+            font-size: 14px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        .main-layout {
+            display: grid;
+            grid-template-columns: 750px 330px; 
+            gap: 20px;
+            align-items: start;
+        }
+
+        .screen {
+            background-color: #090d13;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            width: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .watermark {
+            position: absolute;
+            z-index: 2;
+            pointer-events: none;
+            color: rgba(201, 209, 217, 0.22);
+            font-family: monospace;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .watermark-top-left {
+            left: 16px;
+            top: 14px;
+        }
+        .watermark-center {
+            left: 50%;
+            top: 52%;
+            transform: translate(-50%, -50%) rotate(-12deg);
+            opacity: 0.14;
+        }
+        .watermark-bottom-right {
+            right: 16px;
+            bottom: 14px;
+            z-index: 2;
+        }
+        svg { width: 100%; height: 320px; }
+        canvas { width: 100%; height: 300px; display: block; border-top: 1px solid #30363d; border-radius: 0 0 8px 8px; background: #0d1117; }
+        
+        .axis { stroke: #30363d; stroke-width: 2; }
+        .y-axis-screen { stroke: #58a6ff; stroke-width: 4; opacity: 0.3; stroke-linecap: round; }
+        .ref-circle { stroke: #30363d; stroke-width: 2; fill: none; stroke-dasharray: 5,5; }
+        .radius-line { stroke: #c9d1d9; stroke-width: 2; }
+        
+        .particle { fill: #ff7b72; stroke: #fff; stroke-width: 2; }
+        .shadow-dot { fill: #58a6ff; stroke: #fff; stroke-width: 2; }
+        .projection-line { stroke: #ff7b72; stroke-width: 2; stroke-dasharray: 3,3; opacity: 0.6; }
+        
+        .track-line { stroke: #58a6ff; stroke-width: 2; stroke-dasharray: 4,4; opacity: 0.8; }
+        .spring { stroke: #8b949e; stroke-width: 3; fill: none; stroke-linejoin: round; }
+        .mass { fill: #161b22; stroke: #3fb950; stroke-width: 3; }
+        .support { stroke: #c9d1d9; stroke-width: 4; stroke-linecap: round; }
+        
+        .text-label { fill: #c9d1d9; font-size: 14px; font-weight: bold; font-family: monospace; }
+        .shadow-label { fill: #58a6ff; font-size: 12px; font-weight: bold; font-family: monospace; }
+        
+        .controls-col { display: flex; flex-direction: column; gap: 20px; }
+        .panel { background-color: #21262d; padding: 20px; border-radius: 8px; border: 1px solid #30363d; }
+        .panel h3 { margin-top: 0; color: #58a6ff; font-size: 16px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        
+        .control-group { margin-bottom: 15px; }
+        label { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 13px; color: #c9d1d9;}
+        .val-badge { color: #58a6ff; font-family: monospace; font-size: 14px;}
+        input[type="range"] { width: 100%; accent-color: #58a6ff; cursor: pointer; }
+        
+        .btn-group { display: flex; gap: 10px; margin-top: 25px; }
+        button {
+            flex: 1; padding: 12px; font-weight: bold; cursor: pointer;
+            border: 1px solid; border-radius: 5px; transition: 0.2s; font-size: 14px;
+        }
+        .btn-play { background-color: #238636; color: white; border-color: #2ea043; }
+        .btn-play:hover { background-color: #2ea043; }
+        .btn-reset { background-color: #161b22; color: #ff7b72; border-color: #ff7b72; }
+        .btn-reset:hover { background-color: #ff7b72; color: #161b22; }
+
+        .eq-row { display: flex; justify-content: space-between; font-family: monospace; font-size: 14px; margin-bottom: 12px; align-items: center;}
+        .eq-y { color: #ff7b72; }
+        .eq-v { color: #3fb950; }
+        .eq-a { color: #bc8cff; }
+        .data-val { font-weight: bold; font-size: 16px; }
+        
+        .equation-box {
+            background-color: #0d1117; border: 1px dashed #30363d;
+            padding: 15px; border-radius: 6px; margin-top: 20px;
+            font-family: monospace; font-size: 14px; line-height: 1.8;
+        }
+        .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+        
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <h2>PHYSICS ENGINE - සරල අනුවර්තී චලිතය (SHM)</h2>
+    <p class="subtitle">විස්ථාපනය (y), ප්‍රවේගය (v) සහ ත්වරණය (a) අතර සම්මත කලා වෙනස (Standard Phase Difference View).</p>
+
+    <div class="main-layout">
+        <div class="screen">
+            <svg viewBox="0 0 900 320">
+                <line x1="50" y1="160" x2="400" y2="160" class="axis" /> 
+                <line id="y-axis-screen" x1="200" y1="40" x2="200" y2="280" class="y-axis-screen" /> 
+                <circle id="ref-circle" cx="200" cy="160" r="100" class="ref-circle" />
+                
+                <path id="angle-arc" fill="rgba(88, 166, 255, 0.3)" stroke="#58a6ff" stroke-width="1"/>
+                <text id="theta-label-svg" x="230" y="150" fill="#58a6ff" font-size="13px" font-weight="bold" font-family="monospace">θ</text>
+                
+                <line id="radius-line" x1="200" y1="160" x2="300" y2="160" class="radius-line" />
+                <line id="projection-line" x1="300" y1="160" x2="200" y2="160" class="projection-line" />
+                <circle id="circle-dot" cx="300" cy="160" r="8" class="particle" />
+                <circle id="shadow-dot" cx="200" cy="160" r="6" class="shadow-dot" />
+                
+                <text x="60" y="30" class="text-label" fill="#8b949e">වෘත්තාකාර චලිතය</text>
+                <text id="shadow-label" x="110" y="155" class="shadow-label">සෙවනැල්ල</text>
+
+                <line id="track-line" x1="200" y1="160" x2="700" y2="160" class="track-line" />
+
+                <line x1="660" y1="20" x2="740" y2="20" class="support" />
+                <path id="spring" class="spring" d="M 700 20 L 700 160" />
+                
+                <rect id="mass-block" x="670" y="140" width="60" height="40" rx="5" class="mass" />
+                <circle cx="700" cy="160" r="4" fill="#3fb950" />
+                <text x="750" y="30" class="text-label" fill="#8b949e">SHM පද්ධතිය</text>
+                
+                <line x1="640" y1="160" x2="800" y2="160" class="axis" stroke-dasharray="2,4" opacity="0.5" />
+            </svg>
+
+            <canvas id="graphCanvas"></canvas>
+            <div class="watermark watermark-top-left">Physics Engine</div>
+            <div class="watermark watermark-center">Physics Engine</div>
+            <div class="watermark watermark-bottom-right">Physics Engine</div>
+        </div>
+
+        <div class="controls-col">
+            <div class="panel">
+                <h3>පාලක (Controls)</h3>
+                
+                <div class="control-group">
+                    <label>විස්තාරය (Amplitude - A): <span class="val-badge" id="val-A">100 cm</span></label>
+                    <input type="range" id="slider-A" min="20" max="120" value="100" oninput="updateSliders()">
+                </div>
+
+                <div class="control-group">
+                    <label>කෝණික ප්‍රවේගය (ω): <span class="val-badge" id="val-w">2.0 rad/s</span></label>
+                    <input type="range" id="slider-w" min="0.5" max="5" step="0.1" value="2.0" oninput="updateSliders()">
+                </div>
+
+                <div class="control-group">
+                    <label>ආරම්භක කලාව (Phase - φ): <span class="val-badge" id="val-phi">0°</span></label>
+                    <input type="range" id="slider-phi" min="0" max="360" value="0" oninput="updateSliders()">
+                </div>
+
+                <div class="btn-group">
+                    <button id="btn-play" class="btn-play" onclick="togglePlay()">Play ⏵</button>
+                    <button class="btn-reset" onclick="resetSim()">Reset ↺</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>සජීවී දත්ත (Kinematics)</h3>
+                
+                <div class="eq-row eq-y">
+                    <span><span class="legend-dot" style="background:#ff7b72;"></span>y = A sin(ωt+φ)</span>
+                    <span class="data-val" id="data-y">0.0 cm</span>
+                </div>
+                <div class="eq-row eq-v">
+                    <span><span class="legend-dot" style="background:#3fb950;"></span>v = Aω cos(ωt+φ)</span>
+                    <span class="data-val" id="data-v">200.0 cm/s</span>
+                </div>
+                <div class="eq-row eq-a">
+                    <span><span class="legend-dot" style="background:#bc8cff;"></span>a = -Aω² sin(ωt+φ)</span>
+                    <span class="data-val" id="data-a">0.0 cm/s²</span>
+                </div>
+                
+                <div class="equation-box">
+                    <span style="color:#8b949e;">වත්මන් කෝණය (θ): </span><span id="data-theta" style="color:#58a6ff; font-weight:bold; font-size:16px;">0°</span><br>
+                    <div style="margin-top:10px;">
+                        <span id="live-eq-y" class="eq-y">y = 100 sin(2.0t)</span><br>
+                        <span id="live-eq-v" class="eq-v">v = 200 cos(2.0t)</span><br>
+                        <span id="live-eq-a" class="eq-a">a = -400 sin(2.0t)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let t = 0;
+    let isPlaying = false;
+    let animFrame;
+    
+    let historyY = []; 
+    let historyV = [];
+    let historyA = [];
+
+    const CX = 200; 
+    const CY = 160; 
+    const SX = 700; 
+
+    const canvas = document.getElementById('graphCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const GRAPH_PADDING_LEFT = 50; 
+
+    function updateSliders() {
+        const A = document.getElementById('slider-A').value;
+        const w = parseFloat(document.getElementById('slider-w').value).toFixed(1);
+        const phi = document.getElementById('slider-phi').value;
+
+        document.getElementById('val-A').innerText = A + " cm";
+        document.getElementById('val-w').innerText = w + " rad/s";
+        document.getElementById('val-phi').innerText = phi + "°";
+        
+        document.getElementById('ref-circle').setAttribute('r', A);
+        
+        document.getElementById('y-axis-screen').setAttribute('y1', CY - A - 10);
+        document.getElementById('y-axis-screen').setAttribute('y2', CY + parseInt(A) + 10);
+
+        if (!isPlaying) renderFrame(); 
+    }
+
+    function togglePlay() {
+        isPlaying = !isPlaying;
+        const btn = document.getElementById('btn-play');
+        if (isPlaying) {
+            btn.innerText = "Pause ⏸";
+            btn.style.backgroundColor = "#ff7b72";
+            btn.style.borderColor = "#ff7b72";
+            animFrame = requestAnimationFrame(loop);
+        } else {
+            btn.innerText = "Play ⏵";
+            btn.style.backgroundColor = "#238636";
+            btn.style.borderColor = "#2ea043";
+            cancelAnimationFrame(animFrame);
+        }
+    }
+
+    function resetSim() {
+        t = 0;
+        historyY = [];
+        historyV = [];
+        historyA = [];
+        if(!isPlaying) renderFrame();
+    }
+
+    function drawSpring(yEnd) {
+        const startY = 20;
+        const coils = 12;
+        const width = 25;
+        let path = `M ${SX} ${startY} `;
+        const h = (yEnd - startY);
+        const step = h / coils;
+        for (let i = 1; i <= coils; i++) {
+            let sign = (i % 2 === 0) ? 1 : -1;
+            let px = (i === coils) ? SX : SX + (sign * width);
+            let py = startY + (i * step);
+            path += `L ${px} ${py} `;
+        }
+        document.getElementById('spring').setAttribute('d', path);
+    }
+
+    function drawGraphPath(historyArray, color, centerY) {
+        if(historyArray.length === 0) return;
+        ctx.strokeStyle = color; 
+        ctx.lineWidth = 2.5;
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        
+        const graphWidth = canvas.width - GRAPH_PADDING_LEFT;
+        for (let i = 0; i < historyArray.length; i++) {
+            let x = canvas.width - historyArray.length + i; 
+            
+            if (x < GRAPH_PADDING_LEFT) continue;
+
+            let y = centerY - historyArray[i]; 
+            if (i === 0 || x === GRAPH_PADDING_LEFT) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    function drawGraph() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const laneHeight = canvas.height / 3;
+        const midY_y = laneHeight / 2;
+        const midY_v = laneHeight + laneHeight / 2;
+        const midY_a = 2 * laneHeight + laneHeight / 2;
+        const laneAmp = (laneHeight / 2) - 10; 
+
+        ctx.lineWidth = 1;
+        ctx.font = "bold 12px 'Segoe UI', sans-serif";
+
+        ctx.strokeStyle = "#8b949e";
+        ctx.beginPath(); ctx.moveTo(GRAPH_PADDING_LEFT, 0); ctx.lineTo(GRAPH_PADDING_LEFT, canvas.height); ctx.stroke();
+
+        ctx.strokeStyle = "rgba(48, 54, 61, 0.5)"; 
+        ctx.beginPath(); ctx.moveTo(0, laneHeight); ctx.lineTo(canvas.width, laneHeight); ctx.stroke();
+        ctx.strokeStyle = "#30363d"; 
+        ctx.beginPath(); ctx.moveTo(GRAPH_PADDING_LEFT, midY_y); ctx.lineTo(canvas.width, midY_y); ctx.stroke();
+        ctx.fillStyle = "#ff7b72"; 
+        ctx.fillText("y", GRAPH_PADDING_LEFT + 5, midY_y - 5);
+        ctx.fillText("+A", 5, midY_y - laneAmp + 4);
+        ctx.fillText("-A", 5, midY_y + laneAmp + 4);
+
+        ctx.strokeStyle = "rgba(48, 54, 61, 0.5)"; 
+        ctx.beginPath(); ctx.moveTo(0, 2*laneHeight); ctx.lineTo(canvas.width, 2*laneHeight); ctx.stroke();
+        ctx.strokeStyle = "#30363d"; 
+        ctx.beginPath(); ctx.moveTo(GRAPH_PADDING_LEFT, midY_v); ctx.lineTo(canvas.width, midY_v); ctx.stroke();
+        ctx.fillStyle = "#3fb950"; 
+        ctx.fillText("v", GRAPH_PADDING_LEFT + 5, midY_v - 5);
+        ctx.fillText("+Aω", 5, midY_v - laneAmp + 4);
+        ctx.fillText("-Aω", 5, midY_v + laneAmp + 4);
+
+        ctx.strokeStyle = "#30363d"; 
+        ctx.beginPath(); ctx.moveTo(GRAPH_PADDING_LEFT, midY_a); ctx.lineTo(canvas.width, midY_a); ctx.stroke();
+        ctx.fillStyle = "#bc8cff"; 
+        ctx.fillText("a", GRAPH_PADDING_LEFT + 5, midY_a - 5);
+        ctx.fillText("+Aω²", 5, midY_a - laneAmp + 4);
+        ctx.fillText("-Aω²", 5, midY_a + laneAmp + 4);
+        
+        ctx.fillStyle = "#8b949e";
+        ctx.fillText("කාලය (t) ➔", canvas.width - 75, midY_a - 5);
+
+        drawGraphPath(historyY, "#ff7b72", midY_y);
+        drawGraphPath(historyV, "#3fb950", midY_v);
+        drawGraphPath(historyA, "#bc8cff", midY_a);
+    }
+
+    function renderFrame() {
+        const A = parseFloat(document.getElementById('slider-A').value);
+        const w = parseFloat(document.getElementById('slider-w').value);
+        const phiDeg = parseFloat(document.getElementById('slider-phi').value);
+        
+        const phi = phiDeg * (Math.PI / 180);
+        const thetaRad = (w * t) + phi;
+        
+        let thetaDeg = (thetaRad * (180 / Math.PI)) % 360;
+        if(thetaDeg < 0) thetaDeg += 360;
+
+        const y = A * Math.sin(thetaRad);
+        const v = A * w * Math.cos(thetaRad);
+        const a = -A * w * w * Math.sin(thetaRad);
+
+        const dotX = CX + A * Math.cos(thetaRad);
+        const dotY = CY - y;
+
+        // Visual Angle Arc Logic (The Pie Slice)
+        let normTheta = thetaRad % (2 * Math.PI);
+        if(normTheta < 0) normTheta += 2 * Math.PI;
+        let largeArc = normTheta > Math.PI ? 1 : 0;
+        
+        if (normTheta > 0.001) {
+            let arcPath = `M ${CX} ${CY} L ${CX + A} ${CY} A ${A} ${A} 0 ${largeArc} 0 ${dotX} ${dotY} Z`;
+            document.getElementById('angle-arc').setAttribute('d', arcPath);
+        } else {
+            document.getElementById('angle-arc').setAttribute('d', "");
+        }
+
+        // Dynamic Position for the 'θ' Label
+        let labelR = A / 2; // Position it half-way along the radius
+        let labelX = CX + labelR * Math.cos(normTheta / 2);
+        let labelY = CY - labelR * Math.sin(normTheta / 2);
+        document.getElementById('theta-label-svg').setAttribute('x', labelX - 5);
+        document.getElementById('theta-label-svg').setAttribute('y', labelY + 5);
+
+        document.getElementById('circle-dot').setAttribute('cx', dotX);
+        document.getElementById('circle-dot').setAttribute('cy', dotY);
+        document.getElementById('radius-line').setAttribute('x2', dotX);
+        document.getElementById('radius-line').setAttribute('y2', dotY);
+
+        document.getElementById('projection-line').setAttribute('x1', dotX);
+        document.getElementById('projection-line').setAttribute('y1', dotY);
+        document.getElementById('projection-line').setAttribute('x2', CX);
+        document.getElementById('projection-line').setAttribute('y2', dotY);
+
+        document.getElementById('shadow-dot').setAttribute('cy', dotY);
+        document.getElementById('shadow-label').setAttribute('y', dotY + 4);
+
+        document.getElementById('track-line').setAttribute('x1', CX);
+        document.getElementById('track-line').setAttribute('y1', dotY);
+        document.getElementById('track-line').setAttribute('x2', SX - 30);
+        document.getElementById('track-line').setAttribute('y2', dotY);
+
+        document.getElementById('mass-block').setAttribute('y', dotY - 20); 
+        drawSpring(dotY - 20);
+
+        document.getElementById('data-theta').innerText = Math.round(thetaDeg) + "°";
+        document.getElementById('data-y').innerText = y.toFixed(1) + " cm";
+        document.getElementById('data-v').innerText = v.toFixed(1) + " cm/s";
+        document.getElementById('data-a').innerText = a.toFixed(1) + " cm/s²";
+
+        let phiStr = phiDeg > 0 ? ` + ${parseFloat(phi).toFixed(2)}` : "";
+        document.getElementById('live-eq-y').innerText = `y = ${A} sin(${w.toFixed(1)}t${phiStr})`;
+        document.getElementById('live-eq-v').innerText = `v = ${(A*w).toFixed(1)} cos(${w.toFixed(1)}t${phiStr})`;
+        document.getElementById('live-eq-a').innerText = `a = ${(-A*w*w).toFixed(1)} sin(${w.toFixed(1)}t${phiStr})`;
+
+        const laneAmp = (canvas.height / 3) / 2 - 10; 
+        
+        const max_Y = A;
+        const max_V = A * w;
+        const max_A = A * w * w;
+
+        historyY.push((y / max_Y) * laneAmp); 
+        historyV.push((v / max_V) * laneAmp); 
+        historyA.push((a / max_A) * laneAmp);
+
+        const graphDrawWidth = canvas.width - GRAPH_PADDING_LEFT;
+        if(historyY.length > graphDrawWidth) {
+            historyY.shift(); 
+            historyV.shift();
+            historyA.shift();
+        }
+        drawGraph();
+    }
+
+    function loop() {
+        t += 0.02; 
+        renderFrame();
+        if(isPlaying) {
+            animFrame = requestAnimationFrame(loop);
+        }
+    }
+
+    function init() {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight; 
+        updateSliders(); 
+    }
+
+    window.onload = init;
+    window.onresize = init;
+
+</script>
+
+</body>
+</html>
