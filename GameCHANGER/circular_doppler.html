@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Circular Doppler Lab</title>
+    <style>
+        body {
+            background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', Tahoma, sans-serif;
+            display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; min-height: 100vh;
+        }
+        #app-container {
+            background-color: #161b22; border: 1px solid #30363d; border-radius: 12px;
+            padding: 25px; box-shadow: 0 0 40px rgba(0,0,0,0.9); width: 1150px; position: relative;
+        }
+        h2 { color: #bc8cff; margin-top: 0; text-transform: uppercase; letter-spacing: 1.5px; text-align: center; }
+        p.subtitle { color: #8b949e; font-size: 14px; margin-bottom: 20px; text-align: center; }
+        
+        .main-layout { display: grid; grid-template-columns: 720px 360px; gap: 20px; align-items: start; }
+
+        .visuals-col { display: flex; flex-direction: column; gap: 15px; }
+        .box { background-color: #090d13; border-radius: 8px; border: 1px solid #30363d; overflow: hidden; }
+        .radar-box { height: 400px; box-shadow: inset 0 0 30px rgba(88, 166, 255, 0.05); }
+        .graph-box { height: 220px; }
+        canvas { width: 100%; height: 100%; display: block; }
+        
+        .controls-col { display: flex; flex-direction: column; gap: 15px; }
+        .panel { background-color: #21262d; padding: 20px; border-radius: 8px; border: 1px solid #30363d; }
+        .panel h3 { margin-top: 0; color: #58a6ff; font-size: 16px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        
+        .mode-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 15px; }
+        .mode-btn {
+            background-color: #0d1117; border: 1px solid #30363d; color: #8b949e;
+            padding: 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .mode-btn.active { background-color: #bc8cff; color: #000; border-color: #bc8cff; box-shadow: 0 0 15px rgba(188,140,255,0.3); }
+        .mode-btn:hover:not(.active) { background-color: #30363d; color: #c9d1d9; }
+
+        .control-group { margin-bottom: 15px; }
+        label { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 13px; color: #c9d1d9;}
+        .val-badge { font-family: monospace; font-size: 15px; font-weight: bold; color: #ff7b72;}
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #ff7b72; }
+
+        /* JUMP BUTTONS (STOP BUTTONS) */
+        .jump-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .jump-btn { 
+            background: #0d1117; border: 1px dashed #8b949e; color: #c9d1d9; 
+            padding: 10px 5px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .jump-btn:hover { background: #30363d; }
+        .jump-btn.max { border-color: #ff7b72; color: #ff7b72; }
+        .jump-btn.max:hover { background: rgba(255,123,114,0.1); }
+        .jump-btn.min { border-color: #58a6ff; color: #58a6ff; }
+        .jump-btn.min:hover { background: rgba(88,166,255,0.1); }
+        .jump-btn.perp { border-color: #3fb950; color: #3fb950; }
+        .jump-btn.perp:hover { background: rgba(63,185,80,0.1); }
+        .jump-btn sub { font-size: 0.75em; vertical-align: sub; margin-left: 2px; }
+        .minmax-text sub { font-size: 0.85em; vertical-align: sub; }
+
+        .math-box {
+            background-color: #0d1117; border: 1px dashed #bc8cff;
+            padding: 15px; border-radius: 6px; text-align: center; color: #c9d1d9;
+        }
+        .math-title { font-size: 13px; color: #8b949e; margin-bottom: 10px; font-weight: bold;}
+        .eq-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            font-family: monospace;
+            font-size: 15px;
+            line-height: 1.2;
+        }
+        .eq-prefix, .eq-suffix { white-space: nowrap; }
+        .eq-fraction {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: stretch;
+            min-width: 210px;
+            max-width: 100%;
+        }
+        .eq-numerator,
+        .eq-denominator {
+            text-align: center;
+            padding: 0 8px;
+            white-space: nowrap;
+        }
+        .eq-numerator {
+            padding-bottom: 4px;
+            border-bottom: 2px solid #58a6ff;
+            color: #c9d1d9;
+        }
+        .eq-denominator {
+            padding-top: 4px;
+            color: #8b949e;
+        }
+        .f-prime { font-size: 28px; color: #3fb950; font-weight: bold; display: block; margin-top: 10px; text-shadow: 0 0 10px rgba(63, 185, 80, 0.4);}
+        .minmax-text { font-size: 14px; color: #8b949e; margin-top: 5px; font-family: monospace;}
+
+        .alert-box {
+            padding: 12px; border-radius: 6px; font-size: 13px; font-weight: bold; text-align: center;
+            background: rgba(48, 54, 61, 0.5); border: 1px solid #30363d; color: #8b949e; line-height: 1.5;
+        }
+        .alert-active { background: rgba(63, 185, 80, 0.15); border-color: #3fb950; color: #3fb950; }
+        .alert-max { background: rgba(255, 123, 114, 0.15); border-color: #ff7b72; color: #ff7b72; }
+        .alert-min { background: rgba(88, 166, 255, 0.15); border-color: #58a6ff; color: #58a6ff; }
+        .watermark {
+            position: absolute;
+            z-index: 2;
+            pointer-events: none;
+            color: rgba(201, 209, 217, 0.22);
+            font-family: monospace;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .watermark-top-left { left: 16px; top: 14px; }
+        .watermark-center { left: 50%; top: 52%; transform: translate(-50%, -50%) rotate(-12deg); opacity: 0.14; }
+        .watermark-bottom-right { right: 16px; bottom: 14px; z-index: 2; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <h2>වෘත්තාකාර චලිතයේ ඩොප්ලර් ආචරණය</h2>
+    <p class="subtitle">ප්‍රභවයක් (S) වෘත්තයක ගමන් කරන විට කේන්ද්‍රයේ සහ පිටත සිටින නිරීක්ෂකයන්ට ඇසෙන සංඛ්‍යාතය.</p>
+
+    <div class="main-layout">
+        <div class="visuals-col">
+            <div class="box radar-box">
+                <canvas id="radarCanvas"></canvas>
+            </div>
+            <div class="box graph-box">
+                <canvas id="graphCanvas"></canvas>
+            </div>
+        </div>
+
+        <div class="controls-col">
+            <div class="panel">
+                <div class="mode-grid">
+                    <button class="mode-btn active" id="btn-caseA" onclick="setMode('A')">Case A: නිරීක්ෂකයා කේන්ද්‍රයේ සිටී</button>
+                    <button class="mode-btn" id="btn-caseB" onclick="setMode('B')">Case B: නිරීක්ෂකයා පිටතින් සිටී</button>
+                </div>
+
+                <div class="control-group">
+                    <label>ප්‍රභවයේ රේඛීය වේගය (vₛ): <span class="val-badge" id="val-vs">100 m/s</span></label>
+                    <input type="range" id="slider-vs" min="0" max="250" step="5" value="100" oninput="updateSpeed()">
+                </div>
+                
+                <div style="display:flex; gap:10px; margin-top: 15px;">
+                    <button style="flex:1; padding:10px; border-radius:5px; border:none; background:#238636; color:white; font-weight:bold; cursor:pointer;" onclick="togglePlay()" id="playBtn">Pause ⏸</button>
+                    <button style="flex:1; padding:10px; border-radius:5px; border:1px solid #ff7b72; background:#21262d; color:#ff7b72; font-weight:bold; cursor:pointer;" onclick="resetSim()">Reset ↺</button>
+                </div>
+
+                <div style="margin-top: 15px; border-top: 1px solid #30363d; padding-top: 15px;">
+                    <div style="font-size: 13px; color: #c9d1d9; margin-bottom: 8px; font-weight: bold; text-align: center;">විශේෂ පිහිටුම් වෙත පනින්න (Jump & Pause)</div>
+                    <div class="jump-grid">
+                        <button class="jump-btn max" onclick="jumpTo('fmax')">🔥 f<sub>max</sub> (ලංවන)</button>
+                        <button class="jump-btn min" onclick="jumpTo('fmin')">❄️ f<sub>min</sub> (ඈත්වන)</button>
+                        <button class="jump-btn perp" onclick="jumpTo('closest')">🎯 f'=f (ආසන්නතම)</button>
+                        <button class="jump-btn perp" onclick="jumpTo('furthest')">🎯 f'=f (දුරස්තම)</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="math-box">
+                <div class="math-title" id="math-title">දෘෂ්ටි රේඛාව ඔස්සේ ප්‍රවේග සංරචකය සොයන්න</div>
+                <div class="eq-display" id="eq-display">
+                    <span class="eq-prefix">f' = 400 ×</span>
+                    <span class="eq-fraction">
+                        <span class="eq-numerator" id="eq-num">340</span>
+                        <span class="eq-denominator" id="eq-den">340 - 0</span>
+                    </span>
+                    <span class="eq-suffix">= <span id="eq-result">400.0 Hz</span></span>
+                </div>
+                <span class="f-prime" id="calc-fprime">400.0 Hz</span>
+                <div class="minmax-text" id="minmax-display">f<sub>max</sub> = -- | f<sub>min</sub> = --</div>
+            </div>
+            
+            <div class="alert-box" id="alert-status">
+                ප්‍රභවය චලනය ආරම්භ කර ඇත.
+            </div>
+
+            <div class="watermark watermark-top-left">Physics Engine</div>
+            <div class="watermark watermark-center">Physics Engine</div>
+            <div class="watermark watermark-bottom-right">Physics Engine</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const radar = document.getElementById('radarCanvas');
+    const rCtx = radar.getContext('2d');
+    const graph = document.getElementById('graphCanvas');
+    const gCtx = graph.getContext('2d');
+
+    const V_SOUND = 340; 
+    const F_SOURCE = 400; 
+    const R_CIRCLE = 100; 
+    const VISUAL_SCALE = 0.35; 
+
+    let mode = 'A'; 
+    let v_s = 100; 
+    let angle = 0; 
+    
+    let cx = 0, cy = 0; 
+    let ox = 0, oy = 0; 
+    let sx = 0, sy = 0; 
+    
+    let wavefronts = [];
+    let graphData = [];
+    let time = 0;
+    let lastEmitTime = 0;
+    let isPlaying = true;
+
+    function resizeCanvases() {
+        radar.width = radar.parentElement.clientWidth;
+        radar.height = 400;
+        graph.width = graph.parentElement.clientWidth;
+        graph.height = 220;
+        
+        if(mode === 'A') cx = radar.width / 2;
+        else cx = radar.width / 3; 
+        cy = radar.height / 2;
+        
+        updateObserverPos();
+        updateJumpVisibility();
+        if(!isPlaying) { drawRadar(); drawGraph(); }
+    }
+    window.addEventListener('resize', resizeCanvases);
+
+    function updateObserverPos() {
+        if(mode === 'A') { ox = cx; oy = cy; } 
+        else { ox = cx + 250; oy = cy; }
+    }
+
+    function setMode(newMode) {
+        mode = newMode;
+        document.getElementById('btn-caseA').classList.remove('active');
+        document.getElementById('btn-caseB').classList.remove('active');
+        document.getElementById('btn-case'+mode).classList.add('active');
+        
+        resizeCanvases();
+        updateJumpVisibility();
+        resetSim();
+    }
+
+    function updateJumpVisibility() {
+        const j = document.querySelector('.jump-grid');
+        if (!j) return;
+        j.style.display = (mode === 'A') ? 'none' : 'grid';
+    }
+
+    function updateSpeed() {
+        v_s = parseFloat(document.getElementById('slider-vs').value);
+        document.getElementById('val-vs').innerText = v_s + " m/s";
+        
+        if(mode === 'B') {
+            let fmax = F_SOURCE * (V_SOUND / (V_SOUND - v_s));
+            let fmin = F_SOURCE * (V_SOUND / (V_SOUND + v_s));
+            document.getElementById('minmax-display').innerHTML = `f<sub>max</sub> = ${fmax.toFixed(1)} Hz | f<sub>min</sub> = ${fmin.toFixed(1)} Hz`;
+        } else {
+            document.getElementById('minmax-display').innerText = `නියත සංඛ්‍යාතයකි (Constant)`;
+        }
+        if(!isPlaying) { calculateDoppler(); drawGraph(); }
+    }
+
+    function togglePlay() {
+        isPlaying = !isPlaying;
+        document.getElementById('playBtn').innerText = isPlaying ? "Pause ⏸" : "Play ▶";
+    }
+
+    function resetSim() {
+        angle = 0; time = 0; lastEmitTime = 0;
+        wavefronts = []; graphData = [];
+        updateSpeed();
+        if(!isPlaying) togglePlay();
+    }
+
+    // --- NEW JUMP LOGIC ---
+    function jumpTo(point) {
+        if (mode === 'A') {
+            alert("කේන්ද්‍රයේ සිටින විට සෑම මොහොතක්ම එක සමාන වේ (f' = f). කරුණාකර 'Case B' තෝරා නැවත උත්සාහ කරන්න.");
+            return;
+        }
+
+        let D = ox - cx; // Distance from center to observer
+
+        // Exact geometric angle calculations for tangents and alignments
+        if (point === 'closest') angle = 0;
+        if (point === 'furthest') angle = Math.PI;
+        if (point === 'fmax') angle = -Math.acos(R_CIRCLE / D); // Top Tangent
+        if (point === 'fmin') angle = Math.acos(R_CIRCLE / D);  // Bottom Tangent
+
+        // Force Pause
+        isPlaying = false;
+        document.getElementById('playBtn').innerText = "Play ▶";
+
+        // Update coordinates
+        sx = cx + R_CIRCLE * Math.cos(angle);
+        sy = cy + R_CIRCLE * Math.sin(angle);
+
+        // Clear screen and show a single wavefront at the exact moment
+        wavefronts = [];
+        wavefronts.push({x: sx, y: sy, t: time});
+        lastEmitTime = time;
+
+        let currentF = calculateDoppler();
+
+        // Advance graph slightly to show the jumped point clearly
+        time += 0.05;
+        graphData.push({t: time, f: currentF});
+
+        drawRadar();
+        drawGraph();
+    }
+
+    function calculateDoppler() {
+        let vx = -v_s * Math.sin(angle);
+        let vy = v_s * Math.cos(angle);
+        
+        let dx = ox - sx;
+        let dy = oy - sy;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        
+        if (dist === 0) return F_SOURCE;
+        
+        let ux = dx / dist;
+        let uy = dy / dist;
+        let v_comp = (vx * ux) + (vy * uy); 
+        
+        let f_prime = F_SOURCE * (V_SOUND / (V_SOUND - v_comp));
+        
+        document.getElementById('calc-fprime').innerText = f_prime.toFixed(1) + " Hz";
+        document.getElementById('eq-result').innerText = f_prime.toFixed(1) + " Hz";
+        let alertBox = document.getElementById('alert-status');
+        
+        if(mode === 'A') {
+            document.getElementById('eq-num').innerText = `340`;
+            document.getElementById('eq-den').innerText = `340 - 0`;
+            alertBox.className = "alert-box alert-active";
+            alertBox.innerHTML = "<b>Hack:</b> කේන්ද්‍රයේ සිටින නිරීක්ෂකයාට දෘෂ්ටි රේඛාව නිතරම ප්‍රවේගයට ලම්බක වේ (θ=90°). එබැවින් f' = f වේ.";
+            document.getElementById('calc-fprime').style.color = "#c9d1d9";
+        } else {
+            let cos_theta = v_comp / v_s;
+            if(isNaN(cos_theta)) cos_theta = 0;
+            document.getElementById('eq-num').innerText = `340`;
+            document.getElementById('eq-den').innerText = `340 - (${v_s} × ${cos_theta.toFixed(2)})`;
+            
+            if(cos_theta > 0.95) {
+                alertBox.className = "alert-box alert-max";
+                alertBox.innerHTML = "🔥 <b>උපරිම සංඛ්‍යාතය (f<sub>max</sub>)</b><br>ප්‍රභවය ස්පර්ශකය දිගේ හරියටම නිරීක්ෂකයා දෙසට ගමන් කරයි.";
+                document.getElementById('calc-fprime').style.color = "#ff7b72";
+            } else if (cos_theta < -0.95) {
+                alertBox.className = "alert-box alert-min";
+                alertBox.innerHTML = "❄️ <b>අවම සංඛ්‍යාතය (f<sub>min</sub>)</b><br>ප්‍රභවය ස්පර්ශකය දිගේ හරියටම නිරීක්ෂකයාගෙන් ඈතට ගමන් කරයි.";
+                document.getElementById('calc-fprime').style.color = "#58a6ff";
+            } else if (Math.abs(cos_theta) < 0.05) {
+                alertBox.className = "alert-box alert-active";
+                alertBox.innerHTML = "🎯 <b>ලම්බක මොහොත! (f' = f)</b><br>දෘෂ්ටි රේඛාව ප්‍රවේගයට ලම්බක වේ. ප්‍රවේග සංරචකය ශුන්‍යයි.";
+                document.getElementById('calc-fprime').style.color = "#3fb950";
+            } else {
+                alertBox.className = "alert-box";
+                alertBox.innerHTML = "ප්‍රභවය වෘත්තාකාර මාර්ගයේ ගමන් කරමින් පවතී...";
+                document.getElementById('calc-fprime').style.color = "#3fb950";
+            }
+        }
+        return f_prime;
+    }
+
+    function drawRadar() {
+        rCtx.clearRect(0, 0, radar.width, radar.height);
+        
+        // Path
+        rCtx.strokeStyle = "#30363d"; rCtx.lineWidth = 2; rCtx.setLineDash([5, 5]);
+        rCtx.beginPath(); rCtx.arc(cx, cy, R_CIRCLE, 0, Math.PI*2); rCtx.stroke();
+        rCtx.setLineDash([]);
+
+        // Line of sight
+        rCtx.strokeStyle = "rgba(88, 166, 255, 0.4)"; rCtx.lineWidth = 1;
+        rCtx.beginPath(); rCtx.moveTo(sx, sy); rCtx.lineTo(ox, oy); rCtx.stroke();
+
+        // Wavefronts
+        for (let i = 0; i < wavefronts.length; i++) {
+            let wf = wavefronts[i];
+            let age = time - wf.t;
+            let r = V_SOUND * age * VISUAL_SCALE; 
+            
+            let alpha = Math.max(0, 0.6 - (r / 600));
+            if (alpha > 0) {
+                rCtx.strokeStyle = `rgba(88, 166, 255, ${alpha})`; 
+                rCtx.lineWidth = 1.5;
+                rCtx.beginPath(); rCtx.arc(wf.x, wf.y, r, 0, Math.PI*2); rCtx.stroke();
+            }
+        }
+
+        // Observer
+        rCtx.fillStyle = "#58a6ff";
+        rCtx.beginPath(); rCtx.arc(ox, oy, 8, 0, Math.PI*2); rCtx.fill();
+        rCtx.fillStyle = "#c9d1d9"; rCtx.font = "bold 14px sans-serif"; 
+        rCtx.fillText("O", ox - 5, oy + 25);
+
+        // Source
+        rCtx.fillStyle = "#ff7b72";
+        rCtx.beginPath(); rCtx.arc(sx, sy, 10, 0, Math.PI*2); rCtx.fill();
+        rCtx.fillStyle = "#c9d1d9"; rCtx.fillText("S", sx - 5, sy - 15);
+        
+        // Velocity Vector
+        let vx = -v_s * Math.sin(angle);
+        let vy = v_s * Math.cos(angle);
+        let vLen = Math.sqrt(vx*vx + vy*vy);
+        if(vLen > 0) {
+            let ax = sx + (vx/vLen) * 45;
+            let ay = sy + (vy/vLen) * 45;
+            
+            rCtx.strokeStyle = "#ff7b72"; rCtx.lineWidth = 3;
+            rCtx.beginPath(); rCtx.moveTo(sx, sy); rCtx.lineTo(ax, ay); rCtx.stroke();
+            
+            rCtx.fillStyle = "#ff7b72";
+            let angleHead = Math.atan2(ay - sy, ax - sx);
+            rCtx.beginPath();
+            rCtx.moveTo(ax, ay);
+            rCtx.lineTo(ax - 10 * Math.cos(angleHead - Math.PI / 6), ay - 10 * Math.sin(angleHead - Math.PI / 6));
+            rCtx.lineTo(ax - 10 * Math.cos(angleHead + Math.PI / 6), ay - 10 * Math.sin(angleHead + Math.PI / 6));
+            rCtx.fill();
+        }
+    }
+
+    function drawGraph() {
+        gCtx.clearRect(0, 0, graph.width, graph.height);
+        
+        let h = graph.height;
+        let w = graph.width;
+        let padX = 40; let padY = 20;
+
+        gCtx.strokeStyle = "#30363d"; gCtx.lineWidth = 2;
+        gCtx.beginPath(); gCtx.moveTo(padX, padY); gCtx.lineTo(padX, h - padY); gCtx.stroke(); 
+        gCtx.beginPath(); gCtx.moveTo(padX, h/2); gCtx.lineTo(w - padX, h/2); gCtx.stroke(); 
+        
+        gCtx.fillStyle = "#8b949e"; gCtx.font = "12px sans-serif";
+        gCtx.fillText("f' (Hz)", 5, padY - 5);
+        gCtx.fillText("කාලය (t)", w - 60, h/2 - 10);
+        gCtx.fillStyle = "#c9d1d9"; gCtx.fillText("400", 10, h/2 + 4);
+
+        if (graphData.length > 1) {
+            // THE FIX: Dynamic Y-axis Auto-Scaling
+            let theoreticalMax = (mode === 'B') ? F_SOURCE * (V_SOUND / (V_SOUND - v_s)) : F_SOURCE;
+            let safeRange = Math.max(300, (theoreticalMax - F_SOURCE) * 1.2); 
+            
+            gCtx.strokeStyle = mode === 'A' ? "#c9d1d9" : "#3fb950"; 
+            gCtx.lineWidth = 3;
+            gCtx.beginPath();
+            
+            let lastX, lastY;
+            let visibleWindow = 5; 
+            
+            for (let i = 0; i < graphData.length; i++) {
+                let p = graphData[i];
+                if(time - p.t > visibleWindow) continue; 
+                
+                let px = padX + ((p.t - (time > visibleWindow ? time - visibleWindow : 0)) / visibleWindow) * (w - 2 * padX);
+                let py = h/2 - ((p.f - 400) / safeRange) * (h/2 - padY); 
+                py = Math.max(padY, Math.min(h - padY, py)); 
+
+                if (i === 0 || px === padX) gCtx.moveTo(px, py);
+                else gCtx.lineTo(px, py);
+                
+                lastX = px; lastY = py;
+            }
+            gCtx.stroke();
+            
+            if(lastX && lastY) {
+                gCtx.fillStyle = mode === 'A' ? "#c9d1d9" : "#3fb950";
+                gCtx.beginPath(); gCtx.arc(lastX, lastY, 5, 0, Math.PI*2); gCtx.fill();
+            }
+        }
+    }
+
+    function loop() {
+        if (isPlaying) {
+            time += 1/60; 
+            
+            let v_s_visual = v_s * VISUAL_SCALE;
+            let omega = v_s_visual / R_CIRCLE;
+            angle += omega * (1/60);
+            
+            sx = cx + R_CIRCLE * Math.cos(angle);
+            sy = cy + R_CIRCLE * Math.sin(angle);
+
+            if (time - lastEmitTime > 0.15) {
+                wavefronts.push({x: sx, y: sy, t: time});
+                lastEmitTime = time;
+            }
+
+            for (let i = wavefronts.length - 1; i >= 0; i--) {
+                let age = time - wavefronts[i].t;
+                if ((V_SOUND * age * VISUAL_SCALE) > 800) wavefronts.splice(i, 1);
+            }
+
+            let currentF = calculateDoppler();
+
+            graphData.push({t: time, f: currentF});
+            if(graphData.length > 500) graphData.shift(); 
+        }
+
+        drawRadar();
+        drawGraph();
+        
+        requestAnimationFrame(loop);
+    }
+
+    resizeCanvases();
+    updateSpeed();
+    loop();
+
+</script>
+</body>
+</html>
