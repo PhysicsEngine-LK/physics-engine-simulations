@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Wave Motion Lab</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+        #app-container {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            width: 1150px;
+        }
+        h2 {
+            color: #bc8cff;
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-align: center;
+        }
+        p.subtitle {
+            color: #8b949e;
+            font-size: 14px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        /* Main Layout Grid */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 750px 330px; 
+            gap: 20px;
+            align-items: start;
+        }
+
+        /* Visualizer Screen (Left Side) */
+        .screen {
+            background-color: #000;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            width: 100%;
+            height: 480px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 30px rgba(88, 166, 255, 0.05);
+        }
+        canvas { width: 100%; height: 100%; display: block; }
+        
+        /* Controls & Data Column (Right Side) */
+        .controls-col {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background-color: #21262d;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+        }
+        .panel h3 { margin-top: 0; color: #58a6ff; font-size: 16px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        
+        /* Controls */
+        .control-group { margin-bottom: 20px; }
+        label { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 13px; color: #c9d1d9;}
+        .val-badge { color: #58a6ff; font-family: monospace; font-size: 15px;}
+        input[type="range"] { width: 100%; accent-color: #58a6ff; cursor: pointer; }
+        
+        /* Equations & Alerts */
+        .formula-box {
+            background-color: #0d1117; border: 1px dashed #bc8cff;
+            padding: 15px; border-radius: 6px; text-align: center; 
+            font-family: monospace; font-size: 16px; color: #c9d1d9;
+        }
+        .highlight-text { font-size: 26px; color: #bc8cff; display: block; margin-top: 8px; font-weight: bold; text-shadow: 0 0 10px rgba(188,140,255,0.4);}
+        
+        .alert-box {
+            margin-top: 20px; padding: 12px; border-radius: 6px;
+            background: rgba(210, 153, 34, 0.1); border: 1px solid #d29922;
+            color: #d29922; font-size: 13px; font-weight: bold; text-align: center;
+            opacity: 1; transition: 0.3s;
+        }
+        
+        .btn-play { 
+            background-color: #238636; color: white; border: 1px solid #2ea043;
+            width: 100%; padding: 12px; font-weight: bold; cursor: pointer;
+            border-radius: 5px; transition: 0.2s; font-size: 15px; margin-top: 15px;
+        }
+        .btn-play:hover { background-color: #2ea043; }
+        
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <h2>තරංග චලිතය (Wave Motion)</h2>
+    <p class="subtitle">තීර්යක් (Transverse) සහ අන්වායාම (Longitudinal) තරංගවල හැසිරීම සහ v = fλ සමීකරණය.</p>
+
+    <div class="main-layout">
+        <div class="screen">
+            <canvas id="waveCanvas"></canvas>
+        </div>
+
+        <div class="controls-col">
+            <div class="panel">
+                <h3>තරංග පාලක (Wave Controls)</h3>
+                
+                <div class="control-group">
+                    <label>සංඛ්‍යාතය (Frequency - f): <span class="val-badge" id="val-f">1.5 Hz</span></label>
+                    <input type="range" id="slider-f" min="0.5" max="3.0" step="0.1" value="1.5" oninput="updatePhysics('f')">
+                    <div style="font-size:11px; color:#8b949e; margin-top:4px;">(ප්‍රභවය කම්පනය වන වේගය)</div>
+                </div>
+
+                <div class="control-group">
+                    <label>තරංග ප්‍රවේගය (Velocity - v): <span class="val-badge" id="val-v">150 px/s</span></label>
+                    <input type="range" id="slider-v" min="50" max="300" step="10" value="150" oninput="updatePhysics('v')">
+                    <div style="font-size:11px; color:#8b949e; margin-top:4px;">(තරංගය ඉදිරියට ගමන් කරන වේගය)</div>
+                </div>
+                
+                <button id="btn-play" class="btn-play" onclick="togglePlay()">Pause Animation ⏸</button>
+            </div>
+
+            <div class="panel">
+                <h3>සජීවී ගණනය (v = fλ)</h3>
+                <div class="formula-box">
+                    තරංග ආයාමය (λ) = v / f
+                    <span class="highlight-text" id="calc-lambda">100.0 px</span>
+                </div>
+                
+                <div id="dynamic-alert" class="alert-box">
+                    💡 v නියත විට, f වැඩි කරද්දී λ අඩුවේ! (තරංග තදබද වේ).
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Physics State & UI
+    let t = 0; // Time
+    let isPlaying = true;
+    let animFrame;
+    
+    // Config
+    let f = 1.5;     // Hz (oscillations per sec)
+    let v = 150;     // px per sec
+    let lambda = 100; // px
+    
+    const canvas = document.getElementById('waveCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Wave parameters
+    const A_trans = 50; // Amplitude for transverse
+    const A_long = 25;  // Amplitude for longitudinal
+    
+    // Initialize
+    function init() {
+        // Fix for HDPI / sharp rendering
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        updatePhysics('init');
+        loop();
+    }
+
+    function updatePhysics(source) {
+        f = parseFloat(document.getElementById('slider-f').value);
+        v = parseFloat(document.getElementById('slider-v').value);
+        
+        lambda = v / f; // The core equation!
+        
+        // Update UI
+        document.getElementById('val-f').innerText = f.toFixed(1) + " Hz";
+        document.getElementById('val-v').innerText = v + " px/s";
+        document.getElementById('calc-lambda').innerText = lambda.toFixed(1) + " px";
+        
+        // Update Alerts dynamically
+        const alertBox = document.getElementById('dynamic-alert');
+        if (source === 'f') {
+            alertBox.innerHTML = "💡 <b>v නියත විට, f වෙනස් කිරීමෙන් λ වෙනස් වේ.</b><br>(සංඛ්‍යාතය වැඩි වන විට තරංග ආයාමය අඩුවේ!)";
+            alertBox.style.borderColor = "#bc8cff";
+            alertBox.style.color = "#bc8cff";
+            alertBox.style.background = "rgba(188, 140, 255, 0.1)";
+        } else if (source === 'v') {
+            alertBox.innerHTML = "💡 <b>f නියත විට, v වෙනස් කිරීමෙන් λ වෙනස් වේ.</b><br>(මාධ්‍යය වෙනස් වීම නිසා ප්‍රවේගය වැඩි වූ විට λ වැඩි වේ!)";
+            alertBox.style.borderColor = "#58a6ff";
+            alertBox.style.color = "#58a6ff";
+            alertBox.style.background = "rgba(88, 166, 255, 0.1)";
+        }
+    }
+
+    function togglePlay() {
+        isPlaying = !isPlaying;
+        const btn = document.getElementById('btn-play');
+        if (isPlaying) {
+            btn.innerText = "Pause Animation ⏸";
+            btn.style.backgroundColor = "#238636";
+            btn.style.borderColor = "#2ea043";
+        } else {
+            btn.innerText = "Play Animation ⏵";
+            btn.style.backgroundColor = "#d29922";
+            btn.style.borderColor = "#d29922";
+        }
+    }
+
+    function drawWave() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Calculate Omega (w) and wave number (k)
+        const w = 2 * Math.PI * f;
+        const k = (2 * Math.PI) / lambda;
+        
+        // --- 1. TRANSVERSE WAVE (Top Lane) ---
+        const transCenterY = 120;
+        
+        // Draw Lane Info
+        ctx.fillStyle = "#8b949e"; ctx.font = "bold 14px sans-serif";
+        ctx.fillText("තීර්යක් තරංගය (Transverse Wave)", 20, 30);
+        ctx.font = "12px sans-serif";
+        ctx.fillText("අංශු කම්පනය: ඉහළ-පහළ (ලම්භකව)", 20, 50);
+        
+        // Draw Center Line
+        ctx.strokeStyle = "#30363d"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(0, transCenterY); ctx.lineTo(canvas.width, transCenterY); ctx.stroke();
+        
+        // Draw Wave Curve
+        ctx.strokeStyle = "rgba(88, 166, 255, 0.5)"; ctx.lineWidth = 2;
+        ctx.beginPath();
+        for(let x = 0; x <= canvas.width; x += 2) {
+            // y(x,t) = A * sin(kx - wt)
+            let y = transCenterY - A_trans * Math.sin(k * x - w * t);
+            if(x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Draw Particles
+        const numParticles = 40;
+        const spacing = canvas.width / numParticles;
+        const highlightIndex = Math.floor(numParticles / 2); // Center particle
+        
+        for(let i = 0; i <= numParticles; i++) {
+            let basex = i * spacing;
+            let currentY = transCenterY - A_trans * Math.sin(k * basex - w * t);
+            
+            if(i === highlightIndex) {
+                // Highlight Path (Vertical line)
+                ctx.strokeStyle = "rgba(255, 123, 114, 0.3)"; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.moveTo(basex, transCenterY - A_trans); ctx.lineTo(basex, transCenterY + A_trans); ctx.stroke();
+                
+                // Highlight Particle
+                ctx.fillStyle = "#ff7b72"; ctx.shadowBlur = 10; ctx.shadowColor = "#ff7b72";
+                ctx.beginPath(); ctx.arc(basex, currentY, 6, 0, Math.PI*2); ctx.fill();
+                ctx.shadowBlur = 0;
+            } else {
+                ctx.fillStyle = "#58a6ff";
+                ctx.beginPath(); ctx.arc(basex, currentY, 3, 0, Math.PI*2); ctx.fill();
+            }
+        }
+        
+        // Divider
+        ctx.strokeStyle = "rgba(48, 54, 61, 0.8)"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, canvas.height/2); ctx.lineTo(canvas.width, canvas.height/2); ctx.stroke();
+
+        // --- 2. LONGITUDINAL WAVE (Bottom Lane) ---
+        const longCenterY = 340;
+        
+        // Draw Lane Info
+        ctx.fillStyle = "#8b949e"; ctx.font = "bold 14px sans-serif";
+        ctx.fillText("අන්වායාම තරංගය (Longitudinal Wave)", 20, canvas.height/2 + 30);
+        ctx.font = "12px sans-serif";
+        ctx.fillText("අංශු කම්පනය: ඉදිරියට-පසුපසට (සමාන්තරව)", 20, canvas.height/2 + 50);
+        
+        // Draw Longitudinal Particles (Represented as vertical air layers/lines)
+        const numLines = 80;
+        const lineSpacing = canvas.width / numLines;
+        const highlightLineIndex = Math.floor(numLines / 2); // Center layer
+        
+        for(let i = 0; i <= numLines; i++) {
+            let basex = i * lineSpacing;
+            // Displacement is horizontal! x(t) = basex + A * sin(kx - wt)
+            // Notice it uses sin(kx - wt) so compressions align perfectly with transverse peaks visually if needed, 
+            // but usually we want to show compressions moving right.
+            let displacement = A_long * Math.sin(k * basex - w * t);
+            let currentX = basex + displacement;
+            
+            if(i === highlightLineIndex) {
+                // Highlight Path (Horizontal track)
+                ctx.strokeStyle = "rgba(255, 123, 114, 0.3)"; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.moveTo(basex - A_long, longCenterY); ctx.lineTo(basex + A_long, longCenterY); ctx.stroke();
+                
+                // Highlight Particle (Red vertical bar)
+                ctx.strokeStyle = "#ff7b72"; ctx.lineWidth = 4; ctx.shadowBlur = 10; ctx.shadowColor = "#ff7b72";
+                ctx.beginPath(); ctx.moveTo(currentX, longCenterY - 40); ctx.lineTo(currentX, longCenterY + 40); ctx.stroke();
+                ctx.shadowBlur = 0;
+            } else {
+                // Normal Particle (Purple vertical bar)
+                ctx.strokeStyle = "rgba(188, 140, 255, 0.8)"; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(currentX, longCenterY - 30); ctx.lineTo(currentX, longCenterY + 30); ctx.stroke();
+            }
+        }
+        
+        // Draw Wavelength (λ) indicators (Top transverse wave)
+        // Find peaks
+        let peak1 = (w * t + Math.PI/2) / k; 
+        // Ensure it's on screen
+        while(peak1 > lambda) peak1 -= lambda;
+        let peak2 = peak1 + lambda;
+        
+        if (peak2 < canvas.width) {
+            ctx.strokeStyle = "#c9d1d9"; ctx.lineWidth = 1; ctx.setLineDash([5, 5]);
+            // Vert lines from peaks
+            ctx.beginPath(); ctx.moveTo(peak1, transCenterY - A_trans - 10); ctx.lineTo(peak1, transCenterY - A_trans - 40); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(peak2, transCenterY - A_trans - 10); ctx.lineTo(peak2, transCenterY - A_trans - 40); ctx.stroke();
+            
+            // Horizontal bracket
+            ctx.setLineDash([]);
+            ctx.beginPath(); 
+            ctx.moveTo(peak1, transCenterY - A_trans - 30); 
+            ctx.lineTo(peak2, transCenterY - A_trans - 30); 
+            ctx.stroke();
+            
+            // Text lambda
+            ctx.fillStyle = "#fff"; ctx.font = "bold 14px sans-serif"; ctx.textAlign = "center";
+            ctx.fillText("λ = " + lambda.toFixed(0) + " px", (peak1 + peak2)/2, transCenterY - A_trans - 38);
+            ctx.textAlign = "left"; // reset
+        }
+    }
+
+    function loop() {
+        if (isPlaying) {
+            // Delta time: since we want to move 'v' pixels per second, 
+            // dt should correspond to 1/60th of a second for 60fps.
+            t += 1/60; 
+        }
+        drawWave();
+        animFrame = requestAnimationFrame(loop);
+    }
+
+    // Attach resize listener to keep canvas sharp
+    window.addEventListener('resize', () => {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        if(!isPlaying) drawWave();
+    });
+
+    window.onload = init;
+
+</script>
+
+</body>
+</html>

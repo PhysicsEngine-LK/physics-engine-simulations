@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Wave Properties Lab</title>
+    <style>
+        body {
+            background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', sans-serif;
+            display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; min-height: 100vh;
+        }
+        #app-container {
+            background-color: #161b22; border: 1px solid #30363d; border-radius: 12px;
+            padding: 25px; box-shadow: 0 0 40px rgba(0,0,0,0.8); width: 1150px;
+        }
+        h2 { color: #bc8cff; margin-top: 0; text-transform: uppercase; letter-spacing: 1.5px; text-align: center; }
+        p.subtitle { color: #8b949e; font-size: 14px; margin-bottom: 20px; text-align: center; }
+        
+        .main-layout { display: grid; grid-template-columns: 750px 330px; gap: 20px; align-items: start; }
+
+        /* Canvas Area */
+        .screen {
+            background-color: #000; border-radius: 8px; border: 1px solid #30363d;
+            width: 100%; height: 500px; position: relative; overflow: hidden;
+            box-shadow: inset 0 0 30px rgba(88, 166, 255, 0.05);
+        }
+        canvas { width: 100%; height: 100%; display: block; }
+        
+        /* Controls Area */
+        .controls-col { display: flex; flex-direction: column; gap: 15px; }
+
+        /* Tab Buttons */
+        .tab-nav { display: flex; flex-direction: column; gap: 8px; margin-bottom: 5px; }
+        .tab-btn {
+            background: #21262d; border: 1px solid #30363d; color: #c9d1d9; padding: 12px;
+            border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px;
+        }
+        .tab-btn:hover { background: #30363d; }
+        .tab-btn.active { background: #58a6ff; color: #000; border-color: #58a6ff; box-shadow: 0 0 10px rgba(88,166,255,0.4); }
+        
+        .panel { background-color: #21262d; padding: 20px; border-radius: 8px; border: 1px solid #30363d; display: none; }
+        .panel.active { display: block; }
+        .panel h3 { margin-top: 0; color: #58a6ff; font-size: 16px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        
+        /* UI Elements */
+        .control-group { margin-bottom: 15px; }
+        label { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 13px; color: #c9d1d9;}
+        .val-badge { color: #58a6ff; font-family: monospace; font-size: 15px;}
+        input[type="range"] { width: 100%; accent-color: #58a6ff; cursor: pointer; }
+        
+        .btn-action { 
+            background-color: #238636; color: white; border: 1px solid #2ea043;
+            width: 100%; padding: 12px; font-weight: bold; cursor: pointer;
+            border-radius: 5px; transition: 0.2s; font-size: 15px; margin-top: 10px;
+        }
+        .btn-action:hover { background-color: #2ea043; }
+        
+        /* Toggle Switch */
+        .radio-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .radio-btn {
+            flex: 1; padding: 10px; text-align: center; background: #0d1117; border: 1px solid #30363d;
+            border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: bold;
+        }
+        .radio-btn.selected { background: #bc8cff; color: #000; border-color: #bc8cff; }
+
+        .info-box {
+            background-color: #0d1117; border: 1px dashed #3fb950;
+            padding: 12px; border-radius: 6px; text-align: center; 
+            font-family: monospace; font-size: 14px; color: #3fb950; margin-top: 15px; line-height: 1.6;
+        }
+        .alert-badge { display: block; margin-top: 10px; padding: 10px; background: rgba(210,153,34,0.15); border: 1px solid #d29922; color: #d29922; border-radius: 5px; font-size: 13px; font-weight: bold; text-align: center;}
+        
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <h2>තරංගවල මූලික ගුණ (Properties of Waves)</h2>
+    <p class="subtitle">මායිම්වලදී හැසිරීම, දෛශික එකතු වීම සහ නුගැසුම් ඇතිවීම අත්හදා බලන්න.</p>
+
+    <div class="main-layout">
+        <div class="screen">
+            <canvas id="mainCanvas"></canvas>
+        </div>
+
+        <div class="controls-col">
+            <div class="tab-nav">
+                <button class="tab-btn active" onclick="switchTab(1)" id="tab-btn-1">1. මායිම් පරාවර්තනය (Reflection)</button>
+                <button class="tab-btn" onclick="switchTab(2)" id="tab-btn-2">2. අධිස්ථාපනය (Superposition)</button>
+                <button class="tab-btn" onclick="switchTab(3)" id="tab-btn-3">3. නුගැසුම් (Beats)</button>
+            </div>
+
+            <div class="panel active" id="panel-1">
+                <h3>මායිම් පරාවර්තනය</h3>
+                <label style="color:#bc8cff;">මායිමේ ස්වභාවය තෝරන්න:</label>
+                <div class="radio-group">
+                    <div class="radio-btn selected" id="opt-fixed" onclick="setBoundary('fixed')">දෘඪ අන්තය (Fixed)</div>
+                    <div class="radio-btn" id="opt-free" onclick="setBoundary('free')">නිදහස් අන්තය (Free)</div>
+                </div>
+                <button class="btn-action" onclick="sendPulse1()">තරංගයක් යවන්න ⏵</button>
+                
+                <div class="info-box" id="info-1">
+                    දෘඪ අන්තයේදී හැපී එන තරංගය <span style="color:#ff7b72;">යටිකුරු වී</span> (180° කලා වෙනසක් සහිතව) පරාවර්තනය වේ.
+                </div>
+            </div>
+
+            <div class="panel" id="panel-2">
+                <h3>තරංග අධිස්ථාපනය</h3>
+                <div class="control-group">
+                    <label>තරංගය 1 විස්තාරය: <span class="val-badge" id="val-a1">+80</span></label>
+                    <input type="range" id="slider-a1" min="-100" max="100" step="10" value="80" oninput="updateP2()">
+                </div>
+                <div class="control-group">
+                    <label>තරංගය 2 විස්තාරය: <span class="val-badge" id="val-a2">-60</span></label>
+                    <input type="range" id="slider-a2" min="-100" max="100" step="10" value="-60" oninput="updateP2()">
+                </div>
+                <button class="btn-action" onclick="sendPulse2()">තරංග එකිනෙක යවන්න ⏵</button>
+                
+                <div class="info-box">
+                    සම්ප්‍රයුක්ත විස්ථාපනය = y₁ + y₂<br>
+                    <span style="color:#8b949e; font-size:12px;">(දෛශික ඓක්‍යයට සමාන වේ)</span>
+                </div>
+            </div>
+
+            <div class="panel" id="panel-3">
+                <h3>නුගැසුම් (Beats)</h3>
+                <div class="control-group">
+                    <label>සුරුති දෙබල 1 (f₁): <span class="val-badge">400 Hz (නියතයි)</span></label>
+                </div>
+                <div class="control-group">
+                    <label>සුරුති දෙබල 2 (f₂): <span class="val-badge" id="val-f2" style="color:#ff7b72;">405 Hz</span></label>
+                    <input type="range" id="slider-f2" min="380" max="420" step="1" value="405" oninput="updateP3()">
+                </div>
+                
+                <div class="info-box" style="font-size: 16px; color:#bc8cff;">
+                    නුගැසුම් සංඛ්‍යාතය (f_b) <br> = |f₁ - f₂|<br>
+                    = <b id="val-beat">5 Hz</b>
+                </div>
+                
+                <div class="alert-badge">
+                    සුරුති දෙබලකට ඉටි ගෑ විට සංඛ්‍යාතය අඩුවේ! පීරු විට සංඛ්‍යාතය වැඩිවේ!
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Global State
+    let currentTab = 1;
+    let time = 0;
+    let animFrame;
+
+    // Mode 1 State
+    let isFixed = true;
+    let p1_active = false;
+    let p1_t = 0;
+    
+    // Mode 2 State
+    let p2_active = false;
+    let p2_t = 0;
+    let A1 = 80;
+    let A2 = -60;
+
+    // Mode 3 State
+    let f2 = 405;
+
+    function resize() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        time = 0;
+        
+        // Update Buttons
+        for(let i=1; i<=3; i++) {
+            document.getElementById(`tab-btn-${i}`).classList.remove('active');
+            document.getElementById(`panel-${i}`).classList.remove('active');
+        }
+        document.getElementById(`tab-btn-${tab}`).classList.add('active');
+        document.getElementById(`panel-${tab}`).classList.add('active');
+        
+        // Reset specific states
+        if(tab === 1) p1_active = false;
+        if(tab === 2) p2_active = false;
+    }
+
+    // --- Mode 1 Controllers ---
+    function setBoundary(type) {
+        isFixed = (type === 'fixed');
+        document.getElementById('opt-fixed').classList.toggle('selected', isFixed);
+        document.getElementById('opt-free').classList.toggle('selected', !isFixed);
+        
+        const info = document.getElementById('info-1');
+        if(isFixed) {
+            info.innerHTML = 'දෘඪ අන්තයේදී හැපී එන තරංගය <span style="color:#ff7b72;">යටිකුරු වී</span> (180° කලා වෙනසක් සහිතව) පරාවර්තනය වේ.';
+        } else {
+            info.innerHTML = 'නිදහස් අන්තයේදී හැපී එන තරංගය <span style="color:#58a6ff;">හැඩයේ වෙනසක් නොමැතිව</span> (0° කලා වෙනසක් සහිතව) පරාවර්තනය වේ.';
+        }
+        p1_active = false;
+    }
+
+    function sendPulse1() {
+        p1_t = 0;
+        p1_active = true;
+    }
+
+    // --- Mode 2 Controllers ---
+    function updateP2() {
+        A1 = parseInt(document.getElementById('slider-a1').value);
+        A2 = parseInt(document.getElementById('slider-a2').value);
+        document.getElementById('val-a1').innerText = (A1 > 0 ? "+" : "") + A1;
+        document.getElementById('val-a2').innerText = (A2 > 0 ? "+" : "") + A2;
+        p2_active = false; // pause to let user see
+        draw();
+    }
+    function sendPulse2() {
+        p2_t = 0;
+        p2_active = true;
+    }
+
+    // --- Mode 3 Controllers ---
+    function updateP3() {
+        f2 = parseInt(document.getElementById('slider-f2').value);
+        document.getElementById('val-f2').innerText = f2 + " Hz";
+        document.getElementById('val-beat').innerText = Math.abs(400 - f2) + " Hz";
+    }
+
+    // --- DRAWING LOGIC ---
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        if (currentTab === 1) {
+            drawMode1();
+        } else if (currentTab === 2) {
+            drawMode2();
+        } else if (currentTab === 3) {
+            drawMode3();
+        }
+    }
+
+    // MODE 1: Reflection
+    function drawMode1() {
+        const centerY = canvas.height / 2;
+        const boundaryX = 650;
+        const v = 250; // speed
+        
+        // Draw Guide line
+        ctx.strokeStyle = "#30363d"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(boundaryX, centerY); ctx.stroke();
+        
+        // Draw Boundary
+        if (isFixed) {
+            // Draw Wall
+            ctx.fillStyle = "#8b949e";
+            ctx.fillRect(boundaryX, centerY - 100, 30, 200);
+            for(let i=0; i<10; i++) {
+                ctx.beginPath(); ctx.moveTo(boundaryX + 30, centerY - 90 + i*20); ctx.lineTo(boundaryX + 40, centerY - 100 + i*20); ctx.stroke();
+            }
+        } else {
+            // Draw Pole
+            ctx.strokeStyle = "#8b949e"; ctx.lineWidth = 6;
+            ctx.beginPath(); ctx.moveTo(boundaryX, centerY - 150); ctx.lineTo(boundaryX, centerY + 150); ctx.stroke();
+        }
+
+        let y_at_boundary = 0;
+
+        // Draw Wave
+        ctx.strokeStyle = "#58a6ff"; ctx.lineWidth = 3;
+        ctx.beginPath();
+        for (let x = 0; x <= boundaryX; x++) {
+            let y = 0;
+            if (p1_active) {
+                let inc_x = 50 + v * p1_t;
+                let ref_x = 2 * boundaryX - inc_x;
+                
+                let A = 100;
+                let W = 2000; // Pulse width
+                
+                let val_inc = A * Math.exp(-Math.pow(x - inc_x, 2) / W);
+                let val_ref = (isFixed ? -A : A) * Math.exp(-Math.pow(x - ref_x, 2) / W);
+                
+                y = val_inc;
+                // Add reflection if it's "bouncing back" into the domain
+                if (inc_x > boundaryX - 200) { 
+                    y += val_ref;
+                }
+                
+                if (x === boundaryX) y_at_boundary = y;
+            }
+            if(x === 0) ctx.moveTo(x, centerY - y);
+            else ctx.lineTo(x, centerY - y);
+        }
+        ctx.stroke();
+
+        // Draw Ring for Free End
+        if (!isFixed) {
+            ctx.strokeStyle = "#ff7b72"; ctx.lineWidth = 4; ctx.fillStyle = "#0d1117";
+            ctx.beginPath(); ctx.ellipse(boundaryX, centerY - y_at_boundary, 10, 25, 0, 0, Math.PI*2); 
+            ctx.fill(); ctx.stroke();
+        }
+        
+        // Text
+        ctx.fillStyle = "#8b949e"; ctx.font = "14px sans-serif";
+        ctx.fillText(isFixed ? "දෘඪ මායිම" : "නිදහස් මායිම", boundaryX - 40, centerY - 160);
+    }
+
+    // MODE 2: Superposition
+    function drawMode2() {
+        const centerY = canvas.height / 2;
+        const v = 150;
+        
+        ctx.strokeStyle = "#30363d"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(canvas.width, centerY); ctx.stroke();
+        
+        let p1_x = 100;
+        let p2_x = canvas.width - 100;
+        
+        if (p2_active) {
+            p1_x = 100 + v * p2_t;
+            p2_x = canvas.width - 100 - v * p2_t;
+        }
+
+        ctx.beginPath();
+        
+        let path1 = new Path2D();
+        let path2 = new Path2D();
+        let pathSum = new Path2D();
+        
+        for (let x = 0; x <= canvas.width; x++) {
+            let y1 = A1 * Math.exp(-Math.pow(x - p1_x, 2) / 1500);
+            let y2 = A2 * Math.exp(-Math.pow(x - p2_x, 2) / 1500);
+            let ySum = y1 + y2;
+            
+            if (x === 0) {
+                path1.moveTo(x, centerY - y1);
+                path2.moveTo(x, centerY - y2);
+                pathSum.moveTo(x, centerY - ySum);
+            } else {
+                path1.lineTo(x, centerY - y1);
+                path2.lineTo(x, centerY - y2);
+                pathSum.lineTo(x, centerY - ySum);
+            }
+        }
+        
+        // Draw individual pulses (dashed)
+        ctx.setLineDash([5, 5]);
+        ctx.strokeStyle = "rgba(88, 166, 255, 0.6)"; ctx.lineWidth = 2; ctx.stroke(path1);
+        ctx.strokeStyle = "rgba(255, 123, 114, 0.6)"; ctx.lineWidth = 2; ctx.stroke(path2);
+        ctx.setLineDash([]);
+        
+        // Draw Sum (solid, thick)
+        ctx.strokeStyle = "#bc8cff"; ctx.lineWidth = 4; ctx.stroke(pathSum);
+        
+        // Labels
+        ctx.fillStyle = "#58a6ff"; ctx.font = "14px sans-serif"; ctx.fillText("තරංගය 1", p1_x - 30, centerY - A1 - (A1>0?20:-30));
+        ctx.fillStyle = "#ff7b72"; ctx.fillText("තරංගය 2", p2_x - 30, centerY - A2 - (A2>0?20:-30));
+        
+        if(p2_active && Math.abs(p1_x - p2_x) < 50) {
+            ctx.fillStyle = "#bc8cff"; ctx.font = "bold 16px sans-serif";
+            ctx.fillText("සම්ප්‍රයුක්තය (y₁ + y₂)", canvas.width/2 - 70, 50);
+        }
+    }
+
+    // MODE 3: Beats
+    function drawMode3() {
+        const laneH = canvas.height / 3;
+        
+        const f1 = 400; // Reference
+        // Map to visual frequencies. A small multiplier makes the wave look good on screen.
+        const vis_f1 = 0.05; 
+        const vis_f2 = 0.05 * (f2 / f1);
+        const speed = 2;
+        
+        for (let i=0; i<3; i++) {
+            let cy = i * laneH + laneH / 2;
+            ctx.strokeStyle = "#30363d"; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(canvas.width, cy); ctx.stroke();
+            
+            // Labels
+            ctx.fillStyle = "#c9d1d9"; ctx.font = "12px sans-serif";
+            if(i===0) { ctx.fillStyle="#58a6ff"; ctx.fillText(`f₁ = ${f1} Hz`, 10, cy - 35); }
+            if(i===1) { ctx.fillStyle="#ff7b72"; ctx.fillText(`f₂ = ${f2} Hz`, 10, cy - 35); }
+            if(i===2) { ctx.fillStyle="#bc8cff"; ctx.font="bold 14px sans-serif"; ctx.fillText("නුගැසුම් (Beats Envelope)", 10, cy - 50); }
+        }
+        
+        let path1 = new Path2D();
+        let path2 = new Path2D();
+        let pathSum = new Path2D();
+        let pathEnv1 = new Path2D(); // Top envelope
+        let pathEnv2 = new Path2D(); // Bottom envelope
+        
+        const A = 30; // Amplitude
+        
+        for (let x = 0; x <= canvas.width; x++) {
+            // Snapshot in space shifting with time
+            let y1 = A * Math.sin(vis_f1 * x - speed * time);
+            let y2 = A * Math.sin(vis_f2 * x - speed * time);
+            let ySum = y1 + y2;
+            
+            // Mathematical envelope calculation: 2A * cos((k1-k2)x/2 - (w1-w2)t/2)
+            let env = 2 * A * Math.cos( ((vis_f1 - vis_f2)/2)*x - ((speed - speed*(f2/f1))/2)*time );
+            
+            if (x === 0) {
+                path1.moveTo(x, laneH/2 - y1);
+                path2.moveTo(x, laneH + laneH/2 - y2);
+                pathSum.moveTo(x, 2*laneH + laneH/2 - ySum);
+                pathEnv1.moveTo(x, 2*laneH + laneH/2 - Math.abs(env));
+                pathEnv2.moveTo(x, 2*laneH + laneH/2 + Math.abs(env));
+            } else {
+                path1.lineTo(x, laneH/2 - y1);
+                path2.lineTo(x, laneH + laneH/2 - y2);
+                pathSum.lineTo(x, 2*laneH + laneH/2 - ySum);
+                pathEnv1.lineTo(x, 2*laneH + laneH/2 - Math.abs(env));
+                pathEnv2.lineTo(x, 2*laneH + laneH/2 + Math.abs(env));
+            }
+        }
+        
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#58a6ff"; ctx.stroke(path1);
+        ctx.strokeStyle = "#ff7b72"; ctx.stroke(path2);
+        
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#bc8cff"; ctx.stroke(pathSum);
+        
+        // Draw Envelopes (Dashed)
+        ctx.setLineDash([4, 4]); ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.stroke(pathEnv1); ctx.stroke(pathEnv2);
+        ctx.setLineDash([]);
+    }
+
+    // MAIN LOOP
+    function loop() {
+        if (currentTab === 1 && p1_active) p1_t += 1/60;
+        if (currentTab === 2 && p2_active) p2_t += 1/60;
+        if (currentTab === 3) time += 1/60;
+        
+        draw();
+        animFrame = requestAnimationFrame(loop);
+    }
+
+    // Init
+    resize();
+    window.addEventListener('resize', resize);
+    loop();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Doppler Effect Master Lab</title>
+    <style>
+        body {
+            background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', Tahoma, sans-serif;
+            display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; min-height: 100vh;
+        }
+        #app-container {
+            background-color: #161b22; border: 1px solid #30363d; border-radius: 12px;
+            padding: 25px; box-shadow: 0 0 40px rgba(0,0,0,0.9); width: 1150px; position: relative;
+        }
+        h2 { color: #bc8cff; margin-top: 0; text-transform: uppercase; letter-spacing: 1.5px; text-align: center; }
+        p.subtitle { color: #8b949e; font-size: 14px; margin-bottom: 20px; text-align: center; }
+        
+        .main-layout { display: grid; grid-template-columns: 720px 360px; gap: 20px; align-items: start; }
+
+        /* Left Column: Visualizer & Graph */
+        .visuals-col { display: flex; flex-direction: column; gap: 15px; }
+
+        .box {
+            background-color: #090d13; border-radius: 8px; border: 1px solid #30363d;
+            position: relative; overflow: hidden;
+        }
+        .radar-box { height: 350px; box-shadow: inset 0 0 30px rgba(88, 166, 255, 0.05); }
+        .graph-box { height: 230px; }
+        
+        canvas { width: 100%; height: 100%; display: block; }
+        
+        /* Right Column: Controls */
+        .controls-col { display: flex; flex-direction: column; gap: 15px; }
+        .panel { background-color: #21262d; padding: 20px; border-radius: 8px; border: 1px solid #30363d; }
+        .panel h3 { margin-top: 0; color: #58a6ff; font-size: 16px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        
+        .control-group { margin-bottom: 12px; }
+        label { display: flex; justify-content: space-between; margin-bottom: 6px; font-weight: bold; font-size: 13px; color: #c9d1d9;}
+        .val-badge { font-family: monospace; font-size: 15px; font-weight: bold;}
+        
+        input[type="range"] { width: 100%; cursor: pointer; }
+        
+        /* The 4 Preset Buttons */
+        .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .mode-btn {
+            background-color: #0d1117; border: 1px solid #30363d; color: #8b949e;
+            padding: 10px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .mode-btn.active { background-color: #bc8cff; color: #000; border-color: #bc8cff; box-shadow: 0 0 15px rgba(188,140,255,0.3); }
+        .mode-btn:hover:not(.active) { background-color: #30363d; color: #c9d1d9; }
+
+        /* Action Buttons */
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        .btn {
+            flex: 1; padding: 10px; font-weight: bold; cursor: pointer;
+            border-radius: 5px; transition: 0.2s; font-size: 14px; border: 1px solid;
+        }
+        .btn-play { background-color: #238636; color: white; border-color: #2ea043; }
+        .btn-play:hover { background-color: #2ea043; }
+        .btn-reset { background-color: #21262d; color: #ff7b72; border-color: #ff7b72; }
+        .btn-reset:hover { background-color: #ff7b72; color: #0d1117; }
+
+        /* LIVE EQUATION UI */
+        .math-box {
+            background-color: #0d1117; border: 1px dashed #bc8cff;
+            padding: 12px 5px; border-radius: 6px; text-align: center; 
+            color: #c9d1d9; margin-bottom: 5px; display: flex; flex-direction: column; align-items: center;
+        }
+        .equation-layout {
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+            font-family: 'Consolas', monospace; font-size: 14px; font-weight: bold; white-space: nowrap;
+        }
+        .fraction { display: inline-flex; flex-direction: column; align-items: center; margin: 0 2px; }
+        .numerator { padding: 0 4px 4px 4px; border-bottom: 2px solid #58a6ff; color: #c9d1d9; width: 100%; text-align: center; }
+        .denominator { padding: 4px 4px 0 4px; color: #8b949e; width: 100%; text-align: center; }
+        .f-prime { font-size: 22px; color: #3fb950; font-weight: bold; margin-left: 2px;}
+        .watermark {
+            position: absolute;
+            z-index: 2;
+            pointer-events: none;
+            color: rgba(201, 209, 217, 0.22);
+            font-family: monospace;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .watermark-top-left { left: 16px; top: 14px; }
+        .watermark-center { left: 50%; top: 52%; transform: translate(-50%, -50%) rotate(-12deg); opacity: 0.14; }
+        .watermark-bottom-right { right: 16px; bottom: 14px; z-index: 2; }
+
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <h2>ඩොප්ලර් ආචරණය (Doppler Effect Master Lab)</h2>
+    <p class="subtitle">ප්‍රධාන අවස්ථා 4 සහ සාපේක්ෂ ප්‍රවේගයන් අනුව සජීවීව යාවත්කාලීන වන සමීකරණය.</p>
+
+    <div class="main-layout">
+        <div class="visuals-col">
+            <div class="box radar-box">
+                <canvas id="radarCanvas"></canvas>
+            </div>
+            <div class="box graph-box">
+                <canvas id="graphCanvas"></canvas>
+            </div>
+        </div>
+
+        <div class="controls-col">
+            <div class="panel">
+                <div class="mode-grid">
+                    <button class="mode-btn active" id="btn-m1" onclick="setMode(1)">1. S පමණක් ගමන් කරයි</button>
+                    <button class="mode-btn" id="btn-m2" onclick="setMode(2)">2. O පමණක් ගමන් කරයි</button>
+                    <button class="mode-btn" id="btn-m3" onclick="setMode(3)">3. දෙදෙනාම ළං වේ (+)</button>
+                    <button class="mode-btn" id="btn-m4" onclick="setMode(4)">4. දෙදෙනාම ඈත් වේ (-)</button>
+                </div>
+
+                <div class="control-group">
+                    <label>ප්‍රභවයේ ප්‍රවේගය (vₛ): <span class="val-badge" style="color:#ff7b72" id="val-vs">150 m/s</span></label>
+                    <input type="range" id="slider-vs" min="0" max="200" step="5" value="150" oninput="updateSliders()" style="accent-color:#ff7b72;">
+                </div>
+                <div class="control-group">
+                    <label>නිරීක්ෂකයාගේ ප්‍රවේගය (vₒ): <span class="val-badge" style="color:#58a6ff" id="val-vo">0 m/s</span></label>
+                    <input type="range" id="slider-vo" min="0" max="200" step="5" value="0" oninput="updateSliders()" style="accent-color:#58a6ff;">
+                </div>
+                    <!-- wind control removed (no wind behaviour) -->
+                    <!-- <div class="control-group"> -->
+                    <!--     <label>සුළඟේ ප්‍රවේගය (w): <span class="val-badge" style="color:#38bdf8" id="val-w">0 m/s</span></label> -->
+                    <!--     <input type="range" id="slider-w" min="-50" max="50" step="5" value="0" oninput="updateSliders()" style="accent-color:#38bdf8;"> -->
+                    <!-- </div> -->
+                
+                <div class="btn-group">
+                    <button id="btn-play" class="btn btn-play" onclick="togglePlay()">Pause ⏸</button>
+                    <button class="btn btn-reset" onclick="resetSim()">Reset ↺</button>
+                </div>
+            </div>
+
+            <div class="math-box">
+                <div style="font-size: 11px; color: #8b949e; margin-bottom: 8px;">f' = f × ( O හි සාපේක්ෂ ප්‍රවේගය / S හි සාපේක්ෂ ප්‍රවේගය )</div>
+                
+                <div class="equation-layout">
+                    <div>f' = 400 &times;</div>
+                    <div class="fraction">
+                        <div class="numerator" id="eq-num">340</div>
+                        <div class="denominator" id="eq-den">340 - 150</div>
+                    </div>
+                    <div> = <span class="f-prime" id="calc-fprime">400.0</span> <span style="font-size: 12px;">Hz</span></div>
+                </div>
+            </div>
+
+            <div class="watermark watermark-top-left">Physics Engine</div>
+            <div class="watermark watermark-center">Physics Engine</div>
+            <div class="watermark watermark-bottom-right">Physics Engine</div>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+    const radarCanvas = document.getElementById('radarCanvas');
+    const rCtx = radarCanvas.getContext('2d');
+    const graphCanvas = document.getElementById('graphCanvas');
+    const gCtx = graphCanvas.getContext('2d');
+
+    const V_SOUND = 340; 
+    const F_SOURCE = 400; 
+    
+    // Config
+    let currentMode = 1; // 1: S only, 2: O only, 3: Both Towards, 4: Both Away
+    let vs_val = 150;
+    let vo_val = 0;
+    
+    // State
+    let xs = 0, xo = 0;
+    let vs_dir = 0, vo_dir = 0; // Directions: 1 for Right, -1 for Left, 0 for stop
+    let ys = 175, yo = 175; // 1D motion (Face to Face)
+    
+    let wavefronts = [];
+    let graphData = [];
+    let time = 0;
+    let lastEmitTime = 0;
+    let isPlaying = true; 
+
+    function resizeCanvases() {
+        radarCanvas.width = radarCanvas.parentElement.clientWidth;
+        radarCanvas.height = 350;
+        graphCanvas.width = graphCanvas.parentElement.clientWidth;
+        graphCanvas.height = 230;
+        ys = radarCanvas.height / 2; 
+        yo = radarCanvas.height / 2;
+        if(!isPlaying) { drawRadar(); drawGraph(); }
+    }
+    window.addEventListener('resize', resizeCanvases);
+
+    // Initial setup
+    resizeCanvases();
+
+    // Mode Controller
+    function setMode(mode) {
+        currentMode = mode;
+        
+        // Update UI Buttons
+        for(let i=1; i<=4; i++) {
+            document.getElementById('btn-m'+i).classList.remove('active');
+        }
+        document.getElementById('btn-m'+mode).classList.add('active');
+
+        // Set Slider Values based on Preset
+        if (mode === 1) { document.getElementById('slider-vs').value = 150; document.getElementById('slider-vo').value = 0; }
+        if (mode === 2) { document.getElementById('slider-vs').value = 0; document.getElementById('slider-vo').value = 150; }
+        if (mode === 3) { document.getElementById('slider-vs').value = 100; document.getElementById('slider-vo').value = 100; }
+        if (mode === 4) { document.getElementById('slider-vs').value = 100; document.getElementById('slider-vo').value = 100; }
+        
+        updateSliders();
+        resetSim();
+    }
+
+    function updateSliders() {
+        vs_val = parseFloat(document.getElementById('slider-vs').value);
+        vo_val = parseFloat(document.getElementById('slider-vo').value);
+        
+        // Force logic based on modes
+        if(currentMode === 1) vo_val = 0; 
+        if(currentMode === 2) vs_val = 0;
+
+        // Ensure sliders visually match if forced
+        document.getElementById('slider-vs').value = vs_val;
+        document.getElementById('slider-vo').value = vo_val;
+
+        document.getElementById('val-vs').innerText = vs_val + " m/s";
+        document.getElementById('val-vo').innerText = vo_val + " m/s";
+        // no wind control
+        
+        updateLiveEquation();
+    }
+
+    function resetSim() {
+        time = 0; 
+        lastEmitTime = 0;
+        wavefronts = [];
+        graphData = [];
+        
+        let cw = radarCanvas.width;
+        
+        // Set Starting Positions and Directions based on Mode
+        if (currentMode === 1) { // S only
+            xs = 50; xo = cw - 100;
+            vs_dir = 1; vo_dir = 0;
+        } else if (currentMode === 2) { // O only
+            xs = 100; xo = cw - 50;
+            vs_dir = 0; vo_dir = -1; // O moves left towards S
+        } else if (currentMode === 3) { // Both towards
+            xs = 50; xo = cw - 50;
+            vs_dir = 1; vo_dir = -1;
+        } else if (currentMode === 4) { // Both away
+            xs = cw/2 - 20; xo = cw/2 + 20;
+            vs_dir = -1; vo_dir = 1;
+        }
+
+        if(!isPlaying) { togglePlay(); } 
+    }
+
+    function togglePlay() {
+        isPlaying = !isPlaying;
+        const btn = document.getElementById('btn-play');
+        btn.innerText = isPlaying ? "Pause ⏸" : "Play ⏵";
+        btn.style.backgroundColor = isPlaying ? "#238636" : "#d29922";
+        btn.style.borderColor = isPlaying ? "#2ea043" : "#d29922";
+        btn.style.color = isPlaying ? "white" : "black";
+    }
+
+    // Mathematical Engine
+    function updateLiveEquation() {
+        // Determine Logic State (Approaching vs Receding)
+        let S_approaching_O = (vs_dir === 1 && xs <= xo) || (vs_dir === -1 && xs >= xo);
+        let O_approaching_S = (vo_dir === -1 && xo >= xs) || (vo_dir === 1 && xo <= xs);
+
+        // A/L Standard Sign Convention for Numerator (Observer)
+        let vo_sign = "";
+        let vo_math = 0;
+        if (vo_val > 0) {
+            if (O_approaching_S) { vo_sign = "+"; vo_math = vo_val; }
+            else { vo_sign = "-"; vo_math = -vo_val; }
+        }
+
+        // A/L Standard Sign Convention for Denominator (Source)
+        let vs_sign = "";
+        let vs_math = 0;
+        if (vs_val > 0) {
+            if (S_approaching_O) { vs_sign = "-"; vs_math = -vs_val; }
+            else { vs_sign = "+"; vs_math = vs_val; }
+        }
+
+        // Calculate without wind
+        let v_eff = V_SOUND;
+        let num_val = v_eff + vo_math;
+        let den_val = v_eff + vs_math; // vs_math already contains the required minus or plus
+        
+        let f_prime = F_SOURCE * (num_val / den_val);
+
+        // Update UI HTML
+        let numHtml = `${V_SOUND}`;
+        if (vo_val > 0) numHtml += ` <span style="color:#58a6ff;">${vo_sign} ${vo_val}</span>`;
+        
+        let denHtml = `${V_SOUND}`;
+        if (vs_val > 0) denHtml += ` <span style="color:#ff7b72;">${vs_sign} ${vs_val}</span>`;
+
+        document.getElementById('eq-num').innerHTML = numHtml;
+        document.getElementById('eq-den').innerHTML = denHtml;
+        document.getElementById('calc-fprime').innerText = f_prime.toFixed(1);
+        
+        return f_prime;
+    }
+
+    function drawRadar() {
+        rCtx.clearRect(0, 0, radarCanvas.width, radarCanvas.height);
+        
+        // wind removed - static medium
+
+        // Line of sight
+        rCtx.strokeStyle = "rgba(88, 166, 255, 0.3)"; rCtx.lineWidth = 1; rCtx.setLineDash([5, 5]);
+        rCtx.beginPath(); rCtx.moveTo(xs, ys); rCtx.lineTo(xo, yo); rCtx.stroke();
+        rCtx.setLineDash([]);
+
+        // Wavefronts
+        for (let i = 0; i < wavefronts.length; i++) {
+            let wf = wavefronts[i];
+            let age = time - wf.t;
+            if (age < 0) continue;
+            let r = V_SOUND * age * 0.4;
+            let cx = wf.x; 
+            
+            let alpha = Math.max(0, 0.6 - (r / 1000));
+            if (alpha > 0) {
+                rCtx.strokeStyle = `rgba(88, 166, 255, ${alpha})`; 
+                rCtx.lineWidth = 1.5;
+                rCtx.beginPath(); rCtx.arc(cx, wf.y, r, 0, Math.PI*2); rCtx.stroke();
+            }
+        }
+
+        // Ground Line
+        rCtx.strokeStyle = "#30363d"; rCtx.lineWidth = 2;
+        rCtx.beginPath(); rCtx.moveTo(0, ys + 15); rCtx.lineTo(radarCanvas.width, ys + 15); rCtx.stroke();
+
+        // Draw Observer (O)
+        rCtx.fillStyle = "#58a6ff";
+        rCtx.beginPath(); rCtx.arc(xo, yo, 8, 0, Math.PI*2); rCtx.fill();
+        rCtx.fillStyle = "#c9d1d9"; rCtx.font = "bold 14px sans-serif"; rCtx.fillText("O", xo - 5, yo - 15);
+        if (vo_val > 0) { // Observer Arrow
+            rCtx.strokeStyle = "#58a6ff"; rCtx.lineWidth = 3;
+            rCtx.beginPath(); rCtx.moveTo(xo, yo); rCtx.lineTo(xo + (vo_dir*30), yo); rCtx.stroke();
+        }
+
+        // Draw Source (S)
+        rCtx.fillStyle = "#ff7b72";
+        rCtx.beginPath(); rCtx.arc(xs, ys, 10, 0, Math.PI*2); rCtx.fill();
+        rCtx.fillStyle = "#c9d1d9"; rCtx.fillText("S", xs - 5, ys - 15);
+        if (vs_val > 0) { // Source Arrow
+            rCtx.strokeStyle = "#ff7b72"; rCtx.lineWidth = 3;
+            rCtx.beginPath(); rCtx.moveTo(xs, ys); rCtx.lineTo(xs + (vs_dir*30), ys); rCtx.stroke();
+        }
+    }
+
+    function drawGraph() {
+        gCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+        
+        let h = graphCanvas.height;
+        let w = graphCanvas.width;
+        let padX = 40;
+        let padY = 20;
+
+        // Axes (X is now TIME)
+        gCtx.strokeStyle = "#30363d"; gCtx.lineWidth = 2;
+        gCtx.beginPath(); gCtx.moveTo(padX, padY); gCtx.lineTo(padX, h - padY); gCtx.stroke(); // Y-axis
+        gCtx.beginPath(); gCtx.moveTo(padX, h/2); gCtx.lineTo(w - padX, h/2); gCtx.stroke(); // X-axis (f = 400Hz)
+        
+        gCtx.fillStyle = "#8b949e"; gCtx.font = "12px sans-serif";
+        gCtx.fillText("f' (Hz)", 5, padY - 5);
+        gCtx.fillText("කාලය (t)", w - 60, h/2 - 10);
+        gCtx.fillStyle = "#c9d1d9"; gCtx.fillText("400", 10, h/2 + 4);
+
+        if (graphData.length > 1) {
+            const safeRange = 800; // Allows huge Doppler shifts without breaking chart
+            
+            gCtx.strokeStyle = "#3fb950"; gCtx.lineWidth = 3;
+            gCtx.beginPath();
+            
+            let lastX, lastY;
+            // Map Time to X axis
+            let maxTime = Math.max(10, time); // At least 10 seconds scale
+
+            for (let i = 0; i < graphData.length; i++) {
+                let p = graphData[i];
+                let px = padX + (p.t / maxTime) * (w - 2 * padX);
+                let py = h/2 - ((p.f - 400) / safeRange) * (h/2 - padY); 
+                py = Math.max(padY, Math.min(h - padY, py)); 
+
+                if (i === 0) gCtx.moveTo(px, py);
+                else gCtx.lineTo(px, py);
+                
+                lastX = px; lastY = py;
+            }
+            gCtx.stroke();
+            
+            // Draw Current Dot
+            if(lastX && lastY) {
+                gCtx.fillStyle = "#3fb950";
+                gCtx.beginPath(); gCtx.arc(lastX, lastY, 5, 0, Math.PI*2); gCtx.fill();
+            }
+        }
+    }
+
+    function loop() {
+        if (isPlaying) {
+            time += 1/60; 
+            
+            // Move Particles Based on Modes
+            xs += (vs_dir * vs_val * 0.5 * 1/60);
+            xo += (vo_dir * vo_val * 0.5 * 1/60);
+            
+            // Auto-Reset bounds checking
+            if (xs > radarCanvas.width + 50 || xs < -50 || xo > radarCanvas.width + 50 || xo < -50) {
+                resetSim();
+            }
+
+            // Emit wavefronts from Source
+            if (time - lastEmitTime > 0.15) {
+                wavefronts.push({x: xs, y: ys, t: time});
+                lastEmitTime = time;
+            }
+
+            // Clean up old wavefronts
+            for (let i = wavefronts.length - 1; i >= 0; i--) {
+                let age = time - wavefronts[i].t;
+                if ((V_SOUND * age * 0.4) > 1500) wavefronts.splice(i, 1);
+            }
+
+            // Calculations & Live Update
+            let currentF = updateLiveEquation();
+
+            // Store Graph Data (Time vs F')
+            graphData.push({t: time, f: currentF});
+        }
+
+        drawRadar();
+        drawGraph();
+        
+        requestAnimationFrame(loop);
+    }
+
+    // Initialize
+    setMode(1);
+    loop();
+
+</script>
+</body>
+</html>

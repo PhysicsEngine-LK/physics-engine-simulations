@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Doppler Effect Master Lab</title>
+    <style>
+        body {
+            background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', Tahoma, sans-serif;
+            display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; min-height: 100vh;
+        }
+        #app-container {
+            background-color: #161b22; border: 1px solid #30363d; border-radius: 12px;
+            padding: 25px; box-shadow: 0 0 40px rgba(0,0,0,0.9); width: 1150px; position: relative;
+        }
+        h2 { color: #bc8cff; margin-top: 0; text-transform: uppercase; letter-spacing: 1.5px; text-align: center; }
+        p.subtitle { color: #8b949e; font-size: 14px; margin-bottom: 25px; text-align: center; }
+        
+        .main-layout { display: grid; grid-template-columns: 720px 360px; gap: 20px; align-items: start; }
+
+        /* Left Column: Visualizer & Graph */
+        .visuals-col { display: flex; flex-direction: column; gap: 15px; }
+
+        .box {
+            background-color: #090d13; border-radius: 8px; border: 1px solid #30363d;
+            position: relative; overflow: hidden;
+        }
+        .radar-box { height: 350px; box-shadow: inset 0 0 30px rgba(88, 166, 255, 0.05); }
+        .graph-box { height: 230px; }
+        
+        canvas { width: 100%; height: 100%; display: block; }
+        
+        /* Right Column: Controls */
+        .controls-col { display: flex; flex-direction: column; gap: 15px; }
+        .panel { background-color: #21262d; padding: 20px; border-radius: 8px; border: 1px solid #30363d; }
+        .panel h3 { margin-top: 0; color: #58a6ff; font-size: 16px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        
+        .control-group { margin-bottom: 18px; }
+        label { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 13px; color: #c9d1d9;}
+        .val-badge { color: #58a6ff; font-family: monospace; font-size: 15px;}
+        .val-vs { color: #ff7b72; }
+        .val-y { color: #bc8cff; }
+        .val-w { color: #38bdf8; }
+        
+        /* Specific Wind Highlight Badge */
+        .wind-badge { color: #38bdf8; font-family: monospace; font-size: 15px; font-weight: bold; }
+        #val-vs { color: #ff7b72; }
+        #val-y { color: #bc8cff; }
+        #val-w { color: #38bdf8; }
+        
+        input[type="range"] { width: 100%; accent-color: #58a6ff; cursor: pointer; }
+        .slider-vs { accent-color: #ff7b72; }
+        .slider-y { accent-color: #bc8cff; }
+        .slider-w { accent-color: #38bdf8; }
+        #slider-vs { accent-color: #ff7b72 !important; }
+        #slider-y { accent-color: #bc8cff !important; }
+        #slider-w { accent-color: #38bdf8 !important; }
+        
+        /* Buttons */
+        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        .btn {
+            flex: 1; padding: 12px; font-weight: bold; cursor: pointer;
+            border-radius: 5px; transition: 0.2s; font-size: 14px; border: 1px solid;
+        }
+        .btn-play { background-color: #238636; color: white; border-color: #2ea043; }
+        .btn-play:hover { background-color: #2ea043; }
+        .btn-reset { background-color: #21262d; color: #ff7b72; border-color: #ff7b72; }
+        .btn-reset:hover { background-color: #ff7b72; color: #0d1117; }
+
+        /* LIVE EQUATION UI - ULTRA COMPACT & FIXED FOR OVERFLOW */
+        .math-box {
+            background-color: #0d1117; border: 1px dashed #bc8cff;
+            padding: 12px 8px; border-radius: 6px; text-align: center; 
+            color: #c9d1d9; margin-bottom: 10px; display: flex; flex-direction: column; align-items: center;
+            width: 100%; box-sizing: border-box; overflow: hidden;
+        }
+        .math-title { font-size: 12px; color: #8b949e; margin-bottom: 12px; }
+        
+        .equation-layout {
+            display: flex; align-items: center; justify-content: center; gap: 2px;
+            font-family: 'Consolas', monospace; font-size: 13px; font-weight: bold;
+            width: 100%; box-sizing: border-box; white-space: nowrap;
+        }
+        .math-text { display: flex; align-items: center; }
+        
+        /* Fixed Fraction Engine to stretch the line completely */
+        .fraction { 
+            display: inline-flex; flex-direction: column; align-items: center; 
+            margin: 0 4px; vertical-align: middle;
+        }
+        .numerator { 
+            padding: 0 4px 4px 4px; color: #c9d1d9; text-align: center; 
+            width: 100%; box-sizing: border-box;
+            border-bottom: 2px solid #58a6ff; /* The blue line now covers 100% of the widest part */
+        }
+        .denominator { 
+            padding: 4px 4px 0 4px; color: #8b949e; text-align: center; 
+            width: 100%; box-sizing: border-box;
+        }
+        
+        .f-prime { font-size: 20px; color: #3fb950; font-weight: bold; text-shadow: 0 0 10px rgba(63, 185, 80, 0.4); margin-left: 2px;}
+        
+        /* Alerts */
+        .alert-box {
+            padding: 12px; border-radius: 6px; font-size: 13px; font-weight: bold; text-align: center;
+            background: rgba(48, 54, 61, 0.5); border: 1px solid #30363d; color: #8b949e; transition: 0.2s;
+        }
+        .alert-perp {
+            background: rgba(63, 185, 80, 0.15); border-color: #3fb950; color: #3fb950;
+            box-shadow: 0 0 20px rgba(63, 185, 80, 0.3); transform: scale(1.02);
+        }
+        .watermark {
+            position: absolute;
+            z-index: 2;
+            pointer-events: none;
+            color: rgba(201, 209, 217, 0.22);
+            font-family: monospace;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .watermark-top-left { left: 16px; top: 14px; }
+        .watermark-center { left: 50%; top: 52%; transform: translate(-50%, -50%) rotate(-12deg); opacity: 0.14; }
+        .watermark-bottom-right { right: 16px; bottom: 14px; z-index: 2; }
+
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <h2>ඩොප්ලර් ආචරණය (Doppler Effect)</h2>
+    <p class="subtitle">දෘෂ්ටි රේඛාව සහ සාපේක්ෂ ප්‍රවේගය ඔස්සේ සජීවීව යාවත්කාලීන වන සමීකරණය අධ්‍යයනය කරන්න.</p>
+
+    <div class="main-layout">
+        <div class="visuals-col">
+            <div class="box radar-box">
+                <canvas id="radarCanvas"></canvas>
+            </div>
+            <div class="box graph-box">
+                <canvas id="graphCanvas"></canvas>
+            </div>
+        </div>
+
+        <div class="controls-col">
+            <div class="panel">
+                <h3>ප්‍රවේග පාලක (Velocity Controls)</h3>
+                <div class="control-group">
+                    <label>ප්‍රභවයේ ප්‍රවේගය (vₛ): <span class="val-badge val-vs" id="val-vs">150 m/s</span></label>
+                    <input type="range" id="slider-vs" class="slider-vs" min="0" max="200" step="5" value="150" oninput="updatePhysics()">
+                </div>
+                <div class="control-group">
+                    <label>ලම්බක දුර (y-offset): <span class="val-badge val-y" id="val-y">0 m</span></label>
+                    <input type="range" id="slider-y" class="slider-y" min="0" max="200" step="5" value="0" oninput="updatePhysics()">
+                    <div style="font-size:11px; color:#8b949e; margin-top:4px;">(0 m නම් නිරීක්ෂකයා හරහාම ගමන් කරයි)</div>
+                </div>
+                <div class="control-group">
+                    <label>සුළඟේ ප්‍රවේගය (w): <span class="wind-badge" id="val-w">0 m/s</span></label>
+                    <input type="range" id="slider-w" class="slider-w" min="-50" max="50" step="5" value="0" oninput="updatePhysics()">
+                    <div style="font-size:11px; color:#8b949e; margin-top:4px;">(ධන = දකුණට, සෘණ = වමට)</div>
+                </div>
+                
+                <div class="btn-group">
+                    <button id="btn-play" class="btn btn-play" onclick="togglePlay()">Pause ⏸</button>
+                    <button class="btn btn-reset" onclick="resetSim()">Reset ↺</button>
+                </div>
+            </div>
+
+            <div class="math-box">
+                <div class="math-title">සජීවී සමීකරණය (f = 400 Hz, v = 340 m/s)</div>
+                
+                <div class="equation-layout">
+                    <div class="math-text">f' = 400 &times;</div>
+                    <div class="fraction">
+                        <div class="numerator" id="eq-num">340</div>
+                        <div class="denominator" id="eq-den">340 - (150 &times; 1.00)</div>
+                    </div>
+                    <div class="math-text"> = <span class="f-prime" id="calc-fprime">400.0</span> <span style="font-size: 12px; margin-left: 2px;">Hz</span></div>
+                </div>
+            </div>
+            
+            <div class="alert-box" id="alert-status">
+                ප්‍රභවය (S) ගමන් කරමින් පවතී...
+            </div>
+
+            <div class="watermark watermark-top-left">Physics Engine</div>
+            <div class="watermark watermark-center">Physics Engine</div>
+            <div class="watermark watermark-bottom-right">Physics Engine</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const radarCanvas = document.getElementById('radarCanvas');
+    const rCtx = radarCanvas.getContext('2d');
+    const graphCanvas = document.getElementById('graphCanvas');
+    const gCtx = graphCanvas.getContext('2d');
+
+    // Physics Constants
+    const V_SOUND = 340; // m/s
+    const F_SOURCE = 400; // Hz
+    
+    // State
+    let vs = 150;
+    let y_offset = 0; 
+    let w = 0;
+    
+    let xs = 30; 
+    let xo = 360;  
+    let ys = 175;  
+    let yo = 175 + y_offset;  
+    
+    let wavefronts = [];
+    let graphData = [];
+    
+    // Ambient Aerodynamic Wind Particle System
+    let windParticles = [];
+    for (let i = 0; i < 25; i++) {
+        windParticles.push({
+            x: Math.random() * 800,
+            y: Math.random() * 350,
+            len: 40 + Math.random() * 40,
+            speedMult: 0.6 + Math.random() * 0.6,
+            phase: Math.random() * Math.PI * 2
+        });
+    }
+    
+    let time = 0;
+    let lastEmitTime = 0;
+    let isPerpendicular = false;
+    let isPlaying = true; 
+
+    // Canvas Resolution
+    function resizeCanvases() {
+        const rRect = radarCanvas.parentElement.getBoundingClientRect();
+        radarCanvas.width = rRect.width;
+        radarCanvas.height = rRect.height;
+        
+        const gRect = graphCanvas.parentElement.getBoundingClientRect();
+        graphCanvas.width = gRect.width;
+        graphCanvas.height = gRect.height;
+        
+        xo = radarCanvas.width / 2; 
+        ys = radarCanvas.height / 2; 
+        yo = ys + y_offset;
+        
+        if(!isPlaying) { drawRadar(); drawGraph(); }
+    }
+    window.addEventListener('resize', resizeCanvases);
+    resizeCanvases();
+
+    function updatePhysics() {
+        vs = parseFloat(document.getElementById('slider-vs').value);
+        y_offset = parseFloat(document.getElementById('slider-y').value);
+        w = parseFloat(document.getElementById('slider-w').value);
+        
+        document.getElementById('val-vs').innerText = vs + " m/s";
+        document.getElementById('val-y').innerText = y_offset + " m";
+        document.getElementById('val-w').innerText = w + " m/s";
+        
+        yo = ys + y_offset;
+        graphData = []; 
+        
+        if(!isPlaying) { 
+            updateLiveEquation();
+            drawRadar(); 
+            drawGraph(); 
+        }
+    }
+
+    // Play/Pause Logic
+    function togglePlay() {
+        isPlaying = !isPlaying;
+        const btn = document.getElementById('btn-play');
+        if (isPlaying) {
+            btn.innerText = "Pause ⏸";
+            btn.style.backgroundColor = "#238636";
+            btn.style.borderColor = "#2ea043";
+            btn.style.color = "white";
+        } else {
+            btn.innerText = "Play ⏵";
+            btn.style.backgroundColor = "#d29922";
+            btn.style.borderColor = "#d29922";
+            btn.style.color = "black";
+        }
+    }
+
+    // Reset Simulation
+    function resetSim() {
+        xs = 30; 
+        wavefronts = [];
+        graphData = [];
+        time = 0; 
+        lastEmitTime = 0;
+        isPerpendicular = false;
+        
+        document.getElementById('alert-status').className = "alert-box";
+        document.getElementById('alert-status').innerText = "ප්‍රභවය (S) ගමන් කරමින් පවතී...";
+        
+        if(!isPlaying) { togglePlay(); } 
+    }
+
+    // Live Equation Display Engine
+    function updateLiveEquation() {
+        let dx = xo - xs;
+        let dy = yo - ys;
+        let d = Math.sqrt(dx*dx + dy*dy);
+        
+        let cos_theta = (d === 0) ? 0 : dx / d; 
+        
+        let v_eff = V_SOUND + w * cos_theta;
+        let vs_comp = vs * cos_theta;
+        let f_prime = F_SOURCE * (v_eff / (v_eff - vs_comp));
+        
+        // Highlight wind values inside the fraction with custom wind color span
+        let windStr = w === 0 ? "" : (w > 0 ? ` + <span style="color:#38bdf8;">${w}</span>` : ` - <span style="color:#38bdf8;">${Math.abs(w)}</span>`);
+        document.getElementById('eq-num').innerHTML = `${V_SOUND}${windStr}`;
+        
+        let cosColor = Math.abs(cos_theta) < 0.05 ? "#3fb950" : "#bc8cff"; 
+        
+        // Formatted cleanly to prevent text stacking/overflow bugs
+        document.getElementById('eq-den').innerHTML = 
+            `${V_SOUND}${windStr} - (${vs} &times; <span style="color:${cosColor}; border-bottom: 1px dotted #8b949e; cursor: help;" title="cos(&theta;)">cos&theta;=${cos_theta.toFixed(2)}</span>)`;
+            
+        document.getElementById('calc-fprime').innerText = f_prime.toFixed(1);
+        
+        return f_prime;
+    }
+
+    function drawRadar() {
+        rCtx.clearRect(0, 0, radarCanvas.width, radarCanvas.height);
+        
+        // Premium Wavy Wind Flow Live Vector Lines
+        if (w !== 0) {
+            rCtx.strokeStyle = "rgba(56, 189, 248, 0.22)"; 
+            rCtx.lineWidth = 2;
+            for (let p of windParticles) {
+                if (isPlaying) {
+                    p.x += w * p.speedMult * 0.06;
+                    p.phase += 0.03; 
+                    if (p.x > radarCanvas.width + 100) p.x = -100;
+                    if (p.x < -100) p.x = radarCanvas.width + 100;
+                }
+                
+                rCtx.beginPath();
+                let steps = 15;
+                let stepDist = (w > 0 ? p.len : -p.len) / steps;
+                for(let s = 0; s <= steps; s++) {
+                    let currentX = p.x + (s * stepDist);
+                    let currentY = p.y + Math.sin(currentX * 0.02 + p.phase) * 4;
+                    if (s === 0) rCtx.moveTo(currentX, currentY);
+                    else rCtx.lineTo(currentX, currentY);
+                }
+                rCtx.stroke();
+            }
+        }
+        
+        // Wind Text HUD Indicator
+        if (w !== 0) {
+            rCtx.fillStyle = "#38bdf8";
+            rCtx.font = "italic bold 15px sans-serif";
+            rCtx.fillText(`Wind: ${w > 0 ? "➔" : "⬅"} ${Math.abs(w)} m/s`, 20, 30);
+        }
+
+        // Line of sight
+        rCtx.strokeStyle = "rgba(88, 166, 255, 0.4)"; rCtx.lineWidth = 1; rCtx.setLineDash([5, 5]);
+        rCtx.beginPath(); rCtx.moveTo(xs, ys); rCtx.lineTo(xo, yo); rCtx.stroke();
+        rCtx.setLineDash([]);
+        
+        // Perpendicular Alert Visual (Green Line)
+        if (Math.abs(xs - xo) < 5 && y_offset !== 0) {
+            rCtx.strokeStyle = "#3fb950"; rCtx.lineWidth = 3;
+            rCtx.beginPath(); rCtx.moveTo(xo, ys); rCtx.lineTo(xo, yo); rCtx.stroke();
+        }
+
+        // Expanding Wavefronts
+        for (let i = 0; i < wavefronts.length; i++) {
+            let wf = wavefronts[i];
+            let age = time - wf.t;
+            if (age < 0) continue;
+            let r = V_SOUND * age * 0.4;
+            let cx = wf.x + (w * age * 0.4); 
+            let cy = wf.y;
+            
+            let alpha = Math.max(0, 0.6 - (r / 1200));
+            if (alpha > 0) {
+                rCtx.strokeStyle = `rgba(88, 166, 255, ${alpha})`; 
+                rCtx.lineWidth = 2;
+                rCtx.beginPath(); rCtx.arc(cx, cy, r, 0, Math.PI*2); rCtx.stroke();
+            }
+        }
+
+        // Source Path
+        rCtx.strokeStyle = "#30363d"; rCtx.lineWidth = 2; rCtx.setLineDash([10, 5]);
+        rCtx.beginPath(); rCtx.moveTo(0, ys); rCtx.lineTo(radarCanvas.width, ys); rCtx.stroke();
+        rCtx.setLineDash([]);
+
+        // Observer (O)
+        rCtx.fillStyle = "#58a6ff";
+        rCtx.beginPath(); rCtx.arc(xo, yo, 8, 0, Math.PI*2); rCtx.fill();
+        rCtx.fillStyle = "#c9d1d9"; rCtx.font = "bold 14px sans-serif"; 
+        rCtx.fillText("O", xo - 5, yo + 25);
+
+        // Source (S)
+        rCtx.fillStyle = "#ff7b72";
+        rCtx.beginPath(); rCtx.arc(xs, ys, 10, 0, Math.PI*2); rCtx.fill();
+        rCtx.fillStyle = "#c9d1d9"; rCtx.fillText("S", xs - 5, ys - 15);
+        
+        // Source Velocity Vector Arrow
+        rCtx.strokeStyle = "#ff7b72"; rCtx.lineWidth = 3;
+        rCtx.beginPath(); rCtx.moveTo(xs, ys); rCtx.lineTo(xs + 40, ys); rCtx.stroke();
+        rCtx.beginPath(); rCtx.moveTo(xs + 40, ys); rCtx.lineTo(xs + 30, ys - 5); rCtx.lineTo(xs + 30, ys + 5); rCtx.fill();
+
+        // Draw Angle θ between Velocity Vector and Line of Sight
+        let dx = xo - xs;
+        let dy = yo - ys;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        
+        if (dist > 15 && Math.abs(dy) > 5) {
+            let angle = Math.atan2(dy, dx); 
+            
+            // Draw Arc
+            rCtx.beginPath();
+            rCtx.strokeStyle = "#bc8cff"; 
+            rCtx.lineWidth = 2;
+            rCtx.arc(xs, ys, 25, 0, angle, angle < 0);
+            rCtx.stroke();
+            
+            // Draw 'θ' Label
+            let textRadius = 40;
+            let tx = xs + textRadius * Math.cos(angle / 2);
+            let ty = ys + textRadius * Math.sin(angle / 2);
+            
+            rCtx.fillStyle = "#bc8cff";
+            rCtx.font = "italic 16px sans-serif";
+            rCtx.textBaseline = "middle";
+            rCtx.fillText("θ", tx - 5, ty);
+            rCtx.textBaseline = "alphabetic"; 
+        }
+    }
+
+    function drawGraph() {
+        gCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+        
+        let h = graphCanvas.height;
+        let w = graphCanvas.width;
+        let padX = 40;
+        let padY = 20;
+
+        // Axes
+        gCtx.strokeStyle = "#30363d"; gCtx.lineWidth = 2;
+        gCtx.beginPath(); gCtx.moveTo(padX, padY); gCtx.lineTo(padX, h - padY); gCtx.stroke(); 
+        gCtx.beginPath(); gCtx.moveTo(padX, h/2); gCtx.lineTo(w - padX, h/2); gCtx.stroke(); 
+        
+        gCtx.fillStyle = "#8b949e"; gCtx.font = "12px sans-serif";
+        gCtx.fillText("f' (Hz)", 5, padY - 5);
+        gCtx.fillStyle = "#c9d1d9"; gCtx.fillText("f = 400", padX + 5, h/2 - 8);
+
+        if (graphData.length > 1) {
+            const safeRange = 600; 
+            
+            gCtx.strokeStyle = "#3fb950"; gCtx.lineWidth = 3;
+            gCtx.beginPath();
+            
+            let lastX, lastY;
+            for (let i = 0; i < graphData.length; i++) {
+                let p = graphData[i];
+                let px = padX + (p.x / radarCanvas.width) * (w - 2 * padX);
+                let py = h/2 - ((p.f - 400) / safeRange) * (h/2 - padY); 
+                py = Math.max(padY, Math.min(h - padY, py)); 
+
+                if (i === 0) gCtx.moveTo(px, py);
+                else gCtx.lineTo(px, py);
+                
+                lastX = px; lastY = py;
+            }
+            gCtx.stroke();
+            
+            // Draw Current Dot
+            if(lastX && lastY) {
+                gCtx.fillStyle = "#3fb950";
+                gCtx.beginPath(); gCtx.arc(lastX, lastY, 5, 0, Math.PI*2); gCtx.fill();
+            }
+        }
+    }
+
+    function loop() {
+        if (isPlaying) {
+            time += 1/60; 
+            xs += vs * (1/60) * 0.5; 
+            
+            if (xs > radarCanvas.width + 100) resetSim();
+
+            // Emit wavefronts 
+            if (time - lastEmitTime > 0.15) {
+                wavefronts.push({x: xs, y: ys, t: time});
+                lastEmitTime = time;
+            }
+
+            // Clean up old wavefronts
+            for (let i = wavefronts.length - 1; i >= 0; i--) {
+                let age = time - wavefronts[i].t;
+                if ((V_SOUND * age * 0.4) > 2000) wavefronts.splice(i, 1);
+            }
+
+            // Calculations & Live Update
+            let currentF = updateLiveEquation();
+
+            if (xs >= 0 && xs <= radarCanvas.width) {
+                graphData.push({x: xs, f: currentF});
+            }
+
+            // Alert Logic
+            let wasPerpendicular = isPerpendicular;
+            let threshold = (vs * (1/60) * 0.5) + 1; 
+            isPerpendicular = (xs >= xo && xs <= xo + threshold); 
+
+            if (isPerpendicular && !wasPerpendicular) {
+                let alertBox = document.getElementById('alert-status');
+                if (y_offset === 0) {
+                    alertBox.className = "alert-box alert-perp";
+                    alertBox.innerHTML = "🚨 <b>නිරීක්ෂකයා පසුකර යාම!</b><br>දිශාව වෙනස් වන බැවින් එකවරම f' අඩු වේ.";
+                } else {
+                    alertBox.className = "alert-box alert-perp";
+                    alertBox.innerHTML = "🚨 <b>ලම්බක මොහොත! (Perpendicular Moment)</b><br>vₛ සංරචකය ශුන්‍ය වේ. f' = f = 400 Hz";
+                }
+            }
+        }
+
+        drawRadar();
+        drawGraph();
+        
+        requestAnimationFrame(loop);
+    }
+
+    // Start Simulation
+    updatePhysics();
+    loop();
+
+</script>
+</body>
+</html>
