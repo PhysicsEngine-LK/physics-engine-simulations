@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - SHM Losing Contact Lab</title>
+    <style>
+        body {
+            background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', Tahoma, sans-serif;
+            display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; min-height: 100vh;
+        }
+        #app-container {
+            background-color: #161b22; border: 1px solid #30363d; border-radius: 12px;
+            padding: 25px; box-shadow: 0 0 40px rgba(0,0,0,0.9); width: 1150px;
+        }
+        h2 { color: #bc8cff; margin-top: 0; text-transform: uppercase; letter-spacing: 1.5px; text-align: center; }
+        p.subtitle { color: #8b949e; font-size: 14px; margin-bottom: 25px; text-align: center; }
+        
+        .main-layout { display: grid; grid-template-columns: 720px 360px; gap: 20px; align-items: start; }
+
+        /* Left Column: Visualizer */
+        .visuals-col { display: flex; flex-direction: column; gap: 15px; }
+        .box { background-color: #090d13; border-radius: 8px; border: 1px solid #30363d; position: relative; overflow: hidden; }
+        .sim-box { height: 500px; box-shadow: inset 0 0 30px rgba(88, 166, 255, 0.05); }
+        canvas { width: 100%; height: 100%; display: block; }
+        
+        /* Right Column: Controls */
+        .controls-col { display: flex; flex-direction: column; gap: 15px; }
+        .panel { background-color: #21262d; padding: 20px; border-radius: 8px; border: 1px solid #30363d; }
+        .panel h3 { margin-top: 0; color: #58a6ff; font-size: 16px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        
+        .control-group { margin-bottom: 18px; }
+        label { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 13px; color: #c9d1d9;}
+        .val-badge { font-family: monospace; font-size: 15px; font-weight: bold; }
+        input[type="range"] { width: 100%; cursor: pointer; }
+        
+        /* Buttons */
+        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        .btn { flex: 1; padding: 12px; font-weight: bold; cursor: pointer; border-radius: 5px; transition: 0.2s; font-size: 14px; border: 1px solid; }
+        .btn-play { background-color: #238636; color: white; border-color: #2ea043; }
+        .btn-play:hover { background-color: #2ea043; }
+        .btn-reset { background-color: #21262d; color: #ff7b72; border-color: #ff7b72; }
+        .btn-reset:hover { background-color: #ff7b72; color: #0d1117; }
+
+        /* LIVE EQUATION UI */
+        .math-box {
+            background-color: #0d1117; border: 1px dashed #bc8cff;
+            padding: 20px; border-radius: 6px; text-align: center; 
+            color: #c9d1d9; margin-bottom: 10px; display: flex; flex-direction: column; align-items: center;
+        }
+        .math-title { font-size: 13px; color: #8b949e; margin-bottom: 15px; font-weight: bold;}
+        .equation { font-family: 'Consolas', monospace; font-size: 18px; font-weight: bold; margin-bottom: 10px;}
+        .a-max { font-size: 32px; font-weight: bold; display: block; margin-top: 10px; }
+        
+        /* Dynamic Alerts */
+        .alert-box {
+            padding: 15px; border-radius: 6px; font-size: 14px; font-weight: bold; text-align: center;
+            background: rgba(48, 54, 61, 0.5); border: 1px solid #30363d; color: #8b949e; transition: 0.2s; line-height: 1.6;
+        }
+        .alert-safe { background: rgba(63, 185, 80, 0.15); border-color: #3fb950; color: #3fb950; box-shadow: 0 0 20px rgba(63, 185, 80, 0.2); }
+        .alert-danger { background: rgba(255, 123, 114, 0.15); border-color: #ff7b72; color: #ff7b72; box-shadow: 0 0 20px rgba(255, 123, 114, 0.4); transform: scale(1.02); }
+
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <h2>SHM ස්පර්ශය ගිලිහීම (Losing Contact)</h2>
+    <p class="subtitle">වේදිකාවේ ත්වරණය ගුරුත්වජ ත්වරණය (g) ඉක්මවා යන විට ස්කන්ධය වෙන් වන ආකාරය.</p>
+
+    <div class="main-layout">
+        <div class="visuals-col">
+            <div class="box sim-box">
+                <canvas id="simCanvas"></canvas>
+            </div>
+        </div>
+
+        <div class="controls-col">
+            <div class="panel">
+                <h3>දෝලන පාලක (Oscillation Controls)</h3>
+                <div class="control-group">
+                    <label>විස්තාරය (A): <span class="val-badge" style="color:#58a6ff" id="val-A">0.50 m</span></label>
+                    <input type="range" id="slider-A" min="0.1" max="2.0" step="0.05" value="0.5" oninput="updateParams()" style="accent-color:#58a6ff;">
+                </div>
+                <div class="control-group">
+                    <label>සංඛ්‍යාතය (f): <span class="val-badge" style="color:#bc8cff" id="val-f">0.50 Hz</span></label>
+                    <input type="range" id="slider-f" min="0.1" max="1.5" step="0.05" value="0.5" oninput="updateParams()" style="accent-color:#bc8cff;">
+                </div>
+                
+                <div class="btn-group">
+                    <button id="btn-play" class="btn btn-play" onclick="togglePlay()">Pause ⏸</button>
+                    <button class="btn btn-reset" onclick="resetSim()">Reset ↺</button>
+                </div>
+            </div>
+
+            <div class="math-box">
+                <div class="math-title">උපරිම ත්වරණය ගණනය කිරීම</div>
+                <div class="equation">a_max = ω²A = (2πf)²A</div>
+                <span class="a-max" id="calc-amax" style="color: #3fb950;">0.00 m/s²</span>
+                <div style="font-size: 13px; color: #8b949e; margin-top: 5px;">ගුරුත්වජ ත්වරණය (g) = 9.8 m/s²</div>
+            </div>
+            
+            <div class="alert-box alert-safe" id="alert-status">
+                ✅ <b>ස්පර්ශය පවතී! (a_max &le; g)</b><br>වේදිකාවේ ත්වරණය g ට වඩා කුඩා බැවින් කුට්ටිය වේදිකාව මතම පවතී.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Physics Constants & State
+    const G = 9.8; 
+    let A = 0.5; // Amplitude in meters
+    let f = 0.5; // Frequency in Hz
+    
+    let t = 0;
+    let isPlaying = true;
+    
+    // Coordinates (1D vertical motion)
+    let y_p = 0; // Platform position
+    let v_p = 0; // Platform velocity
+    let a_p = 0; // Platform acceleration
+    
+    let y_m = 0; // Mass position
+    let v_m = 0; // Mass velocity
+    let isAirborne = false; // Is the mass detached?
+
+    // Rendering scales
+    const SCALE = 80; // 1 meter = 80 pixels
+    const PLATFORM_W = 200;
+    const PLATFORM_H = 20;
+    const MASS_SIZE = 50;
+
+    function resizeCanvas() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = 500;
+        if(!isPlaying) draw();
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function updateParams() {
+        A = parseFloat(document.getElementById('slider-A').value);
+        f = parseFloat(document.getElementById('slider-f').value);
+        
+        document.getElementById('val-A').innerText = A.toFixed(2) + " m";
+        document.getElementById('val-f').innerText = f.toFixed(2) + " Hz";
+        
+        let omega = 2 * Math.PI * f;
+        let a_max = omega * omega * A;
+        
+        let aMaxElement = document.getElementById('calc-amax');
+        let alertBox = document.getElementById('alert-status');
+        
+        aMaxElement.innerText = a_max.toFixed(2) + " m/s²";
+        
+        if (a_max > G) {
+            aMaxElement.style.color = "#ff7b72";
+            aMaxElement.style.textShadow = "0 0 10px rgba(255, 123, 114, 0.5)";
+            alertBox.className = "alert-box alert-danger";
+            alertBox.innerHTML = "🚨 <b>ස්පර්ශය ගිලිහේ! (a_max > g)</b><br>වේදිකාව ගුරුත්වයට වඩා වේගයෙන් පහළට යයි. කුට්ටිය ඉහළට විසිවේ!";
+        } else {
+            aMaxElement.style.color = "#3fb950";
+            aMaxElement.style.textShadow = "none";
+            alertBox.className = "alert-box alert-safe";
+            alertBox.innerHTML = "✅ <b>ස්පර්ශය පවතී! (a_max &le; g)</b><br>වේදිකාවේ ත්වරණය g ට වඩා කුඩා බැවින් කුට්ටිය වේදිකාව මතම පවතී.";
+        }
+        
+        if(!isPlaying) draw();
+    }
+
+    function togglePlay() {
+        isPlaying = !isPlaying;
+        const btn = document.getElementById('btn-play');
+        btn.innerText = isPlaying ? "Pause ⏸" : "Play ▶";
+        btn.style.backgroundColor = isPlaying ? "#238636" : "#d29922";
+        btn.style.borderColor = isPlaying ? "#2ea043" : "#d29922";
+        btn.style.color = isPlaying ? "white" : "black";
+    }
+
+    function resetSim() {
+        t = 0;
+        isAirborne = false;
+        y_m = 0;
+        v_m = 0;
+        if(!isPlaying) togglePlay();
+    }
+
+    function updatePhysics(dt) {
+        let omega = 2 * Math.PI * f;
+        
+        // Platform SHM Equations (Up is Positive)
+        y_p = A * Math.sin(omega * t);
+        v_p = A * omega * Math.cos(omega * t);
+        a_p = -A * omega * omega * Math.sin(omega * t);
+
+        if (!isAirborne) {
+            // Mass follows platform
+            y_m = y_p;
+            v_m = v_p;
+
+            // Check condition for separation: Normal force R < 0
+            // Platform accelerating downwards faster than g
+            // a_p is negative when platform is above equilibrium
+            if (a_p < -G) {
+                isAirborne = true;
+            }
+        } else {
+            // Mass is in freefall (Projectile motion)
+            v_m -= G * dt; // Gravity acts downwards
+            y_m += v_m * dt;
+
+            // Check collision with platform
+            if (y_m <= y_p) {
+                isAirborne = false;
+                y_m = y_p;
+                v_m = v_p; // Inelastic collision (sticks to platform)
+            }
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        let cx = canvas.width / 2;
+        let cy = canvas.height / 2; // Equilibrium position
+
+        // Draw Equilibrium Dashed Line
+        ctx.strokeStyle = "#30363d"; ctx.lineWidth = 2; ctx.setLineDash([10, 10]);
+        ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(canvas.width, cy); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = "#8b949e"; ctx.font = "14px sans-serif";
+        ctx.fillText("සමතුලිත පිහිටුම (Equilibrium)", 10, cy - 10);
+
+        // Convert Physics Coordinates (y up) to Screen Coordinates (y down)
+        let screen_y_p = cy - (y_p * SCALE);
+        let screen_y_m = cy - (y_m * SCALE);
+
+        // Draw Platform
+        ctx.fillStyle = "#58a6ff";
+        ctx.shadowBlur = 15; ctx.shadowColor = "rgba(88, 166, 255, 0.4)";
+        ctx.fillRect(cx - PLATFORM_W/2, screen_y_p, PLATFORM_W, PLATFORM_H);
+        ctx.shadowBlur = 0;
+
+        // Draw Center Support Rod for Platform
+        ctx.fillStyle = "#21262d";
+        ctx.fillRect(cx - 5, screen_y_p + PLATFORM_H, 10, canvas.height - screen_y_p);
+
+        // Draw Mass
+        ctx.fillStyle = "#ff7b72";
+        if(isAirborne) {
+            ctx.shadowBlur = 20; ctx.shadowColor = "rgba(255, 123, 114, 0.8)";
+        } else {
+            ctx.shadowBlur = 5; ctx.shadowColor = "rgba(255, 123, 114, 0.3)";
+        }
+        ctx.fillRect(cx - MASS_SIZE/2, screen_y_m - MASS_SIZE, MASS_SIZE, MASS_SIZE);
+        ctx.shadowBlur = 0;
+
+        // Draw 'm' text on Mass
+        ctx.fillStyle = "#0d1117"; ctx.font = "bold 20px sans-serif"; ctx.textAlign = "center";
+        ctx.fillText("m", cx, screen_y_m - MASS_SIZE/2 + 7);
+        ctx.textAlign = "left"; // reset
+
+        // Draw Separation Indicator Line (if airborne)
+        if (isAirborne) {
+            ctx.strokeStyle = "#bc8cff"; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
+            ctx.beginPath(); 
+            ctx.moveTo(cx + MASS_SIZE/2 + 20, screen_y_m); 
+            ctx.lineTo(cx + MASS_SIZE/2 + 20, screen_y_p); 
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Distance text
+            let sepDist = (y_m - y_p).toFixed(2);
+            ctx.fillStyle = "#bc8cff"; ctx.font = "bold 14px sans-serif";
+            ctx.fillText(sepDist + " m", cx + MASS_SIZE/2 + 30, (screen_y_m + screen_y_p)/2 + 5);
+        }
+    }
+
+    function loop() {
+        if (isPlaying) {
+            // High fidelity physics update (sub-stepping)
+            // Splitting the frame into smaller steps prevents the mass from passing through the platform
+            let dt = 1/60; 
+            let substeps = 10;
+            let sub_dt = dt / substeps;
+            
+            for(let i=0; i<substeps; i++) {
+                t += sub_dt;
+                updatePhysics(sub_dt);
+            }
+        }
+
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    // Initialize
+    updateParams();
+    loop();
+
+</script>
+</body>
+</html>
