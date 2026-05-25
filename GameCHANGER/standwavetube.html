@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Air Columns Lab</title>
+    <style>
+        body {
+            background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', Tahoma, sans-serif;
+            display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; min-height: 100vh;
+        }
+        #app-container {
+            background-color: #161b22; border: 1px solid #30363d; border-radius: 12px;
+            padding: 25px; box-shadow: 0 0 40px rgba(0,0,0,0.9); width: 1150px;
+        }
+        h2 { color: #bc8cff; margin-top: 0; text-transform: uppercase; letter-spacing: 1.5px; text-align: center; }
+        p.subtitle { color: #8b949e; font-size: 14px; margin-bottom: 25px; text-align: center; }
+        
+        .main-layout { display: flex; flex-direction: column; gap: 20px; }
+
+        /* Visualizer (Top) */
+        .box {
+            background-color: #090d13; border-radius: 8px; border: 1px solid #30363d;
+            position: relative; overflow: hidden;
+        }
+        .sim-box { height: 350px; box-shadow: inset 0 0 30px rgba(88, 166, 255, 0.05); }
+        canvas { width: 100%; height: 100%; display: block; }
+        
+        /* Controls & Math (Bottom) */
+        .bottom-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        .panel { background-color: #21262d; padding: 20px; border-radius: 8px; border: 1px solid #30363d; }
+        .panel h3 { margin-top: 0; color: #58a6ff; font-size: 16px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        
+        .control-group { margin-bottom: 18px; }
+        label { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 14px; color: #c9d1d9;}
+        .val-badge { font-family: monospace; font-size: 15px; font-weight: bold; color: #58a6ff;}
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #58a6ff; }
+        
+        /* Toggle Buttons */
+        .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .mode-btn {
+            background-color: #0d1117; border: 1px solid #30363d; color: #8b949e;
+            padding: 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .mode-btn.active { background-color: #58a6ff; color: #000; border-color: #58a6ff; box-shadow: 0 0 15px rgba(88,166,255,0.3); }
+        .mode-btn:hover:not(.active) { background-color: #30363d; color: #c9d1d9; }
+
+        /* Math Display */
+        .math-box {
+            background-color: #0d1117; border: 1px dashed #bc8cff;
+            padding: 20px; border-radius: 6px; text-align: center; color: #c9d1d9;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .math-title { font-size: 14px; color: #8b949e; margin-bottom: 10px; font-weight: bold;}
+        
+        .equation-layout {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            font-family: 'Consolas', monospace; font-size: 20px; font-weight: bold;
+        }
+        .fraction { display: inline-flex; flex-direction: column; align-items: center; }
+        .numerator { padding: 0 10px 4px 10px; border-bottom: 2px solid #58a6ff; color: #c9d1d9; }
+        .denominator { padding: 4px 10px 0 10px; color: #8b949e; }
+        
+        .f-prime { font-size: 32px; color: #ff7b72; font-weight: bold; margin-left: 10px; text-shadow: 0 0 10px rgba(255, 123, 114, 0.4);}
+        
+        .overtone-badge {
+            margin-top: 15px; padding: 5px 15px; border-radius: 20px; background: rgba(188, 140, 255, 0.2);
+            color: #bc8cff; font-weight: bold; border: 1px solid #bc8cff; font-size: 15px;
+        }
+
+        .alert-box {
+            margin-top: 15px; padding: 12px; border-radius: 6px; font-size: 13px; font-weight: bold; text-align: center;
+            background: rgba(48, 54, 61, 0.5); border: 1px solid #30363d; color: #8b949e; line-height: 1.5;
+        }
+        .alert-closed { background: rgba(255, 123, 114, 0.15); border-color: #ff7b72; color: #ff7b72; }
+        .alert-open { background: rgba(88, 166, 255, 0.15); border-color: #58a6ff; color: #58a6ff; }
+
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <h2>වායු කඳන්වල කම්පන (Air Columns)</h2>
+    <p class="subtitle">සංවෘත සහ විවෘත නළ තුළ ස්ථාවර තරංග (Standing Waves) සෑදීම සහ උපරිතාන.</p>
+
+    <div class="main-layout">
+        <div class="box sim-box">
+            <canvas id="simCanvas"></canvas>
+        </div>
+
+        <div class="bottom-layout">
+            <div class="panel">
+                <h3>පාලක (Controls)</h3>
+                <div class="mode-grid">
+                    <button class="mode-btn active" id="btn-closed" onclick="setMode('closed')">සංවෘත නළය (Closed)</button>
+                    <button class="mode-btn" id="btn-open" onclick="setMode('open')">විවෘත නළය (Open)</button>
+                </div>
+
+                <div class="control-group">
+                    <label>නළයේ දිග (L): <span class="val-badge" id="val-L">1.0 m</span></label>
+                    <input type="range" id="slider-L" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updatePhysics()">
+                </div>
+                
+                <div class="control-group">
+                    <label>උපරිතාන තත්ත්වය (Overtone Step): <span class="val-badge" id="val-step" style="color:#bc8cff;">1</span></label>
+                    <input type="range" id="slider-step" min="1" max="5" step="1" value="1" oninput="updatePhysics()" style="accent-color:#bc8cff;">
+                    <div style="font-size: 11px; color:#8b949e; margin-top: 4px;">(1 = මූලික තානය, ඊට පසු උපරිතාන)</div>
+                </div>
+            </div>
+
+            <div class="math-box">
+                <div class="math-title">සංඛ්‍යාතය ගණනය කිරීම (v = 340 m/s)</div>
+                
+                <div class="equation-layout">
+                    <div id="eq-f-label">f₁ =</div>
+                    <div class="fraction">
+                        <div class="numerator" id="eq-num">1 &times; 340</div>
+                        <div class="denominator" id="eq-den">4 &times; 1.0</div>
+                    </div>
+                    <div>= <span class="f-prime" id="calc-fprime">85.0 Hz</span></div>
+                </div>
+
+                <div class="overtone-badge" id="overtone-text">මූලික තානය (Fundamental Tone)</div>
+
+                <div class="alert-box alert-closed" id="alert-status">
+                    💡 <b>සංවෘත නළයක සෑදෙන්නේ ඔත්තේ ප්‍රසංවාද පමණි!</b><br>n = 1, 3, 5... (Node එකකින් පටන් ගෙන Antinode එකකින් අවසන් වේ).
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Physics
+    const V_SOUND = 340; // m/s
+    let mode = 'closed'; // 'closed' or 'open'
+    let L = 1.0; // Length in meters
+    let stepIndex = 1; // 1 to 5
+    
+    let n = 1; // Harmonic number
+    let f = 85; // Frequency
+    let time = 0;
+
+    function resizeCanvas() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+        if(time === 0) draw();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function setMode(newMode) {
+        mode = newMode;
+        document.getElementById('btn-closed').classList.remove('active');
+        document.getElementById('btn-open').classList.remove('active');
+        document.getElementById('btn-' + mode).classList.add('active');
+        
+        let alertBox = document.getElementById('alert-status');
+        if (mode === 'closed') {
+            alertBox.className = "alert-box alert-closed";
+            alertBox.innerHTML = "💡 <b>සංවෘත නළයක සෑදෙන්නේ ඔත්තේ ප්‍රසංවාද පමණි!</b><br>n = 1, 3, 5... (Node එකකින් පටන් ගෙන Antinode එකකින් අවසන් වේ).";
+        } else {
+            alertBox.className = "alert-box alert-open";
+            alertBox.innerHTML = "💡 <b>විවෘත නළයක සියලුම ප්‍රසංවාද සෑදේ!</b><br>n = 1, 2, 3... (දෙකෙළවරම Antinodes වේ).";
+        }
+        
+        updatePhysics();
+    }
+
+    function updatePhysics() {
+        L = parseFloat(document.getElementById('slider-L').value);
+        stepIndex = parseInt(document.getElementById('slider-step').value);
+        
+        document.getElementById('val-L').innerText = L.toFixed(1) + " m";
+        document.getElementById('val-step').innerText = stepIndex;
+
+        // Calculate Harmonic Number (n) based on mode
+        if (mode === 'closed') {
+            n = 2 * stepIndex - 1; // Odd harmonics: 1, 3, 5, 7, 9
+            f = (n * V_SOUND) / (4 * L);
+            
+            document.getElementById('eq-f-label').innerText = `f${n} =`;
+            document.getElementById('eq-num').innerHTML = `${n} &times; 340`;
+            document.getElementById('eq-den').innerHTML = `4 &times; ${L.toFixed(1)}`;
+        } else {
+            n = stepIndex; // All harmonics: 1, 2, 3, 4, 5
+            f = (n * V_SOUND) / (2 * L);
+            
+            document.getElementById('eq-f-label').innerText = `f${n} =`;
+            document.getElementById('eq-num').innerHTML = `${n} &times; 340`;
+            document.getElementById('eq-den').innerHTML = `2 &times; ${L.toFixed(1)}`;
+        }
+
+        document.getElementById('calc-fprime').innerText = f.toFixed(1) + " Hz";
+
+        // Overtone Naming
+        let overtoneText = "";
+        if (stepIndex === 1) overtoneText = `මූලික තානය (Fundamental) - n=${n}`;
+        else overtoneText = `${stepIndex - 1} වන උපරිතානය (${stepIndex - 1} Overtone) - n=${n}`;
+        
+        document.getElementById('overtone-text').innerText = overtoneText;
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Canvas coordinate setup
+        let cy = canvas.height / 2;
+        let startX = 100;
+        let pixelsPerMeter = 400; // max length 2.0m -> 800px width
+        let pipeW = L * pixelsPerMeter;
+        let pipeH = 120; // Height of the pipe
+        let amp = pipeH / 2 - 10; // Max amplitude for drawing waves
+
+        // 1. Draw Pipe
+        ctx.strokeStyle = "#8b949e"; ctx.lineWidth = 4;
+        
+        // Top and Bottom walls
+        ctx.beginPath();
+        ctx.moveTo(startX, cy - pipeH/2); ctx.lineTo(startX + pipeW, cy - pipeH/2);
+        ctx.moveTo(startX, cy + pipeH/2); ctx.lineTo(startX + pipeW, cy + pipeH/2);
+        ctx.stroke();
+
+        // Left End (Closed or Open)
+        if (mode === 'closed') {
+            ctx.strokeStyle = "#ff7b72"; ctx.lineWidth = 8;
+            ctx.beginPath(); ctx.moveTo(startX, cy - pipeH/2 - 2); ctx.lineTo(startX, cy + pipeH/2 + 2); ctx.stroke();
+            ctx.fillStyle = "#ff7b72"; ctx.font = "bold 14px sans-serif"; ctx.fillText("Closed End", startX - 80, cy);
+        } else {
+            ctx.fillStyle = "#58a6ff"; ctx.font = "bold 14px sans-serif"; ctx.fillText("Open End", startX - 75, cy);
+        }
+
+        // Right End (Always Open)
+        ctx.fillStyle = "#58a6ff"; ctx.fillText("Open End", startX + pipeW + 15, cy);
+
+        // Center dashed line
+        ctx.strokeStyle = "rgba(48, 54, 61, 0.8)"; ctx.lineWidth = 1; ctx.setLineDash([5, 5]);
+        ctx.beginPath(); ctx.moveTo(startX - 20, cy); ctx.lineTo(startX + pipeW + 20, cy); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 2. Mathematical Standing Wave Drawing
+        let phase = time * f * 0.05; // Animation speed
+        let timeOscillation = Math.cos(phase); // Pulses between -1 and 1
+        
+        ctx.beginPath();
+        
+        // Draw the filled envelope (the vibrating air)
+        let wavePath1 = new Path2D();
+        let wavePath2 = new Path2D();
+        
+        for (let x = 0; x <= pipeW; x++) {
+            let relativeX = x / pipeW; // 0 to 1
+            let envelope = 0;
+
+            if (mode === 'closed') {
+                // Closed: node at x=0, antinode at x=L. sin(n * pi/2 * relativeX)
+                envelope = Math.sin((n * Math.PI / 2) * relativeX);
+            } else {
+                // Open: antinode at x=0, antinode at x=L. cos(n * pi * relativeX)
+                envelope = Math.cos(n * Math.PI * relativeX);
+            }
+
+            let yOffset = amp * envelope * timeOscillation;
+            
+            if (x === 0) {
+                wavePath1.moveTo(startX + x, cy - yOffset);
+                wavePath2.moveTo(startX + x, cy + yOffset);
+            } else {
+                wavePath1.lineTo(startX + x, cy - yOffset);
+                wavePath2.lineTo(startX + x, cy + yOffset);
+            }
+        }
+
+        // Draw Envelope Bounds (Max limits) in dashed lines
+        ctx.strokeStyle = "rgba(88, 166, 255, 0.3)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        for (let x = 0; x <= pipeW; x+=2) {
+            let relX = x / pipeW;
+            let env = mode === 'closed' ? Math.sin((n * Math.PI / 2) * relX) : Math.cos(n * Math.PI * relX);
+            let yMax = amp * Math.abs(env);
+            if(x===0){ ctx.moveTo(startX+x, cy-yMax); } else { ctx.lineTo(startX+x, cy-yMax); }
+        }
+        ctx.stroke();
+        ctx.beginPath();
+        for (let x = 0; x <= pipeW; x+=2) {
+            let relX = x / pipeW;
+            let env = mode === 'closed' ? Math.sin((n * Math.PI / 2) * relX) : Math.cos(n * Math.PI * relX);
+            let yMax = amp * Math.abs(env);
+            if(x===0){ ctx.moveTo(startX+x, cy+yMax); } else { ctx.lineTo(startX+x, cy+yMax); }
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Fill current vibrating air
+        ctx.fillStyle = "rgba(88, 166, 255, 0.15)";
+        let fillPath = new Path2D(wavePath1);
+        for(let x=pipeW; x>=0; x--) {
+            let relX = x / pipeW;
+            let env = mode === 'closed' ? Math.sin((n * Math.PI / 2) * relX) : Math.cos(n * Math.PI * relX);
+            let yOffset = amp * env * timeOscillation;
+            fillPath.lineTo(startX + x, cy + yOffset);
+        }
+        fillPath.closePath();
+        ctx.fill(fillPath);
+
+        // Solid lines for current state
+        ctx.strokeStyle = "#58a6ff"; ctx.lineWidth = 3;
+        ctx.stroke(wavePath1);
+        ctx.strokeStyle = "#bc8cff"; // Secondary color for bottom wave to show symmetry
+        ctx.stroke(wavePath2);
+
+        // 3. Mark Nodes (නිෂ්පන්ද) and Antinodes (ප්‍රස්පන්ද)
+        ctx.fillStyle = "#ff7b72"; ctx.font = "bold 12px sans-serif";
+        ctx.textAlign = "center";
+        
+        let nodeColor = "#ff7b72"; // Red for Nodes (Zero movement)
+        let antinodeColor = "#3fb950"; // Green for Antinodes (Max movement)
+
+        if (mode === 'closed') {
+            // Nodes exist where sin(k x) = 0 -> x = (2m/n)*L
+            for(let m=0; m<=Math.floor(n/2); m++) {
+                let nx = startX + (2*m/n) * pipeW;
+                // Draw line
+                ctx.strokeStyle = "rgba(255, 123, 114, 0.5)"; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(nx, cy - pipeH/2); ctx.lineTo(nx, cy + pipeH/2); ctx.stroke();
+                // Draw dot and text
+                ctx.fillStyle = nodeColor; ctx.beginPath(); ctx.arc(nx, cy, 4, 0, Math.PI*2); ctx.fill();
+                ctx.fillText("N", nx, cy + pipeH/2 + 20);
+            }
+            // Antinodes exist where sin is max -> x = ((2m+1)/n)*L
+            for(let m=0; m<=Math.floor((n-1)/2); m++) {
+                let ax = startX + ((2*m+1)/n) * pipeW;
+                ctx.fillStyle = antinodeColor;
+                ctx.fillText("A", ax, cy - pipeH/2 - 10);
+            }
+        } else {
+            // Open: Nodes exist where cos(k x) = 0 -> x = ((2m+1)/(2n))*L
+            for(let m=0; m<n; m++) {
+                let nx = startX + ((2*m+1)/(2*n)) * pipeW;
+                ctx.strokeStyle = "rgba(255, 123, 114, 0.5)"; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(nx, cy - pipeH/2); ctx.lineTo(nx, cy + pipeH/2); ctx.stroke();
+                ctx.fillStyle = nodeColor; ctx.beginPath(); ctx.arc(nx, cy, 4, 0, Math.PI*2); ctx.fill();
+                ctx.fillText("N", nx, cy + pipeH/2 + 20);
+            }
+            // Antinodes exist where cos is max -> x = (m/n)*L
+            for(let m=0; m<=n; m++) {
+                let ax = startX + (m/n) * pipeW;
+                ctx.fillStyle = antinodeColor;
+                ctx.fillText("A", ax, cy - pipeH/2 - 10);
+            }
+        }
+        
+        ctx.textAlign = "left"; // reset
+
+        // Length Dimension Line
+        ctx.strokeStyle = "#8b949e"; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(startX, cy + pipeH/2 + 40); ctx.lineTo(startX, cy + pipeH/2 + 50);
+        ctx.moveTo(startX + pipeW, cy + pipeH/2 + 40); ctx.lineTo(startX + pipeW, cy + pipeH/2 + 50);
+        ctx.moveTo(startX, cy + pipeH/2 + 45); ctx.lineTo(startX + pipeW, cy + pipeH/2 + 45);
+        ctx.stroke();
+        
+        ctx.fillStyle = "#8b949e"; ctx.font = "bold 14px sans-serif"; ctx.textAlign = "center";
+        ctx.fillText("L = " + L.toFixed(1) + " m", startX + pipeW/2, cy + pipeH/2 + 65);
+        ctx.textAlign = "left";
+    }
+
+    function loop() {
+        time += 1;
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    // Init
+    resizeCanvas();
+    updatePhysics();
+    loop();
+
+</script>
+</body>
+</html>
