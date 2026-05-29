@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Barton's Pendulums - Physics Engine</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #00ffcc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            background: #0a0a0a;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #222;
+            box-shadow: 0 0 40px rgba(188, 140, 255, 0.1);
+            justify-content: center;
+            max-width: 1200px;
+            align-items: flex-start;
+        }
+        .canvas-wrapper {
+            position: relative;
+            background: #050505;
+            border: 2px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: inset 0 0 50px rgba(0, 255, 204, 0.05);
+        }
+        canvas {
+            display: block;
+        }
+        .panel { 
+            width: 380px; 
+            text-align: left; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .header-title { margin-bottom: 5px; color: #bc8cff; font-size: 1.8em; text-transform: uppercase; letter-spacing: 1px;}
+        .sub-title { color: #888; margin-top: 0; margin-bottom: 20px; }
+
+        .slider-group { margin-bottom: 15px; background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333;}
+        .slider-label { display: flex; justify-content: space-between; color: #ccc; font-weight: bold; font-size: 0.95em; margin-bottom: 10px;}
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #bc8cff; }
+
+        button {
+            padding: 15px; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; transition: 0.2s; font-size: 1.1em; margin-bottom: 15px; text-transform: uppercase;
+        }
+        #btnToggle { background: #bc8cff; color: #000; }
+        #btnToggle:hover { background: #a366ff; transform: scale(1.02); }
+
+        .math-proof {
+            padding: 15px;
+            background: rgba(188, 140, 255, 0.05);
+            border: 1px dashed #bc8cff;
+            color: #c9d1d9;
+            font-size: 0.95em;
+            border-radius: 5px;
+            line-height: 1.6;
+        }
+        .highlight { color: #00ffcc; font-weight: bold; font-size: 1.1em; }
+        .highlight-driver { color: #bc8cff; font-weight: bold; font-size: 1.1em; }
+        
+        .legend-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.9em; color: #ccc;}
+        .legend-color { width: 15px; height: 15px; border-radius: 50%; margin-right: 10px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title">බාර්ටන් අවලම්බය - BARTON'S PENDULUMS</h2>
+    <p class="sub-title">අනුනාදය (Resonance) සහ කෘත කම්පන</p>
+
+    <div class="container">
+        <div class="canvas-wrapper">
+            <canvas id="simCanvas" width="600" height="450"></canvas>
+        </div>
+
+        <div class="panel">
+            <button id="btnToggle">▶ කම්පනය අරඹන්න (Start)</button>
+
+            <div class="slider-group">
+                <div class="slider-label"><span>ප්‍රධාන අවලම්බයේ (X) දිග</span> <span id="lblLength" style="color:#bc8cff;">Medium</span></div>
+                <input type="range" id="lengthSlider" min="0" max="4" step="1" value="2">
+                <div style="font-size: 11px; color: #888; margin-top: 8px;">(දිග වෙනස් කර අනුනාද වන කුඩා අවලම්බය වෙනස් වන අයුරු බලන්න)</div>
+            </div>
+
+            <div style="padding: 10px; margin-bottom: 15px;">
+                <div class="legend-item"><span class="legend-color" style="background:#bc8cff; box-shadow: 0 0 10px #bc8cff;"></span> ප්‍රධාන බර අවලම්බය (Driver - X)</div>
+                <div class="legend-item"><span class="legend-color" style="background:#00ffcc;"></span> කුඩා සැහැල්ලු අවලම්බ (A, B, C, D, E)</div>
+            </div>
+
+            <div class="math-proof" id="expBox">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const lengthSlider = document.getElementById('lengthSlider');
+        const lblLength = document.getElementById('lblLength');
+        const btnToggle = document.getElementById('btnToggle');
+        const expBox = document.getElementById('expBox');
+
+        let isRunning = false;
+        let time = 0;
+        
+        // Pendulum Setup
+        const stringY = 50; 
+        const g = 9.8;
+        
+        const drivenLengths = [120, 180, 240, 300, 360];
+        const drivenNames = ['A', 'B', 'C', 'D', 'E'];
+        let driverIndex = parseInt(lengthSlider.value); 
+        
+        let driverLength = drivenLengths[driverIndex];
+        let driverOmega = Math.sqrt(g / (driverLength / 100)); 
+
+        function updateMathText() {
+            let resName = drivenNames[driverIndex];
+            expBox.innerHTML = `
+                <strong class="highlight-driver">ප්‍රධාන අවලම්බය (X)</strong> කම්පනය වන විට එහි ශක්තිය තන්තුව දිගේ ගමන් කරයි.<br><br>
+                මෙහිදී X හි දිග <strong class="highlight">${resName}</strong> හි දිගට හරියටම සමාන වේ. එබැවින් X හි කම්පන සංඛ්‍යාතය (f), ${resName} හි ස්වභාවික සංඛ්‍යාතයට (f₀) සමාන වේ.<br><br>
+                <span style="color:#ffcc00; font-size:1.1em; font-weight:bold;">f = f₀ (අනුනාදය සිදුවේ!)</span><br><br>
+                මෙම නිසා <strong class="highlight">${resName} උපරිම විස්තාරයකින්</strong> කම්පනය වේ. අනෙක් ඒවාට ලබාගත හැක්කේ අඩු ශක්තියකි.
+            `;
+        }
+
+        function drawScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Watermark
+            ctx.save();
+            ctx.globalAlpha = 0.05; ctx.fillStyle = "#fff"; ctx.font = "bold 40px Arial";
+            ctx.textAlign = "center"; ctx.fillText("PHYSICS ENGINE", canvas.width/2, canvas.height/2);
+            ctx.restore();
+
+            let driverAngle = 0;
+            if (isRunning) {
+                driverAngle = 0.25 * Math.cos(driverOmega * time); 
+            }
+
+            // Horizontal string
+            ctx.beginPath();
+            ctx.moveTo(30, stringY);
+            ctx.quadraticCurveTo(canvas.width/2, stringY + (driverAngle * 20), canvas.width - 30, stringY);
+            ctx.strokeStyle = "#555";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Pillars
+            ctx.fillStyle = "#333";
+            ctx.fillRect(15, 20, 30, canvas.height);
+            ctx.fillRect(canvas.width - 45, 20, 30, canvas.height);
+
+            const startX = 100;
+            const spacing = 75;
+
+            // Driver (X)
+            let xPosX = startX;
+            let xBobX = xPosX + driverLength * Math.sin(driverAngle);
+            let xBobY = stringY + driverLength * Math.cos(driverAngle);
+
+            ctx.beginPath(); ctx.moveTo(xPosX, stringY); ctx.lineTo(xBobX, xBobY);
+            ctx.strokeStyle = "rgba(188, 140, 255, 0.6)"; ctx.lineWidth = 3; ctx.stroke();
+            
+            ctx.beginPath(); ctx.arc(xBobX, xBobY, 15, 0, Math.PI*2);
+            ctx.fillStyle = "#bc8cff"; ctx.fill();
+            ctx.shadowBlur = 15; ctx.shadowColor = "#bc8cff"; ctx.fill(); ctx.shadowBlur = 0;
+            
+            ctx.fillStyle = "#000"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText("X", xBobX, xBobY);
+
+            // Driven Pendulums
+            for (let i = 0; i < drivenLengths.length; i++) {
+                let L = drivenLengths[i];
+                let px = startX + spacing * (i + 1); 
+                
+                let angle = 0;
+                let isResonating = (i === driverIndex);
+
+                if (isRunning) {
+                    let w0 = Math.sqrt(g / (L / 100)); 
+                    let w = driverOmega; 
+                    
+                    let detuning = Math.abs(w0 - w); // Simpler detuning logic
+                    let amplitude = 0;
+
+                    if (isResonating) {
+                        // Massive amplitude for resonance
+                        amplitude = 0.75; 
+                    } else {
+                        // Drastically reduced amplitude for non-resonating ones based on how far they are from resonance
+                        amplitude = 0.1 / (1 + (detuning * detuning * 50)); 
+                        // Cap minimum amplitude so they move a tiny bit
+                        if (amplitude < 0.05) amplitude = 0.05;
+                    }
+                    
+                    // Simple Phase: roughly -pi/2 if resonating, 0 if shorter, -pi if longer (simplified for visual clarity)
+                    let phase = 0;
+                    if(w > w0) phase = Math.PI; // Shorter pendulum (w0 > w)
+                    else if(w < w0) phase = 0; // Longer pendulum (w0 < w)
+                    else phase = Math.PI/2; // Resonating
+
+                    angle = amplitude * Math.cos(w * time - phase);
+                }
+
+                let bobX = px + L * Math.sin(angle);
+                let bobY = stringY + L * Math.cos(angle);
+
+                // Draw string
+                ctx.beginPath(); ctx.moveTo(px, stringY); ctx.lineTo(bobX, bobY);
+                ctx.strokeStyle = isResonating ? "rgba(0, 255, 204, 0.8)" : "rgba(255, 255, 255, 0.2)";
+                ctx.lineWidth = isResonating ? 2 : 1.5;
+                ctx.stroke();
+
+                // Draw bob
+                ctx.beginPath(); ctx.arc(bobX, bobY, 8, 0, Math.PI*2);
+                ctx.fillStyle = isResonating ? "#00ffcc" : "#888";
+                if(isResonating) {
+                    ctx.shadowBlur = 15; ctx.shadowColor = "#00ffcc";
+                }
+                ctx.fill(); ctx.shadowBlur = 0;
+
+                // Label
+                ctx.fillStyle = isResonating ? "#00ffcc" : "#666";
+                ctx.font = "bold 14px Arial";
+                ctx.fillText(drivenNames[i], px, stringY - 15);
+            }
+        }
+
+        function animate() {
+            if (isRunning) {
+                time += 0.05; 
+            }
+            drawScene();
+            requestAnimationFrame(animate);
+        }
+
+        btnToggle.onclick = () => {
+            isRunning = !isRunning;
+            if(isRunning) {
+                btnToggle.innerHTML = "⏸ කම්පනය නවත්වන්න (Stop)";
+                btnToggle.style.background = "#ff3366";
+            } else {
+                btnToggle.innerHTML = "▶ කම්පනය අරඹන්න (Start)";
+                btnToggle.style.background = "#bc8cff";
+                time = 0; 
+            }
+        };
+
+        lengthSlider.addEventListener('input', () => {
+            driverIndex = parseInt(lengthSlider.value);
+            driverLength = drivenLengths[driverIndex];
+            driverOmega = Math.sqrt(g / (driverLength / 100));
+            
+            let labels = ['Shortest (A)', 'Short (B)', 'Medium (C)', 'Long (D)', 'Longest (E)'];
+            lblLength.innerText = labels[driverIndex];
+            updateMathText();
+            
+            if(!isRunning) drawScene();
+        });
+
+        updateMathText();
+        drawScene();
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>

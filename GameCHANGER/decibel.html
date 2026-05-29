@@ -22,7 +22,8 @@
             border-radius: 12px;
             padding: 25px;
             box-shadow: 0 0 40px rgba(0,0,0,0.8);
-            width: 950px;
+            width: 1050px; /* Slightly wider for the new layout */
+            max-width: 100%;
         }
         h2 {
             color: #bc8cff;
@@ -38,11 +39,20 @@
             text-align: center;
         }
         
-        /* Grid Layout */
-        .grid-container {
+        /* New Grid Layout */
+        .layout-wrapper {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 2fr 1fr;
             gap: 20px;
+        }
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .right-column {
+            display: flex;
+            flex-direction: column;
         }
         
         /* Visualizer Screen */
@@ -50,14 +60,42 @@
             background-color: #000;
             border-radius: 8px;
             border: 1px solid #30363d;
-            height: 400px;
+            height: 420px;
             position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            grid-column: 1 / span 2;
             box-shadow: inset 0 0 50px rgba(88, 166, 255, 0.1);
+        }
+        .watermark {
+            position: absolute;
+            z-index: 2;
+            pointer-events: none;
+            color: rgba(201, 209, 217, 0.20);
+            font-family: monospace;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .watermark-top-left { left: 14px; top: 12px; }
+        .watermark-center { left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-12deg); opacity: 0.14; }
+        .watermark-bottom-right { right: 14px; bottom: 12px; }
+        .source-label {
+            position: absolute;
+            left: 50%;
+            top: calc(50% + 14px);
+            transform: translateX(-50%);
+            z-index: 3;
+            pointer-events: none;
+            color: #ffffff;
+            font-family: monospace;
+            font-size: 12px;
+            font-weight: 700;
+            text-shadow: 0 0 6px rgba(0,0,0,0.6);
         }
         canvas { width: 100%; height: 100%; display: block; }
         
@@ -76,14 +114,15 @@
         input[type="range"] { width: 100%; accent-color: #58a6ff; cursor: pointer; }
         
         /* Real-time Data */
-        .data-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-family: monospace; font-size: 15px; background: #0d1117; padding: 10px; border-radius: 6px; border: 1px solid #30363d;}
-        .data-val { color: #3fb950; font-weight: bold; font-size: 18px; }
+        .calc-row-flex { display: flex; gap: 15px; margin-bottom: 15px; }
+        .data-row { flex: 1; display: flex; justify-content: space-between; align-items: center; font-family: monospace; font-size: 14px; background: #0d1117; padding: 12px; border-radius: 6px; border: 1px solid #30363d;}
+        .data-val { color: #3fb950; font-weight: bold; font-size: 16px; }
         .data-label { display: flex; flex-direction: column; }
         .sub-eq { font-size: 11px; color: #8b949e; margin-top: 3px; }
 
         .equation-box {
             background-color: #0d1117; border: 1px dashed #bc8cff;
-            padding: 15px; border-radius: 6px; margin-top: 15px;
+            padding: 15px; border-radius: 6px;
             text-align: center; font-family: monospace; font-size: 16px; color: #bc8cff;
         }
         .highlight-text { font-size: 24px; color: #fff; display: block; text-shadow: 0 0 12px rgba(188,140,255,0.6); margin-top: 8px; font-weight: bold;}
@@ -97,64 +136,74 @@
 <body>
 
 <div id="app-container">
-    <h2>ගෝලාකාර තරංග සහ ධ්වනි තීව්‍රතාව</h2>
+    <h2>ධ්වනි තීව්‍රතාව (Sound Intensity)</h2>
     <p class="subtitle">Inverse Square Law: දුර වැඩිවන විට වර්ගඵලය (4πr²) විශාල වී ශක්තිය විසිරී යන ආකාරය.</p>
 
-    <div class="screen">
-        <canvas id="sphere-canvas"></canvas>
-        <div class="overlay-label">
-            Source Power: <span id="overlay-P" style="color:#58a6ff;">10 W</span><br>
-            Distance (Radius): <span id="overlay-r" style="color:#58a6ff;">2.0 m</span>
-        </div>
-    </div>
-
-    <div class="grid-container">
-        <div class="panel">
-            <h3>පාලක (Controls)</h3>
-            
-            <div class="control-group">
-                <label>ප්‍රභවයේ බලය (Source Power - P): <span class="val-badge" id="val-P">10.0 W</span></label>
-                <input type="range" id="slider-P" min="1" max="100" step="1" value="10" oninput="updatePhysics()">
-                <div style="font-size: 11px; color: #8b949e; margin-top: 5px;">(ශබ්දය නිපදවන මූලික ශක්තිය)</div>
-            </div>
-
-            <div class="control-group">
-                <label>නිරීක්ෂකයාට ඇති දුර (Distance - r): <span class="val-badge" id="val-r">2.0 m</span></label>
-                <input type="range" id="slider-r" min="1" max="10" step="0.1" value="2.0" oninput="updatePhysics()">
-                <div style="font-size: 11px; color: #8b949e; margin-top: 5px;">(ගෝලයේ අරය වෙනස් කිරීම)</div>
-            </div>
-            
-            <div style="padding: 15px; background: #161b22; border-radius: 6px; border-left: 4px solid #d29922; margin-top: 30px;">
-                <span style="color: #d29922; font-weight: bold; font-size: 13px;">💡 MASTER HACK:</span>
-                <p style="font-size: 13px; color: #c9d1d9; margin: 5px 0 0 0; line-height: 1.5;">
-                    දුර (r) දෙගුණ කළ විට, ගෝලයේ වර්ගඵලය 4 ගුණයකින් විශාල වේ. එවිට එම වර්ගඵලය මත පැතිරෙන තීව්‍රතාවය හතරෙන් එකක් (1/4) වී දීප්තිය අඩුවන බව නිරීක්ෂණය කරන්න.
-                </p>
-            </div>
-        </div>
-
-        <div class="panel">
-            <h3>සජීවී ගණනය කිරීම් (Real-time Calculations)</h3>
-            
-            <div class="data-row">
-                <div class="data-label">
-                    <span>ගෝලයේ මතුපිට වර්ගඵලය</span>
-                    <span class="sub-eq">A = 4πr²</span>
+    <div class="layout-wrapper">
+        <div class="left-column">
+            <div class="screen">
+                <canvas id="sphere-canvas"></canvas>
+                <div class="overlay-label">
+                    Source Power: <span id="overlay-P" style="color:#58a6ff;">10 W</span><br>
+                    Distance (Radius): <span id="overlay-r" style="color:#58a6ff;">2.0 m</span>
                 </div>
-                <span class="data-val" id="calc-A" style="color:#8b949e;">50.3 m²</span>
+                <div class="source-label">Source</div>
+                <div class="watermark watermark-top-left">Physics Engine</div>
+                <div class="watermark watermark-center">Physics Engine</div>
+                <div class="watermark watermark-bottom-right">Physics Engine</div>
             </div>
 
-            <div class="data-row">
-                <div class="data-label">
-                    <span style="color:#ff7b72;">ධ්වනි තීව්‍රතාව (Intensity)</span>
-                    <span class="sub-eq">I = P / A</span>
+            <div class="panel">
+                <h3>සජීවී ගණනය කිරීම් (Real-time Calculations)</h3>
+                
+                <div class="calc-row-flex">
+                    <div class="data-row">
+                        <div class="data-label">
+                            <span>ගෝලයේ මතුපිට වර්ගඵලය</span>
+                            <span class="sub-eq">A = 4πr²</span>
+                        </div>
+                        <span class="data-val" id="calc-A" style="color:#8b949e;">50.3 m²</span>
+                    </div>
+
+                    <div class="data-row">
+                        <div class="data-label">
+                            <span style="color:#ff7b72;">ධ්වනි තීව්‍රතාව (Intensity)</span>
+                            <span class="sub-eq">I = P / A</span>
+                        </div>
+                        <span class="data-val" id="calc-I" style="color:#ff7b72;">0.20 W/m²</span>
+                    </div>
                 </div>
-                <span class="data-val" id="calc-I" style="color:#ff7b72;">0.20 W/m²</span>
-            </div>
 
-            <div class="equation-box">
-                <span style="font-size: 14px;">ධ්වනි තීව්‍රතා මට්ටම (Loudness Level - β)</span><br>
-                <span style="font-size: 12px; color: #8b949e;">β = 10 log₁₀(I / I₀)</span>
-                <span class="highlight-text" id="calc-db">113.0 dB</span>
+                <div class="equation-box">
+                    <span style="font-size: 14px;">ධ්වනි තීව්‍රතා මට්ටම (Loudness Level - β)</span><br>
+                    <span style="font-size: 12px; color: #8b949e;">β = 10 log₁₀(I / I₀)</span>
+                    <span class="highlight-text" id="calc-db">113.0 dB</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-column">
+            <div class="panel" style="height: 100%;">
+                <h3>පාලක (Controls)</h3>
+                
+                <div class="control-group">
+                    <label>ප්‍රභවයේ බලය (Source Power - P): <span class="val-badge" id="val-P">10.0 W</span></label>
+                    <input type="range" id="slider-P" min="1" max="100" step="1" value="10" oninput="updatePhysics()">
+                    <div style="font-size: 11px; color: #8b949e; margin-top: 5px;">(ශබ්දය නිපදවන මූලික ශක්තිය)</div>
+                </div>
+
+                <div class="control-group">
+                    <label>නිරීක්ෂකයාට ඇති දුර (Distance - r): <span class="val-badge" id="val-r">2.0 m</span></label>
+                    <input type="range" id="slider-r" min="1" max="10" step="0.1" value="2.0" oninput="updatePhysics()">
+                    <div style="font-size: 11px; color: #8b949e; margin-top: 5px;">(ගෝලයේ අරය වෙනස් කිරීම)</div>
+                </div>
+                
+                <div style="padding: 15px; background: #161b22; border-radius: 6px; border-left: 4px solid #d29922; margin-top: 30px;">
+                    <span style="color: #d29922; font-weight: bold; font-size: 13px;">💡 MASTER HACK:</span>
+                    <p style="font-size: 13px; color: #c9d1d9; margin: 10px 0 0 0; line-height: 1.6;">
+                        දුර (r) දෙගුණ කළ විට, ගෝලයේ වර්ගඵලය 4 ගුණයකින් විශාල වේ. එවිට එම වර්ගඵලය මත පැතිරෙන තීව්‍රතාවය හතරෙන් එකක් (1/4) වී දීප්තිය අඩුවන බව නිරීක්ෂණය කරන්න.
+                    </p>
+                </div>
             </div>
         </div>
     </div>
@@ -213,7 +262,6 @@
         document.getElementById('overlay-r').innerText = currentR.toFixed(1) + " m";
 
         document.getElementById('calc-A').innerText = A.toFixed(1) + " m²";
-        // Scientific notation if very small
         document.getElementById('calc-I').innerText = currentI > 0.01 ? currentI.toFixed(3) + " W/m²" : currentI.toExponential(2) + " W/m²";
         document.getElementById('calc-db').innerText = dB.toFixed(1) + " dB";
     }
@@ -226,12 +274,10 @@
         const cx = width / 2;
         const cy = height / 2;
         
-        // Map currentR (1 to 10) to screen pixels (max radius ~ 150px)
+        // Map currentR (1 to 10) to screen pixels
         const screenRadius = 20 + (currentR / 10) * 160;
 
         // Visual mapping: How bright is the sphere?
-        // Max theoretical Intensity here is P=100, r=1 => ~7.95 W/m^2
-        // We want a clear visual fade.
         const maxExpectedI = 100 / (4 * PI * 1 * 1);
         let intensityRatio = Math.max(0.05, currentI / maxExpectedI);
         
@@ -303,15 +349,14 @@
             ctx.stroke();
         }
 
-        // Draw "Listener" at the equator (right side of sphere)
-        // Find vertex closest to right edge
-        let rightmost = projected[0];
-        for(let p of projected) {
-            if(p.x > rightmost.x && p.z > -10) rightmost = p;
-        }
-        
+        // --- FIXED EAR POSITION ---
+        // Draw "Listener" at the exact right equator of the projected sphere
+        let edgeScale = fov / (fov + 200); 
+        let earX = cx + (screenRadius * edgeScale);
+        let earY = cy; // Fixed Y position prevents up/down jumping
+
         ctx.beginPath();
-        ctx.arc(rightmost.x, rightmost.y, 8, 0, 2*PI);
+        ctx.arc(earX, earY, 8, 0, 2*PI);
         ctx.fillStyle = '#ff7b72'; // Red listener
         ctx.fill();
         ctx.strokeStyle = '#000';
@@ -321,7 +366,8 @@
         // Listener label
         ctx.fillStyle = '#fff';
         ctx.font = '12px monospace';
-        ctx.fillText("Ear", rightmost.x + 12, rightmost.y + 4);
+        ctx.fillText("Ear", earX + 12, earY + 4);
+        // --------------------------
 
         angleY += 0.005; // Spin slowly
         requestAnimationFrame(draw3D);

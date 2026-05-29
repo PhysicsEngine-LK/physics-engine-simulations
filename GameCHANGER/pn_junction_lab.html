@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - P-N Junction Lab</title>
+    <style>
+        body {
+            background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', Tahoma, sans-serif;
+            display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; min-height: 100vh;
+        }
+        #app-container {
+            background-color: #161b22; border: 1px solid #30363d; border-radius: 12px;
+            padding: 25px; box-shadow: 0 0 40px rgba(0,0,0,0.9); width: 1100px;
+        }
+        h2 { color: #bc8cff; margin-top: 0; text-transform: uppercase; letter-spacing: 1.5px; text-align: center; }
+        p.subtitle { color: #8b949e; font-size: 14px; margin-bottom: 25px; text-align: center; }
+        
+        .main-layout { display: flex; flex-direction: column; gap: 20px; }
+
+        /* Top: Simulation Visualizer */
+        .box {
+            background-color: #090d13; border-radius: 8px; border: 1px solid #30363d;
+            position: relative; overflow: hidden;
+        }
+        .sim-box { height: 350px; box-shadow: inset 0 0 30px rgba(88, 166, 255, 0.05); }
+        canvas { width: 100%; height: 100%; display: block; }
+        
+        /* Bottom: Controls & Graph */
+        .bottom-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        .panel { background-color: #21262d; padding: 20px; border-radius: 8px; border: 1px solid #30363d; display: flex; flex-direction: column; justify-content: center;}
+        .panel h3 { margin-top: 0; color: #58a6ff; font-size: 16px; border-bottom: 1px solid #30363d; padding-bottom: 10px; margin-bottom: 20px;}
+        
+        .control-group { margin-bottom: 25px; }
+        label { display: flex; justify-content: space-between; margin-bottom: 12px; font-weight: bold; font-size: 14px; color: #c9d1d9;}
+        .val-badge { font-family: monospace; font-size: 18px; font-weight: bold; color: #ff7b72; background: #0d1117; padding: 2px 8px; border-radius: 4px; border: 1px solid #30363d;}
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #58a6ff; height: 8px; }
+        
+        /* Alerts & Info */
+        .alert-box {
+            padding: 15px; border-radius: 6px; font-size: 14px; font-weight: bold; text-align: center;
+            background: rgba(48, 54, 61, 0.5); border: 1px solid #30363d; color: #8b949e; line-height: 1.6; transition: 0.3s;
+        }
+        .alert-reverse { background: rgba(88, 166, 255, 0.15); border-color: #58a6ff; color: #58a6ff; }
+        .alert-forward { background: rgba(63, 185, 80, 0.15); border-color: #3fb950; color: #3fb950; box-shadow: 0 0 20px rgba(63, 185, 80, 0.2);}
+        .alert-neutral { background: rgba(139, 148, 158, 0.15); border-color: #8b949e; color: #c9d1d9; }
+
+        /* Graph Box */
+        .graph-box { height: 220px; }
+
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <h2>p-n සන්ධිය සහ නැඹුරු කිරීම (P-N Junction & Biasing)</h2>
+    <p class="subtitle">බාධක විභවය (0.7V) සහ හායිත පෙදෙස (Depletion Layer) වෝල්ටීයතාවය සමඟ වෙනස් වන ආකාරය.</p>
+
+    <div class="main-layout">
+        <div class="box sim-box">
+            <canvas id="simCanvas"></canvas>
+        </div>
+
+        <div class="bottom-layout">
+            <div class="panel">
+                <h3>පාලක (Biasing Controls)</h3>
+                <div class="control-group">
+                    <label>ආරෝපිත වෝල්ටීයතාව (V): <span class="val-badge" id="val-v">0.0 V</span></label>
+                    <input type="range" id="slider-v" min="-5.0" max="3.0" step="0.1" value="0.0" oninput="updatePhysics()">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #8b949e; margin-top: 8px; font-weight: bold;">
+                        <span>පසුමුඛ (-5V)</span>
+                        <span>0V</span>
+                        <span>පෙරමුඛ (+3V)</span>
+                    </div>
+                </div>
+                
+                <div class="alert-box alert-neutral" id="alert-status">
+                    <b>නැඹුරු කර නැත (Unbiased)</b><br>හායිත පෙදෙස සහ බාධක විභවය ස්ථාපිත වී ඇත. ධාරාවක් ගලන්නේ නැත.
+                </div>
+            </div>
+
+            <div class="box graph-box">
+                <canvas id="graphCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const simCanvas = document.getElementById('simCanvas');
+    const simCtx = simCanvas.getContext('2d');
+    const graphCanvas = document.getElementById('graphCanvas');
+    const graphCtx = graphCanvas.getContext('2d');
+
+    let V = 0.0; // Applied Voltage
+    let time = 0;
+    
+    // Particle arrays
+    let holes = [];
+    let electrons = [];
+    let fixedIons = [];
+
+    const BARRIER_POTENTIAL = 0.7; // 0.7V for Silicon
+
+    function initParticles() {
+        holes = [];
+        electrons = [];
+        fixedIons = [];
+        
+        let width = simCanvas.width;
+        let height = simCanvas.height;
+        let midX = width / 2;
+
+        // Generate mobile majority carriers
+        for(let i=0; i<80; i++) {
+            // Holes in P region (Left)
+            holes.push({ x: Math.random() * (midX - 50), y: Math.random() * height, speed: 2 + Math.random()*2 });
+            // Electrons in N region (Right)
+            electrons.push({ x: midX + 50 + Math.random() * (midX - 50), y: Math.random() * height, speed: 2 + Math.random()*2 });
+        }
+
+        // Generate fixed ions near the junction (Depletion region)
+        // Fixed Negative ions on P side
+        for(let i=0; i<25; i++) {
+            fixedIons.push({ x: midX - 15 - Math.random() * 30, y: Math.random() * height, type: 'neg' });
+        }
+        // Fixed Positive ions on N side
+        for(let i=0; i<25; i++) {
+            fixedIons.push({ x: midX + 15 + Math.random() * 30, y: Math.random() * height, type: 'pos' });
+        }
+    }
+
+    function resizeCanvases() {
+        simCanvas.width = simCanvas.parentElement.clientWidth;
+        simCanvas.height = simCanvas.parentElement.clientHeight;
+        
+        graphCanvas.width = graphCanvas.parentElement.clientWidth;
+        graphCanvas.height = graphCanvas.parentElement.clientHeight;
+        
+        if (holes.length === 0) initParticles();
+    }
+    window.addEventListener('resize', resizeCanvases);
+
+    function updatePhysics() {
+        V = parseFloat(document.getElementById('slider-v').value);
+        let valBadge = document.getElementById('val-v');
+        valBadge.innerText = V > 0 ? "+" + V.toFixed(1) + " V" : V.toFixed(1) + " V";
+
+        let alertBox = document.getElementById('alert-status');
+        
+        if (V === 0) {
+            valBadge.style.color = "#8b949e";
+            alertBox.className = "alert-box alert-neutral";
+            alertBox.innerHTML = "<b>නැඹුරු කර නැත (Unbiased)</b><br>හායිත පෙදෙස සහ බාධක විභවය ස්ථාපිත වී ඇත. ධාරාව ශුන්‍යයි.";
+        } else if (V < 0) {
+            valBadge.style.color = "#58a6ff";
+            alertBox.className = "alert-box alert-reverse";
+            alertBox.innerHTML = "🧊 <b>පසුමුඛ නැඹුරුව (Reverse Bias)</b><br>හායිත පෙදෙස පුළුල් වේ. බහුතර ආරෝපණ වාහක වලට ගමන් කළ නොහැක. ධාරාව ශුන්‍යයි.";
+        } else if (V > 0 && V < BARRIER_POTENTIAL) {
+            valBadge.style.color = "#d29922";
+            alertBox.className = "alert-box";
+            alertBox.style.borderColor = "#d29922";
+            alertBox.style.color = "#d29922";
+            alertBox.innerHTML = "⚠️ <b>පෙරමුඛ නැඹුරුව (Forward Bias)</b><br>හායිත පෙදෙස කුඩා වේ, නමුත් බාධක විභවය (0.7V) තවමත් බිඳවැටී නොමැත.";
+        } else {
+            valBadge.style.color = "#3fb950";
+            alertBox.className = "alert-box alert-forward";
+            alertBox.innerHTML = "🔥 <b>පෙරමුඛ නැඹුරුව (Forward Bias)</b><br>බාධක විභවය බිඳ වැටේ! ඉලෙක්ට්‍රෝන සහ කුහර වේගයෙන් ගමන් කරමින් <b>විශාල ධාරාවක්</b> සපයයි.";
+        }
+    }
+
+    // Function for I-V Curve Math
+    function getCurrent(volt) {
+        if (volt < 0) return 0; // Ideal diode reverse current ~0
+        if (volt >= 0 && volt < BARRIER_POTENTIAL) return Math.pow(volt/BARRIER_POTENTIAL, 3) * 0.1; // Slight curve
+        if (volt >= BARRIER_POTENTIAL) return 0.1 + (volt - BARRIER_POTENTIAL) * 2; // Sharp linear rise for visualization
+        return 0;
+    }
+
+    function drawSim() {
+        simCtx.clearRect(0, 0, simCanvas.width, simCanvas.height);
+        let midX = simCanvas.width / 2;
+        let h = simCanvas.height;
+        let w = simCanvas.width;
+
+        // Backgrounds
+        // P-Type Region (Blue tint)
+        simCtx.fillStyle = "rgba(88, 166, 255, 0.1)";
+        simCtx.fillRect(0, 0, midX, h);
+        // N-Type Region (Red/Orange tint)
+        simCtx.fillStyle = "rgba(255, 123, 114, 0.1)";
+        simCtx.fillRect(midX, 0, midX, h);
+
+        // Depletion Layer Math
+        // Base width = 100px. Widens in reverse, shrinks to 0 in forward > 0.7V
+        let depletionWidth = 100;
+        if (V < 0) {
+            depletionWidth = 100 + Math.abs(V) * 25; // Widens up to ~225px
+        } else if (V >= 0 && V < BARRIER_POTENTIAL) {
+            depletionWidth = 100 * (1 - (V / BARRIER_POTENTIAL)); // Shrinks
+        } else {
+            depletionWidth = 0; // Disappears
+        }
+
+        // Draw Depletion Layer
+        if (depletionWidth > 0) {
+            simCtx.fillStyle = "rgba(48, 54, 61, 0.7)";
+            simCtx.fillRect(midX - depletionWidth/2, 0, depletionWidth, h);
+        }
+
+        // Labels
+        simCtx.fillStyle = "rgba(255, 255, 255, 0.8)";
+        simCtx.font = "bold 24px sans-serif";
+        simCtx.textAlign = "center";
+        simCtx.fillText("P-වර්ගය", midX / 2, 40);
+        simCtx.fillText("N-වර්ගය", midX + midX / 2, 40);
+        
+        if (depletionWidth > 0) {
+            simCtx.font = "14px sans-serif";
+            simCtx.fillStyle = "#8b949e";
+            simCtx.fillText("හායිත පෙදෙස", midX, h - 20);
+        }
+
+        // Draw Fixed Ions (Only visible if inside depletion layer loosely)
+        fixedIons.forEach(ion => {
+            if (Math.abs(ion.x - midX) <= (depletionWidth/2 + 20) && depletionWidth > 0) {
+                simCtx.beginPath();
+                simCtx.arc(ion.x, ion.y, 8, 0, Math.PI*2);
+                simCtx.fillStyle = ion.type === 'pos' ? "rgba(255, 123, 114, 0.4)" : "rgba(88, 166, 255, 0.4)";
+                simCtx.fill();
+                simCtx.fillStyle = "#c9d1d9";
+                simCtx.font = "bold 12px monospace";
+                simCtx.fillText(ion.type === 'pos' ? "+" : "-", ion.x, ion.y + 4);
+            }
+        });
+
+        // Move and Draw Mobile Carriers
+        let isConducting = V >= BARRIER_POTENTIAL;
+
+        // Draw Holes (P to N) - White circles with blue stroke
+        holes.forEach(hole => {
+            if (isConducting) {
+                hole.x += hole.speed * (1 + (V - BARRIER_POTENTIAL)); // Move right
+                if (hole.x > w) hole.x = 0; // Wrap around
+            } else {
+                // Jiggle but stay in bounds
+                hole.x += (Math.random() - 0.5) * 2;
+                if (hole.x > midX - depletionWidth/2 - 10) hole.x = midX - depletionWidth/2 - 10;
+                if (hole.x < 10) hole.x = 10;
+            }
+            
+            simCtx.beginPath();
+            simCtx.arc(hole.x, hole.y, 5, 0, Math.PI*2);
+            simCtx.fillStyle = "#0d1117";
+            simCtx.fill();
+            simCtx.lineWidth = 2;
+            simCtx.strokeStyle = "#58a6ff";
+            simCtx.stroke();
+            
+            // tiny plus
+            simCtx.fillStyle = "#58a6ff";
+            simCtx.font = "10px monospace";
+            simCtx.fillText("+", hole.x, hole.y + 3);
+        });
+
+        // Draw Electrons (N to P) - Solid red dots
+        electrons.forEach(elec => {
+            if (isConducting) {
+                elec.x -= elec.speed * (1 + (V - BARRIER_POTENTIAL)); // Move left
+                if (elec.x < 0) elec.x = w; // Wrap around
+            } else {
+                // Jiggle but stay in bounds
+                elec.x += (Math.random() - 0.5) * 2;
+                if (elec.x < midX + depletionWidth/2 + 10) elec.x = midX + depletionWidth/2 + 10;
+                if (elec.x > w - 10) elec.x = w - 10;
+            }
+            
+            simCtx.beginPath();
+            simCtx.arc(elec.x, elec.y, 5, 0, Math.PI*2);
+            simCtx.fillStyle = "#ff7b72";
+            simCtx.fill();
+            
+            // tiny minus
+            simCtx.fillStyle = "#0d1117";
+            simCtx.font = "bold 10px monospace";
+            simCtx.fillText("-", elec.x, elec.y + 3);
+        });
+    }
+
+    function drawGraph() {
+        graphCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+        
+        let w = graphCanvas.width;
+        let h = graphCanvas.height;
+        let padX = 30;
+        let padY = 20;
+
+        // Axes (Origin is shifted since voltage goes from -5 to +3)
+        // Total range = 8. Origin is at 5/8 of the width
+        let originX = padX + (5/8) * (w - 2*padX);
+        let originY = h - padY - 10;
+
+        // Draw Axes
+        graphCtx.strokeStyle = "#30363d"; graphCtx.lineWidth = 2;
+        // Y-axis
+        graphCtx.beginPath(); graphCtx.moveTo(originX, padY); graphCtx.lineTo(originX, h - padY); graphCtx.stroke();
+        // X-axis
+        graphCtx.beginPath(); graphCtx.moveTo(padX, originY); graphCtx.lineTo(w - padX, originY); graphCtx.stroke();
+        
+        graphCtx.fillStyle = "#8b949e"; graphCtx.font = "12px sans-serif";
+        graphCtx.fillText("ධාරාව (I)", originX - 50, padY);
+        graphCtx.fillText("වෝල්ටීයතාව (V)", w - 90, originY + 15);
+        
+        // Draw I-V Curve
+        graphCtx.strokeStyle = "#bc8cff"; graphCtx.lineWidth = 3;
+        graphCtx.beginPath();
+        for(let v = -5.0; v <= 3.0; v += 0.1) {
+            let i_val = getCurrent(v);
+            let px = padX + ((v + 5) / 8) * (w - 2*padX);
+            let py = originY - (i_val / 5.0) * (originY - padY); // Max I scaled to 5 for drawing
+            
+            if (v === -5.0) graphCtx.moveTo(px, py);
+            else graphCtx.lineTo(px, py);
+        }
+        graphCtx.stroke();
+
+        // Draw Current Point
+        let currentI = getCurrent(V);
+        let dotX = padX + ((V + 5) / 8) * (w - 2*padX);
+        let dotY = originY - (currentI / 5.0) * (originY - padY);
+        
+        // Glow effect
+        graphCtx.shadowBlur = 15;
+        graphCtx.shadowColor = V >= BARRIER_POTENTIAL ? "#3fb950" : (V < 0 ? "#58a6ff" : "#ff7b72");
+        graphCtx.fillStyle = graphCtx.shadowColor;
+        graphCtx.beginPath(); graphCtx.arc(dotX, dotY, 6, 0, Math.PI*2); graphCtx.fill();
+        graphCtx.shadowBlur = 0;
+
+        // Coordinate Text
+        graphCtx.fillStyle = "#c9d1d9";
+        graphCtx.font = "bold 13px sans-serif";
+        graphCtx.fillText(`(${V.toFixed(1)}V, ${currentI.toFixed(2)}A)`, dotX - 30, dotY - 15);
+    }
+
+    function loop() {
+        time++;
+        drawSim();
+        drawGraph();
+        requestAnimationFrame(loop);
+    }
+
+    // Initialize
+    resizeCanvases();
+    updatePhysics();
+    loop();
+
+</script>
+</body>
+</html>
