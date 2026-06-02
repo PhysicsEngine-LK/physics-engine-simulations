@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PHYSICS ENGINE | p-n Junction V-I Characteristics</title>
+<style>
+    :root {
+        --bg-color: #0d1117;
+        --panel-bg: #161b22;
+        --text-color: #c9d1d9;
+        --accent: #58a6ff;
+        --border: #30363d;
+        --positive-side: #39ff14;
+        --negative-side: #ff3b30;
+        --dot-color: #ff7b72;
+    }
+    body {
+        margin: 0;
+        padding: 20px;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+    }
+    h1 {
+        color: var(--accent);
+        text-align: center;
+        margin-bottom: 5px;
+    }
+    p.subtitle {
+        color: #8b949e;
+        text-align: center;
+        margin-top: 0;
+        margin-bottom: 20px;
+    }
+    .dashboard {
+        background: var(--panel-bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        max-width: 1100px; /* Increased width to accommodate side-by-side layout */
+        width: 100%;
+        display: flex; /* Flex layout for graph and side panel */
+        gap: 20px;
+    }
+    
+    .graph-section {
+        flex: 2; /* Graph takes up more space */
+        display: flex;
+        flex-direction: column;
+    }
+
+    .canvas-container {
+        display: flex;
+        justify-content: center;
+        background: #010409;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px;
+        position: relative;
+    }
+    canvas {
+        background: transparent;
+        width: 100%; /* Make canvas responsive */
+        height: auto;
+    }
+
+    .side-panel {
+        flex: 1; /* Side panel for controls and status */
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .controls {
+        display: flex;
+        flex-direction: column; /* Controls stacked vertically */
+        gap: 20px;
+        background: #0d1117;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+    }
+    .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    label {
+        font-weight: bold;
+        font-size: 14px;
+        color: #a5d6ff;
+    }
+    select {
+        padding: 10px;
+        border-radius: 6px;
+        background: #21262d;
+        color: white;
+        border: 1px solid var(--border);
+        cursor: pointer;
+        font-family: inherit;
+    }
+    input[type=range] {
+        width: 100%;
+        accent-color: var(--accent);
+        cursor: pointer;
+    }
+    .val-display {
+        font-size: 18px;
+        font-weight: bold;
+        color: #ff7b72;
+    }
+    
+    .status-panel {
+        background: #0d1117;
+        border-left: 4px solid var(--accent);
+        padding: 20px;
+        border-radius: 4px;
+        font-size: 15px;
+        line-height: 1.6;
+        flex-grow: 1; /* Allow status panel to fill available space */
+    }
+    .status-title {
+        font-weight: bold;
+        color: white;
+        margin-bottom: 10px;
+        font-size: 18px;
+    }
+</style>
+</head>
+<body>
+
+<h1>PHYSICS ENGINE | p-n සන්ධි ඩයෝඩයේ V-I ලාක්ෂණිකය</h1>
+<p class="subtitle">Forward, Reverse සහ Breakdown අවස්ථා අධ්‍යයනය කරන්න</p>
+
+<div class="dashboard">
+    <div class="graph-section">
+        <div class="canvas-container">
+            <canvas id="graphCanvas" width="700" height="600"></canvas>
+        </div>
+    </div>
+
+    <div class="side-panel">
+        <div class="controls">
+            <div class="control-group">
+                <label for="materialSelect">අර්ධ සන්නායක ද්‍රව්‍යය (Material):</label>
+                <select id="materialSelect">
+                    <option value="Si">සිලිකන් (Silicon - Si) : කඩඉම් විභවය 0.7 V</option>
+                    <option value="Ge">ජර්මේනියම් (Germanium - Ge) : කඩඉම් විභවය 0.3 V</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="voltageSlider">වෝල්ටීයතාව (V): <span class="val-display" id="voltageVal">0.0 V</span></label>
+                <input type="range" id="voltageSlider" min="-8" max="2" step="0.1" value="0">
+            </div>
+        </div>
+
+        <div class="status-panel" id="statusPanel">
+            <div class="status-title" id="statusTitle">අවස්ථාව:</div>
+            <div id="statusText">වෝල්ටීයතාව වෙනස් කර වෙනස නිරීක්ෂණය කරන්න.</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('graphCanvas');
+    const ctx = canvas.getContext('2d');
+    const materialSelect = document.getElementById('materialSelect');
+    const voltageSlider = document.getElementById('voltageSlider');
+    const voltageVal = document.getElementById('voltageVal');
+    const statusTitle = document.getElementById('statusTitle');
+    const statusText = document.getElementById('statusText');
+
+    // Graph settings
+    const width = canvas.width;
+    const height = canvas.height;
+    const originX = width * 0.75; // 75% of width for origin to show more reverse bias
+    
+    // Adjusted originY to match the new height (now 600px tall)
+    // Moving it slightly up relatively so there is more room for the breakdown line to go down
+    const originY = height * 0.55; 
+    
+    const scaleX = 60; // pixels per Volt
+    const scaleY = 10; // pixels per mA
+
+    const V_BR = -5.0; // Breakdown voltage
+
+    function getKneeVoltage() {
+        return materialSelect.value === 'Si' ? 0.7 : 0.3;
+    }
+
+    // Function to calculate current given voltage
+    function calculateCurrent(v, vk) {
+        if (v >= vk) {
+            // Forward exponential curve approximation visually
+            return Math.pow(v - vk + 0.5, 4) * 2; 
+        } else if (v >= 0 && v < vk) {
+            // Very small forward current before knee
+            return 0; 
+        } else if (v > V_BR && v < 0) {
+            // Reverse leakage current (micro amps, visually small negative)
+            return -0.5; 
+        } else {
+            // Breakdown region
+            // Increased the multiplier to make the drop even sharper on the taller graph
+            return -0.5 - Math.pow(Math.abs(v - V_BR), 3) * 15;
+        }
+    }
+
+    function drawAxes() {
+        ctx.beginPath();
+        ctx.strokeStyle = '#484f58';
+        ctx.lineWidth = 1;
+        
+        // Grid lines
+        for (let x = originX % scaleX; x < width; x += scaleX) {
+            ctx.moveTo(x, 0); ctx.lineTo(x, height);
+        }
+        for (let y = originY % scaleY; y < height; y += scaleY * 2) {
+            ctx.moveTo(0, y); ctx.lineTo(width, y);
+        }
+        ctx.stroke();
+
+        // Main Axes
+        ctx.beginPath();
+        ctx.strokeStyle = '#8b949e';
+        ctx.lineWidth = 2;
+        // X axis
+        ctx.moveTo(0, originY); ctx.lineTo(width, originY);
+        // Y axis
+        ctx.moveTo(originX, 0); ctx.lineTo(originX, height);
+        ctx.stroke();
+
+        // Labels
+        ctx.fillStyle = '#8b949e';
+        ctx.font = '14px Arial';
+        ctx.fillText('V (V)', width - 40, originY - 10);
+        ctx.fillText('I (mA)', originX + 10, 20);
+        ctx.fillText('0', originX + 5, originY + 15);
+        ctx.fillText('-5V (V_BR)', originX - (5 * scaleX) - 30, originY + 20);
+    }
+
+    function drawCurve(vk) {
+        const drawHalf = (minV, maxV, color) => {
+            ctx.beginPath();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = color;
+
+            let started = false;
+            for (let px = 0; px <= width; px += 2) {
+                const v = (px - originX) / scaleX;
+                if (v < minV || v > maxV) continue;
+
+                const i = calculateCurrent(v, vk);
+                const py = originY - (i * scaleY);
+
+                // Limit drawing within canvas to prevent massive off-screen rendering
+                if (py < -50 || py > height + 50) continue;
+
+                if (!started) {
+                    ctx.moveTo(px, py);
+                    started = true;
+                } else {
+                    ctx.lineTo(px, py);
+                }
+            }
+            ctx.stroke();
+        };
+
+        drawHalf(0, Infinity, '#39ff14');
+        drawHalf(-Infinity, 0, '#ff3b30');
+    }
+
+    function drawActivePoint(v, vk) {
+        let i = calculateCurrent(v, vk);
+        let px = originX + (v * scaleX);
+        let py = originY - (i * scaleY);
+
+        // Draw dotted lines to axes
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.strokeStyle = '#a5d6ff';
+        ctx.lineWidth = 1;
+        ctx.moveTo(px, originY); ctx.lineTo(px, py);
+        ctx.moveTo(originX, py); ctx.lineTo(px, py);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset
+
+        // Draw Point
+        ctx.beginPath();
+        ctx.arc(px, py, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = 'var(--dot-color)';
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    function updateStatus(v, vk) {
+        let title = "";
+        let text = "";
+        let panelColor = "";
+
+        if (v > vk) {
+            title = "පෙර නැඹුරු අවස්ථාව (Forward Bias)";
+            text = "කඩඉම් වෝල්ටීයතාව පසුකර ඇති බැවින්, ධාරාව අතිශය සීඝ්‍රයෙන් (ඝාතීයව) ඉහළ යයි.";
+            panelColor = "#3fb950"; // Green
+        } else if (v >= 0 && v <= vk) {
+            title = "පෙර නැඹුරු අවස්ථාව (Forward Bias)";
+            text = "තවමත් කඩඉම් වෝල්ටීයතාවයට (Knee Voltage) ළඟා වී නොමැත. එබැවින් ධාරාව නොගැලෙන තරම් කුඩාය.";
+            panelColor = "#58a6ff"; // Blue
+        } else if (v > V_BR && v < 0) {
+            title = "පසු නැඹුරු අවස්ථාව (Reverse Bias)";
+            text = "ගලන්නේ සුළුතර වාහක නිසා ඇතිවන ඉතා කුඩා කාන්දු ධාරාවක් (Leakage Current) පමණි. මෙය වෝල්ටීයතාව මත රඳා නොපවතී.";
+            panelColor = "#f39c12"; // Orange
+        } else if (v <= V_BR) {
+            title = "බිඳවැටුම් අවස්ථාව (Breakdown Region)";
+            text = "ඕඝ බිඳවැටීම (Avalanche Breakdown) සිදුවේ. සහසංයුජ බන්ධන බිඳී ක්ෂණිකව විශාල ධාරාවක් ගලයි. ඩයෝඩය විනාශ විය හැක!";
+            panelColor = "#ff7b72"; // Red
+        }
+
+        statusTitle.textContent = title;
+        statusTitle.style.color = panelColor;
+        statusText.innerHTML = text;
+        document.getElementById('statusPanel').style.borderLeftColor = panelColor;
+    }
+
+    function render() {
+        let v = parseFloat(voltageSlider.value);
+        let vk = getKneeVoltage();
+        
+        voltageVal.textContent = v > 0 ? `+${v.toFixed(1)} V` : `${v.toFixed(1)} V`;
+        
+        ctx.clearRect(0, 0, width, height);
+        drawAxes();
+        drawCurve(vk);
+        drawActivePoint(v, vk);
+        updateStatus(v, vk);
+    }
+
+    // Event Listeners
+    voltageSlider.addEventListener('input', render);
+    materialSelect.addEventListener('change', render);
+
+    // Initial render
+    render();
+</script>
+</body>
+</html>

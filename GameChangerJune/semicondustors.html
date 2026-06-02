@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hole Conduction Simulation</title>
+<style>
+    :root {
+        --bg: #050a12; --panel: #0d1624; --text: #eff6ff; 
+        --si: #2ecc71; --hole: #46d7ff; --bound: #bdc3c7;
+    }
+    body {
+        margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+        font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+        display: flex; flex-direction: column; align-items: center; padding: 20px;
+    }
+    .header { text-align: center; margin-bottom: 20px; }
+    h1 { color: var(--si); margin: 0 0 10px; font-size: 28px; }
+    p.sub { color: #9cafc3; margin: 0; max-width: 800px; line-height: 1.5; }
+    .eq-box {
+        display: inline-block; margin-top: 12px; padding: 8px 14px;
+        border-radius: 8px; border: 3px solid #9b59b6; background: rgba(155,89,182,0.06);
+        font-family: monospace; color: #ffffff; font-weight: 700; font-size: 16px;
+    }
+    
+    .dashboard { display: flex; gap: 20px; max-width: 900px; width: 100%; justify-content: center; flex-wrap: wrap; }
+    .canvas-container { background: #080f1a; border: 1px solid #1d3145; border-radius: 12px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    canvas { background: #04070c; border-radius: 8px; }
+    
+    .controls { display: flex; flex-direction: column; gap: 15px; width: 320px; }
+    .panel { background: var(--panel); border: 1px solid #1a2c3f; border-radius: 12px; padding: 15px; }
+    .panel h3 { margin: 0 0 15px; color: #ffd055; font-size: 16px; border-bottom: 1px solid #29445a; padding-bottom: 8px; }
+    
+    .temp-control { display: flex; flex-direction: column; background: #0a121e; padding: 15px; border-radius: 8px; border: 1px dashed #29445b;}
+    .temp-control label { font-size: 16px; color: #ff9e54; font-weight: bold; margin-bottom: 12px; display: flex; justify-content: space-between;}
+    input[type=range] { width: 100%; accent-color: #ff9e54; cursor: pointer; }
+
+    .stats { display: flex; justify-content: center; margin-top: 10px; }
+    .stat-box { background: #0a121e; border: 1px solid #1d3145; padding: 15px; border-radius: 8px; text-align: center; width: 100%;}
+    .stat-box span { display: block; font-size: 14px; color: #9cafc3; margin-bottom: 5px; }
+    .stat-box strong { font-size: 32px; color: var(--hole); }
+
+    .legend { display: flex; flex-direction: column; gap: 12px; font-size: 15px; color: #c6d6e6; margin-top: 15px; }
+    .legend-item { display: flex; align-items: center; gap: 10px; }
+    .dot { width: 14px; height: 14px; border-radius: 50%; }
+    .dot.si { background: var(--si); }
+    .dot.h { border: 2px solid var(--hole); background: transparent; box-shadow: 0 0 8px var(--hole); }
+    .dot.be { background: var(--bound); }
+</style>
+</head>
+<body>
+
+    <div class="header">
+    <h1>සංයුජතා කලාපයේ කුහර ගමන් කිරීම (Hole Conduction)</h1>
+    <p class="sub">බන්ධනයක් බිඳ වැටෙන සෑම විටම නිදහස් ඉලෙක්ට්‍රෝනයක් හා එය තිබූ තැන 'කුහරයක්' (Hole) සෑදේ. මෙලෙස ඇතිවන ඉලෙක්ට්‍රෝන නැවත කුහර සමඟ ප්‍රතිසංයෝජනය වීමද සිදුවේ. මෙම ක්‍රියාවලි දෙක ගතික සමතුලිතතාවකට පත්වන විට නියත වාහක ඝනත්වයක් පවතී.</p>
+    <div class="eq-box">n = n<sub>e</sub> = n<sub>h</sub></div>
+    </div>
+
+<div class="dashboard">
+    <div class="canvas-container">
+        <canvas id="simCanvas" width="500" height="480"></canvas>
+    </div>
+    
+    <div class="controls">
+        <div class="panel">
+            <h3>උෂ්ණත්ව පාලකය (Temperature)</h3>
+            <div class="temp-control">
+                <label><span>උෂ්ණත්වය:</span> <span id="temp-val">0 K</span></label>
+                <input type="range" id="temp-slider" min="0" max="600" step="10" value="0">
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>බිඳුණු බන්ධන ප්‍රමාණය</h3>
+            <div class="stats">
+                <div class="stat-box stat-h">
+                    <span>නිදහස් ඉලෙක්ට්‍රෝන සාන්ද්‍රණය = කුහර සාන්ද්‍රණය</span>
+                    <strong id="h-count">0</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>සංකේත (Legend)</h3>
+            <div class="legend">
+                <div class="legend-item"><div class="dot si"></div> සිලිකන් (Si) පරමාණුව</div>
+                <div class="legend-item"><div class="dot be"></div> බන්ධන ඉලෙක්ට්‍රෝනය (Bound)</div>
+                <div class="legend-item"><div class="dot h"></div> කුහරය (Hole)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+const hCountEl = document.getElementById('h-count');
+const tempSlider = document.getElementById('temp-slider');
+const tempVal = document.getElementById('temp-val');
+
+const rows = 4, cols = 4;
+const startX = 70, startY = 70;
+const spacingX = 120, spacingY = 110;
+
+let atoms = [];
+let bonds = [];
+
+function initGrid() {
+    atoms = []; bonds = [];
+
+    // සිලිකන් පරමාණු නිර්මාණය
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            atoms.push({ id: r*cols+c, r, c, x: startX + c*spacingX, y: startY + r*spacingY });
+        }
+    }
+
+    // බන්ධන සහ බන්ධන ඉලෙක්ට්‍රෝන නිර්මාණය
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            let a1 = atoms[r*cols+c];
+            if (c < cols - 1) bonds.push(createBond(a1, atoms[r*cols+(c+1)]));
+            if (r < rows - 1) bonds.push(createBond(a1, atoms[(r+1)*cols+c]));
+        }
+    }
+}
+
+function createBond(a1, a2) {
+    let dx = a2.x - a1.x, dy = a2.y - a1.y;
+    return {
+        a1, a2,
+        slots: [
+            { state: 'full', x: a1.x + dx*0.35, y: a1.y + dy*0.35 },
+            { state: 'full', x: a1.x + dx*0.65, y: a1.y + dy*0.65 }
+        ]
+    };
+}
+
+function getHoleCount() {
+    let h = 0;
+    bonds.forEach(b => b.slots.forEach(s => { if(s.state === 'hole') h++; }));
+    return h;
+}
+
+tempSlider.oninput = () => { tempVal.textContent = tempSlider.value + ' K'; };
+
+function updateLogic() {
+    let tempK = parseInt(tempSlider.value);
+    
+    // 1. උෂ්ණත්වය අනුව ජනනය විය යුතු කුහර ගණන (Max at 600K -> 12 holes)
+    let targetHoles = Math.floor((tempK / 600) * 12); 
+    let currentHoles = getHoleCount();
+
+    // කුහර ජනනය (බන්ධනයක් බිඳී යාම - නිදහස් වන ඉලෙක්ට්‍රෝනය නොපෙන්වයි)
+    if (currentHoles < targetHoles && Math.random() < 0.2) {
+        let fullSlots = [];
+        bonds.forEach(b => b.slots.forEach(s => { if(s.state === 'full') fullSlots.push(s); }));
+        if (fullSlots.length > 0) {
+            let slot = fullSlots[Math.floor(Math.random() * fullSlots.length)];
+            slot.state = 'hole'; 
+        }
+    }
+    
+    // උෂ්ණත්වය අඩු වනවිට අතිරික්ත කුහර නැවත පිරවීම (Recombination)
+    if (currentHoles > targetHoles && Math.random() < 0.2) {
+        let holeSlots = [];
+        bonds.forEach(b => b.slots.forEach(s => { if(s.state === 'hole') holeSlots.push(s); }));
+        if (holeSlots.length > 0) {
+            let slot = holeSlots[Math.floor(Math.random() * holeSlots.length)];
+            slot.state = 'full';
+        }
+    }
+
+    // 2. කුහර ගමන් කිරීම (යාබද බන්ධන ඉලෙක්ට්‍රෝනයක් කුහරය වෙත පැනීම)
+    if (Math.random() < 0.3) { 
+        let holeSlots = [];
+        bonds.forEach(b => b.slots.forEach(s => { if(s.state === 'hole') holeSlots.push({b, s}); }));
+        
+        if (holeSlots.length > 0) {
+            let target = holeSlots[Math.floor(Math.random() * holeSlots.length)];
+            let adjSlots = [];
+            
+            // කුහරයට අදාළ පරමාණු දෙකට සම්බන්ධ අනෙකුත් බන්ධන සෙවීම
+            bonds.forEach(b => {
+                if (b.a1 === target.b.a1 || b.a1 === target.b.a2 || b.a2 === target.b.a1 || b.a2 === target.b.a2) {
+                    if (b !== target.b) {
+                        b.slots.forEach(s => { if(s.state === 'full') adjSlots.push(s); });
+                    }
+                }
+            });
+
+            if (adjSlots.length > 0) {
+                // යාබද ඉලෙක්ට්‍රෝනයක් කුහරයට පැනීම
+                let donor = adjSlots[Math.floor(Math.random() * adjSlots.length)];
+                donor.state = 'hole';      // ඉලෙක්ට්‍රෝනය ආ තැන අලුත් කුහරයක් සෑදීම
+                target.s.state = 'full';   // පරණ කුහරය ඉලෙක්ට්‍රෝනයකින් පිරීම
+            }
+        }
+    }
+
+    // දත්ත යාවත්කාලීන කිරීම
+    hCountEl.textContent = getHoleCount();
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.lineWidth = 3;
+    bonds.forEach(b => {
+        // බන්ධන රේඛාව
+        ctx.strokeStyle = '#1d3145';
+        ctx.beginPath(); ctx.moveTo(b.a1.x, b.a1.y); ctx.lineTo(b.a2.x, b.a2.y); ctx.stroke();
+
+        // බන්ධන කුහර සහ ඉලෙක්ට්‍රෝන
+        b.slots.forEach(s => {
+            ctx.beginPath();
+            if (s.state === 'full') {
+                ctx.arc(s.x, s.y, 4, 0, Math.PI*2);
+                ctx.fillStyle = '#bdc3c7';
+                ctx.fill();
+            } else {
+                ctx.arc(s.x, s.y, 5, 0, Math.PI*2);
+                ctx.strokeStyle = '#46d7ff';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                // දීප්තියක් එක් කිරීම
+                ctx.shadowColor = '#46d7ff';
+                ctx.shadowBlur = 8;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+        });
+    });
+
+    atoms.forEach(a => {
+        ctx.beginPath(); ctx.arc(a.x, a.y, 20, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(46, 204, 113, 0.15)';
+        ctx.fill();
+
+        ctx.beginPath(); ctx.arc(a.x, a.y, 14, 0, Math.PI*2);
+        ctx.fillStyle = '#2ecc71';
+        ctx.fill();
+        ctx.strokeStyle = '#04070c'; ctx.lineWidth = 2; ctx.stroke();
+        
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('Si', a.x, a.y);
+    });
+}
+
+function loop() {
+    updateLogic();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+initGrid();
+loop();
+</script>
+</body>
+</html>

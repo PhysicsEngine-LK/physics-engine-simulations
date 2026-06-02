@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intrinsic, P-type and N-type Semiconductor Simulation</title>
+<style>
+:root{
+    --bg:#050a12; --panel:#0d1624; --text:#eff6ff; --muted:#9cafc3;
+    --si:#2ecc71; --b:#9b59b6; --as:#e67e22;
+    --hole:#46d7ff; --bond:#bdc3c7; --electron:#f39c12;
+    --danger:#ff6b6b; --line:#1d3145; --gold:#ffd055; --math:#d6e8ff;
+}
+*{box-sizing:border-box}
+body{
+    margin:0; min-height:100vh; background:var(--bg); color:var(--text);
+    font-family:"Segoe UI",Tahoma,Arial,sans-serif;
+    display:flex; flex-direction:column; align-items:center; padding:18px;
+}
+.header{text-align:center; max-width:1220px; margin-bottom:16px}
+h1{color:var(--gold); margin:0 0 8px; font-size:27px}
+.sub{color:var(--muted); margin:0 auto; line-height:1.55; font-size:14px}
+.dashboard{
+    display:flex; gap:18px; width:100%; max-width:1280px;
+    justify-content:center; align-items:flex-start; flex-wrap:wrap;
+}
+.canvas-container{
+    background:#080f1a; border:1px solid var(--line); border-radius:12px;
+    padding:12px; box-shadow:0 10px 30px rgba(0,0,0,.45);
+}
+canvas{display:block; background:#04070c; border-radius:8px}
+.symbol-note{
+    width:100%; max-width:620px; background:#0d1624; margin-top:10px;
+    border-left:3px solid var(--gold); border-radius:6px; padding:9px 11px;
+    font-size:12.5px; color:#ceddeb; line-height:1.45;
+}
+.controls{display:flex; flex-direction:column; gap:12px; width:455px}
+.panel{background:var(--panel); border:1px solid #1a2c3f; border-radius:12px; padding:14px}
+.panel h3{
+    margin:0 0 12px; color:var(--gold); font-size:16px;
+    border-bottom:1px solid #29445a; padding-bottom:8px;
+}
+.btn-group{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px}
+button{
+    flex:1 1 46%; background:#112131; color:var(--text);
+    border:1px solid #29445b; padding:9px; border-radius:8px;
+    cursor:pointer; font-size:13px; font-weight:bold; transition:.18s;
+}
+button:hover{background:#1a334a}
+#btn-b{border-color:var(--b); color:#e2bdf1}
+#btn-as{border-color:var(--as); color:#ffd0a5}
+#btn-reset{flex:1 1 100%; border-color:var(--danger)}
+.temp-control{
+    display:flex; flex-direction:column; background:#0a121e; padding:10px;
+    border-radius:8px; border:1px dashed #29445b;
+}
+.temp-control label{
+    font-size:13px; color:#ffb36d; font-weight:bold; margin-bottom:8px;
+    display:flex; justify-content:space-between;
+}
+input[type=range]{width:100%; accent-color:#ff9e54; cursor:pointer}
+.scale-note{
+    font-size:12px; color:#a9c0d5; margin:9px 0 0; line-height:1.45;
+}
+.material-badge{
+    background:#101e2e; border:1px solid #29445a; border-radius:8px;
+    padding:10px; margin-top:10px; text-align:center;
+    color:#cfe6ff; font-weight:700;
+}
+.model-badge{
+    margin-top:8px; padding:8px 10px; border-radius:8px;
+    font-size:12px; font-weight:700; text-align:center;
+}
+.model-badge.measured{
+    color:#a6ebc0; background:rgba(46,204,113,.08); border:1px solid rgba(46,204,113,.38);
+}
+.model-badge.extrapolated{
+    color:#ffd198; background:rgba(243,156,18,.08); border:1px solid rgba(243,156,18,.42);
+}
+.concentration-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.concentration-box{
+    background:#0a121e; border:1px solid var(--line); padding:10px;
+    border-radius:8px; min-height:84px;
+}
+.concentration-box span{display:block; font-size:12px; color:var(--muted); margin-bottom:6px}
+.concentration-box strong{font-size:19px; white-space:nowrap}
+.stat-e strong{color:var(--electron)}
+.stat-h strong{color:var(--hole)}
+.parameters{
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:7px; margin-top:9px;
+}
+.parameter{
+    padding:8px 5px; background:#09121e; border:1px solid var(--line);
+    border-radius:7px; text-align:center;
+}
+.parameter .name{font-size:11px; color:var(--muted); margin-bottom:4px}
+.parameter .value{font-size:12px; color:#ebf5ff; font-weight:700}
+.equations{
+    margin-top:10px; padding:10px; background:#08111c;
+    border-radius:8px; font-size:13px; color:var(--math); line-height:1.72;
+    border:1px solid #182a3c;
+}
+.equations .eq-title{color:var(--gold); font-weight:700; margin-bottom:3px}
+.equations .current{
+    margin-top:7px; padding-top:7px; border-top:1px solid #243a4e; color:#eff6ff;
+}
+.equations .small{font-size:11.5px; color:#9eb4c9; line-height:1.45; margin-top:6px}
+.note{
+    margin:10px 0 0; font-size:12px; color:#94a8bd;
+    line-height:1.45;
+}
+.legend{display:flex; flex-wrap:wrap; gap:8px; font-size:12px; color:#c6d6e6}
+.legend-item{display:flex; align-items:center; gap:6px; width:47%}
+.dot{width:12px; height:12px; border-radius:50%}
+.dot.si{background:var(--si)}
+.dot.b{background:var(--b)}
+.dot.as{background:var(--as)}
+.dot.fe{background:var(--electron); box-shadow:0 0 8px var(--electron)}
+.dot.h{border:2px solid var(--hole); background:transparent}
+.charge{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:25px; height:18px; border-radius:4px; font-weight:bold; font-size:11px;
+}
+.charge.bp{background:rgba(155,89,182,.25); color:#edd2f7}
+.charge.asp{background:rgba(230,126,34,.25); color:#ffd3ae}
+sup,sub{line-height:0}
+@media(max-width:1150px){.controls{width:620px}}
+</style>
+</head>
+<body>
+<div class="header">
+    <h1>PHYSICS ENGINE | Semiconductor Simulation</h1>
+    
+</div>
+
+<div class="dashboard">
+    <div>
+        <div class="canvas-container">
+            <canvas id="simCanvas" width="620" height="520"></canvas>
+        </div>
+        <!-- symbol notes removed -->
+    </div>
+
+    <div class="controls">
+        <div class="panel">
+            <h3>මාත්‍රණය සහ උෂ්ණත්වය</h3>
+            <div class="btn-group">
+                <button id="btn-b" onclick="addDopant('B')">+ Boron (B)<br><small>Acceptor → hole</small></button>
+                <button id="btn-as" onclick="addDopant('As')">+ Arsenic (As)<br><small>Donor → electron</small></button>
+                <button id="btn-reset" onclick="resetGrid()">Reset / නිසග අර්ධ සන්නායක</button>
+            </div>
+            <div class="temp-control">
+                <label><span>උෂ්ණත්වය:</span><span id="temp-val">300 K</span></label>
+                <input type="range" id="temp-slider" min="250" max="500" step="10" value="300">
+            </div>
+            <p class="scale-note">
+                තාප ශක්තිය නිසා නිදහස් ඉලෙක්ට්‍රෝනයක් ඇති වන සෑම විටම කුහරයක් ද ඇති වේ. බාහිර විද්‍යුත් ක්ෂේත්‍රයක් නොමැති නිසා ආරෝපණ වාහක අහඹු ලෙස ගමන් කරයි.
+            </p>
+            <div class="material-badge" id="material-type">නිසග අර්ධ සන්නායක</div>
+        </div>
+
+        <div class="panel">
+            <h3>Carrier Concentration / වාහක සාන්ද්‍රණය</h3>
+            <div class="concentration-grid">
+                <div class="concentration-box stat-e">
+                    <span>Electron concentration, n</span>
+                    <strong id="e-density">0 cm⁻³</strong>
+                </div>
+                <div class="concentration-box stat-h">
+                    <span>Hole concentration, p</span>
+                    <strong id="h-density">0 cm⁻³</strong>
+                </div>
+            </div>
+            <!-- parameter cards and equations removed -->
+        </div>
+
+        <div class="panel">
+            <h3>සංකේත</h3>
+            <div class="legend">
+                <div class="legend-item"><div class="dot si"></div> Silicon (Si)</div>
+                <div class="legend-item"><div class="dot b"></div> Boron (B)</div>
+                <div class="legend-item"><div class="dot as"></div> Arsenic (As)</div>
+                <div class="legend-item"><div class="dot fe"></div> Free electron</div>
+                <div class="legend-item"><div class="dot h"></div> Hole</div>
+                <div class="legend-item"><span class="charge bp">B−</span> Fixed acceptor ion</div>
+                <div class="legend-item"><span class="charge asp">As+</span> Fixed donor ion</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+"use strict";
+
+const canvas = document.getElementById("simCanvas");
+const ctx = canvas.getContext("2d");
+
+const eDensityEl = document.getElementById("e-density");
+const hDensityEl = document.getElementById("h-density");
+const tempSlider = document.getElementById("temp-slider");
+const tempVal = document.getElementById("temp-val");
+const materialType = document.getElementById("material-type");
+// Removed references to ni/ND/NA, equations and model-range status (UI removed)
+
+const colours = {
+    si: "#2ecc71",
+    boron: "#9b59b6",
+    arsenic: "#e67e22",
+    hole: "#46d7ff",
+    electron: "#f39c12",
+    bond: "#bdc3c7"
+};
+
+const rows = 4;
+const cols = 5;
+const startX = 72;
+const startY = 76;
+const spacingX = 116;
+const spacingY = 119;
+
+const DOPANT_STEP = 1.0e15;       // cm^-3 represented by one dopant symbol
+
+/*
+  Experimentally based silicon intrinsic-carrier-density fit:
+  K. Misiakos and D. Tsamakis,
+  "Accurate measurements of the silicon intrinsic carrier density from 78 to 340 K",
+  Journal of Applied Physics 74, 3293 (1993).
+
+  ni(T) = 5.29 × 10^19 (T/300)^2.54 exp(-6726/T) cm^-3
+
+  The fit is used directly within the published measured range up to 340 K.
+  For 350–500 K, it is extended as a clearly labelled classroom extrapolation
+  so students can visualize the rapid temperature effect.
+*/
+const MISIAKOS_A = 5.29e19;
+const MISIAKOS_POWER = 2.54;
+const MISIAKOS_EXPONENT = 6726;
+
+let atoms = [];
+let bonds = [];
+let freeElectrons = [];
+let visibleHoles = [];
+let physics = {};
+
+function initGrid() {
+    atoms = [];
+    bonds = [];
+    freeElectrons = [];
+    visibleHoles = [];
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            atoms.push({
+                id: r * cols + c,
+                r, c,
+                x: startX + c * spacingX,
+                y: startY + r * spacingY,
+                type: "Si"
+            });
+        }
+    }
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const atom = atoms[r * cols + c];
+            if (c < cols - 1) bonds.push(createBond(atom, atoms[r * cols + c + 1]));
+            if (r < rows - 1) bonds.push(createBond(atom, atoms[(r + 1) * cols + c]));
+        }
+    }
+
+    updatePhysics();
+}
+
+function createBond(a1, a2) {
+    const dx = a2.x - a1.x;
+    const dy = a2.y - a1.y;
+    return {
+        a1, a2,
+        slots: [
+            { x: a1.x + dx * 0.37, y: a1.y + dy * 0.37 },
+            { x: a1.x + dx * 0.63, y: a1.y + dy * 0.63 }
+        ]
+    };
+}
+
+window.addDopant = function(type) {
+    const siliconAtoms = atoms.filter(atom => atom.type === "Si");
+    if (siliconAtoms.length === 0) return;
+
+    const chosen = siliconAtoms[Math.floor(Math.random() * siliconAtoms.length)];
+    chosen.type = type;
+    updatePhysics();
+};
+
+window.resetGrid = function() {
+    initGrid();
+};
+
+tempSlider.addEventListener("input", () => {
+    tempVal.textContent = `${tempSlider.value} K`;
+    updatePhysics();
+});
+
+/*
+  Experimentally based fit for silicon intrinsic carrier concentration
+  within the published measured range of 78–340 K.
+*/
+function intrinsicConcentration(tempK) {
+    return MISIAKOS_A *
+        Math.pow(tempK / 300, MISIAKOS_POWER) *
+        Math.exp(-MISIAKOS_EXPONENT / tempK);
+}
+
+function scientificHTML(value, digits = 2) {
+    if (!Number.isFinite(value) || value === 0) return "0";
+    const exponent = Math.floor(Math.log10(Math.abs(value)));
+    const coefficient = value / Math.pow(10, exponent);
+    return `${coefficient.toFixed(digits)} × 10<sup>${exponent}</sup>`;
+}
+
+function scientificPlain(value, digits = 2) {
+    if (!Number.isFinite(value) || value === 0) return "0";
+    const exponent = Math.floor(Math.log10(Math.abs(value)));
+    const coefficient = value / Math.pow(10, exponent);
+    return `${coefficient.toFixed(digits)}×10^${exponent}`;
+}
+
+function updatePhysics() {
+    const tempK = Number(tempSlider.value);
+    const donorCount = atoms.filter(atom => atom.type === "As").length;
+    const acceptorCount = atoms.filter(atom => atom.type === "B").length;
+
+    const ND = donorCount * DOPANT_STEP;
+    const NA = acceptorCount * DOPANT_STEP;
+    const ni = intrinsicConcentration(tempK);
+    const delta = ND - NA;
+
+    let n, p;
+
+    /*
+      Solves both:
+        np = ni^2
+        n - p = ND - NA
+      The split calculation avoids numerical cancellation in strongly p-type material.
+    */
+    if (delta >= 0) {
+        n = (delta + Math.sqrt(delta * delta + 4 * ni * ni)) / 2;
+        p = (ni * ni) / n;
+    } else {
+        p = (-delta + Math.sqrt(delta * delta + 4 * ni * ni)) / 2;
+        n = (ni * ni) / p;
+    }
+
+    physics = { tempK, donorCount, acceptorCount, ND, NA, ni, n, p, delta };
+
+    eDensityEl.innerHTML = `${scientificHTML(n)} <small>cm<sup>−3</sup></small>`;
+    hDensityEl.innerHTML = `${scientificHTML(p)} <small>cm<sup>−3</sup></small>`;
+    setMaterialLabel(delta, donorCount, acceptorCount);
+    syncVisibleCarriers();
+}
+
+function setMaterialLabel(delta, donors, acceptors) {
+    if (donors === 0 && acceptors === 0) {
+        materialType.textContent = "නිසග අර්ධ සන්නායක";
+    } else if (delta > 0) {
+        materialType.textContent = "N-වර්ගයේ අර්ධ සන්නායක — බහුතර වාහක වන්නේ ඉලෙක්ට්‍රෝන ය.";
+    } else if (delta < 0) {
+        materialType.textContent = "P-වර්ගයේ අර්ධ සන්නායක — බහුතර වාහක වන්නේ කුහර ය.";
+    } else {
+        materialType.textContent = "දායක පරමාණු සාන්ද්‍රණය = ප්‍රතිග්‍රාහක පරමාණු සාන්ද්‍රණය";
+    }
+}
+
+/*
+  Dot quantities are intentionally symbolic rather than proportional to the
+  enormous carrier concentrations. They communicate majority/minority behaviour.
+*/
+function syncVisibleCarriers() {
+    const { tempK, n, p, donorCount, acceptorCount } = physics;
+    const temperaturePairs = Math.max(1, Math.min(5, Math.round((tempK - 220) / 55)));
+    const netSymbols = donorCount - acceptorCount;
+
+    let electronMarkers = temperaturePairs;
+    let holeMarkers = temperaturePairs;
+
+    if (netSymbols > 0) {
+        electronMarkers = Math.min(20, temperaturePairs + netSymbols + 4);
+        holeMarkers = Math.max(1, temperaturePairs - Math.min(temperaturePairs - 1, netSymbols));
+    } else if (netSymbols < 0) {
+        holeMarkers = Math.min(20, temperaturePairs + Math.abs(netSymbols) + 4);
+        electronMarkers = Math.max(1, temperaturePairs - Math.min(temperaturePairs - 1, Math.abs(netSymbols)));
+    }
+
+    // Ensure visual majority is consistent with the calculated concentration.
+    if (n > p && electronMarkers <= holeMarkers) electronMarkers = holeMarkers + 3;
+    if (p > n && holeMarkers <= electronMarkers) holeMarkers = electronMarkers + 3;
+
+    while (freeElectrons.length > electronMarkers) freeElectrons.pop();
+    while (freeElectrons.length < electronMarkers) {
+        const donors = atoms.filter(a => a.type === "As");
+        const source = donors.length ? donors[freeElectrons.length % donors.length] : null;
+        freeElectrons.push({
+            x: source ? source.x + (Math.random() - 0.5) * 30 : 20 + Math.random() * (canvas.width - 40),
+            y: source ? source.y + (Math.random() - 0.5) * 30 : 20 + Math.random() * (canvas.height - 55),
+            vx: (Math.random() - 0.5) * 1.8,
+            vy: (Math.random() - 0.5) * 1.8
+        });
+    }
+
+    const occupied = new Set();
+    const acceptors = atoms.filter(a => a.type === "B");
+    const allSlots = bonds.flatMap(bond => bond.slots);
+    const selected = [];
+
+    acceptors.forEach(atom => {
+        if (selected.length >= holeMarkers) return;
+        const nearby = bonds
+            .filter(bond => bond.a1 === atom || bond.a2 === atom)
+            .flatMap(bond => bond.slots)
+            .filter(slot => !occupied.has(slot));
+        if (nearby.length) {
+            occupied.add(nearby[0]);
+            selected.push(nearby[0]);
+        }
+    });
+
+    for (const slot of allSlots) {
+        if (selected.length >= holeMarkers) break;
+        if (!occupied.has(slot)) {
+            occupied.add(slot);
+            selected.push(slot);
+        }
+    }
+    visibleHoles = selected;
+}
+
+function animateCarriers() {
+    freeElectrons.forEach(e => {
+        e.x += e.vx;
+        e.y += e.vy;
+        if (e.x < 8 || e.x > canvas.width - 8) e.vx *= -1;
+        if (e.y < 8 || e.y > canvas.height - 25) e.vy *= -1;
+    });
+
+    if (visibleHoles.length && Math.random() < 0.045) {
+        const index = Math.floor(Math.random() * visibleHoles.length);
+        const current = visibleHoles[index];
+        const used = new Set(visibleHoles);
+        const nearby = bonds.flatMap(bond => bond.slots).filter(slot => {
+            if (used.has(slot)) return false;
+            return Math.hypot(slot.x - current.x, slot.y - current.y) < spacingX * 1.15;
+        });
+        if (nearby.length) {
+            visibleHoles[index] = nearby[Math.floor(Math.random() * nearby.length)];
+        }
+    }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const holeSet = new Set(visibleHoles);
+
+    ctx.lineWidth = 3;
+    bonds.forEach(bond => {
+        ctx.strokeStyle = "#1d3145";
+        ctx.beginPath();
+        ctx.moveTo(bond.a1.x, bond.a1.y);
+        ctx.lineTo(bond.a2.x, bond.a2.y);
+        ctx.stroke();
+
+        bond.slots.forEach(slot => {
+            ctx.beginPath();
+            if (holeSet.has(slot)) {
+                ctx.arc(slot.x, slot.y, 5, 0, Math.PI * 2);
+                ctx.strokeStyle = colours.hole;
+                ctx.lineWidth = 2.5;
+                ctx.shadowColor = colours.hole;
+                ctx.shadowBlur = 9;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            } else {
+                ctx.arc(slot.x, slot.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = colours.bond;
+                ctx.fill();
+            }
+        });
+    });
+
+    atoms.forEach(atom => {
+        const isBoron = atom.type === "B";
+        const isArsenic = atom.type === "As";
+
+        ctx.beginPath();
+        ctx.arc(atom.x, atom.y, 23, 0, Math.PI * 2);
+        ctx.fillStyle = isBoron
+            ? "rgba(155,89,182,.20)"
+            : isArsenic
+                ? "rgba(230,126,34,.20)"
+                : "rgba(46,204,113,.16)";
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(atom.x, atom.y, 17, 0, Math.PI * 2);
+        ctx.fillStyle = isBoron ? colours.boron : isArsenic ? colours.arsenic : colours.si;
+        ctx.fill();
+        ctx.strokeStyle = "#04070c";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        const label = isBoron ? "B⁻" : isArsenic ? "As⁺" : "Si";
+        ctx.fillStyle = "#fff";
+        ctx.font = label === "As⁺" ? "bold 11px Arial" : "bold 13px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, atom.x, atom.y);
+    });
+
+    freeElectrons.forEach(e => {
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = colours.electron;
+        ctx.shadowColor = colours.electron;
+        ctx.shadowBlur = 10;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    });
+
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.font = "bold 12px Arial";
+    ctx.fillStyle = "#ffd055";
+    
+}
+
+function loop() {
+    animateCarriers();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+initGrid();
+loop();
+</script>
+</body>
+</html>

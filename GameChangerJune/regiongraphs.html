@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ට්‍රාන්සිස්ටර ලාක්ෂණික ප්‍රස්ථාර</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #08080f;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            background-color: #12121a;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+            border: 1px solid #2a2a3d;
+            text-align: center;
+            max-width: 1000px;
+            width: 100%;
+        }
+        h2 {
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-around;
+            background-color: #1a1a26;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+        .control-group {
+            width: 45%;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+            accent-color: #b026ff;
+            cursor: pointer;
+        }
+        .status-box {
+            font-size: 20px;
+            font-weight: bold;
+            padding: 15px;
+            border-radius: 6px;
+            color: white;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        .graphs-wrapper {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .graph-box {
+            background: #0a0a10;
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid #333;
+            width: 31%;
+        }
+        .graph-box h3 {
+            font-size: 14px;
+            color: #b026ff;
+            margin: 5px 0 15px 0;
+        }
+        canvas {
+            background-color: #000;
+            border-left: 2px solid #555;
+            border-bottom: 2px solid #555;
+            border-radius: 0 0 0 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>ට්‍රාන්සිස්ටර ලාක්ෂණික ප්‍රස්ථාර 3 හි සම්බන්ධතාවය</h2>
+        
+        <div class="status-box" id="status-display">කලාපය</div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label style="color: #ccc; font-size: 16px;">
+                    පාදක ධාරාව (I<sub>B</sub>) : <span id="ib-val" style="color:#b026ff; font-weight:bold;">0</span> &mu;A
+                </label>
+                <input type="range" id="ib-slider" min="0" max="60" step="1" value="0">
+            </div>
+            <div class="control-group">
+                <label style="color: #ccc; font-size: 16px;">
+                    සංග්‍රාහක-විමෝචක වෝල්ටීයතාව (V<sub>CE</sub>) : <span id="vce-val" style="color:#00ffff; font-weight:bold;">5.0</span> V
+                </label>
+                <input type="range" id="vce-slider" min="0" max="10" step="0.1" value="5.0">
+            </div>
+        </div>
+
+        <div class="graphs-wrapper">
+            <div class="graph-box">
+                <h3>1. ආදාන ලාක්ෂණිකය<br><small>(I<sub>B</sub> එදිරිව V<sub>BE</sub>)</small></h3>
+                <canvas id="canvas-input" width="250" height="250"></canvas>
+            </div>
+            
+            <div class="graph-box">
+                <h3>2. සංක්‍රාමණ ලාක්ෂණිකය<br><small>(I<sub>C</sub> එදිරිව I<sub>B</sub>)</small></h3>
+                <canvas id="canvas-transfer" width="250" height="250"></canvas>
+            </div>
+            
+            <div class="graph-box">
+                <h3>3. ප්‍රතිදාන ලාක්ෂණිකය<br><small>(I<sub>C</sub> එදිරිව V<sub>CE</sub>)</small></h3>
+                <canvas id="canvas-output" width="250" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ibSlider = document.getElementById('ib-slider');
+        const vceSlider = document.getElementById('vce-slider');
+        const ibVal = document.getElementById('ib-val');
+        const vceVal = document.getElementById('vce-val');
+        const statusDisplay = document.getElementById('status-display');
+
+        // Canvas Contexts
+        const ctxInput = document.getElementById('canvas-input').getContext('2d');
+        const ctxTransfer = document.getElementById('canvas-transfer').getContext('2d');
+        const ctxOutput = document.getElementById('canvas-output').getContext('2d');
+
+        const width = 250;
+        const height = 250;
+        const padding = 20;
+
+        // Transistor Constants
+        const beta = 100;
+        const maxIb = 60; // uA
+        const maxIc = 6;  // mA
+        const maxVce = 10; // V
+        const maxVbe = 1;  // V
+
+        // Mapping helper
+        function mapY(val, max) { return height - padding - ((val / max) * (height - 2 * padding)); }
+        function mapX(val, max) { return padding + ((val / max) * (width - 2 * padding)); }
+
+        // Draw basic Grid
+        function drawGrid(ctx) {
+            ctx.clearRect(0, 0, width, height);
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 1;
+            for(let i=1; i<5; i++) {
+                let y = padding + (i/5)*(height - 2*padding);
+                let x = padding + (i/5)*(width - 2*padding);
+                ctx.beginPath(); ctx.moveTo(padding, y); ctx.lineTo(width-padding, y); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(x, padding); ctx.lineTo(x, height-padding); ctx.stroke();
+            }
+        }
+
+        // Draw dot
+        function drawPoint(ctx, x, y, color) {
+            ctx.beginPath();
+            ctx.arc(x, y, 6, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            // Glow
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = color;
+            ctx.fill();
+            ctx.shadowBlur = 0; // reset
+        }
+
+        function drawGraphs() {
+            let Ib = parseFloat(ibSlider.value);
+            let Vce = parseFloat(vceSlider.value);
+            
+            ibVal.textContent = Ib;
+            vceVal.textContent = Vce.toFixed(1);
+
+            // --- Math Model ---
+            // Saturation logic: Ic drops exponentially when Vce is near 0
+            // Ic = Beta * Ib * (1 - e^(-Vce / 0.2))
+            let saturationFactor = (1 - Math.exp(-Vce / 0.2)); 
+            let Ic = (Ib * beta / 1000) * saturationFactor; // in mA
+
+            // Approximate Vbe based on Ib (diode equation inverse approx)
+            let Vbe = 0;
+            if (Ib > 0) { Vbe = 0.65 + 0.1 * (Ib / maxIb); }
+
+            // --- Status Box Logic ---
+            if (Ib === 0) {
+                statusDisplay.innerHTML = 'කපා හැරීමේ කලාපය (Cut-off)';
+                statusDisplay.style.backgroundColor = '#d32f2f'; // Red
+            } else if (Vce < 0.8) {
+                statusDisplay.innerHTML = 'සංතෘප්ත කලාපය (Saturation) - V<sub>CE</sub> ඉතා කුඩාය';
+                statusDisplay.style.backgroundColor = '#388e3c'; // Green
+            } else {
+                statusDisplay.innerHTML = 'සක්‍රීය කලාපය (Active) - I<sub>C</sub> කෙලින්ම සමානුපාතිකයි';
+                statusDisplay.style.backgroundColor = '#f57c00'; // Orange
+            }
+
+            // ==========================================
+            // 1. Input Graph (Ib vs Vbe)
+            // ==========================================
+            drawGrid(ctxInput);
+            ctxInput.strokeStyle = '#b026ff';
+            ctxInput.lineWidth = 3;
+            ctxInput.beginPath();
+            for(let v = 0; v <= maxVbe; v += 0.05) {
+                let tempIb = 0;
+                if(v > 0.65) { tempIb = maxIb * Math.pow((v - 0.65)/0.15, 2); }
+                if(tempIb > maxIb) tempIb = maxIb;
+                let x = mapX(v, maxVbe);
+                let y = mapY(tempIb, maxIb);
+                if(v===0) ctxInput.moveTo(x, y); else ctxInput.lineTo(x, y);
+            }
+            ctxInput.stroke();
+            // Draw Point
+            drawPoint(ctxInput, mapX(Vbe, maxVbe), mapY(Ib, maxIb), '#ff00ff');
+
+
+            // ==========================================
+            // 2. Transfer Graph (Ic vs Ib)
+            // ==========================================
+            drawGrid(ctxTransfer);
+            // This line changes slope based on Vce (Saturation effect)
+            ctxTransfer.strokeStyle = '#00ffff';
+            ctxTransfer.lineWidth = 3;
+            ctxTransfer.beginPath();
+            ctxTransfer.moveTo(mapX(0, maxIb), mapY(0, maxIc));
+            ctxTransfer.lineTo(mapX(maxIb, maxIb), mapY((maxIb * beta / 1000) * saturationFactor, maxIc));
+            ctxTransfer.stroke();
+            // Draw Point
+            drawPoint(ctxTransfer, mapX(Ib, maxIb), mapY(Ic, maxIc), '#00ffff');
+
+
+            // ==========================================
+            // 3. Output Graph (Ic vs Vce)
+            // ==========================================
+            drawGrid(ctxOutput);
+            
+            // Draw static background curves for family of Ib
+            ctxOutput.lineWidth = 2;
+            for(let ib_step = 10; ib_step <= maxIb; ib_step += 10) {
+                if (ib_step === Ib) continue; // Skip drawing here to draw over it later
+                ctxOutput.strokeStyle = '#333';
+                ctxOutput.beginPath();
+                for(let v = 0; v <= maxVce; v += 0.2) {
+                    let tempIc = (ib_step * beta / 1000) * (1 - Math.exp(-v / 0.2));
+                    let x = mapX(v, maxVce);
+                    let y = mapY(tempIc, maxIc);
+                    if(v===0) ctxOutput.moveTo(x, y); else ctxOutput.lineTo(x, y);
+                }
+                ctxOutput.stroke();
+            }
+
+            // Draw CURRENT active curve highlighted
+            if (Ib > 0) {
+                ctxOutput.strokeStyle = '#00ffff';
+                ctxOutput.lineWidth = 3;
+                ctxOutput.beginPath();
+                for(let v = 0; v <= maxVce; v += 0.2) {
+                    let tempIc = (Ib * beta / 1000) * (1 - Math.exp(-v / 0.2));
+                    let x = mapX(v, maxVce);
+                    let y = mapY(tempIc, maxIc);
+                    if(v===0) ctxOutput.moveTo(x, y); else ctxOutput.lineTo(x, y);
+                }
+                ctxOutput.stroke();
+            }
+
+            // Draw Point
+            drawPoint(ctxOutput, mapX(Vce, maxVce), mapY(Ic, maxIc), '#ffff00');
+        }
+
+        // Event Listeners
+        ibSlider.addEventListener('input', drawGraphs);
+        vceSlider.addEventListener('input', drawGraphs);
+
+        // Initial Draw
+        drawGraphs();
+    </script>
+</body>
+</html>
