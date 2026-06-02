@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Additive Doping Simulation</title>
+<style>
+    :root {
+        --bg: #050a12; --panel: #0d1624; --text: #eff6ff; 
+        --si: #2ecc71; --b: #9b59b6; --as: #e67e22; 
+        --hole: #46d7ff; --bound: #bdc3c7; 
+        --electron: #f39c12; /* Orange color for free electrons */
+    }
+    body {
+        margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+        font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+        display: flex; flex-direction: column; align-items: center; padding: 20px;
+    }
+    .header { text-align: center; margin-bottom: 20px; }
+    h1 { color: #ffd055; margin: 0 0 10px; font-size: 26px; }
+    p.sub { color: #9cafc3; margin: 0; max-width: 850px; line-height: 1.5; font-size: 15px;}
+    
+    .dashboard { display: flex; gap: 20px; max-width: 1050px; width: 100%; justify-content: center; flex-wrap: wrap; }
+    .canvas-container { background: #080f1a; border: 1px solid #1d3145; border-radius: 12px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative;}
+    canvas { background: #04070c; border-radius: 8px; }
+    
+    .controls { display: flex; flex-direction: column; gap: 15px; width: 360px; }
+    .panel { background: var(--panel); border: 1px solid #1a2c3f; border-radius: 12px; padding: 15px; }
+    .panel h3 { margin: 0 0 15px; color: #ffd055; font-size: 16px; border-bottom: 1px solid #29445a; padding-bottom: 8px; }
+    
+    .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+    button {
+        flex: 1 1 45%; background: #112131; color: var(--text); border: 1px solid #29445b; 
+        padding: 10px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; transition: 0.2s;
+    }
+    button:hover { background: #1a334a; }
+    #btn-b { border-color: var(--b); color: #dcb6eb; }
+    #btn-b:hover { background: rgba(155, 89, 182, 0.2); }
+    #btn-as { border-color: var(--as); color: #f3c79b; }
+    #btn-as:hover { background: rgba(230, 126, 34, 0.2); }
+    #btn-reset { flex: 1 1 100%; border-color: #ff5e5e;}
+    #btn-reset:hover { background: #552222; }
+
+    .temp-control { display: flex; flex-direction: column; background: #0a121e; padding: 12px; border-radius: 8px; border: 1px dashed #29445b;}
+    .temp-control label { font-size: 14px; color: #ff9e54; font-weight: bold; margin-bottom: 8px; display: flex; justify-content: space-between;}
+    input[type=range] { width: 100%; accent-color: #ff9e54; cursor: pointer; }
+
+    .stats { display: flex; flex-direction: column; gap: 10px; }
+    .stat-box { background: #0a121e; border: 1px solid #1d3145; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;}
+    .stat-box span { font-size: 14px; color: #9cafc3; }
+    .stat-box strong { font-size: 24px; width: 40px; text-align: right;}
+    .stat-h strong { color: var(--hole); }
+    .stat-e strong { color: var(--electron); }
+
+    .math-note { font-size: 13px; color: #7f8c8d; text-align: center; margin-top: 10px; font-style: italic;}
+
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 13px; color: #c6d6e6; margin-top: 5px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; width: 45%;}
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot.si { background: var(--si); }
+    .dot.b { background: var(--b); }
+    .dot.as { background: var(--as); }
+    .dot.fe { background: var(--electron); box-shadow: 0 0 8px var(--electron);}
+    .dot.h { border: 2px solid var(--hole); background: transparent; box-shadow: 0 0 6px var(--hole); }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>තාපජ යුගල සහ මාත්‍රණය (Additive Doping)</h1>
+    <p class="sub">තාපය නිසා මුලින්ම හැදෙන ඉලෙක්ට්‍රෝන - කුහර යුගල (Thermal pairs) එලෙසම පවතිද්දී, මාත්‍රණය කරන මූලද්‍රව්‍යය අනුව අතිරික්ත කුහර හෝ අතිරික්ත ඉලෙක්ට්‍රෝන පමණක් දැලිසට එකතු වන ආකාරය මෙයින් නිරීක්ෂණය කරන්න.</p>
+</div>
+
+<div class="dashboard">
+    <div class="canvas-container">
+        <canvas id="simCanvas" width="550" height="480"></canvas>
+    </div>
+    
+    <div class="controls">
+        <div class="panel">
+            <h3>මාත්‍රණය පාලනය (Add Dopants)</h3>
+            <div class="btn-group">
+                <button id="btn-b" onclick="addDopant('B')">+ බෝරෝන් (B) <br><small>අතිරික්ත කුහර</small></button>
+                <button id="btn-as" onclick="addDopant('As')">+ ආසනික් (As) <br><small>අතිරික්ත ඉලෙක්ට්‍රෝන</small></button>
+                <button id="btn-reset" onclick="resetGrid()">මුල සිට අරඹන්න</button>
+            </div>
+            
+            <div class="temp-control">
+                <label><span>උෂ්ණත්වය (තාපජ යුගල):</span> <span id="temp-val">300 K</span></label>
+                <input type="range" id="temp-slider" min="0" max="600" step="10" value="300">
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>වාහක ගණනය (Total Carriers)</h3>
+            <div class="stats">
+                <div class="stat-box stat-e">
+                    <span>මුළු නිදහස් ඉලෙක්ට්‍රෝන</span>
+                    <strong id="e-count">0</strong>
+                </div>
+                <div class="stat-box stat-h">
+                    <span>මුළු කුහර සංඛ්‍යාව</span>
+                    <strong id="h-count">0</strong>
+                </div>
+            </div>
+            <p class="math-note" id="math-exp">මුළු වාහක = තාපජ වාහක + මාත්‍රණ වාහක</p>
+        </div>
+
+        <div class="panel">
+            <h3>සංකේත</h3>
+            <div class="legend">
+                <div class="legend-item"><div class="dot si"></div> Si (සිලිකන්)</div>
+                <div class="legend-item"><div class="dot b"></div> B (P-වර්ගය)</div>
+                <div class="legend-item"><div class="dot as"></div> As (N-වර්ගය)</div>
+                <div class="legend-item"><div class="dot fe"></div> නිදහස් ඉලෙක්ට්‍රෝනය</div>
+                <div class="legend-item"><div class="dot h"></div> කුහරය (+)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+const hCountEl = document.getElementById('h-count');
+const eCountEl = document.getElementById('e-count');
+const tempSlider = document.getElementById('temp-slider');
+const tempVal = document.getElementById('temp-val');
+const mathExp = document.getElementById('math-exp');
+
+const rows = 4, cols = 5;
+const startX = 60, startY = 60;
+const spacingX = 105, spacingY = 110;
+
+let atoms = [];
+let bonds = [];
+let freeElectrons = [];
+let boronCount = 0;
+let arsenicCount = 0;
+
+let theoretical_nh = 0;
+let theoretical_ne = 0;
+
+function initGrid() {
+    atoms = []; bonds = []; freeElectrons = [];
+    boronCount = 0; arsenicCount = 0;
+    
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            atoms.push({ id: r*cols+c, r, c, x: startX + c*spacingX, y: startY + r*spacingY, type: 'Si' });
+        }
+    }
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            let a1 = atoms[r*cols+c];
+            if (c < cols - 1) bonds.push(createBond(a1, atoms[r*cols+(c+1)]));
+            if (r < rows - 1) bonds.push(createBond(a1, atoms[(r+1)*cols+c]));
+        }
+    }
+    updatePhysics();
+}
+
+function createBond(a1, a2) {
+    let dx = a2.x - a1.x, dy = a2.y - a1.y;
+    return {
+        a1, a2,
+        slots: [
+            { state: 'full', x: a1.x + dx*0.35, y: a1.y + dy*0.35 },
+            { state: 'full', x: a1.x + dx*0.65, y: a1.y + dy*0.65 }
+        ]
+    };
+}
+
+window.addDopant = function(type) {
+    // මිශ්‍ර කිරීම තහනම් කර ඇත (Compensation Doping Prevented)
+    if ((type === 'B' && arsenicCount > 0) || (type === 'As' && boronCount > 0)) {
+        initGrid(); 
+    }
+
+    let siAtoms = atoms.filter(a => a.type === 'Si');
+    if (siAtoms.length === 0) return; 
+    
+    let a = siAtoms[Math.floor(Math.random() * siAtoms.length)];
+    a.type = type;
+    
+    if (type === 'B') boronCount++;
+    if (type === 'As') arsenicCount++;
+    
+    updatePhysics();
+};
+
+window.resetGrid = function() {
+    initGrid();
+};
+
+tempSlider.oninput = () => { 
+    tempVal.textContent = tempSlider.value + ' K'; 
+    updatePhysics();
+};
+
+function getGridHoleCount() {
+    let h = 0;
+    bonds.forEach(b => b.slots.forEach(s => { if(s.state === 'hole') h++; }));
+    return h;
+}
+
+function updatePhysics() {
+    let tempK = parseInt(tempSlider.value);
+    
+    // FIX 3: Exponential Temperature Dependence
+    // Using a visual proxy curve that maps 300K to ~1 pair, and 600K to 8 pairs.
+    let ni = tempK === 0 ? 0 : Math.max(0, Math.floor(0.125 * Math.exp(0.00693 * tempK))); 
+    
+    // FIX 2: Correct Dopant Contribution Ratio
+    // 1 dopant atom provides exactly 1 carrier (not 4)
+    let Nd = arsenicCount; // Donors (N-type)
+    let Na = boronCount;   // Acceptors (P-type)
+
+    // FIX 1: Mass Action Law (n * p = ni^2)
+    // The product of electrons and holes must equal the square of intrinsic carriers
+    let netDoping = Math.abs(Nd - Na);
+    
+    // Exact mathematical solution for majority and minority carriers
+    let majority = (netDoping / 2) + Math.sqrt(Math.pow(netDoping / 2, 2) + Math.pow(ni, 2));
+    let minority = majority > 0 ? Math.pow(ni, 2) / majority : 0;
+
+    if (Nd > Na) {
+        // N-type: Electrons are majority, Holes are minority
+        theoretical_ne = Math.round(majority);
+        theoretical_nh = Math.round(minority);
+    } else if (Na > Nd) {
+        // P-type: Holes are majority, Electrons are minority
+        theoretical_nh = Math.round(majority);
+        theoretical_ne = Math.round(minority);
+    } else {
+        // Intrinsic (Zero doping)
+        theoretical_ne = Math.round(ni);
+        theoretical_nh = Math.round(ni);
+    }
+
+    // Update the UI Scoreboard
+    hCountEl.textContent = theoretical_nh;
+    eCountEl.textContent = theoretical_ne;
+
+    // Update the mathematical explanation to reflect the real physics
+    mathExp.innerHTML = `තාපජ වාහක (n<sub>i</sub>): <b>${ni}</b> <br> ස්කන්ධ ක්‍රියාකාරී නියමය: <b>n &times; p = n<sub>i</sub><sup>2</sup></b>`;
+}
+
+function spawnElectron() {
+    freeElectrons.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 2,
+        vy: (Math.random() - 0.5) * 2
+    });
+}
+
+function updateLogic() {
+    let currentGridHoles = getGridHoleCount();
+    
+    // කුහර ප්‍රමාණය නියමිත අගයට ගෙන ඒම
+    if (currentGridHoles < theoretical_nh && Math.random() < 0.2) {
+        let fullSlots = [];
+        bonds.forEach(b => b.slots.forEach(s => { if(s.state === 'full') fullSlots.push(s); }));
+        if (fullSlots.length > 0) {
+            fullSlots[Math.floor(Math.random() * fullSlots.length)].state = 'hole';
+        }
+    } else if (currentGridHoles > theoretical_nh && Math.random() < 0.5) {
+        let holeSlots = [];
+        bonds.forEach(b => b.slots.forEach(s => { if(s.state === 'hole') holeSlots.push(s); }));
+        if (holeSlots.length > 0) {
+            holeSlots[Math.floor(Math.random() * holeSlots.length)].state = 'full';
+        }
+    }
+
+    // ඉලෙක්ට්‍රෝන ප්‍රමාණය නියමිත අගයට ගෙන ඒම 
+    if (freeElectrons.length < theoretical_ne && Math.random() < 0.3) {
+        spawnElectron();
+    } else if (freeElectrons.length > theoretical_ne) {
+        freeElectrons.pop();
+    }
+
+    // නිදහස් ඉලෙක්ට්‍රෝන චලනය
+    freeElectrons.forEach(e => {
+        e.x += e.vx; e.y += e.vy;
+        if (e.x < 10 || e.x > canvas.width - 10) e.vx *= -1;
+        if (e.y < 10 || e.y > canvas.height - 10) e.vy *= -1;
+    });
+
+    // කුහර ගමන් කිරීම (Hole Mobility)
+    if (Math.random() < 0.3) { 
+        let holeSlots = [];
+        bonds.forEach(b => b.slots.forEach(s => { if(s.state === 'hole') holeSlots.push({b, s}); }));
+        
+        if (holeSlots.length > 0) {
+            let target = holeSlots[Math.floor(Math.random() * holeSlots.length)];
+            let adjSlots = [];
+            bonds.forEach(b => {
+                if (b.a1 === target.b.a1 || b.a1 === target.b.a2 || b.a2 === target.b.a1 || b.a2 === target.b.a2) {
+                    if (b !== target.b) b.slots.forEach(s => { if(s.state === 'full') adjSlots.push(s); });
+                }
+            });
+
+            if (adjSlots.length > 0) {
+                let donor = adjSlots[Math.floor(Math.random() * adjSlots.length)];
+                donor.state = 'hole'; target.s.state = 'full';
+            }
+        }
+    }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.lineWidth = 3;
+    bonds.forEach(b => {
+        ctx.strokeStyle = '#1d3145';
+        ctx.beginPath(); ctx.moveTo(b.a1.x, b.a1.y); ctx.lineTo(b.a2.x, b.a2.y); ctx.stroke();
+
+        b.slots.forEach(s => {
+            ctx.beginPath();
+            if (s.state === 'full') {
+                ctx.arc(s.x, s.y, 4, 0, Math.PI*2);
+                ctx.fillStyle = '#bdc3c7'; ctx.fill();
+            } else {
+                ctx.arc(s.x, s.y, 5, 0, Math.PI*2);
+                ctx.strokeStyle = '#46d7ff'; ctx.lineWidth = 2.5; ctx.stroke();
+                ctx.shadowColor = '#46d7ff'; ctx.shadowBlur = 8; ctx.stroke(); ctx.shadowBlur = 0;
+            }
+        });
+    });
+
+    atoms.forEach(a => {
+        let isBoron = (a.type === 'B');
+        let isArsenic = (a.type === 'As');
+        
+        ctx.beginPath(); ctx.arc(a.x, a.y, 22, 0, Math.PI*2);
+        if (isBoron) ctx.fillStyle = 'rgba(155, 89, 182, 0.2)';
+        else if (isArsenic) ctx.fillStyle = 'rgba(230, 126, 34, 0.2)';
+        else ctx.fillStyle = 'rgba(46, 204, 113, 0.15)';
+        ctx.fill();
+
+        ctx.beginPath(); ctx.arc(a.x, a.y, 16, 0, Math.PI*2);
+        if (isBoron) ctx.fillStyle = '#9b59b6';
+        else if (isArsenic) ctx.fillStyle = '#e67e22';
+        else ctx.fillStyle = '#2ecc71';
+        ctx.fill();
+        
+        ctx.strokeStyle = '#04070c'; ctx.lineWidth = 2; ctx.stroke();
+        
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 13px Arial';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(a.type, a.x, a.y);
+    });
+
+    freeElectrons.forEach(e => {
+        ctx.beginPath(); ctx.arc(e.x, e.y, 4, 0, Math.PI*2);
+        ctx.fillStyle = 'var(--electron)';
+        ctx.shadowColor = 'var(--electron)'; ctx.shadowBlur = 10;
+        ctx.fill(); ctx.shadowBlur = 0;
+    });
+}
+
+function loop() {
+    updateLogic();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+initGrid();
+loop();
+</script>
+</body>
+</html>

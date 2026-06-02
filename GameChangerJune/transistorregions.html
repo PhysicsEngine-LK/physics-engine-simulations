@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BJT Output Characteristics Simulation</title>
+    <style>
+        /* Dark Theme & Cyberpunk Aesthetics */
+        body {
+            background-color: #0d0d12;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            background: #15151e;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            border: 1px solid #2a2a35;
+            width: 100%;
+            max-width: 700px;
+        }
+        h2 {
+            text-align: center;
+            margin-top: 0;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #09090c;
+            border-radius: 8px;
+            border: 1px solid #b026ff;
+        }
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            width: 60%;
+        }
+        input[type=range] {
+            accent-color: #00ffff;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .readouts {
+            text-align: right;
+            font-size: 1.1rem;
+        }
+        .highlight-cyan { color: #00ffff; font-weight: bold; }
+        .highlight-purple { color: #b026ff; font-weight: bold; }
+        .state-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-top: 5px;
+            background: #222;
+        }
+        canvas {
+            background: #09090c;
+            border-radius: 8px;
+            width: 100%;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>BJT Output Characteristics ($V_{CE}$ vs $I_C$)</h2>
+    
+    <div class="controls">
+        <div class="slider-group">
+            <label>Base Control Valve ($I_B$): <span id="ib-val" class="highlight-cyan">50</span> μA</label>
+            <input type="range" id="ib-slider" min="0" max="100" step="1" value="50">
+        </div>
+        <div class="readouts">
+            <div>$I_C$ (Flow): <span id="ic-val" class="highlight-cyan">0.0</span> mA</div>
+            <div>$V_{CE}$ (Drop): <span id="vce-val" class="highlight-purple">0.0</span> V</div>
+            <div id="state-badge" class="state-badge">Active Region</div>
+        </div>
+    </div>
+
+    <canvas id="bjtCanvas" width="660" height="400"></canvas>
+</div>
+
+<script>
+    const canvas = document.getElementById('bjtCanvas');
+    const ctx = canvas.getContext('2d');
+    const slider = document.getElementById('ib-slider');
+    const outIb = document.getElementById('ib-val');
+    const outIc = document.getElementById('ic-val');
+    const outVce = document.getElementById('vce-val');
+    const stateBadge = document.getElementById('state-badge');
+
+    // System Parameters
+    const beta = 100;
+    const Vcc = 10; // Volts
+    const Rc = 1; // kOhms
+    const Vce_sat_limit = 0.2; // Saturation boundary
+
+    // Canvas Layout Settings
+    const margin = { top: 20, right: 20, bottom: 50, left: 60 };
+    const width = canvas.width - margin.left - margin.right;
+    const height = canvas.height - margin.top - margin.bottom;
+
+    // Scale mappings (0-10V for X, 0-10mA for Y)
+    const scaleX = (v) => margin.left + (v / 10) * width;
+    const scaleY = (i) => canvas.height - margin.bottom - (i / 10) * height;
+
+    function getIcForVce(vce, ib_uA) {
+        let ic_active = (beta * ib_uA) / 1000; // mA
+        // Add slight upward slope for Early Effect visualization
+        ic_active = ic_active + (vce * 0.02); 
+        
+        if (vce < Vce_sat_limit) {
+            // Steep rise in saturation
+            return ic_active * (vce / Vce_sat_limit);
+        }
+        return ic_active;
+    }
+
+    function drawSystem() {
+        // Clear screen
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        let currentIb = parseInt(slider.value);
+
+        // --- 1. Draw Region Backgrounds ---
+        // Saturation Region (Vce < 0.2V)
+        ctx.fillStyle = 'rgba(255, 50, 50, 0.1)';
+        ctx.fillRect(scaleX(0), scaleY(10), scaleX(Vce_sat_limit) - scaleX(0), height);
+        
+        // Active Region
+        ctx.fillStyle = 'rgba(0, 255, 255, 0.03)';
+        ctx.fillRect(scaleX(Vce_sat_limit), scaleY(10), width - (scaleX(Vce_sat_limit)-scaleX(0)), height);
+
+        // --- 2. Draw Axes & Grid ---
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for(let i=0; i<=10; i+=2) {
+            // Vertical lines (Vce)
+            ctx.moveTo(scaleX(i), scaleY(0)); ctx.lineTo(scaleX(i), scaleY(10));
+            // Horizontal lines (Ic)
+            ctx.moveTo(scaleX(0), scaleY(i)); ctx.lineTo(scaleX(10), scaleY(i));
+        }
+        ctx.stroke();
+
+        // Axis Labels
+        ctx.fillStyle = '#888';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        for(let i=0; i<=10; i+=2) ctx.fillText(i, scaleX(i), scaleY(0) + 15);
+        ctx.fillText("V_CE (Volts)", scaleX(5), scaleY(0) + 35);
+
+        ctx.textAlign = 'right';
+        for(let i=0; i<=10; i+=2) ctx.fillText(i, scaleX(0) - 10, scaleY(i) + 4);
+        ctx.save();
+        ctx.translate(scaleX(0) - 35, scaleY(5));
+        ctx.rotate(-Math.PI/2);
+        ctx.textAlign = 'center';
+        ctx.fillText("I_C (mA)", 0, 0);
+        ctx.restore();
+
+        // Main Axis Lines
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(scaleX(0), scaleY(10)); ctx.lineTo(scaleX(0), scaleY(0)); // Y
+        ctx.lineTo(scaleX(10), scaleY(0)); // X
+        ctx.stroke();
+
+        // --- 3. Draw Background Standard Curves (Ib = 20, 40, 60, 80, 100) ---
+        ctx.strokeStyle = '#2a2a35';
+        ctx.lineWidth = 2;
+        [20, 40, 60, 80, 100].forEach(ib => {
+            ctx.beginPath();
+            for(let v=0; v<=10; v+=0.1) {
+                let x = scaleX(v);
+                let y = scaleY(getIcForVce(v, ib));
+                if(v===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        });
+
+        // --- 4. Draw Current User Curve (Neon Cyan) ---
+        ctx.strokeStyle = '#00ffff'; // Cyberpunk Cyan
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        for(let v=0; v<=10; v+=0.1) {
+            let x = scaleX(v);
+            let y = scaleY(getIcForVce(v, currentIb));
+            if(v===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // --- 5. Draw Load Line (Neon Purple) ---
+        // Vcc = 10V, Rc = 1kOhm -> Intersects at (10V, 0mA) and (0V, 10mA)
+        ctx.strokeStyle = '#b026ff'; // Purple
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(scaleX(0), scaleY(10)); 
+        ctx.lineTo(scaleX(10), scaleY(0));
+        ctx.stroke();
+        ctx.setLineDash([]); // reset
+
+        // --- 6. Calculate Q-Point (Intersection) ---
+        // Load line eq: Ic = (Vcc - Vce)/Rc = 10 - Vce
+        let qVce = 0, qIc = 0;
+        for(let v=0; v<=10; v+=0.05) {
+            let curveIc = getIcForVce(v, currentIb);
+            let loadIc = 10 - v;
+            if (curveIc >= loadIc) {
+                qVce = v;
+                qIc = loadIc;
+                break;
+            }
+        }
+        if(currentIb === 0) { qVce = 10; qIc = 0; } // Force exact cutoff
+
+        // Draw Q-Point Dot
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(scaleX(qVce), scaleY(qIc), 5, 0, Math.PI*2);
+        ctx.fill();
+        ctx.shadowBlur = 0; // reset
+
+        // --- 7. Update UI Text & States ---
+        outIb.innerText = currentIb;
+        outIc.innerText = qIc.toFixed(2);
+        outVce.innerText = qVce.toFixed(2);
+
+        if (currentIb === 0) {
+            stateBadge.innerText = "Cut-off Region (OFF)";
+            stateBadge.style.color = "#888";
+            stateBadge.style.boxShadow = "none";
+        } else if (qVce <= Vce_sat_limit) {
+            stateBadge.innerText = "Saturation Region (ON)";
+            stateBadge.style.color = "#ff3333";
+            stateBadge.style.boxShadow = "0 0 10px rgba(255, 50, 50, 0.5)";
+        } else {
+            stateBadge.innerText = "Active Region (Amplifier)";
+            stateBadge.style.color = "#00ffff";
+            stateBadge.style.boxShadow = "0 0 10px rgba(0, 255, 255, 0.3)";
+        }
+    }
+
+    // Event Listeners
+    slider.addEventListener('input', drawSystem);
+    
+    // Initial Draw
+    drawSystem();
+</script>
+
+</body>
+</html>

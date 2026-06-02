@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated P-N Junction Simulation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0b0f19; 
+            background-image: radial-gradient(circle at 50% 50%, #151f32 0%, #0b0f19 100%);
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 { margin-bottom: 5px; text-align: center; color: #4CAF50; text-shadow: 0 0 10px rgba(76, 175, 80, 0.3); }
+        .subtitle { color: #8ab4f8; margin-bottom: 30px; text-align: center; font-size: 15px; }
+
+        /* --- Dashboard Layout --- */
+        .dashboard {
+            display: flex;
+            gap: 30px;
+            max-width: 1150px;
+            width: 100%;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .sim-section {
+            flex: 0 0 auto; /* Prevent shrinking */
+        }
+
+        .side-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 320px;
+        }
+
+        /* --- Controls --- */
+        .controls {
+            display: flex;
+            flex-direction: column; /* Stack buttons vertically on the right */
+            gap: 12px;
+            background: #161b22;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 1px solid #333;
+            border-radius: 6px;
+            background-color: #1e2638;
+            color: #a8b2c1;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            width: 100%; /* Fill the container */
+        }
+
+        button:hover { background-color: #2a354d; border-color: #555; color: #fff;}
+        button.active { 
+            background-color: #2e7d32; 
+            color: white; 
+            border-color: #4CAF50;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.4);
+        }
+
+        /* --- Simulation Container --- */
+        .sim-wrapper {
+            position: relative;
+            width: 700px;
+            height: 300px;
+        }
+
+        /* --- Circuit Wiring (SVG) --- */
+        .circuit-wires {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .wire {
+            fill: none;
+            stroke: #334155;
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: stroke 0.5s ease;
+        }
+
+        /* Animated current layer on wires */
+        .wire-pulse {
+            fill: none;
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 8, 20;
+            display: none;
+            filter: drop-shadow(0 0 5px currentColor);
+        }
+
+        /* --- Semiconductor Block --- */
+        .semiconductor {
+            position: absolute;
+            top: 20px;
+            left: 100px;
+            width: 500px;
+            height: 120px;
+            display: flex;
+            border: 2px solid #475569;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.8);
+            z-index: 2;
+            background-color: #000;
+            overflow: hidden;
+            /* Grid background for physics engine look */
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .p-type {
+            background-color: rgba(92, 58, 33, 0.7);
+            width: 50%;
+            height: 100%;
+            position: relative;
+        }
+
+        .n-type {
+            background-color: rgba(26, 54, 123, 0.7);
+            width: 50%;
+            height: 100%;
+            position: relative;
+        }
+
+        /* --- Perfect Particle Grids with Thermal Jitter --- */
+        .particle-container {
+            position: absolute;
+            top: 10px;
+            bottom: 10px;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            place-items: center;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .grid-p { left: 10px; right: 50px; }
+        .grid-n { right: 10px; left: 50px; }
+
+        /* Base Particles with Physics-like Glow and Jitter */
+        .hole {
+            width: 12px;
+            height: 12px;
+            border: 2px dashed rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            background-color: transparent;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.3), inset 0 0 4px rgba(255, 255, 255, 0.2);
+            /* Random thermal motion */
+            animation: jitter 0.4s infinite alternate ease-in-out;
+        }
+        
+        .hole:nth-child(even) { animation-delay: 0.1s; animation-duration: 0.5s; }
+        .hole:nth-child(3n) { animation-delay: 0.2s; animation-duration: 0.35s; }
+
+        .electron {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #00ffff;
+            box-shadow: 0 0 10px #00ffff, 0 0 20px rgba(0, 255, 255, 0.4);
+            /* Random thermal motion */
+            animation: jitter 0.3s infinite alternate ease-in-out;
+        }
+        
+        .electron:nth-child(even) { animation-delay: 0.15s; animation-duration: 0.4s; }
+        .electron:nth-child(3n) { animation-delay: 0.05s; animation-duration: 0.45s; }
+
+        @keyframes jitter {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(1px, -1px); }
+            50% { transform: translate(-1px, 1px); }
+            75% { transform: translate(1px, 1px); }
+            100% { transform: translate(-1px, -1px); }
+        }
+
+        /* Labels */
+        .type-label { display: none; }
+        .side-label {
+            position: absolute;
+            top: 6px;
+            font-weight: 800;
+            font-size: 20px;
+            color: #fff;
+            background: rgba(15, 23, 42, 0.8);
+            padding: 4px 12px;
+            border-radius: 4px;
+            border: 1px solid #334155;
+            z-index: 10;
+            pointer-events: none;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        }
+        .side-left { left: 110px; color: #ff9999; }
+        .side-right { right: 110px; color: #99ccff; }
+
+        /* --- Depletion Layer --- */
+        .depletion-layer {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            height: 100%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, rgba(20,20,20,0.95), rgba(40,40,40,0.95), rgba(20,20,20,0.95));
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 4;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            box-sizing: border-box;
+            border-left: 2px dashed rgba(255,100,100,0.5);
+            border-right: 2px dashed rgba(100,100,255,0.5);
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.9);
+        }
+
+        .ions {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            height: 100%;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 0 10px;
+            opacity: 0.8;
+        }
+        .ions-neg { color: #ff8888; text-shadow: 0 0 5px #ff8888; }
+        .ions-pos { color: #88ff88; text-shadow: 0 0 5px #88ff88; }
+
+        .depletion-text {
+            color: #a8b2c1;
+            font-size: 12px;
+            text-align: center;
+            font-weight: 600;
+            white-space: nowrap;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        /* --- Continuous Flowing Carrier Layer --- */
+        .flow-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 3;
+            display: none;
+            pointer-events: none;
+        }
+
+        .flowing-hole {
+            position: absolute;
+            top: 50px;
+            width: 12px;
+            height: 12px;
+            border: 2px dashed #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #fff;
+            animation: moveHoles 2.5s infinite linear;
+        }
+
+        .flowing-electron {
+            position: absolute;
+            top: 70px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #00ffff;
+            box-shadow: 0 0 15px #00ffff;
+            animation: moveElectrons 2.5s infinite linear;
+        }
+
+        .f2 { animation-delay: 0.8s !important; }
+        .f3 { animation-delay: 1.6s !important; }
+
+        /* --- Battery --- */
+        .battery-container {
+            position: absolute;
+            top: 195px;
+            left: 310px;
+            width: 80px;
+            height: 44px;
+            z-index: 5;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            border-radius: 6px;
+        }
+
+        .battery {
+            width: 100%;
+            height: 100%;
+            background-color: #1e293b;
+            display: flex;
+            font-size: 24px;
+            font-weight: bold;
+            border: 3px solid #64748b;
+            border-radius: 6px;
+            box-sizing: border-box;
+            transition: opacity 0.4s ease;
+        }
+
+        .terminal-p { width: 50%; height: 100%; background: #991b1b; display: flex; align-items: center; justify-content: center; color: white; }
+        .terminal-n { width: 50%; height: 100%; background: #0f172a; display: flex; align-items: center; justify-content: center; color: white; }
+
+        /* --- KEYFRAMES --- */
+        @keyframes moveHoles {
+            0% { left: 150px; opacity: 0; transform: scale(0.5); }
+            15% { opacity: 1; transform: scale(1); }
+            85% { opacity: 1; transform: scale(1); }
+            100% { left: 400px; opacity: 0; transform: scale(0.5); } 
+        }
+
+        @keyframes moveElectrons {
+            0% { left: 350px; opacity: 0; transform: scale(0.5); }
+            15% { opacity: 1; transform: scale(1); }
+            85% { opacity: 1; transform: scale(1); }
+            100% { left: 100px; opacity: 0; transform: scale(0.5); } 
+        }
+
+        @keyframes wireFlowLeft { to { stroke-dashoffset: -50; } }
+        @keyframes wireFlowRight { to { stroke-dashoffset: 50; } }
+
+        /* --- STATE LOGIC --- */
+        .state-unbiased .depletion-layer { width: 90px; }
+        .state-unbiased .battery { opacity: 0; }
+
+        .state-forward .depletion-layer { width: 12px; }
+        .state-forward .grid-p { right: 10px; } 
+        .state-forward .grid-n { left: 10px; }
+        .state-forward .battery { opacity: 1; flex-direction: row; } 
+        .state-forward .wire { stroke: #fbbf24; } 
+        .state-forward .wire-pulse { display: block; }
+        .state-forward .flow-layer { display: block; }
+
+        .state-reverse .depletion-layer { width: 220px; }
+        .state-reverse .grid-p { right: 120px; } 
+        .state-reverse .grid-n { left: 120px; }
+        .state-reverse .battery { opacity: 1; flex-direction: row-reverse; } 
+        .state-reverse .wire { stroke: #334155; }
+
+        /* --- Explanations --- */
+        .explanation {
+            background-color: #161b22;
+            padding: 20px 25px;
+            width: 100%;
+            line-height: 1.6;
+            border-radius: 8px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 1px solid #30363d;
+            border-left: 5px solid #4CAF50;
+            flex-grow: 1; /* Fill remaining height in sidebar */
+        }
+        .explanation h3 { margin-top: 0; color: #4CAF50; letter-spacing: 0.5px; }
+        .explanation p { margin-bottom: 0; font-size: 15px; color: #c9d1d9;}
+        
+    </style>
+</head>
+<body>
+
+    <h1>PHYSICS ENGINE | p-n සන්ධි අනුරූපණය</h1>
+    <div class="subtitle"> </div>
+
+    <div class="dashboard">
+        
+        <div class="sim-section">
+            <div class="sim-wrapper state-unbiased" id="sim-container">
+                <div class="side-label side-left">P-වර්ගය</div>
+                <div class="side-label side-right">N-වර්ගය</div>
+                
+                <svg class="circuit-wires">
+                    <polyline class="wire" points="100,80 30,80 30,220 310,220" />
+                    <polyline class="wire" points="600,80 670,80 670,220 390,220" />
+                    
+                    <polyline class="wire-pulse" stroke="#00ffff" points="100,80 30,80 30,220 310,220" style="animation: wireFlowLeft 1.5s linear infinite;" />
+                    <polyline class="wire-pulse" stroke="#fbbf24" points="600,80 670,80 670,220 390,220" style="animation: wireFlowRight 1.5s linear infinite;" />
+                </svg>
+
+                <div class="semiconductor">
+                    <div class="p-type">
+                        <div class="type-label">P</div>
+                        <div class="particle-container grid-p" id="p-region"></div>
+                    </div>
+                    
+                    <div class="depletion-layer">
+                        <div class="ions ions-neg">
+                            <span>-</span><span>-</span><span>-</span>
+                        </div>
+                        <div class="depletion-text">හායිත<br>කලාපය</div>
+                        <div class="ions ions-pos">
+                            <span>+</span><span>+</span><span>+</span>
+                        </div>
+                    </div>
+
+                    <div class="n-type">
+                        <div class="type-label">N</div>
+                        <div class="particle-container grid-n" id="n-region"></div>
+                    </div>
+
+                    <div class="flow-layer">
+                        <div class="flowing-hole f1"></div>
+                        <div class="flowing-hole f2" style="top:25px;"></div>
+                        <div class="flowing-hole f3" style="top:80px;"></div>
+
+                        <div class="flowing-electron f1"></div>
+                        <div class="flowing-electron f2" style="top:35px;"></div>
+                        <div class="flowing-electron f3" style="top:95px;"></div>
+                    </div>
+                </div>
+
+                <div class="battery-container">
+                    <div class="battery" id="battery">
+                        <div class="terminal-p">+</div>
+                        <div class="terminal-n">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="side-panel">
+            <div class="controls">
+                <button id="btn-unbiased" class="active" onclick="setState('unbiased')">නැඹුරු නොකළ (Unbiased)</button>
+                <button id="btn-forward" onclick="setState('forward')">පෙර නැඹුරුව (Forward Bias)</button>
+                <button id="btn-reverse" onclick="setState('reverse')">පසු නැඹුරුව (Reverse Bias)</button>
+            </div>
+
+            <div class="explanation" id="explanation-box">
+                </div>
+        </div>
+
+    </div>
+
+    <script>
+        function generateParticles(containerId, className, count) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; 
+            for (let i = 0; i < count; i++) {
+                const el = document.createElement('div');
+                el.className = className;
+                container.appendChild(el);
+            }
+        }
+
+        // Generate carriers
+        generateParticles('p-region', 'hole', 24);
+        generateParticles('n-region', 'electron', 24);
+
+        const explanations = {
+            unbiased: {
+                title: "නැඹුරු නොකළ (Unbiased)",
+                text: `<p><strong>සමතුලිතතාව:</strong> දැලිස් ව්‍යුහය ස්ථායී වේ. කුහර (සුදු වළලු) සහ ඉලෙක්ට්‍රෝන (නිල් පැහැති තිත්) තාපජ චලිතය (thermal random motion) නිසා කම්පනය වුවද, බාහිර වෝල්ටීයතා ප්‍රභවයක් නොමැතිව ආරෝපණ ගලායාමක් සිදු නොවේ. මධ්‍යයේ ඇති හායිත කලාපය තුළ ඇත්තේ චලනය විය නොහැකි අයන (- සහ +) පමණි.</p>`
+            },
+            forward: {
+                title: "පෙර නැඹුරුව (Forward Bias)",
+                text: `<p><strong>ගතික ප්‍රවාහය සක්‍රීයයි:</strong> බැටරියේ ධන අග්‍රය මඟින් පටු වූ හායිත කලාපය හරහා කුහර N-පැත්තට තල්ලු කරන ආකාරය නිරීක්ෂණය කරන්න. ඒ සමඟම, සෘණ අග්‍රය මඟින් ඉලෙක්ට්‍රෝන P-පැත්තට විකර්ෂණය කරයි. පරිපථයේ වයර් දිලිසෙන්නේ ඩයෝඩය හරහා අඛණ්ඩ විද්‍යුත් ධාරාවක් ගලන බව පෙන්වීමටය.</p>`
+            },
+            reverse: {
+                title: "පසු නැඹුරුව (Reverse Bias)",
+                text: `<p><strong>ප්‍රවාහයක් නොමැත:</strong> බැටරියේ ප්‍රතිවිරුද්ධ අග්‍ර මඟින් වාහකයන් සන්ධියෙන් ඉවතට (දෙපසට) ආකර්ෂණය කරයි. මේ නිසා හායිත කලාපය පුළුල් වන අතර අඛණ්ඩ ධාරාවක් ගැලීම සඳහා වූ මාර්ගය සම්පූර්ණයෙන්ම අවහිර වේ. (මෙහිදී සිදුවන ඉතා කුඩා කාන්දු ධාරාව නොසලකා හැර ඇත).</p>`
+            }
+        };
+
+        function setState(state) {
+            // Update button styles
+            document.querySelectorAll('.controls button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + state).classList.add('active');
+
+            // Trigger CSS states
+            const simContainer = document.getElementById('sim-container');
+            simContainer.className = 'sim-wrapper state-' + state;
+
+            // Update explanation text
+            const expBox = document.getElementById('explanation-box');
+            expBox.innerHTML = `<h3>${explanations[state].title}</h3>${explanations[state].text}`;
+            
+            // Change color context of explanation box border based on state
+            if(state === 'forward') expBox.style.borderLeftColor = '#fbbf24';
+            else if(state === 'reverse') expBox.style.borderLeftColor = '#f87171';
+            else expBox.style.borderLeftColor = '#4CAF50';
+        }
+
+        // Initialize default state
+        setState('unbiased');
+    </script>
+</body>
+</html>
