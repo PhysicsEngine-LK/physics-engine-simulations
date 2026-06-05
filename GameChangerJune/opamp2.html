@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Op-Amp: Open-Loop vs Closed-Loop</title>
+<style>
+    :root {
+        --bg: #050a12; --panel: #0d1624; --text: #eff6ff; 
+        --cyan: #46d7ff; --green: #2ecc71; --orange: #ff9e54; 
+        --purple: #b88bff; --red: #ff5e5e; --muted: #9cafc3;
+    }
+    body {
+        margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+        font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+        display: flex; flex-direction: column; align-items: center; padding: 20px;
+    }
+    .header { text-align: center; margin-bottom: 20px; }
+    h1 { color: var(--cyan); margin: 0 0 10px; font-size: 26px; text-shadow: 0 0 10px rgba(70, 215, 255, 0.3); }
+    p.sub { color: var(--muted); margin: 0; max-width: 850px; line-height: 1.5; }
+    
+    .dashboard { display: flex; flex-direction: column; gap: 20px; max-width: 1000px; width: 100%; align-items: center; }
+    
+    .controls-bar { 
+        display: flex; gap: 30px; background: var(--panel); padding: 20px; 
+        border-radius: 12px; border: 1px solid #1a2c3f; width: 100%; justify-content: space-between; align-items: center; flex-wrap: wrap;
+    }
+    
+    .btn-group { display: flex; gap: 10px; }
+    button {
+        background: #112131; color: var(--text); border: 1px solid #29445b; 
+        padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: bold; transition: 0.2s;
+    }
+    button:hover { background: #1a334a; }
+    button.active-open { background: #1a0b1c; border-color: var(--purple); color: var(--purple); box-shadow: 0 0 10px rgba(184, 139, 255, 0.2); }
+    button.active-closed { background: #081a24; border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 10px rgba(70, 215, 255, 0.2); }
+
+    .slider-group { display: flex; flex-direction: column; gap: 8px; width: 300px; }
+    .slider-group label { display: flex; justify-content: space-between; font-size: 14px; font-weight: bold; color: var(--muted); }
+    .slider-group span { color: var(--orange); font-size: 16px; }
+    input[type=range] { width: 100%; accent-color: var(--orange); cursor: pointer; }
+
+    .voltmeter {
+        background: #04070c; border: 2px solid #29445b; border-radius: 8px; padding: 10px 20px; text-align: center;
+        min-width: 120px;
+    }
+    .voltmeter span { display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+    .voltmeter strong { font-size: 24px; font-family: monospace; letter-spacing: 1px; }
+
+    .display-area {
+        display: flex; gap: 20px; width: 100%; justify-content: space-between;
+    }
+    .canvas-container { 
+        background: #080f1a; border: 1px solid #1d3145; border-radius: 12px; 
+        padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; width: 48%;
+    }
+    .canvas-container h3 { margin: 0 0 10px; color: #fff; font-size: 16px; font-weight: 500; }
+    canvas { background: #04070c; border-radius: 8px; display: block; width: 100%; }
+    
+    .status-text { margin-top: 15px; font-size: 14px; color: var(--yellow); text-align: center; min-height: 40px;}
+
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>කාරක වර්ධක ක්‍රියාකාරී ආකාර 2 (Modes of Operation)</h1>
+    <p class="sub">
+        ප්‍රතිපෝෂණයක් (Feedback) නොමැති විට සහ ඇති විට Op-Amp එක හැසිරෙන ආකාරය නිරීක්ෂණය කරන්න.
+    </p>
+</div>
+
+<div class="dashboard">
+    <div class="controls-bar">
+        <div class="btn-group">
+            <button id="btn-open" class="active-open" onclick="setMode('open')">1. විවෘත පුඬුව (Comparator)</button>
+            <button id="btn-closed" onclick="setMode('closed')">2. සංවෘත පුඬුව (Amplifier)</button>
+        </div>
+
+        <div class="slider-group">
+            <label>ආදාන වෝල්ටීයතාවය (V<sub>in</sub>) <span id="vin-val">1.0 V</span></label>
+            <input type="range" id="vin-slider" min="-6" max="6" step="0.1" value="1">
+        </div>
+
+        <div class="voltmeter" id="vout-meter">
+            <span>ප්‍රතිදානය (V<sub>out</sub>)</span>
+            <strong id="vout-val" style="color: var(--purple);">15.00 V</strong>
+        </div>
+    </div>
+
+    <div class="display-area">
+        <div class="canvas-container">
+            <h3>පරිපථ සටහන (Circuit Diagram)</h3>
+            <canvas id="circuitCanvas" width="450" height="350"></canvas>
+            <div class="status-text" id="circuit-desc">
+                කිසිදු සෘණ ප්‍රතිපෝෂණයක් (Feedback) නොමැත.
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <h3>සංක්‍රාමණ ලාක්ෂණිකය (Transfer Characteristic)</h3>
+            <canvas id="graphCanvas" width="450" height="350"></canvas>
+            <div class="status-text" id="graph-desc">
+                අනන්ත ලාභය නිසා ප්‍රතිදානය ක්ෂණිකවම උපරිමයට (Saturation) පනී.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const circuitCanvas = document.getElementById('circuitCanvas');
+const cCtx = circuitCanvas.getContext('2d');
+const graphCanvas = document.getElementById('graphCanvas');
+const gCtx = graphCanvas.getContext('2d');
+
+const vinSlider = document.getElementById('vin-slider');
+const voutVal = document.getElementById('vout-val');
+const vinVal = document.getElementById('vin-val');
+
+let mode = 'open'; // 'open', 'closed'
+const vsat = 15;
+const gain = -3; // Closed loop gain
+
+// Setup Hi-DPI Canvases
+function setupCanvas(canvas, ctx) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = 450 * dpr;
+    canvas.height = 350 * dpr;
+    ctx.scale(dpr, dpr);
+}
+setupCanvas(circuitCanvas, cCtx);
+setupCanvas(graphCanvas, gCtx);
+
+function drawResistor(ctx, x, y, angle, label) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = '#111';
+    ctx.strokeStyle = '#46d7ff';
+    ctx.lineWidth = 2;
+    ctx.fillRect(-20, -10, 40, 20);
+    ctx.strokeRect(-20, -10, 40, 20);
+    ctx.restore();
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if(angle === 0) ctx.fillText(label, x, y - 20);
+    else ctx.fillText(label, x - 25, y);
+}
+
+function drawCircuit(vin, vout) {
+    cCtx.clearRect(0, 0, 450, 350);
+    
+    cCtx.strokeStyle = '#344e65';
+    cCtx.lineWidth = 3;
+    cCtx.beginPath();
+    
+    // Op-Amp Triangle
+    cCtx.fillStyle = '#0d1624';
+    cCtx.moveTo(150, 120); cCtx.lineTo(270, 180); cCtx.lineTo(150, 240); cCtx.closePath();
+    cCtx.fill(); cCtx.stroke();
+    
+    // +/- Labels
+    cCtx.fillStyle = '#fff'; cCtx.font = 'bold 18px Arial'; cCtx.textAlign = 'left';
+    
+    if (mode === 'open') {
+        // OPEN LOOP: Vin to (+), Ground to (-)
+        cCtx.fillText("-", 160, 160);
+        cCtx.fillText("+", 160, 210);
+        
+        // Wires
+        cCtx.beginPath();
+        // Vin to (+)
+        cCtx.moveTo(60, 200); cCtx.lineTo(150, 200);
+        // Ground to (-)
+        cCtx.moveTo(110, 150); cCtx.lineTo(150, 150);
+        cCtx.moveTo(110, 150); cCtx.lineTo(110, 240);
+        // Ground Symbol
+        cCtx.moveTo(90, 240); cCtx.lineTo(130, 240);
+        cCtx.moveTo(100, 248); cCtx.lineTo(120, 248);
+        cCtx.moveTo(106, 256); cCtx.lineTo(114, 256);
+        cCtx.stroke();
+
+        // Labels
+        cCtx.fillStyle = '#46d7ff';
+        cCtx.fillText("V_in", 20, 200);
+        
+    } else {
+        // CLOSED LOOP: Inverting Amp. Vin to (-), Ground to (+), Rf from (-) to Output
+        cCtx.fillText("-", 160, 160);
+        cCtx.fillText("+", 160, 210);
+        
+        cCtx.beginPath();
+        // Ground to (+)
+        cCtx.moveTo(110, 200); cCtx.lineTo(150, 200);
+        cCtx.moveTo(110, 200); cCtx.lineTo(110, 260);
+        cCtx.moveTo(90, 260); cCtx.lineTo(130, 260);
+        cCtx.moveTo(100, 268); cCtx.lineTo(120, 268);
+        cCtx.moveTo(106, 276); cCtx.lineTo(114, 276);
+        
+        // Vin to Rin to (-)
+        cCtx.moveTo(60, 150); cCtx.lineTo(200, 150); // Will be covered by resistor
+        
+        // Feedback Loop
+        cCtx.moveTo(130, 150); cCtx.lineTo(130, 60); cCtx.lineTo(320, 60); cCtx.lineTo(320, 180);
+        cCtx.stroke();
+        
+        drawResistor(cCtx, 95, 150, 0, "R_in");
+        drawResistor(cCtx, 230, 60, 0, "R_f");
+        
+        // Labels
+        cCtx.fillStyle = '#46d7ff';
+        cCtx.fillText("V_in", 20, 150);
+        
+        // Feedback label
+        cCtx.fillStyle = '#2ecc71'; cCtx.font = '12px Arial';
+        cCtx.fillText("සෘණ ප්‍රතිපෝෂණය", 180, 40);
+    }
+    
+    // Output Wire
+    cCtx.strokeStyle = '#344e65'; cCtx.lineWidth = 3; cCtx.beginPath();
+    cCtx.moveTo(270, 180); cCtx.lineTo(370, 180); cCtx.stroke();
+    
+    cCtx.fillStyle = '#ff5e5e'; cCtx.font = 'bold 16px Arial';
+    cCtx.fillText("V_out", 380, 180);
+    
+    // Output Voltage Readout on Diagram
+    cCtx.fillStyle = mode === 'open' ? '#b88bff' : '#46d7ff';
+    cCtx.fillText(vout.toFixed(2) + "V", 380, 205);
+}
+
+function drawGraph(vin, vout) {
+    gCtx.clearRect(0, 0, 450, 350);
+    
+    const cx = 225; const cy = 175;
+    const sclX = 30; // pixels per Volt (X)
+    const sclY = 8;  // pixels per Volt (Y)
+    
+    // Grid & Axes
+    gCtx.strokeStyle = '#1d3145'; gCtx.lineWidth = 1;
+    gCtx.beginPath();
+    for(let i = -6; i <= 6; i++) { gCtx.moveTo(cx + i*sclX, 0); gCtx.lineTo(cx + i*sclX, 350); }
+    for(let i = -20; i <= 20; i+=5) { gCtx.moveTo(0, cy - i*sclY); gCtx.lineTo(450, cy - i*sclY); }
+    gCtx.stroke();
+    
+    gCtx.strokeStyle = '#555'; gCtx.lineWidth = 2;
+    gCtx.beginPath(); gCtx.moveTo(0, cy); gCtx.lineTo(450, cy); // X axis
+    gCtx.moveTo(cx, 0); gCtx.lineTo(cx, 350); // Y axis
+    gCtx.stroke();
+    
+    gCtx.fillStyle = '#aaa'; gCtx.font = '12px Arial';
+    gCtx.fillText("V_in (V)", 390, cy + 20);
+    gCtx.fillText("V_out (V)", cx + 10, 20);
+    gCtx.fillText("+15V", cx + 5, cy - 15*sclY - 5);
+    gCtx.fillText("-15V", cx + 5, cy + 15*sclY + 15);
+    
+    // Saturation Lines (Dashed)
+    gCtx.strokeStyle = '#ff5e5e'; gCtx.lineWidth = 1; gCtx.setLineDash([5, 5]);
+    gCtx.beginPath();
+    gCtx.moveTo(0, cy - 15*sclY); gCtx.lineTo(450, cy - 15*sclY);
+    gCtx.moveTo(0, cy + 15*sclY); gCtx.lineTo(450, cy + 15*sclY);
+    gCtx.stroke(); gCtx.setLineDash([]);
+    
+    // Transfer Curve
+    gCtx.lineWidth = 3;
+    gCtx.beginPath();
+    
+    if (mode === 'open') {
+        gCtx.strokeStyle = '#b88bff';
+        gCtx.shadowColor = '#b88bff'; gCtx.shadowBlur = 10;
+        
+        // Step function: Vout = -15 if Vin < 0, +15 if Vin > 0
+        gCtx.moveTo(cx - 6*sclX, cy + 15*sclY);
+        gCtx.lineTo(cx, cy + 15*sclY);
+        gCtx.lineTo(cx, cy - 15*sclY);
+        gCtx.lineTo(cx + 6*sclX, cy - 15*sclY);
+    } else {
+        gCtx.strokeStyle = '#46d7ff';
+        gCtx.shadowColor = '#46d7ff'; gCtx.shadowBlur = 10;
+        
+        // Slope = -3
+        let x1 = -6, y1 = gain * x1; if(y1 > 15) y1 = 15; if(y1 < -15) y1 = -15;
+        let x2 = -5, y2 = 15;
+        let x3 = 5, y3 = -15;
+        let x4 = 6, y4 = gain * x4; if(y4 > 15) y4 = 15; if(y4 < -15) y4 = -15;
+        
+        gCtx.moveTo(cx - 6*sclX, cy - y1*sclY);
+        gCtx.lineTo(cx - 5*sclX, cy - y2*sclY);
+        gCtx.lineTo(cx + 5*sclX, cy - y3*sclY);
+        gCtx.lineTo(cx + 6*sclX, cy - y4*sclY);
+    }
+    gCtx.stroke(); gCtx.shadowBlur = 0;
+    
+    // Current State Dot
+    gCtx.fillStyle = '#fff';
+    gCtx.shadowColor = '#fff'; gCtx.shadowBlur = 15;
+    gCtx.beginPath();
+    gCtx.arc(cx + vin*sclX, cy - vout*sclY, 6, 0, Math.PI*2);
+    gCtx.fill(); gCtx.shadowBlur = 0;
+}
+
+function updateSimulation() {
+    let vin = parseFloat(vinSlider.value);
+    let vout = 0;
+    
+    if (mode === 'open') {
+        // Comparator Logic (Vin to +, Ground to -)
+        if (vin > 0) vout = vsat;
+        else if (vin < 0) vout = -vsat;
+        else vout = 0; // Exactly zero
+    } else {
+        // Inverting Amplifier Logic
+        vout = vin * gain;
+        if (vout > vsat) vout = vsat;
+        if (vout < -vsat) vout = -vsat;
+    }
+    
+    // Update UI
+    vinVal.textContent = (vin > 0 ? "+" : "") + vin.toFixed(1) + " V";
+    voutVal.textContent = (vout > 0 ? "+" : "") + vout.toFixed(2) + " V";
+    voutVal.style.color = mode === 'open' ? 'var(--purple)' : 'var(--cyan)';
+    
+    document.getElementById('circuit-desc').innerHTML = mode === 'open' ? 
+        'කිසිදු සෘණ ප්‍රතිපෝෂණයක් (Feedback) නොමැත.' : 
+        'සෘණ ප්‍රතිපෝෂණය (<span style="color:var(--green)">R<sub>f</sub></span>) මගින් ලාභය පාලනය කර ඇත.';
+        
+    document.getElementById('graph-desc').innerHTML = mode === 'open' ? 
+        'අනන්ත ලාභය නිසා V<sub>in</sub> හි සුළු වෙනසකින් ප්‍රතිදානය උපරිමයට (<span style="color:var(--red)">Saturation</span>) පනී.' : 
+        'ප්‍රතිපෝෂණය නිසා ප්‍රතිදානය සුමටව (<span style="color:var(--cyan)">V<sub>out</sub> = -3 × V<sub>in</sub></span>) රේඛීයව වෙනස් වේ.';
+
+    drawCircuit(vin, vout);
+    drawGraph(vin, vout);
+}
+
+window.setMode = function(newMode) {
+    mode = newMode;
+    document.getElementById('btn-open').className = mode === 'open' ? 'active-open' : '';
+    document.getElementById('btn-closed').className = mode === 'closed' ? 'active-closed' : '';
+    updateSimulation();
+};
+
+vinSlider.addEventListener('input', updateSimulation);
+updateSimulation();
+</script>
+</body>
+</html>

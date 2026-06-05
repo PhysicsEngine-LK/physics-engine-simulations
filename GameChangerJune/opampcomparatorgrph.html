@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Op-Amp Concept Visualizer</title>
+<style>
+    :root {
+        --bg: #050a12; --panel: #0d1624; --text: #eff6ff; 
+        --cyan: #46d7ff; --green: #2ecc71; --orange: #ff9e54; 
+        --purple: #b88bff; --red: #ff5e5e; --muted: #9cafc3;
+    }
+    body {
+        margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+        font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+        display: flex; flex-direction: column; align-items: center; padding: 20px;
+    }
+    .header { text-align: center; margin-bottom: 20px; }
+    h1 { color: var(--cyan); margin: 0 0 10px; font-size: 26px; }
+    p.sub { color: var(--muted); margin: 0; max-width: 800px; line-height: 1.5; }
+    
+    .dashboard { display: flex; flex-direction: column; gap: 20px; max-width: 900px; width: 100%; align-items: center; }
+    
+    .mode-selector { 
+        display: flex; gap: 15px; background: var(--panel); padding: 15px 25px; 
+        border-radius: 12px; border: 1px solid #1a2c3f; flex-wrap: wrap; justify-content: center;
+    }
+    button {
+        background: #112131; color: var(--text); border: 1px solid #29445b; 
+        padding: 12px 25px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s;
+    }
+    button:hover { background: #1a334a; }
+    button.active { background: #081a24; border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 15px rgba(70, 215, 255, 0.2); }
+
+    .main-area { display: flex; flex-direction: column; width: 100%; gap: 15px; }
+    
+    .canvas-container { 
+        background: #080f1a; border: 1px solid #1d3145; border-radius: 12px; 
+        padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative;
+    }
+    canvas { background: #04070c; border-radius: 8px; display: block; width: 100%; }
+
+    .controls-panel {
+        background: var(--panel); border: 1px solid #1d3145; border-radius: 12px; padding: 20px; 
+        display: flex; gap: 40px; justify-content: center; align-items: center; min-height: 80px; flex-wrap: wrap;
+    }
+    .slider-group { display: flex; flex-direction: column; gap: 8px; width: 250px; }
+    .slider-group label { display: flex; justify-content: space-between; font-size: 15px; font-weight: bold; color: var(--muted); }
+    .slider-group span { color: var(--orange); }
+    input[type=range] { width: 100%; accent-color: var(--cyan); cursor: pointer; }
+    
+    .result-box {
+        background: #04070c; border: 2px solid #29445b; border-radius: 8px; padding: 15px 25px; text-align: center;
+        min-width: 200px; transition: all 0.3s ease;
+    }
+    .result-box span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+    .result-box strong { font-size: 26px; font-family: monospace; letter-spacing: 1px; }
+
+    .explanation { text-align: center; color: var(--yellow); font-size: 15px; padding: 10px; line-height: 1.5; }
+
+    .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>741 කාරක වර්ධකයේ ප්‍රායෝගික කාර්යයන් 2</h1>
+    <p class="sub">අභ්‍යන්තර පරිපථ අමතක කර, බාහිරින් ලබා දෙන ආදානවලට ප්‍රතිදානය ප්‍රතිචාර දක්වන අයුරු නිරීක්ෂණය කරන්න.</p>
+</div>
+
+<div class="dashboard">
+    <div class="mode-selector">
+        <button id="btn-comp" class="active" onclick="setMode('comp')">1. තීරණ ගැනීම (සංසන්දකය / Comparator)</button>
+        <button id="btn-amp" onclick="setMode('amp')">2. සුමටව විශාල කිරීම (වර්ධකය / Amplifier)</button>
+    </div>
+
+    <div class="main-area">
+        <div class="canvas-container">
+            <canvas id="simCanvas" width="800" height="350"></canvas>
+        </div>
+
+        <div class="controls-panel" id="comp-controls">
+            <div class="slider-group">
+                <label>ආදානය A (Input A) <span id="valA-txt" style="color:var(--cyan)">2.0 V</span></label>
+                <input type="range" id="sliderA" min="0" max="5" step="0.1" value="2.0">
+            </div>
+            <div class="slider-group">
+                <label>ආදානය B (Input B) <span id="valB-txt" style="color:var(--purple)">3.0 V</span></label>
+                <input type="range" id="sliderB" min="0" max="5" step="0.1" value="3.0">
+            </div>
+            <div class="result-box" id="comp-result">
+                <span>ප්‍රතිදානය (තීරණය)</span>
+                <strong id="comp-out-txt">-15.00 V</strong>
+            </div>
+        </div>
+
+        <div class="controls-panel hidden" id="amp-controls">
+            <div class="slider-group" style="width: 400px;">
+                <label>ආදාන සංඥාව (Input Signal) <span id="valIn-txt" style="color:var(--cyan)">1.5 V</span></label>
+                <input type="range" id="sliderIn" min="-3" max="3" step="0.1" value="1.5">
+            </div>
+            <div class="result-box" id="amp-result">
+                <span>ප්‍රතිදානය (විශාලනය වූ)</span>
+                <strong id="amp-out-txt">+7.50 V</strong>
+            </div>
+        </div>
+
+        <div class="explanation" id="exp-text">
+            තරාදියක් මෙන් අගයන් දෙකක් සසඳා, විශාල කුමක්දැයි තීරණය කර ප්‍රතිදානය ක්ෂණිකව උපරිම සීමාවට පත් කරයි.
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+
+let mode = 'comp'; // 'comp' or 'amp'
+let currentAngle = 0; // For comparator scale animation
+let currentAmpLevel = 0; // For amplifier bar animation
+
+// Setup Hi-DPI Canvases
+function setupCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+}
+setupCanvas();
+window.addEventListener('resize', setupCanvas);
+
+function drawComparator(valA, valB) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const cx = canvas.width / (2 * (window.devicePixelRatio || 1)); // Handle dynamic center
+    const cy = 250;
+
+    // Determine target angle based on weight difference
+    let targetAngle = (valA - valB) * 0.08; 
+    // Max tilt
+    if (targetAngle > 0.4) targetAngle = 0.4;
+    if (targetAngle < -0.4) targetAngle = -0.4;
+    
+    // Smooth animation
+    currentAngle += (targetAngle - currentAngle) * 0.1;
+
+    // Draw Pivot Base
+    ctx.fillStyle = '#1d3145';
+    ctx.beginPath(); ctx.moveTo(cx, cy - 20); ctx.lineTo(cx + 40, cy + 80); ctx.lineTo(cx - 40, cy + 80); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy - 20, 10, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill();
+
+    ctx.save();
+    ctx.translate(cx, cy - 20);
+    ctx.rotate(currentAngle);
+
+    // Draw Beam
+    ctx.fillStyle = '#9cafc3';
+    ctx.fillRect(-200, -5, 400, 10);
+
+    // Draw Pans Function
+    const drawPan = (x, val, color, label) => {
+        ctx.save();
+        ctx.translate(x, 0);
+        ctx.rotate(-currentAngle); // Counter-rotate to keep pans upright
+        
+        // Strings
+        ctx.strokeStyle = '#555'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-40, 80); ctx.moveTo(0, 0); ctx.lineTo(40, 80); ctx.stroke();
+        
+        // Pan base
+        ctx.fillStyle = '#344e65'; ctx.fillRect(-50, 80, 100, 10);
+        
+        // Weight block (height changes with value)
+        let h = Math.max(10, val * 20);
+        ctx.fillStyle = color;
+        ctx.fillRect(-30, 80 - h, 60, h);
+        
+        // Label
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'center';
+        ctx.fillText(label + ": " + val.toFixed(1), 0, 115);
+        
+        ctx.restore();
+    };
+
+    drawPan(-200, valA, '#46d7ff', 'A');
+    drawPan(200, valB, '#b88bff', 'B');
+
+    ctx.restore();
+
+    // Logic Result Display
+    let outText = "0.00 V";
+    let outColor = "#fff";
+    let resBox = document.getElementById('comp-result');
+    
+    if (valA > valB) {
+        outText = "+15.00 V (A විශාලයි)";
+        outColor = "var(--green)";
+        resBox.style.borderColor = "var(--green)";
+        resBox.style.boxShadow = "0 0 15px rgba(46, 204, 113, 0.3)";
+    } else if (valB > valA) {
+        outText = "-15.00 V (B විශාලයි)";
+        outColor = "var(--red)";
+        resBox.style.borderColor = "var(--red)";
+        resBox.style.boxShadow = "0 0 15px rgba(255, 94, 94, 0.3)";
+    } else {
+        outText = "0.00 V (සමානයි)";
+        outColor = "#aaa";
+        resBox.style.borderColor = "#29445b";
+        resBox.style.boxShadow = "none";
+    }
+    
+    document.getElementById('comp-out-txt').textContent = outText;
+    document.getElementById('comp-out-txt').style.color = outColor;
+}
+
+function drawAmplifier(valIn) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const cx = canvas.width / (2 * (window.devicePixelRatio || 1));
+    const cy = 175;
+
+    // Target Output
+    let targetOut = valIn * 5; // Multiplier is x5
+    let clippedOut = targetOut;
+    let isClipped = false;
+    
+    // Hardware limits (Saturation at +/- 15V)
+    if (clippedOut > 15) { clippedOut = 15; isClipped = true; }
+    if (clippedOut < -15) { clippedOut = -15; isClipped = true; }
+
+    // Smooth animation for output bar
+    currentAmpLevel += (clippedOut - currentAmpLevel) * 0.15;
+
+    // Draw Center Box
+    ctx.fillStyle = '#112131'; ctx.strokeStyle = '#46d7ff'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.roundRect(cx - 80, cy - 60, 160, 120, 15); ctx.fill(); ctx.stroke();
+    ctx.shadowColor = '#46d7ff'; ctx.shadowBlur = 15; ctx.stroke(); ctx.shadowBlur = 0;
+    
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 24px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText("×5 ගුණකය", cx, cy - 10);
+    ctx.fillStyle = '#9cafc3'; ctx.font = '14px Arial';
+    ctx.fillText("(Amplifier)", cx, cy + 20);
+
+    // Draw Input Signal Path & Bar
+    ctx.strokeStyle = '#46d7ff'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(cx - 250, cy); ctx.lineTo(cx - 80, cy); ctx.stroke();
+    
+    let inH = valIn * 25; // Scale height for visuals
+    ctx.fillStyle = '#46d7ff';
+    ctx.fillRect(cx - 200, cy - inH, 40, inH);
+    ctx.fillStyle = '#fff'; ctx.font = '16px Arial';
+    ctx.fillText("ආදානය", cx - 180, cy + (inH > 0 ? 25 : -15));
+    ctx.fillText(valIn.toFixed(1) + " V", cx - 180, cy - inH + (inH > 0 ? -15 : 25));
+
+    // Draw Output Signal Path & Bar
+    ctx.strokeStyle = isClipped ? '#ff5e5e' : '#2ecc71'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(cx + 80, cy); ctx.lineTo(cx + 250, cy); ctx.stroke();
+
+    let outH = currentAmpLevel * 8; // Scale height for visuals
+    ctx.fillStyle = isClipped ? '#ff5e5e' : '#2ecc71';
+    ctx.fillRect(cx + 160, cy - outH, 40, outH);
+    
+    ctx.fillStyle = '#fff';
+    ctx.fillText("ප්‍රතිදානය", cx + 180, cy + (outH > 0 ? 25 : -15));
+    ctx.fillText(clippedOut.toFixed(1) + " V", cx + 180, cy - outH + (outH > 0 ? -15 : 25));
+    
+    if (isClipped) {
+        ctx.fillStyle = '#ff5e5e'; ctx.font = 'bold 12px Arial';
+        ctx.fillText("උපරිම සීමාවට පත්ව ඇත!", cx + 180, cy - outH + (outH > 0 ? -35 : 45));
+    }
+
+    // Logic Result Display
+    let resBox = document.getElementById('amp-result');
+    let outTxt = document.getElementById('amp-out-txt');
+    outTxt.textContent = (clippedOut > 0 ? "+" : "") + clippedOut.toFixed(2) + " V";
+    outTxt.style.color = isClipped ? "var(--red)" : "var(--green)";
+    resBox.style.borderColor = isClipped ? "var(--red)" : "var(--green)";
+    
+    if(isClipped) {
+        resBox.style.boxShadow = "0 0 15px rgba(255, 94, 94, 0.3)";
+    } else {
+        resBox.style.boxShadow = "none";
+    }
+}
+
+// Main Animation Loop
+function loop() {
+    if (mode === 'comp') {
+        let valA = parseFloat(document.getElementById('sliderA').value);
+        let valB = parseFloat(document.getElementById('sliderB').value);
+        document.getElementById('valA-txt').textContent = valA.toFixed(1) + " V";
+        document.getElementById('valB-txt').textContent = valB.toFixed(1) + " V";
+        drawComparator(valA, valB);
+    } else {
+        let valIn = parseFloat(document.getElementById('sliderIn').value);
+        document.getElementById('valIn-txt').textContent = (valIn > 0 ? "+" : "") + valIn.toFixed(1) + " V";
+        drawAmplifier(valIn);
+    }
+    requestAnimationFrame(loop);
+}
+
+// UI Mode Switcher
+window.setMode = function(newMode) {
+    mode = newMode;
+    document.getElementById('btn-comp').classList.remove('active');
+    document.getElementById('btn-amp').classList.remove('active');
+    document.getElementById('btn-' + mode).classList.add('active');
+    
+    if (mode === 'comp') {
+        document.getElementById('comp-controls').classList.remove('hidden');
+        document.getElementById('amp-controls').classList.add('hidden');
+        document.getElementById('exp-text').innerHTML = "තරාදියක් මෙන් අගයන් දෙකක් සසඳා, විශාල කුමක්දැයි තීරණය කර ප්‍රතිදානය ක්ෂණිකව උපරිම සීමාවට පත් කරයි.";
+    } else {
+        document.getElementById('comp-controls').classList.add('hidden');
+        document.getElementById('amp-controls').classList.remove('hidden');
+        document.getElementById('exp-text').innerHTML = "ලබාදෙන සංඥාවේ හැඩය ඒ අයුරින්ම රැකගනිමින්, නියත ගුණයකින් ප්‍රතිදානය සුමටව විශාල කරයි (±15V සීමාවට යටත්ව).";
+    }
+};
+
+// Start the loop
+loop();
+</script>
+</body>
+</html>

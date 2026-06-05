@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Op-Amp Waveform Visualizer</title>
+<style>
+    :root {
+        --bg: #050a12; --panel: #0d1624; --text: #eff6ff; 
+        --cyan: #46d7ff; --green: #2ecc71; --orange: #ff9e54; 
+        --purple: #b88bff; --red: #ff5e5e; --muted: #9cafc3;
+    }
+    body {
+        margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+        font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+        display: flex; flex-direction: column; align-items: center; padding: 20px;
+    }
+    .header { text-align: center; margin-bottom: 20px; }
+    h1 { color: var(--cyan); margin: 0 0 10px; font-size: 26px; }
+    p.sub { color: var(--muted); margin: 0; max-width: 800px; line-height: 1.5; }
+    
+    .dashboard { display: flex; flex-direction: column; gap: 20px; max-width: 900px; width: 100%; align-items: center; }
+    
+    .controls-panel {
+        background: var(--panel); border: 1px solid #1d3145; border-radius: 12px; padding: 20px; 
+        display: flex; gap: 30px; justify-content: center; align-items: center; width: 100%; flex-wrap: wrap;
+    }
+    
+    .mode-selector { display: flex; gap: 10px; }
+    button {
+        background: #112131; color: var(--text); border: 1px solid #29445b; 
+        padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: bold; transition: 0.3s;
+    }
+    button:hover { background: #1a334a; }
+    button.active-inv { background: #1a0b1c; border-color: var(--purple); color: var(--purple); box-shadow: 0 0 15px rgba(184, 139, 255, 0.2); }
+    button.active-non { background: #0b2219; border-color: var(--green); color: var(--green); box-shadow: 0 0 15px rgba(46, 204, 113, 0.2); }
+
+    .slider-group { display: flex; flex-direction: column; gap: 8px; width: 250px; }
+    .slider-group label { display: flex; justify-content: space-between; font-size: 15px; font-weight: bold; color: var(--muted); }
+    .slider-group span { color: var(--orange); }
+    input[type=range] { width: 100%; accent-color: var(--orange); cursor: pointer; }
+    
+    .canvas-container { 
+        background: #080f1a; border: 1px solid #1d3145; border-radius: 12px; 
+        padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; width: 100%;
+    }
+    canvas { background: #04070c; border-radius: 8px; display: block; width: 100%; }
+
+    .explanation { 
+        background: var(--panel); border: 1px solid #1d3145; border-radius: 12px; padding: 15px;
+        text-align: center; color: var(--text); font-size: 16px; width: 100%; min-height: 50px;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .explanation strong { color: var(--yellow); }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>වර්ධක පරිපථවල තරංග හැසිරීම (Amplifier Waveforms)</h1>
+    <p class="sub">සෘණ සහ ධන ආදානවලට සංඥා ලබා දීමේදී, ප්‍රතිදානය හැසිරෙන ආකාරය ඔසිලෝස්කෝපයකින් නිරීක්ෂණය කරන්න.</p>
+</div>
+
+<div class="dashboard">
+    <div class="controls-panel">
+        <div class="mode-selector">
+            <button id="btn-inv" class="active-inv" onclick="setMode('inv')">1. ප්‍රතිවර්තක වර්ධකය (Inverting)</button>
+            <button id="btn-non" onclick="setMode('non')">2. අප්‍රතිවර්තක වර්ධකය (Non-Inverting)</button>
+        </div>
+        <div class="slider-group">
+            <label>වෝල්ටීයතා ලාභය (Gain) <span id="gain-txt">×3</span></label>
+            <input type="range" id="gain-slider" min="1" max="5" step="0.5" value="3">
+        </div>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="waveCanvas" width="850" height="400"></canvas>
+    </div>
+
+    <div class="explanation" id="exp-text">
+        ආදානය <strong>සෘණ (-)</strong> අග්‍රයට ලබා දෙන බැවින්, සංඥාව විශාලනය වන අතරම කලාව (Phase) <strong>180° කින් හැරේ</strong>. (එකක් ඉහළ යන විට අනෙක පහළ යයි).
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('waveCanvas');
+const ctx = canvas.getContext('2d');
+const gainSlider = document.getElementById('gain-slider');
+const gainTxt = document.getElementById('gain-txt');
+
+let mode = 'inv'; // 'inv' or 'non'
+let time = 0;
+
+// Set up Canvas for High DPI screens
+function setupCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+}
+setupCanvas();
+window.addEventListener('resize', setupCanvas);
+
+function drawAxes(cy, label, color) {
+    const width = canvas.width / (window.devicePixelRatio || 1);
+    
+    // X Axis
+    ctx.strokeStyle = '#29445b'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(width, cy); ctx.stroke();
+    
+    // Label
+    ctx.fillStyle = color; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'left';
+    ctx.fillText(label, 20, cy - 20);
+    
+    // Grid lines (vertical)
+    ctx.strokeStyle = '#1d3145'; ctx.lineWidth = 1; ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    for (let x = 50; x < width; x += 100) {
+        ctx.moveTo(x, cy - 80); ctx.lineTo(x, cy + 80);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+}
+
+function drawWave(cy, amplitude, frequency, phase, color, isDashed = false) {
+    const width = canvas.width / (window.devicePixelRatio || 1);
+    
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 10;
+    
+    if (isDashed) ctx.setLineDash([10, 10]);
+    else ctx.setLineDash([]);
+    
+    ctx.beginPath();
+    for (let x = 0; x < width; x++) {
+        // y = A * sin(kx - wt + phi)
+        // time represents the scrolling effect (wt)
+        let y = cy - amplitude * Math.sin((x * frequency) + time + phase);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    
+    ctx.shadowBlur = 0;
+    ctx.setLineDash([]);
+}
+
+function drawVerticalSyncLines(cy1, cy2, frequency) {
+    const width = canvas.width / (window.devicePixelRatio || 1);
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.globalAlpha = 0.3;
+    
+    ctx.beginPath();
+    // Find peaks of the input wave (sin(kx + time) = 1  => kx + time = PI/2 + 2nPI)
+    for (let x = 0; x < width; x++) {
+        let phase = (x * frequency) + time;
+        // Check if phase modulo 2PI is close to PI/2 (Peak) or 3PI/2 (Trough)
+        let normalizedPhase = phase % (Math.PI * 2);
+        if (normalizedPhase < 0) normalizedPhase += Math.PI * 2;
+        
+        if (Math.abs(normalizedPhase - Math.PI/2) < 0.05 || Math.abs(normalizedPhase - 3*Math.PI/2) < 0.05) {
+            ctx.moveTo(x, cy1 - 40);
+            ctx.lineTo(x, cy2 + 150);
+        }
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+    ctx.setLineDash([]);
+}
+
+function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    let gain = parseFloat(gainSlider.value);
+    gainTxt.textContent = "×" + gain.toFixed(1);
+    
+    const width = canvas.width / (window.devicePixelRatio || 1);
+    const height = canvas.height / (window.devicePixelRatio || 1);
+    
+    const cy1 = height * 0.25; // Top graph (Input)
+    const cy2 = height * 0.75; // Bottom graph (Output)
+    
+    const baseAmplitude = 25; // Base input amplitude
+    const frequency = 0.02; // Wave frequency
+    
+    // Draw Background Axes
+    drawAxes(cy1, "ආදාන සංඥාව (Input - Vin)", "#46d7ff");
+    drawAxes(cy2, "ප්‍රතිදාන සංඥාව (Output - Vout)", mode === 'inv' ? "#b88bff" : "#2ecc71");
+    
+    // Draw Sync Lines
+    drawVerticalSyncLines(cy1, cy2, frequency);
+    
+    // Draw Input Wave
+    drawWave(cy1, baseAmplitude, frequency, 0, '#46d7ff');
+    
+    // Draw Output Wave
+    if (mode === 'inv') {
+        // Inverting: 180 degrees out of phase (add Math.PI)
+        drawWave(cy2, baseAmplitude * gain, frequency, Math.PI, '#b88bff');
+    } else {
+        // Non-Inverting: In phase (0)
+        drawWave(cy2, baseAmplitude * gain, frequency, 0, '#2ecc71');
+    }
+    
+    time += 0.04; // Animation speed
+    requestAnimationFrame(animate);
+}
+
+window.setMode = function(newMode) {
+    mode = newMode;
+    document.getElementById('btn-inv').classList.remove('active-inv');
+    document.getElementById('btn-non').classList.remove('active-non');
+    
+    let expText = document.getElementById('exp-text');
+    
+    if (mode === 'inv') {
+        document.getElementById('btn-inv').classList.add('active-inv');
+        expText.innerHTML = "ආදානය <strong>සෘණ (-)</strong> අග්‍රයට ලබා දෙන බැවින්, සංඥාව විශාලනය වන අතරම කලාව (Phase) <strong>180° කින් හැරේ</strong>. (එකක් ඉහළ යන විට අනෙක පහළ යයි).";
+    } else {
+        document.getElementById('btn-non').classList.add('active-non');
+        expText.innerHTML = "ආදානය <strong>ධන (+)</strong> අග්‍රයට ලබා දෙන බැවින්, සංඥාවේ හැඩය සහ කලාව <strong>කිසිසේත් වෙනස් නොවී</strong> විශාලනය වේ. (දෙකම එකට ඉහළ යයි).";
+    }
+};
+
+animate();
+</script>
+</body>
+</html>

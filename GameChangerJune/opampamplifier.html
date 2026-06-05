@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Op-Amp Math Derivation Simulator</title>
+<style>
+    :root {
+        --bg: #050a12; --panel: #0d1624; --text: #eff6ff; 
+        --cyan: #46d7ff; --green: #2ecc71; --orange: #ff9e54; 
+        --purple: #b88bff; --red: #ff5e5e; --muted: #9cafc3;
+    }
+    body {
+        margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+        font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+        display: flex; flex-direction: column; align-items: center; padding: 20px;
+    }
+    .header { text-align: center; margin-bottom: 15px; }
+    h1 { color: var(--cyan); margin: 0 0 10px; font-size: 26px; }
+    p.sub { color: var(--muted); margin: 0; max-width: 900px; line-height: 1.5; font-size: 15px;}
+    
+    .dashboard { display: flex; flex-direction: column; gap: 20px; max-width: 1050px; width: 100%; align-items: center; }
+    
+    .controls-bar { 
+        display: flex; gap: 30px; background: var(--panel); padding: 15px 25px; 
+        border-radius: 12px; border: 1px solid #1a2c3f; width: 100%; justify-content: center; align-items: center; flex-wrap: wrap;
+    }
+    
+    .mode-selector { display: flex; gap: 10px; margin-right: 20px; }
+    button {
+        background: #112131; color: var(--text); border: 1px solid #29445b; 
+        padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; transition: 0.3s;
+    }
+    button:hover { background: #1a334a; }
+    button.active { background: #081a24; border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 15px rgba(70, 215, 255, 0.2); }
+
+    .slider-group { display: flex; flex-direction: column; gap: 5px; width: 180px; }
+    .slider-group label { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; color: var(--muted); }
+    .slider-group span { color: var(--orange); }
+    input[type=range] { width: 100%; accent-color: var(--cyan); cursor: pointer; }
+
+    .main-area { display: flex; gap: 20px; width: 100%; justify-content: space-between; }
+    
+    .canvas-container { 
+        background: #080f1a; border: 1px solid #1d3145; border-radius: 12px; 
+        padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 45%; display: flex; flex-direction: column; align-items: center;
+    }
+    .canvas-container h3 { margin: 0 0 10px; font-size: 16px; color: #fff; }
+    canvas { background: #04070c; border-radius: 8px; width: 100%; }
+
+    .math-panel {
+        background: var(--panel); border: 1px solid #1d3145; border-radius: 12px; padding: 25px; 
+        width: 55%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; justify-content: center;
+    }
+    .math-panel h3 { margin: 0 0 20px; font-size: 18px; color: var(--orange); border-bottom: 1px solid #29445b; padding-bottom: 10px;}
+    
+    .step { margin-bottom: 15px; background: #04070c; padding: 12px 15px; border-radius: 8px; border-left: 4px solid #344e65; }
+    .step.highlight-green { border-left-color: var(--green); }
+    .step.highlight-red { border-left-color: var(--red); }
+    .step.highlight-cyan { border-left-color: var(--cyan); }
+    
+    .step-title { font-size: 13px; color: var(--muted); margin-bottom: 5px; font-weight: bold; }
+    .step-math { font-size: 18px; font-family: monospace; letter-spacing: 1px; color: #fff; margin: 0; }
+    .val { color: var(--orange); font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>වර්ධක සමීකරණ ගොඩනැගීම (Mathematical Derivations)</h1>
+    <p class="sub">රන් රීති 2 භාවිත කරමින් ප්‍රතිවර්තක සහ අප්‍රතිවර්තක වර්ධක සඳහා සමීකරණ සාධනය කරන ආකාරය පියවරෙන් පියවර අධ්‍යයනය කරන්න.</p>
+</div>
+
+<div class="dashboard">
+    <div class="controls-bar">
+        <div class="mode-selector">
+            <button id="btn-inv" class="active" onclick="setMode('inv')">1. ප්‍රතිවර්තක (Inverting)</button>
+            <button id="btn-noninv" onclick="setMode('noninv')">2. අප්‍රතිවර්තක (Non-Inverting)</button>
+        </div>
+
+        <div class="slider-group">
+            <label>V<sub>in</sub> (ආදානය) <span id="vin-txt">2.0 V</span></label>
+            <input type="range" id="vin-slider" min="0" max="5" step="0.1" value="2">
+        </div>
+        <div class="slider-group">
+            <label>R<sub>f</sub> (ප්‍රතිපෝෂණ) <span id="rf-txt">20 kΩ</span></label>
+            <input type="range" id="rf-slider" min="10" max="100" step="5" value="20">
+        </div>
+        <div class="slider-group">
+            <label>R<sub>in</sub> (ආදාන) <span id="rin-txt">10 kΩ</span></label>
+            <input type="range" id="rin-slider" min="5" max="50" step="1" value="10">
+        </div>
+    </div>
+
+    <div class="main-area">
+        <div class="canvas-container">
+            <h3 id="circuit-title">ප්‍රතිවර්තක වර්ධක පරිපථය</h3>
+            <canvas id="circuitCanvas" width="450" height="380"></canvas>
+        </div>
+
+        <div class="math-panel">
+            <h3 id="math-title">ගණිතමය සාධනය: V<sub>out</sub> සෙවීම</h3>
+            <div id="math-content">
+                </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('circuitCanvas');
+const ctx = canvas.getContext('2d');
+const vinSlider = document.getElementById('vin-slider');
+const rfSlider = document.getElementById('rf-slider');
+const rinSlider = document.getElementById('rin-slider');
+
+let mode = 'inv'; // 'inv' or 'noninv'
+let time = 0;
+
+function setupCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = 450 * dpr;
+    canvas.height = 380 * dpr;
+    ctx.scale(dpr, dpr);
+}
+setupCanvas();
+
+function drawResistor(x, y, label, val) {
+    ctx.fillStyle = '#111'; ctx.strokeStyle = '#46d7ff'; ctx.lineWidth = 2;
+    ctx.fillRect(x - 25, y - 10, 50, 20); ctx.strokeRect(x - 25, y - 10, 50, 20);
+    ctx.fillStyle = '#fff'; ctx.font = '12px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y - 20);
+    ctx.fillStyle = '#ff9e54'; ctx.font = '11px Arial'; ctx.fillText(val + 'kΩ', x, y);
+}
+
+function drawCircuit(vin, rf, rin, vout, vminus) {
+    ctx.clearRect(0, 0, 450, 380);
+    
+    // Grid alignment variables
+    const cx = 250, cy = 200; // OpAmp Center
+    const mx = cx - 50, my = cy - 20; // Inverting node (-)
+    const px = cx - 50, py = cy + 20; // Non-inverting node (+)
+    
+    ctx.strokeStyle = '#344e65'; ctx.lineWidth = 3; ctx.beginPath();
+    
+    if (mode === 'inv') {
+        // INVERTING AMP
+        // Vin to Rin to (-)
+        ctx.moveTo(50, my); ctx.lineTo(mx, my);
+        // Feedback (-) to Output
+        ctx.moveTo(mx, my); ctx.lineTo(mx, cy - 100); ctx.lineTo(cx + 100, cy - 100); ctx.lineTo(cx + 100, cy);
+        // (+) to Ground
+        ctx.moveTo(px, py); ctx.lineTo(px, py + 40);
+        // Ground symbol
+        ctx.moveTo(px - 15, py + 40); ctx.lineTo(px + 15, py + 40);
+        ctx.moveTo(px - 8, py + 48); ctx.lineTo(px + 8, py + 48);
+        ctx.moveTo(px - 3, py + 56); ctx.lineTo(px + 3, py + 56);
+        ctx.stroke();
+
+        drawResistor(110, my, "R_in", rin);
+        drawResistor(cx + 25, cy - 100, "R_f", rf);
+
+        // Labels
+        ctx.fillStyle = '#46d7ff'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'right';
+        ctx.fillText(`V_in = ${vin}V`, 45, my);
+        ctx.fillStyle = '#2ecc71'; ctx.textAlign = 'left';
+        ctx.fillText(`V- = ${vminus}V`, mx - 20, my - 15);
+        ctx.fillStyle = '#fff'; ctx.font = '12px Arial';
+        ctx.fillText("භූගතය (0V)", px + 10, py + 30);
+
+    } else {
+        // NON-INVERTING AMP
+        // Ground to Rin to (-)
+        ctx.moveTo(50, my); ctx.lineTo(mx, my);
+        // Ground symbol at start of Rin
+        ctx.moveTo(35, my); ctx.lineTo(35, my + 30);
+        ctx.moveTo(20, my + 30); ctx.lineTo(50, my + 30);
+        ctx.moveTo(27, my + 38); ctx.lineTo(43, my + 38);
+        ctx.moveTo(32, my + 46); ctx.lineTo(38, my + 46);
+        
+        // Feedback (-) to Output
+        ctx.moveTo(mx, my); ctx.lineTo(mx, cy - 100); ctx.lineTo(cx + 100, cy - 100); ctx.lineTo(cx + 100, cy);
+        // Vin to (+)
+        ctx.moveTo(50, py); ctx.lineTo(px, py);
+        ctx.stroke();
+
+        drawResistor(110, my, "R_in", rin);
+        drawResistor(cx + 25, cy - 100, "R_f", rf);
+
+        // Labels
+        ctx.fillStyle = '#fff'; ctx.font = '12px Arial'; ctx.textAlign = 'left';
+        ctx.fillText("0V", 45, my - 15);
+        ctx.fillStyle = '#46d7ff'; ctx.font = 'bold 14px Arial';
+        ctx.fillText(`V_in = ${vin}V`, 45, py - 10);
+        ctx.fillStyle = '#2ecc71'; 
+        ctx.fillText(`V- = ${vminus}V`, mx - 20, my - 15);
+    }
+
+    // Output Wire
+    ctx.strokeStyle = '#344e65'; ctx.beginPath();
+    ctx.moveTo(cx + 50, cy); ctx.lineTo(cx + 130, cy); ctx.stroke();
+
+    // Op-Amp Symbol
+    ctx.fillStyle = '#0d1624'; ctx.strokeStyle = '#eff6ff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx - 50, cy - 50); ctx.lineTo(cx + 50, cy); ctx.lineTo(cx - 50, cy + 50); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 18px Arial'; ctx.textAlign = 'left';
+    ctx.fillText("-", cx - 40, my + 6);
+    ctx.fillText("+", cx - 40, py + 6);
+
+    // Output Label
+    ctx.fillStyle = '#ff5e5e'; ctx.font = 'bold 16px Arial';
+    ctx.fillText(`V_out = ${vout.toFixed(2)}V`, cx + 60, cy + 25);
+    
+    // Nodes
+    ctx.fillStyle = '#fff'; ctx.beginPath();
+    ctx.arc(mx, my, 4, 0, Math.PI*2); ctx.fill(); // Inverting node
+    ctx.beginPath(); ctx.arc(cx + 100, cy, 4, 0, Math.PI*2); ctx.fill(); // Output node
+}
+
+function drawCurrent(mode, vin, vout) {
+    if (vin === 0) return;
+    
+    const cx = 250, cy = 200;
+    const mx = cx - 50, my = cy - 20;
+
+    let path = [];
+    if (mode === 'inv') {
+        // Path: Vin -> Rin -> (-) -> Rf -> Output
+        path = [
+            {x: 50, y: my}, {x: mx, y: my}, {x: mx, y: cy - 100}, 
+            {x: cx + 100, y: cy - 100}, {x: cx + 100, y: cy}
+        ];
+    } else {
+        // Path: Output -> Rf -> (-) -> Rin -> Ground (since Vout is always higher than Ground in Non-Inv with positive Vin)
+        path = [
+            {x: cx + 100, y: cy}, {x: cx + 100, y: cy - 100}, 
+            {x: mx, y: cy - 100}, {x: mx, y: my}, {x: 50, y: my}
+        ];
+    }
+
+    time += 0.015;
+    ctx.fillStyle = '#ffd055'; ctx.shadowColor = '#ffd055'; ctx.shadowBlur = 8;
+    
+    for (let i = 0; i < 6; i++) {
+        let t = (time + i / 6) % 1;
+        let pos = getPointOnPath(path, t);
+        ctx.beginPath(); ctx.arc(pos.x, pos.y, 4, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+}
+
+function getPointOnPath(path, t) {
+    let totalLen = 0;
+    let lengths = [];
+    for(let i=0; i<path.length-1; i++) {
+        let d = Math.hypot(path[i+1].x - path[i].x, path[i+1].y - path[i].y);
+        lengths.push(d); totalLen += d;
+    }
+    
+    let target = t * totalLen;
+    for(let i=0; i<lengths.length; i++) {
+        if(target <= lengths[i]) {
+            let ratio = target / lengths[i];
+            return {
+                x: path[i].x + (path[i+1].x - path[i].x) * ratio,
+                y: path[i].y + (path[i+1].y - path[i].y) * ratio
+            };
+        }
+        target -= lengths[i];
+    }
+    return path[path.length-1];
+}
+
+function updateMathPanel(vin, rf, rin, vout, vminus) {
+    const content = document.getElementById('math-content');
+    if (mode === 'inv') {
+        content.innerHTML = `
+            <div class="step highlight-green">
+                <div class="step-title">පියවර 1: අතාත්වික භූගතය (Rule 2)</div>
+                <p class="step-math">V<sub>+</sub> = 0V නිසා ➔ <span style="color:var(--green)">V<sub>-</sub> = 0 V</span></p>
+            </div>
+            <div class="step highlight-red">
+                <div class="step-title">පියවර 2: ආදාන ධාරාව ශුන්‍ය වීම (Rule 1)</div>
+                <p class="step-math">I<sub>OpAmp</sub> = 0 ➔ <span style="color:var(--red)">I<sub>Rin</sub> = I<sub>Rf</sub></span></p>
+            </div>
+            <div class="step highlight-cyan">
+                <div class="step-title">පියවර 3: ඕම්ගේ නියමය (V = IR) යෙදීම</div>
+                <p class="step-math">(<span class="val">${vin}</span> - 0) / <span class="val">${rin}</span> = (0 - V<sub>out</sub>) / <span class="val">${rf}</span></p>
+            </div>
+            <div class="step" style="border-left-color: var(--orange); background: #111;">
+                <div class="step-title">පියවර 4: V<sub>out</sub> උක්ත කිරීම</div>
+                <p class="step-math">V<sub>out</sub> = -(<span class="val">${rf}</span> / <span class="val">${rin}</span>) × <span class="val">${vin}</span> = <span style="color:var(--red); font-size: 22px;">${vout.toFixed(2)} V</span></p>
+            </div>
+        `;
+    } else {
+        content.innerHTML = `
+            <div class="step highlight-green">
+                <div class="step-title">පියවර 1: අතාත්වික භූගතය (Rule 2)</div>
+                <p class="step-math">V<sub>+</sub> = <span class="val">${vin}</span>V නිසා ➔ <span style="color:var(--green)">V<sub>-</sub> = <span class="val">${vminus}</span> V</span></p>
+            </div>
+            <div class="step highlight-red">
+                <div class="step-title">පියවර 2: ආදාන ධාරාව ශුන්‍ය වීම (Rule 1)</div>
+                <p class="step-math">I<sub>OpAmp</sub> = 0 ➔ <span style="color:var(--red)">I<sub>Rin</sub> = I<sub>Rf</sub></span></p>
+            </div>
+            <div class="step highlight-cyan">
+                <div class="step-title">පියවර 3: ඕම්ගේ නියමය (V = IR) යෙදීම</div>
+                <p class="step-math">(0 - <span class="val">${vminus}</span>) / <span class="val">${rin}</span> = (<span class="val">${vminus}</span> - V<sub>out</sub>) / <span class="val">${rf}</span></p>
+            </div>
+            <div class="step" style="border-left-color: var(--orange); background: #111;">
+                <div class="step-title">පියවර 4: V<sub>out</sub> උක්ත කිරීම</div>
+                <p class="step-math">V<sub>out</sub> = (1 + <span class="val">${rf}</span>/<span class="val">${rin}</span>) × <span class="val">${vin}</span> = <span style="color:var(--red); font-size: 22px;">${vout.toFixed(2)} V</span></p>
+            </div>
+        `;
+    }
+}
+
+function updateSimulation() {
+    let vin = parseFloat(vinSlider.value);
+    let rf = parseFloat(rfSlider.value);
+    let rin = parseFloat(rinSlider.value);
+    
+    document.getElementById('vin-txt').textContent = vin.toFixed(1) + " V";
+    document.getElementById('rf-txt').textContent = rf + " kΩ";
+    document.getElementById('rin-txt').textContent = rin + " kΩ";
+
+    let vout = 0;
+    let vminus = 0;
+
+    if (mode === 'inv') {
+        vout = -(rf / rin) * vin;
+        vminus = 0.0;
+    } else {
+        vout = (1 + rf / rin) * vin;
+        vminus = vin; // Rule 2
+    }
+
+    drawCircuit(vin, rf, rin, vout, vminus);
+    drawCurrent(mode, vin, vout);
+    updateMathPanel(vin, rf, rin, vout, vminus);
+
+    requestAnimationFrame(updateSimulation);
+}
+
+window.setMode = function(newMode) {
+    mode = newMode;
+    document.getElementById('btn-inv').className = mode === 'inv' ? 'active' : '';
+    document.getElementById('btn-noninv').className = mode === 'noninv' ? 'active' : '';
+    document.getElementById('circuit-title').textContent = mode === 'inv' ? "ප්‍රතිවර්තක වර්ධක පරිපථය" : "අප්‍රතිවර්තක වර්ධක පරිපථය";
+    time = 0;
+};
+
+updateSimulation();
+</script>
+</body>
+</html>

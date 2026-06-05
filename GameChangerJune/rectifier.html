@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rectification Simulation</title>
+    <style>
+        :root {
+            --bg: #090e17;
+            --panel: #131d2b;
+            --border: #23344a;
+            --text: #e2e8f0;
+            --primary: #3b82f6;
+            --ac-color: #facc15;
+            --dc-color: #22d3ee;
+            --cap-color: #4ade80;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 { color: #60a5fa; margin-bottom: 5px; text-align: center; text-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+        .subtitle { color: #94a3b8; margin-bottom: 30px; font-size: 15px; text-align: center; }
+
+        /* --- Dashboard Layout --- */
+        .dashboard {
+            display: flex;
+            gap: 25px;
+            width: 100%;
+            max-width: 1200px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* --- Left Side: Oscilloscopes --- */
+        .scope-panel {
+            flex: 2;
+            min-width: 600px;
+            background: #020617;
+            border: 2px solid #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.8), 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .scope-title {
+            position: absolute;
+            font-family: monospace;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 10;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        canvas {
+            width: 100%;
+            height: 220px;
+            border: 1px solid #1e293b;
+            border-radius: 6px;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 25px 25px;
+            background-position: center center;
+            display: block;
+        }
+
+        /* --- Right Side: Controls & Explanation --- */
+        .side-panel {
+            flex: 1;
+            min-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .controls-panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label { font-size: 14px; font-weight: bold; color: #93c5fd; }
+        
+        select {
+            padding: 10px;
+            border-radius: 6px;
+            background: #0f172a;
+            color: white;
+            border: 1px solid #334155;
+            font-size: 15px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #0f172a;
+            padding: 12px 15px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            cursor: pointer;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--cap-color);
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .rectifier-diagram {
+            width: 100%;
+            max-width: 280px;
+            margin: 4px auto 0;
+            padding: 10px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        .rectifier-diagram img {
+            display: block;
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+
+        /* Ensure hidden class overrides the image display rule (specificity fix) */
+        .rectifier-diagram img.hidden,
+        .rectifier-diagram.hidden img {
+            display: none;
+        }
+
+        .rectifier-diagram.hidden {
+            display: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Smaller variant for half-wave thumbnail */
+        #half-rect-img {
+            max-width: 140px;
+            width: auto;
+            height: auto;
+            display: block;
+            margin: 8px auto 0;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        #btn-play { background-color: var(--danger); }
+        #btn-play:hover { filter: brightness(1.2); }
+        #btn-play.paused { background-color: #10b981; } /* Green when paused */
+
+        #btn-reset { background-color: #475569; }
+        #btn-reset:hover { background-color: #64748b; }
+
+        .explanation {
+            background: var(--panel);
+            border-left: 5px solid var(--primary);
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #cbd5e1;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            flex-grow: 1;
+        }
+
+        .explanation strong { color: #fff; }
+
+    </style>
+</head>
+<body>
+
+    <h1>සෘජුකරණය සහ සුමටනය (Rectification & Smoothing)</h1>
+    <div class="subtitle">දෝලනේක්ෂ (Oscilloscope) තරංග සටහන් සජීවීව නිරීක්ෂණය කරන්න</div>
+
+    <div class="dashboard">
+        
+        <div class="scope-panel">
+            <div class="canvas-wrapper">
+                <div class="scope-title" style="top: 10px; left: 10px; color: var(--ac-color);">CH1: ආදාන ප්‍රත්‍යාවර්ත තරංගය (Input AC)</div>
+                <canvas id="canvas-in" width="800" height="220"></canvas>
+            </div>
+
+            <div class="canvas-wrapper">
+                <div class="scope-title" style="top: 10px; left: 10px; color: var(--dc-color);">CH2: ප්‍රතිදාන සරල තරංගය (Output DC)</div>
+                <canvas id="canvas-out" width="800" height="220"></canvas>
+            </div>
+        </div>
+
+        <div class="side-panel">
+            <div class="controls-panel">
+                
+                <div class="control-group">
+                    <label>සෘජුකරණ වර්ගය තෝරන්න (Type):</label>
+                    <select id="rect-type">
+                        <option value="half" selected>අර්ධ තරංග සෘජුකරණය (Half-Wave)</option>
+                        <option value="full">පූර්ණ තරංග සෘජුකරණය (Full-Wave Bridge)</option>
+                    </select>
+                </div>
+
+                <label class="checkbox-wrapper">
+                    <input type="checkbox" id="smooth-toggle">
+                    <span style="font-weight: bold; color: var(--cap-color);">ධාරිත්‍රක සුමටනය (Add Smoothing Capacitor)</span>
+                </label>
+
+                <div class="btn-group">
+                    <button id="btn-play" onclick="toggleSimulation()">නවත්වන්න (Pause)</button>
+                    <button id="btn-reset" onclick="resetSimulation()">මුල සිට (Reset)</button>
+                </div>
+
+                <div class="rectifier-diagram" id="rectifier-diagram">
+                    <img id="full-rect-img" class="hidden" src="../assets/fullrectifier.png" alt="Full-wave bridge rectifier diagram">
+                    <img id="half-rect-img" src="../assets/halfrectifier.png" alt="Half-wave rectifier diagram" style="margin-top:8px;">
+                </div>
+
+            </div>
+
+            <div class="explanation" id="exp-text">
+                </div>
+        </div>
+
+    </div>
+
+    <script>
+        const canvasIn = document.getElementById('canvas-in');
+        const ctxIn = canvasIn.getContext('2d');
+        const canvasOut = document.getElementById('canvas-out');
+        const ctxOut = canvasOut.getContext('2d');
+        
+        const rectTypeSelect = document.getElementById('rect-type');
+        const smoothToggle = document.getElementById('smooth-toggle');
+        const expText = document.getElementById('exp-text');
+        const btnPlay = document.getElementById('btn-play');
+
+        let time = 0;
+        let waveDataIn = [];
+        let waveDataOut = [];
+        const maxPoints = 800; 
+
+        const amplitude = 90;
+        const frequency = 0.03;
+        const diodeDrop = 0; 
+        
+        let capVoltage = 0;
+        const dischargeRate = 0.55; 
+
+        // Simulation Control Variables
+        let isRunning = true;
+        let animationId;
+
+        function updateExplanation() {
+            let type = rectTypeSelect.value;
+            let smoothed = smoothToggle.checked;
+            
+            // Show/hide diagram based on rectifier type (toggle correct image)
+            const fullImg = document.getElementById('full-rect-img');
+            const halfImg = document.getElementById('half-rect-img');
+            if (type === 'full') {
+                // prefer explicit style toggle to avoid CSS specificity edge-cases
+                fullImg.style.display = '';
+                halfImg.style.display = 'none';
+                fullImg.classList.remove('hidden');
+                halfImg.classList.add('hidden');
+            } else {
+                fullImg.style.display = 'none';
+                halfImg.style.display = '';
+                fullImg.classList.add('hidden');
+                halfImg.classList.remove('hidden');
+            }
+            
+            let html = "";
+            
+            if (type === 'half') {
+                html += "<strong>අර්ධ තරංග සෘජුකරණය:</strong> AC තරංගයේ ධන අර්ධයේදී පමණක් ඩයෝඩය පෙර නැඹුරු වී ධාරාව ගලයි. සෘණ අර්ධය කපා හැරේ. මෙහි කාර්යක්ෂමතාව අඩුය.";
+            } else {
+                html += "<strong>පූර්ණ තරංග සෘජුකරණය:</strong> සේතු පරිපථය (Bridge) මඟින් AC තරංගයේ ධන සහ සෘණ යන අර්ධ දෙකම එකම දිශාවකට ගමන් කරවයි. මෙය වඩාත් කාර්යක්ෂම වේ.";
+            }
+
+            if (smoothed) {
+                html += "<br><br><span style='color: #4ade80;'><strong>ධාරිත්‍රක සුමටනය සක්‍රීයයි:</strong> වෝල්ටීයතාව උපරිම වන විට ධාරිත්‍රකය ආරෝපණය (Charge) වන අතර, තරංගය පහළ බසින විට එය සෙමින් විසර්ජනය (Discharge) වේ. මේ නිසා ප්‍රතිදානය සරල රේඛාවකට ආසන්න වේ (Ripple අඩු වේ).</span>";
+            }
+
+            expText.innerHTML = html;
+        }
+
+        function toggleSimulation() {
+            isRunning = !isRunning;
+            if (isRunning) {
+                btnPlay.textContent = 'නවත්වන්න (Pause)';
+                btnPlay.classList.remove('paused');
+                animate();
+            } else {
+                btnPlay.textContent = 'ආරම්භ කරන්න (Play)';
+                btnPlay.classList.add('paused');
+                cancelAnimationFrame(animationId);
+            }
+        }
+
+        function resetSimulation() {
+            // Clear arrays and reset variables
+            waveDataIn = [];
+            waveDataOut = [];
+            time = 0;
+            capVoltage = 0;
+
+            // Clear canvases and draw grid
+            drawGrid(ctxIn, canvasIn.height);
+            drawGrid(ctxOut, canvasOut.height);
+        }
+
+        function drawGrid(ctx, height) {
+            ctx.clearRect(0, 0, maxPoints, height);
+            ctx.beginPath();
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            ctx.moveTo(0, height/2);
+            ctx.lineTo(maxPoints, height/2);
+            ctx.stroke();
+        }
+
+        function drawWave(ctx, data, color, height) {
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.lineJoin = 'round';
+
+            for (let i = 0; i < data.length; i++) {
+                let x = i;
+                let y = (height / 2) - data[i]; 
+                
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+
+        function animate() {
+            if (!isRunning) return;
+
+            // 1. Generate Input AC Signal (Sine Wave)
+            let vin = amplitude * Math.sin(time * frequency);
+            
+            // 2. Process Rectification
+            let vout = 0;
+            let type = rectTypeSelect.value;
+            
+            if (type === 'half') {
+                vout = vin > diodeDrop ? vin - diodeDrop : 0;
+            } else {
+                let absVin = Math.abs(vin);
+                vout = absVin > (diodeDrop * 2) ? absVin - (diodeDrop * 2) : 0;
+            }
+
+            // 3. Process Capacitor Smoothing
+            if (smoothToggle.checked) {
+                if (vout >= capVoltage) {
+                    capVoltage = vout; 
+                } else {
+                    capVoltage -= dischargeRate;
+                    if (capVoltage < 0) capVoltage = 0;
+                }
+                vout = capVoltage; 
+            } else {
+                capVoltage = 0; 
+            }
+
+            // 4. Update Data Arrays
+            waveDataIn.push(vin);
+            if (waveDataIn.length > maxPoints) waveDataIn.shift();
+
+            waveDataOut.push(vout);
+            if (waveDataOut.length > maxPoints) waveDataOut.shift();
+
+            // 5. Draw Canvases
+            drawGrid(ctxIn, canvasIn.height);
+            drawWave(ctxIn, waveDataIn, 'var(--ac-color)', canvasIn.height);
+
+            drawGrid(ctxOut, canvasOut.height);
+            let outColor = smoothToggle.checked ? 'var(--cap-color)' : 'var(--dc-color)';
+            drawWave(ctxOut, waveDataOut, outColor, canvasOut.height);
+
+            time += 1;
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Event Listeners for text update
+        rectTypeSelect.addEventListener('change', updateExplanation);
+        smoothToggle.addEventListener('change', updateExplanation);
+
+        // Initialize
+        updateExplanation();
+        animate();
+    </script>
+</body>
+</html>
