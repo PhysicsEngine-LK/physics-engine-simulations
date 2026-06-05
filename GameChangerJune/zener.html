@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zener Diode Voltage Regulator</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: #161b22;
+            --border: #30363d;
+            --text-main: #c9d1d9;
+            --accent: #58a6ff;
+            --zener-off: #8b949e;
+            --zener-on: #3fb950;
+            --warning: #f39c12;
+            --danger: #ff7b72;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 { color: #58a6ff; margin-bottom: 5px; text-align: center; }
+        .subtitle { color: #8b949e; margin-bottom: 25px; text-align: center; }
+
+        .dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* --- Panels --- */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+
+        .controls-panel {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .circuit-panel {
+            flex: 2;
+            min-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .graph-panel {
+            flex: 1 1 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- Controls --- */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #0d1117;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #21262d;
+        }
+
+        label { font-size: 14px; font-weight: bold; color: #a5d6ff; display: flex; justify-content: space-between; }
+        .val-display { color: #ff7b72; }
+
+        input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+        select { padding: 8px; border-radius: 6px; background: #21262d; color: white; border: 1px solid var(--border); font-family: inherit; }
+
+        /* --- Circuit Diagram Elements --- */
+        .circuit-container {
+            position: relative;
+            width: 550px;
+            height: 300px;
+            background: #010409;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 15px;
+        }
+
+        .svg-wires {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+        }
+        
+        .wire { fill: none; stroke: #484f58; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+        
+        .current-anim {
+            fill: none; stroke: #fbbf24; stroke-width: 3; stroke-dasharray: 6, 12;
+            animation: flow 1s linear infinite; display: none;
+        }
+        .current-zener { stroke: #3fb950; }
+        .current-load { stroke: #58a6ff; }
+
+        @keyframes flow { to { stroke-dashoffset: -18; } }
+
+        /* Circuit Labels */
+        .c-label {
+            position: absolute; z-index: 5; background: #161b22; padding: 2px 6px; 
+            border-radius: 4px; font-size: 13px; font-weight: bold; border: 1px solid #30363d;
+        }
+        
+        .meter {
+            position: absolute; z-index: 5; background: #000; padding: 4px 8px;
+            border-radius: 4px; font-size: 14px; font-weight: bold; color: #fff;
+            border: 1px solid #444; box-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+
+        .meter span { font-size: 11px; color: #8b949e; display: block; margin-bottom: 2px;}
+
+        /* --- Zener Diode Symbol --- */
+        .zener-symbol {
+            position: absolute; top: 120px; left: 250px; z-index: 10;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .z-line { width: 40px; height: 4px; background: var(--zener-off); transition: background 0.3s; position: relative;}
+        .z-wing-left { position: absolute; width: 12px; height: 4px; background: inherit; top: 8px; left: -4px; transform: rotate(45deg); }
+        .z-wing-right { position: absolute; width: 12px; height: 4px; background: inherit; top: -8px; right: -4px; transform: rotate(45deg); }
+        .z-triangle { width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-bottom: 30px solid var(--zener-off); transition: border-bottom-color 0.3s;}
+
+        .zener-on .z-line, .zener-on .z-wing-left, .zener-on .z-wing-right { background: var(--zener-on); box-shadow: 0 0 10px var(--zener-on); }
+        .zener-on .z-triangle { border-bottom-color: var(--zener-on); filter: drop-shadow(0 0 5px var(--zener-on)); }
+
+        /* --- Status Panel --- */
+        .status-box {
+            background: #0d1117; border-left: 5px solid var(--zener-off); padding: 15px; border-radius: 6px; width: 100%; box-sizing: border-box;
+        }
+        .status-box h3 { margin: 0 0 8px 0; font-size: 16px; }
+        .status-box p { margin: 0; font-size: 14px; line-height: 1.5; color: #c9d1d9;}
+
+        /* --- Graph --- */
+        canvas { background: #010409; border: 1px solid var(--border); border-radius: 8px; }
+
+    </style>
+</head>
+<body>
+
+    <h1>සෙනර් ඩයෝඩ වෝල්ටීයතා යාමකය (Zener Voltage Regulator)</h1>
+    <p class="subtitle">ආදාන වෝල්ටීයතාව වෙනස් වුවද භාරය හරහා වෝල්ටීයතාව නියතව තබාගන්නා ආකාරය</p>
+
+    <div class="dashboard">
+        
+        <div class="panel controls-panel">
+            <div class="control-group">
+                <label><span>ආදාන වෝල්ටීයතාවය (V<sub>in</sub>)</span> <span class="val-display" id="val-vin">8.0 V</span></label>
+                <input type="range" id="slider-vin" min="0" max="15" step="0.1" value="8">
+            </div>
+            
+            <div class="control-group">
+                <label><span>ශ්‍රේණිගත ප්‍රතිරෝධකය (R<sub>s</sub>)</span> <span class="val-display" id="val-rs">500 &Omega;</span></label>
+                <input type="range" id="slider-rs" min="100" max="1000" step="10" value="500">
+            </div>
+
+            <div class="control-group">
+                <label><span>භාර ප්‍රතිරෝධකය (R<sub>L</sub>)</span> <span class="val-display" id="val-rl">1000 &Omega;</span></label>
+                <input type="range" id="slider-rl" min="100" max="5000" step="50" value="1000">
+            </div>
+
+            <div class="control-group">
+                <label><span>සෙනර් බිඳවැටුම් වෝල්ටීයතාව (V<sub>Z</sub>)</span></label>
+                <select id="select-vz">
+                    <option value="3.3">3.3 V</option>
+                    <option value="5.1" selected>5.1 V</option>
+                    <option value="9.1">9.1 V</option>
+                </select>
+            </div>
+            <div class="status-box" id="status-panel">
+                <h3 id="status-title">Status</h3>
+                <p id="status-text">Description</p>
+            </div>
+        </div>
+
+        <div class="panel circuit-panel">
+            <div class="circuit-container">
+                <svg class="svg-wires">
+                    <polyline class="wire" points="80,80 270,80 270,120" /> <polyline class="wire" points="270,80 440,80 440,120" /> <polyline class="wire" points="80,240 440,240 440,190" /> <polyline class="wire" points="270,240 270,180" /> <polyline class="wire" points="140,80 150,70 160,90 170,70 180,90 190,70 200,80" />
+                    <polyline class="wire" points="440,130 430,140 450,150 430,160 450,170 430,180 440,190" />
+                    
+                    <line class="wire" x1="80" y1="130" x2="80" y2="80" />
+                    <line class="wire" x1="60" y1="130" x2="100" y2="130" style="stroke-width:4;" />
+                    <line class="wire" x1="70" y1="140" x2="90" y2="140" style="stroke-width:8;" />
+                    <line class="wire" x1="60" y1="150" x2="100" y2="150" style="stroke-width:4;" />
+                    <line class="wire" x1="70" y1="160" x2="90" y2="160" style="stroke-width:8;" />
+                    <line class="wire" x1="80" y1="160" x2="80" y2="240" />
+
+                    <polyline class="current-anim" id="anim-is" points="80,100 80,80 220,80" />
+                    <polyline class="current-anim current-zener" id="anim-iz" points="270,80 270,110" />
+                    <polyline class="current-anim current-load" id="anim-il" points="300,80 440,80 440,110" />
+                </svg>
+
+                <div class="c-label" style="top: 140px; left: 15px;">V<sub>in</sub></div>
+                <div class="c-label" style="top: 50px; left: 155px;">R<sub>s</sub></div>
+                <div class="c-label" style="top: 150px; left: 470px;">R<sub>L</sub></div>
+                
+                <div class="zener-symbol" id="zener-graphic">
+                    <div class="z-line"><div class="z-wing-left"></div><div class="z-wing-right"></div></div>
+                    <div class="z-triangle"></div>
+                    <div style="margin-top: 5px; font-size: 12px; font-weight: bold; color: #a5d6ff;">V<sub>Z</sub> = <span id="lbl-vz">5.1</span>V</div>
+                </div>
+
+                <div class="meter" style="top: 20px; left: 130px;"><span>මුළු ධාරාව (I<sub>s</sub>)</span><div id="meter-is" style="color:#fbbf24">0.0 mA</div></div>
+                <div class="meter" style="top: 145px; left: 160px; border-color:var(--zener-on);"><span>සෙනර් ධාරාව (I<sub>z</sub>)</span><div id="meter-iz" style="color:var(--zener-on)">0.0 mA</div></div>
+                <div class="meter" style="top: 20px; left: 330px; border-color:var(--accent);"><span>භාර ධාරාව (I<sub>L</sub>)</span><div id="meter-il" style="color:var(--accent)">0.0 mA</div></div>
+                <div class="meter" style="top: 250px; left: 400px; border-color:var(--danger); box-shadow: 0 0 15px rgba(255,0,0,0.3);"><span>භාර වෝල්ටීයතාව (V<sub>L</sub>)</span><div id="meter-vl" style="color:var(--danger); font-size: 18px;">0.00 V</div></div>
+            </div>
+
+            <!-- Graph moved here so it appears under the circuit -->
+            <div style="width:100%; display:flex; justify-content:center; margin-top:10px;">
+                <div style="width:100%; max-width:700px;">
+                    <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #a5d6ff; text-align:center;">V<sub>in</sub> එදිරිව V<sub>Load</sub> ප්‍රස්තාරය</h3>
+                    <canvas id="graphCanvas" width="600" height="250" style="display:block; margin:0 auto;"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        
+
+    </div>
+
+    <script>
+        // DOM Elements
+        const sliderVin = document.getElementById('slider-vin');
+        const sliderRs = document.getElementById('slider-rs');
+        const sliderRl = document.getElementById('slider-rl');
+        const selectVz = document.getElementById('select-vz');
+
+        const valVin = document.getElementById('val-vin');
+        const valRs = document.getElementById('val-rs');
+        const valRl = document.getElementById('val-rl');
+        const lblVz = document.getElementById('lbl-vz');
+
+        const meterIs = document.getElementById('meter-is');
+        const meterIz = document.getElementById('meter-iz');
+        const meterIl = document.getElementById('meter-il');
+        const meterVl = document.getElementById('meter-vl');
+
+        const zenerGraphic = document.getElementById('zener-graphic');
+        const animIs = document.getElementById('anim-is');
+        const animIz = document.getElementById('anim-iz');
+        const animIl = document.getElementById('anim-il');
+
+        const statusPanel = document.getElementById('status-panel');
+        const statusTitle = document.getElementById('status-title');
+        const statusText = document.getElementById('status-text');
+
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function calculateValues() {
+            // Get inputs
+            const Vin = parseFloat(sliderVin.value);
+            const Rs = parseFloat(sliderRs.value);
+            const RL = parseFloat(sliderRl.value);
+            const Vz = parseFloat(selectVz.value);
+
+            // Update UI Labels
+            valVin.textContent = Vin.toFixed(1) + " V";
+            valRs.innerHTML = Rs + " &Omega;";
+            valRl.innerHTML = RL + " &Omega;";
+            lblVz.textContent = Vz;
+
+            // Physics Calculations
+            // 1. Calculate Unregulated Voltage (Voltage divider rule if Zener was removed)
+            let V_unreg = Vin * (RL / (Rs + RL));
+            
+            let V_load = 0;
+            let I_s = 0;
+            let I_z = 0;
+            let I_L = 0;
+            let zenerState = false;
+
+            if (V_unreg < Vz) {
+                // Zener is OFF (Not in breakdown)
+                zenerState = false;
+                V_load = V_unreg;
+                I_z = 0;
+                I_L = V_load / RL;
+                I_s = I_L;
+            } else {
+                // Zener is ON (In breakdown)
+                zenerState = true;
+                V_load = Vz; // Voltage is clamped
+                I_L = V_load / RL;
+                I_s = (Vin - Vz) / Rs;
+                I_z = I_s - I_L;
+            }
+
+            // Convert currents to mA for display
+            I_s = I_s * 1000;
+            I_z = I_z * 1000;
+            I_L = I_L * 1000;
+
+            // Update Meters
+            meterVl.textContent = V_load.toFixed(2) + " V";
+            meterIs.textContent = I_s.toFixed(1) + " mA";
+            meterIz.textContent = I_z.toFixed(1) + " mA";
+            meterIl.textContent = I_L.toFixed(1) + " mA";
+
+            // Update Animations and Styles
+            animIs.style.display = I_s > 0 ? 'block' : 'none';
+            animIl.style.display = I_L > 0 ? 'block' : 'none';
+            animIz.style.display = I_z > 0.1 ? 'block' : 'none';
+
+            if (zenerState) {
+                zenerGraphic.classList.add('zener-on');
+                statusPanel.style.borderLeftColor = 'var(--zener-on)';
+                statusTitle.textContent = "සෙනර් ඩයෝඩය සක්‍රීයයි (Zener Breakdown ON)";
+                statusTitle.style.color = 'var(--zener-on)';
+                statusText.innerHTML = `ආදාන වෝල්ටීයතාවය වැඩි වුවද, සෙනර් ඩයෝඩය බිඳවැටුම් අවස්ථාවේ පවතින බැවින් භාරය හරහා වෝල්ටීයතාවය නියතව (<b>${Vz} V</b>) පවතී. අතිරික්ත ධාරාව සෙනර් ඩයෝඩය හරහා ගලා යයි. පරිපථය ආරක්ෂිතයි!`;
+            } else {
+                zenerGraphic.classList.remove('zener-on');
+                statusPanel.style.borderLeftColor = 'var(--zener-off)';
+                statusTitle.textContent = "සෙනර් ඩයෝඩය අක්‍රීයයි (Zener OFF)";
+                statusTitle.style.color = 'var(--zener-off)';
+                statusText.innerHTML = `පරිපථයේ වෝල්ටීයතාව සෙනර් විභවයට (<b>${Vz} V</b>) වඩා අඩු බැවින්, සෙනර් ඩයෝඩය හරහා ධාරාවක් නොගලයි. භාර වෝල්ටීයතාවය ආදානය මත රඳා පවතී.`;
+            }
+
+            drawGraph(Vin, Rs, RL, Vz, V_load);
+        }
+
+        function drawGraph(currentVin, Rs, RL, Vz, currentVload) {
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 40;
+            
+            ctx.clearRect(0, 0, width, height);
+
+            // Scales: X -> 0 to 15V, Y -> 0 to 10V
+            const scaleX = (width - padding * 2) / 15;
+            const scaleY = (height - padding * 2) / 10;
+            const originX = padding;
+            const originY = height - padding;
+
+            // Draw Axes
+            ctx.beginPath();
+            ctx.strokeStyle = '#484f58';
+            ctx.lineWidth = 2;
+            ctx.moveTo(originX, padding / 2); ctx.lineTo(originX, originY); // Y
+            ctx.lineTo(width - padding / 2, originY); // X
+            ctx.stroke();
+
+            // Labels
+            // Improved labels with simulated subscripts for better readability on canvas
+            function drawLabelParts(parts, x, y, align) {
+                ctx.save();
+                ctx.textBaseline = 'alphabetic';
+                align = align || 'center';
+                // measure total width
+                let total = 0;
+                for (let p of parts) { ctx.font = p.font; total += ctx.measureText(p.text).width; }
+                let startX = x;
+                if (align === 'center') startX = x - total / 2;
+                else if (align === 'right') startX = x - total;
+                let curX = startX;
+                for (let p of parts) {
+                    ctx.font = p.font;
+                    ctx.fillStyle = p.color || '#8b949e';
+                    const yOff = p.offset || 0;
+                    ctx.fillText(p.text, curX, y + yOff);
+                    curX += ctx.measureText(p.text).width;
+                }
+                ctx.restore();
+            }
+
+            // Right X axis label: V with subscript 'in' and unit
+            drawLabelParts([
+                { text: 'V', font: '13px Arial' },
+                { text: 'in', font: '11px Arial', offset: 6 },
+                { text: ' (V)', font: '13px Arial' }
+            ], width - 40, originY + 20, 'center');
+
+            // Top-left Y axis label: V with subscript 'Load' and unit
+            drawLabelParts([
+                { text: 'V', font: '13px Arial' },
+                { text: 'Load', font: '11px Arial', offset: 6 },
+                { text: ' (V)', font: '13px Arial' }
+            ], originX + 10, 15, 'left');
+            
+            // Grid and ticks
+            ctx.textAlign = 'center';
+            for(let i=0; i<=15; i+=3) {
+                let x = originX + i * scaleX;
+                ctx.fillText(i, x, originY + 15);
+                ctx.fillStyle = '#30363d'; ctx.fillRect(x, originY, 1, - (height - padding*1.5)); ctx.fillStyle = '#8b949e';
+            }
+            ctx.textAlign = 'right';
+            for(let i=0; i<=10; i+=2) {
+                let y = originY - i * scaleY;
+                ctx.fillText(i, originX - 5, y + 4);
+                ctx.fillStyle = '#30363d'; ctx.fillRect(originX, y, width - padding*1.5, 1); ctx.fillStyle = '#8b949e';
+            }
+
+            // Draw Transfer Curve
+            ctx.beginPath();
+            ctx.strokeStyle = '#58a6ff';
+            ctx.lineWidth = 3;
+            
+            for (let v_in = 0; v_in <= 15; v_in += 0.5) {
+                let v_u = v_in * (RL / (Rs + RL));
+                let v_out = v_u < Vz ? v_u : Vz;
+                
+                let px = originX + v_in * scaleX;
+                let py = originY - v_out * scaleY;
+                
+                if (v_in === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+
+            // Draw current operating point
+            let dotX = originX + currentVin * scaleX;
+            let dotY = originY - currentVload * scaleY;
+
+            // Dotted lines to axes
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = '#ff7b72';
+            ctx.lineWidth = 1;
+            ctx.moveTo(dotX, originY); ctx.lineTo(dotX, dotY);
+            ctx.moveTo(originX, dotY); ctx.lineTo(dotX, dotY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Dot
+            ctx.beginPath();
+            ctx.arc(dotX, dotY, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff7b72';
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Event Listeners
+        sliderVin.addEventListener('input', calculateValues);
+        sliderRs.addEventListener('input', calculateValues);
+        sliderRl.addEventListener('input', calculateValues);
+        selectVz.addEventListener('change', calculateValues);
+
+        // Initial Calculation
+        calculateValues();
+    </script>
+</body>
+</html>

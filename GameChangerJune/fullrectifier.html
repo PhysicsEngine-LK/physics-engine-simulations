@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Wave Rectifier Circuit</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f4f8;
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+        }
+
+        .circuit-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            border: 1px solid #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="circuit-container">
+        <svg width="700" height="350" viewBox="0 0 700 350" xmlns="http://www.w3.org/2000/svg">
+            
+            <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#000" />
+                </marker>
+
+                <g id="diode">
+                    <polygon points="-12,12 12,12 0,-12" fill="#000" />
+                    <line x1="-12" y1="-12" x2="12" y2="-12" stroke="#000" stroke-width="4" />
+                </g>
+            </defs>
+
+            <rect x="0" y="0" width="480" height="350" fill="#fff500" />
+
+            <line x1="50" y1="80" x2="50" y2="270" stroke="#000" stroke-width="2" />
+            <line x1="60" y1="80" x2="60" y2="270" stroke="#000" stroke-width="2" />
+            
+            <path d="M 80,100 C 110,100 110,125 80,125 C 110,125 110,150 80,150 C 110,150 110,175 80,175 C 110,175 110,200 80,200 C 110,200 110,225 80,225 C 110,225 110,250 80,250" fill="none" stroke="#000" stroke-width="2.5" />
+
+            <polyline points="80,100 180,100 180,175" fill="none" stroke="#000" stroke-width="2.5" />
+            
+            <polyline points="80,250 330,250 330,175" fill="none" stroke="#000" stroke-width="2.5" />
+
+            <polygon points="255,100 330,175 255,250 180,175" fill="none" stroke="#000" stroke-width="2.5" />
+
+            <use href="#diode" x="217.5" y="137.5" transform="rotate(45 217.5 137.5)" />
+            
+            <use href="#diode" x="292.5" y="137.5" transform="rotate(-45 292.5 137.5)" />
+            
+            <use href="#diode" x="217.5" y="212.5" transform="rotate(-45 217.5 212.5)" />
+            
+            <use href="#diode" x="292.5" y="212.5" transform="rotate(45 292.5 212.5)" />
+
+            <circle cx="180" cy="175" r="4" fill="#000" /> <circle cx="330" cy="175" r="4" fill="#000" /> <circle cx="255" cy="100" r="4" fill="#000" /> <circle cx="255" cy="250" r="4" fill="#000" /> <polyline points="255,100 255,60 520,60" fill="none" stroke="#000" stroke-width="2.5" />
+            
+            <polyline points="255,250 255,290 520,290" fill="none" stroke="#000" stroke-width="2.5" />
+
+            <circle cx="420" cy="60" r="4" fill="#000" />
+            <circle cx="420" cy="290" r="4" fill="#000" />
+
+            <line x1="420" y1="60" x2="420" y2="165" stroke="#000" stroke-width="2.5" />
+            <line x1="420" y1="290" x2="420" y2="185" stroke="#000" stroke-width="2.5" />
+            
+            <line x1="395" y1="165" x2="445" y2="165" stroke="#000" stroke-width="4" />
+            <line x1="395" y1="185" x2="445" y2="185" stroke="#000" stroke-width="4" />
+            
+            <text x="380" y="155" font-size="24" font-weight="bold" fill="#000">+</text>
+
+            <circle cx="520" cy="60" r="5" fill="#fff" stroke="#000" stroke-width="2" />
+            <circle cx="520" cy="290" r="5" fill="#fff" stroke="#000" stroke-width="2" />
+            
+            <text x="500" y="45" font-size="20" font-weight="bold" fill="#000">+</text>
+            <text x="505" y="315" font-size="26" font-weight="bold" fill="#000">-</text>
+
+            <text x="460" y="180" font-size="18" font-family="Arial" fill="#000">V<tspan baseline-shift="sub" font-size="12">DC</tspan></text>
+
+            <polyline points="525,60 620,60 620,110" fill="none" stroke="#000" stroke-width="2.5" />
+            <polyline points="525,290 620,290 620,240" fill="none" stroke="#000" stroke-width="2.5" />
+
+            <polyline points="620,110 605,120 635,140 605,160 635,180 605,200 635,220 620,230 620,240" fill="none" stroke="#000" stroke-width="2.5" stroke-linejoin="round" />
+            
+            <line x1="595" y1="205" x2="645" y2="145" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />
+
+            <text x="645" y="180" font-size="18" font-family="Arial" fill="#000">R<tspan baseline-shift="sub" font-size="12">L</tspan> භාරය</text>
+
+        </svg>
+    </div>
+
+</body>
+</html>

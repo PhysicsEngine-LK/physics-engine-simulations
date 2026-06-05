@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>741 Op-Amp Pinout Simulator</title>
+<style>
+    :root {
+        --bg: #050a12; --panel: #0d1624; --text: #eff6ff; 
+        --cyan: #46d7ff; --green: #2ecc71; --orange: #ff9e54; 
+        --purple: #b88bff; --red: #ff5e5e; --muted: #9cafc3;
+    }
+    body {
+        margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+        font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+        display: flex; flex-direction: column; align-items: center; padding: 20px;
+    }
+    .header { text-align: center; margin-bottom: 20px; }
+    h1 { color: var(--cyan); margin: 0 0 10px; font-size: 26px; }
+    p.sub { color: var(--muted); margin: 0; max-width: 800px; line-height: 1.5; }
+    
+    .dashboard { display: flex; flex-direction: column; gap: 20px; max-width: 900px; width: 100%; align-items: center; }
+    
+    .controls { display: flex; gap: 10px; background: var(--panel); padding: 15px; border-radius: 12px; border: 1px solid #1a2c3f; }
+    button {
+        background: #112131; color: var(--text); border: 1px solid #29445b; 
+        padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: bold; transition: 0.2s;
+    }
+    button:hover { background: #1a334a; }
+    button.active { background: #102b38; border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 10px rgba(70, 215, 255, 0.2); }
+
+    .canvas-container { background: #080f1a; border: 1px solid #1d3145; border-radius: 12px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; cursor: crosshair;}
+    canvas { background: #04070c; border-radius: 8px; }
+
+    .info-box {
+        background: var(--panel); border: 1px solid #1d3145; border-radius: 12px; padding: 20px; 
+        width: 100%; min-height: 120px; text-align: center; display: flex; flex-direction: column; justify-content: center;
+        transition: all 0.3s ease;
+    }
+    .info-box h3 { margin: 0 0 8px; font-size: 20px; color: var(--orange); }
+    .info-box p { margin: 0; font-size: 15px; color: var(--text); line-height: 1.5; }
+    .info-box.highlight { border-color: var(--cyan); box-shadow: 0 0 15px rgba(70, 215, 255, 0.2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>741 කාරක වර්ධකය (741 Op-Amp) අග්‍ර හඳුනාගැනීම</h1>
+    <p class="sub">අග්‍ර (Pins) මතට මවුසය ගෙන යමින් ඒවායේ කාර්යය අධ්‍යයනය කරන්න.</p>
+</div>
+
+<div class="dashboard">
+    <div class="controls">
+        <button id="btn-ic" class="active" onclick="setMode('ic')">1. භෞතික පෙනුම (IC)</button>
+        <button id="btn-sym" onclick="setMode('sym')">2. පරිපථ සංකේතය (Symbol)</button>
+        <button id="btn-map" onclick="setMode('map')">3. සම්බන්ධතාවය පෙන්වන්න (Map)</button>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="simCanvas" width="700" height="400"></canvas>
+    </div>
+    
+    <div class="info-box" id="info-panel">
+        <h3 id="info-title">අග්‍රයක් තෝරන්න</h3>
+        <p id="info-desc">වැඩි විස්තර දැනගැනීම සඳහා අග්‍රයක් (Pin) මතට මවුසය ගෙන යන්න.</p>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+let mode = 'ic'; // 'ic', 'sym', 'map'
+let hoveredPin = null;
+let animationTime = 0;
+
+// Pin Data Definitions
+const pins = {
+    1: { name: "1. Offset Null", desc: "අපගේ විෂය නිර්දේශයේ පරිපථ සඳහා භාවිතා නොවේ.", color: "#555", used: false },
+    2: { name: "2. ප්‍රතිවර්තක ආදානය (Inverting -)", desc: "මෙයට ලබාදෙන සංඥාව 180° කින් හැරී (අනිත් පැත්ත හැරී) විශාලනය වේ.", color: "#46d7ff", used: true },
+    3: { name: "3. අප්‍රතිවර්තක ආදානය (Non-Inverting +)", desc: "මෙයට ලබාදෙන සංඥාව එම හැඩයෙන්ම (කලාව වෙනස් නොවී) විශාලනය වේ.", color: "#ff5e5e", used: true },
+    4: { name: "4. සෘණ බල සැපයුම (-Vcc / -Vee)", desc: "IC එක ක්‍රියාත්මක වීමට අවශ්‍ය සෘණ වෝල්ටීයතාවය ලබා දෙන අග්‍රයයි (උදා: -15V).", color: "#b88bff", used: true },
+    5: { name: "5. Offset Null", desc: "අපගේ විෂය නිර්දේශයේ පරිපථ සඳහා භාවිතා නොවේ.", color: "#555", used: false },
+    6: { name: "6. ප්‍රතිදානය (Output)", desc: "විශාලනය කරන ලද අවසන් සංඥාව අපට ලබා ගත හැක්කේ මෙම අග්‍රයෙනි.", color: "#2ecc71", used: true },
+    7: { name: "7. ධන බල සැපයුම (+Vcc)", desc: "IC එක ක්‍රියාත්මක වීමට අවශ්‍ය ධන වෝල්ටීයතාවය ලබා දෙන අග්‍රයයි (උදා: +15V).", color: "#ff9e54", used: true },
+    8: { name: "8. No Connection (NC)", desc: "අභ්‍යන්තරව කිසිදු සම්බන්ධයක් නොමැත. භාවිතා නොකෙරේ.", color: "#555", used: false }
+};
+
+let hitboxes = []; // Stores {x, y, w, h, pinNum}
+
+function drawRoundedRect(ctx, x, y, width, height, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+}
+
+// Draw Physical IC
+function drawIC(cx, cy, scale) {
+    const w = 120 * scale;
+    const h = 180 * scale;
+    const pinW = 30 * scale;
+    const pinH = 15 * scale;
+    const spacing = h / 5;
+
+    // Draw Pins
+    ctx.lineWidth = 2;
+    for (let i = 1; i <= 4; i++) {
+        let py = cy - h/2 + spacing * i;
+        // Left pins (1 to 4)
+        drawPinHitbox(i, cx - w/2 - pinW, py - pinH/2, pinW, pinH, (hoveredPin === i || (mode === 'map' && pins[i].used)));
+        // Right pins (8 down to 5)
+        let rightPin = 9 - i;
+        drawPinHitbox(rightPin, cx + w/2, py - pinH/2, pinW, pinH, (hoveredPin === rightPin || (mode === 'map' && pins[rightPin].used)));
+    }
+
+    // IC Body
+    ctx.fillStyle = '#111';
+    drawRoundedRect(ctx, cx - w/2, cy - h/2, w, h, 10);
+    ctx.fill();
+    ctx.strokeStyle = '#333'; ctx.stroke();
+
+    // Notch
+    ctx.beginPath();
+    ctx.arc(cx, cy - h/2, 15*scale, 0, Math.PI, false);
+    ctx.fillStyle = '#080808'; ctx.fill();
+    ctx.strokeStyle = '#222'; ctx.stroke();
+
+    // Dot for Pin 1
+    ctx.beginPath();
+    ctx.arc(cx - w/2 + 20*scale, cy - h/2 + 20*scale, 6*scale, 0, Math.PI*2);
+    ctx.fillStyle = '#444'; ctx.fill();
+
+    // Text label
+    ctx.fillStyle = '#555';
+    ctx.font = `bold ${24*scale}px Arial`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(Math.PI/2);
+    ctx.fillText("LM741", 0, 0);
+    ctx.restore();
+}
+
+function drawPinHitbox(pinNum, x, y, w, h, highlight) {
+    let color = pins[pinNum].used ? pins[pinNum].color : '#555';
+    
+    ctx.fillStyle = highlight ? color : '#888';
+    if(highlight) {
+        ctx.shadowColor = color; ctx.shadowBlur = 15;
+    }
+    
+    ctx.fillRect(x, y, w, h);
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#222'; ctx.strokeRect(x, y, w, h);
+
+    // Number
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    let nx = pinNum <= 4 ? x - 15 : x + w + 15;
+    ctx.fillText(pinNum, nx, y + h/2);
+
+    // Register hitbox
+    hitboxes.push({x: x-20, y: y-10, w: w+40, h: h+20, pinNum: pinNum, isSym: false});
+}
+
+// Draw Symbol
+function drawSym(cx, cy, scale) {
+    const s = 80 * scale;
+    
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#eff6ff';
+    ctx.fillStyle = '#0a1626';
+
+    // Triangle
+    ctx.beginPath();
+    ctx.moveTo(cx - s, cy - s);
+    ctx.lineTo(cx + s, cy);
+    ctx.lineTo(cx - s, cy + s);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // Inputs
+    ctx.font = `bold ${18*scale}px Arial`;
+    ctx.fillStyle = '#fff';
+    ctx.fillText("-", cx - s + 15*scale, cy - s/2);
+    ctx.fillText("+", cx - s + 15*scale, cy + s/2);
+
+    // Connections (2, 3, 6, 7, 4)
+    drawSymLeg(2, cx - s - 40*scale, cy - s/2, cx - s, cy - s/2); // Inverting (2)
+    drawSymLeg(3, cx - s - 40*scale, cy + s/2, cx - s, cy + s/2); // Non-Inverting (3)
+    drawSymLeg(6, cx + s, cy, cx + s + 40*scale, cy); // Output (6)
+    drawSymLeg(7, cx, cy - s/2, cx, cy - s - 30*scale); // +Vcc (7)
+    drawSymLeg(4, cx, cy + s/2, cx, cy + s + 30*scale); // -Vcc (4)
+}
+
+function drawSymLeg(pinNum, x1, y1, x2, y2) {
+    let highlight = (hoveredPin === pinNum || mode === 'map');
+    let color = pins[pinNum].color;
+    
+    ctx.strokeStyle = highlight ? color : '#777';
+    ctx.lineWidth = 4;
+    
+    if(highlight) { ctx.shadowColor = color; ctx.shadowBlur = 10; }
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Dot terminal
+    let termX = (x1 < x2 && pinNum !== 7 && pinNum !== 4) ? x1 : (pinNum === 6 ? x2 : x2); // approximate outer tip
+    if(pinNum === 7) { termX = x2; termY = y2; }
+    else if(pinNum === 4) { termX = x2; termY = y2; }
+    else if(pinNum === 6) { termX = x2; termY = y2; }
+    else { termX = x1; termY = y1; }
+
+    ctx.beginPath(); ctx.arc(termX, termY, 6, 0, Math.PI*2);
+    ctx.fillStyle = highlight ? color : '#777';
+    ctx.fill();
+
+    // Label
+    ctx.fillStyle = highlight ? '#fff' : '#888';
+    ctx.font = 'bold 12px Arial';
+    let lx = termX, ly = termY;
+    if(pinNum === 2 || pinNum === 3) lx -= 15;
+    else if(pinNum === 6) lx += 15;
+    else if(pinNum === 7) ly -= 15;
+    else if(pinNum === 4) ly += 15;
+    ctx.fillText(pinNum, lx, ly);
+
+    // Hitbox
+    hitboxes.push({x: termX-15, y: termY-15, w: 30, h: 30, pinNum: pinNum, isSym: true, termX, termY});
+}
+
+function drawMappingLines() {
+    let icBoxes = hitboxes.filter(h => !h.isSym);
+    let symBoxes = hitboxes.filter(h => h.isSym);
+
+    [2, 3, 4, 6, 7].forEach(p => {
+        let icBox = icBoxes.find(b => b.pinNum === p);
+        let symBox = symBoxes.find(b => b.pinNum === p);
+        
+        if (icBox && symBox) {
+            let startX = p <= 4 ? icBox.x + icBox.w : icBox.x;
+            let startY = icBox.y + icBox.h/2;
+            let endX = symBox.termX;
+            let endY = symBox.termY;
+
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            // Bezier curve for smooth flowing lines
+            ctx.bezierCurveTo(startX + 80, startY, endX - 80, endY, endX, endY);
+            
+            ctx.strokeStyle = pins[p].color;
+            ctx.lineWidth = (hoveredPin === p) ? 4 : 2;
+            ctx.globalAlpha = (hoveredPin === null || hoveredPin === p) ? 0.7 : 0.1;
+            
+            // Animation effect (flowing dashes)
+            ctx.setLineDash([10, 10]);
+            ctx.lineDashOffset = -animationTime;
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.globalAlpha = 1.0;
+        }
+    });
+}
+
+function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    hitboxes = [];
+    animationTime += 1;
+
+    if (mode === 'ic') {
+        drawIC(canvas.width / 2, canvas.height / 2, 1.2);
+    } else if (mode === 'sym') {
+        drawSym(canvas.width / 2, canvas.height / 2, 1.2);
+    } else if (mode === 'map') {
+        drawIC(canvas.width * 0.25, canvas.height / 2, 0.9);
+        drawSym(canvas.width * 0.75, canvas.height / 2, 1.0);
+        drawMappingLines();
+    }
+
+    requestAnimationFrame(render);
+}
+
+// Interaction
+canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    
+    let found = null;
+    for (let b of hitboxes) {
+        if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
+            found = b.pinNum;
+            break;
+        }
+    }
+
+    if (found !== hoveredPin) {
+        hoveredPin = found;
+        updateInfoPanel();
+    }
+});
+
+canvas.addEventListener('mouseleave', () => {
+    hoveredPin = null;
+    updateInfoPanel();
+});
+
+function updateInfoPanel() {
+    const panel = document.getElementById('info-panel');
+    const title = document.getElementById('info-title');
+    const desc = document.getElementById('info-desc');
+
+    if (hoveredPin) {
+        let p = pins[hoveredPin];
+        title.textContent = p.name;
+        title.style.color = p.color;
+        desc.textContent = p.desc;
+        panel.classList.add('highlight');
+    } else {
+        title.textContent = "අග්‍රයක් තෝරන්න";
+        title.style.color = "var(--orange)";
+        desc.textContent = "වැඩි විස්තර දැනගැනීම සඳහා අග්‍රයක් (Pin) මතට මවුසය ගෙන යන්න.";
+        panel.classList.remove('highlight');
+    }
+}
+
+window.setMode = function(newMode) {
+    mode = newMode;
+    document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
+    document.getElementById(`btn-${newMode}`).classList.add('active');
+    hoveredPin = null;
+    updateInfoPanel();
+};
+
+render();
+</script>
+</body>
+</html>

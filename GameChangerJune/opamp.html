@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Op-Amp Golden Rules Simulator</title>
+<style>
+    :root {
+        --bg: #050a12; --panel: #0d1624; --text: #eff6ff; 
+        --cyan: #46d7ff; --green: #2ecc71; --orange: #ff9e54; 
+        --yellow: #ffd055; --red: #ff5e5e; --muted: #9cafc3;
+    }
+    body {
+        margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+        font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+        display: flex; flex-direction: column; align-items: center; padding: 20px;
+    }
+    .header { text-align: center; margin-bottom: 20px; }
+    h1 { color: var(--cyan); margin: 0 0 10px; font-size: 26px; }
+    p.sub { color: var(--muted); margin: 0; max-width: 850px; line-height: 1.5; }
+    
+    .dashboard { display: flex; flex-direction: column; gap: 20px; max-width: 1000px; width: 100%; align-items: center; }
+    
+    .controls-bar { 
+        display: flex; gap: 30px; background: var(--panel); padding: 20px; 
+        border-radius: 12px; border: 1px solid #1a2c3f; width: 100%; justify-content: center; flex-wrap: wrap;
+    }
+    .control-group { display: flex; flex-direction: column; gap: 8px; width: 300px; }
+    .control-group label { display: flex; justify-content: space-between; font-size: 14px; font-weight: bold; color: var(--muted); }
+    .control-group span { color: var(--yellow); }
+    input[type=range] { width: 100%; accent-color: var(--cyan); cursor: pointer; }
+
+    .canvas-container { 
+        background: #080f1a; border: 1px solid #1d3145; border-radius: 12px; 
+        padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative;
+    }
+    canvas { background: #04070c; border-radius: 8px; display: block; }
+
+    .math-panel {
+        background: var(--panel); border: 1px solid #1d3145; border-radius: 12px; padding: 15px 25px; 
+        width: 100%; display: flex; justify-content: space-between; align-items: center;
+    }
+    .math-step { text-align: center; }
+    .math-step h4 { margin: 0 0 5px; color: var(--orange); font-size: 14px; }
+    .math-step p { margin: 0; font-size: 18px; font-weight: bold; font-family: monospace; letter-spacing: 1px; color: #fff;}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>පරමාදර්ශී කාරක වර්ධකයේ "රන් රීති 2" (Golden Rules)</h1>
+    <p class="sub">
+        ප්‍රතිවර්තක වර්ධකයක (Inverting Amplifier) ධාරාව ගලන මාර්ගය සහ විභවයන් නිරීක්ෂණය කරන්න.<br>
+        <span style="color:var(--red);">Rule 1:</span> ආදාන අග්‍ර (+, -) තුළට ධාරාවක් නොගලයි ($I=0$). 
+        <span style="color:var(--green);">Rule 2:</span> අතාත්වික භූගතය ($V_- = V_+ = 0\text{V}$).
+    </p>
+</div>
+
+<div class="dashboard">
+    <div class="controls-bar">
+        <div class="control-group">
+            <label>ආදාන වෝල්ටීයතාවය (V<sub>in</sub>) <span id="vin-val">1.0 V</span></label>
+            <input type="range" id="vin-slider" min="-5" max="5" step="0.1" value="1">
+        </div>
+        <div class="control-group">
+            <label>ප්‍රතිපෝෂණ ප්‍රතිරෝධය (R<sub>f</sub>) <span id="rf-val">20 kΩ</span></label>
+            <input type="range" id="rf-slider" min="10" max="50" step="1" value="20">
+        </div>
+        <div class="control-group" style="justify-content: center; align-items: center; width: 150px;">
+            <div style="font-size: 13px; color: var(--muted);">ආදාන ප්‍රතිරෝධය (R<sub>in</sub>)</div>
+            <div style="font-size: 18px; font-weight: bold; color: var(--cyan);">10 kΩ (නියතයි)</div>
+        </div>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="circuitCanvas" width="850" height="400"></canvas>
+    </div>
+
+    <div class="math-panel">
+        <div class="math-step">
+            <h4>1. ආදාන ධාරාව (I)</h4>
+            <p>I = V<sub>in</sub> / R<sub>in</sub> = <span id="math-i">0.10</span> mA</p>
+        </div>
+        <div class="math-step" style="color: var(--muted); font-size: 20px;">➔</div>
+        <div class="math-step">
+            <h4>2. අතාත්වික භූගතය හරහා</h4>
+            <p style="color:var(--green);">V<sub>-</sub> = 0V (I Op-Amp තුළට නොයයි)</p>
+        </div>
+        <div class="math-step" style="color: var(--muted); font-size: 20px;">➔</div>
+        <div class="math-step">
+            <h4>3. ප්‍රතිදාන වෝල්ටීයතාවය (V<sub>out</sub>)</h4>
+            <p>V<sub>out</sub> = 0 - (I × R<sub>f</sub>) = <span id="math-vout">-2.00</span> V</p>
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('circuitCanvas');
+const ctx = canvas.getContext('2d');
+const vinSlider = document.getElementById('vin-slider');
+const rfSlider = document.getElementById('rf-slider');
+const rin = 10; // 10 kOhms fixed
+
+let time = 0;
+
+// Path definition for current flow
+const currentPath = [
+    {x: 100, y: 220}, // Vin
+    {x: 350, y: 220}, // Node B (Inverting input junction)
+    {x: 350, y: 100}, // Up to feedback loop
+    {x: 550, y: 100}, // Across Rf
+    {x: 550, y: 220}, // Down to output junction
+    {x: 750, y: 220}  // Vout
+];
+
+// Helper to scale for high DPI displays (Crisp text)
+function setupCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    return rect;
+}
+setupCanvas();
+
+function drawResistor(x, y, label, val) {
+    ctx.fillStyle = '#111';
+    ctx.strokeStyle = '#46d7ff';
+    ctx.lineWidth = 2;
+    ctx.fillRect(x - 30, y - 12, 60, 24);
+    ctx.strokeRect(x - 30, y - 12, 60, 24);
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y - 22);
+    ctx.fillStyle = '#ffd055';
+    ctx.fillText(val + ' kΩ', x, y);
+}
+
+function drawVoltmeter(x, y, label, voltage, highlightColor) {
+    ctx.fillStyle = '#0a1626';
+    ctx.strokeStyle = highlightColor || '#1d3145';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(x - 50, y - 25, 100, 50, 8); ctx.fill(); ctx.stroke();
+    
+    if(highlightColor) {
+        ctx.shadowColor = highlightColor; ctx.shadowBlur = 10; ctx.stroke(); ctx.shadowBlur = 0;
+    }
+
+    ctx.fillStyle = '#9cafc3';
+    ctx.font = '11px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, x, y - 8);
+    
+    ctx.fillStyle = highlightColor || '#fff';
+    ctx.font = 'bold 16px monospace';
+    ctx.fillText(voltage.toFixed(2) + ' V', x, y + 12);
+}
+
+function drawCircuit(vin, rf, vout) {
+    ctx.clearRect(0, 0, 850, 400);
+
+    // 1. Draw Wires
+    ctx.strokeStyle = '#344e65';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    // Vin to Node B to OpAmp (-)
+    ctx.moveTo(100, 220); ctx.lineTo(400, 220);
+    // Node A (+) to Ground
+    ctx.moveTo(400, 280); ctx.lineTo(350, 280); ctx.lineTo(350, 340);
+    // Ground symbol
+    ctx.moveTo(330, 340); ctx.lineTo(370, 340);
+    ctx.moveTo(340, 348); ctx.lineTo(360, 348);
+    ctx.moveTo(347, 356); ctx.lineTo(353, 356);
+    // Feedback loop
+    ctx.moveTo(350, 220); ctx.lineTo(350, 100); ctx.lineTo(550, 100); ctx.lineTo(550, 250);
+    // Output line
+    ctx.moveTo(500, 250); ctx.lineTo(750, 250);
+    ctx.stroke();
+
+    // 2. Draw Op-Amp Triangle
+    ctx.fillStyle = '#0d1624';
+    ctx.strokeStyle = '#eff6ff';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(400, 170); ctx.lineTo(500, 250); ctx.lineTo(400, 330); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    
+    // +/- Labels on Op-Amp
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'left';
+    ctx.fillText("-", 410, 227);
+    ctx.fillText("+", 410, 287);
+
+    // 3. Draw Resistors
+    drawResistor(225, 220, "R_in", rin);
+    drawResistor(450, 100, "R_f", rf);
+
+    // 4. Draw Nodes (Dots)
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(350, 220, 5, 0, Math.PI*2); ctx.fill(); // Node B
+    ctx.beginPath(); ctx.arc(550, 250, 5, 0, Math.PI*2); ctx.fill(); // Output junction
+
+    // 5. Draw Voltmeters
+    drawVoltmeter(100, 220, "V_in", vin, '#46d7ff'); // Vin
+    drawVoltmeter(750, 250, "V_out", vout, '#ff5e5e'); // Vout
+    
+    // VIRTUAL EARTH VOLTMETER (Highly highlighted)
+    drawVoltmeter(350, 160, "අතාත්වික භූගතය (V_-)", 0.00, '#2ecc71');
+    // Ground Voltmeter
+    drawVoltmeter(270, 280, "භූගතය (V_+)", 0.00, '#888');
+
+    // 6. Draw Rule 1 (I=0 Barrier)
+    ctx.strokeStyle = '#ff5e5e';
+    ctx.lineWidth = 4;
+    // Barrier at (-)
+    ctx.beginPath(); ctx.moveTo(380, 210); ctx.lineTo(400, 230); ctx.moveTo(400, 210); ctx.lineTo(380, 230); ctx.stroke();
+    // Barrier at (+)
+    ctx.beginPath(); ctx.moveTo(380, 270); ctx.lineTo(400, 290); ctx.moveTo(400, 270); ctx.lineTo(380, 290); ctx.stroke();
+    
+    ctx.fillStyle = '#ff5e5e';
+    ctx.font = 'bold 14px Arial';
+    ctx.fillText("I = 0", 380, 195);
+}
+
+function getPathPoint(t) {
+    // Total path length is roughly: 250 + 120 + 200 + 120 + 200 = 890
+    // Simplified segment interpolation
+    let lengths = [250, 120, 200, 120, 200];
+    let totalLen = 890;
+    let dist = (t % 1) * totalLen;
+    
+    for (let i = 0; i < lengths.length; i++) {
+        if (dist <= lengths[i]) {
+            let p1 = currentPath[i];
+            let p2 = currentPath[i+1];
+            let ratio = dist / lengths[i];
+            return {
+                x: p1.x + (p2.x - p1.x) * ratio,
+                y: p1.y + (p2.y - p1.y) * ratio
+            };
+        }
+        dist -= lengths[i];
+    }
+    return currentPath[0];
+}
+
+function drawCurrent(vin) {
+    if (Math.abs(vin) < 0.1) return; // No current if Vin is 0
+    
+    // Current direction: If Vin > 0, flows left to right. If Vin < 0, flows right to left.
+    let speed = Math.abs(vin) * 0.003; 
+    let direction = vin > 0 ? 1 : -1;
+    time += speed * direction;
+
+    ctx.fillStyle = '#ffd055';
+    ctx.shadowColor = '#ffd055';
+    ctx.shadowBlur = 8;
+    
+    // Draw 8 moving particles
+    for (let i = 0; i < 8; i++) {
+        let t = (time + i / 8);
+        if (t < 0) t = 1 - (Math.abs(t) % 1); // Wrap around for negative
+        let pos = getPathPoint(t);
+        
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 4, 0, Math.PI*2);
+        ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+}
+
+function updateSimulation() {
+    let vin = parseFloat(vinSlider.value);
+    let rf = parseFloat(rfSlider.value);
+    
+    // Calculations
+    let i = vin / rin; // mA
+    let vout = -vin * (rf / rin);
+    
+    // Clamp Vout to typical op-amp saturation limits (e.g. +/- 15V)
+    if (vout > 15) vout = 15;
+    if (vout < -15) vout = -15;
+
+    // Update UI Texts
+    document.getElementById('vin-val').textContent = vin.toFixed(1) + ' V';
+    document.getElementById('rf-val').textContent = rf + ' kΩ';
+    document.getElementById('math-i').textContent = Math.abs(i).toFixed(2);
+    document.getElementById('math-vout').textContent = vout.toFixed(2);
+
+    drawCircuit(vin, rf, vout);
+    drawCurrent(vin);
+    
+    requestAnimationFrame(updateSimulation);
+}
+
+// Start
+updateSimulation();
+</script>
+</body>
+</html>
