@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analog vs Digital Signal Visualizer</title>
+<style>
+    :root {
+        --bg: #050a12; --panel: #0d1624; --text: #eff6ff; 
+        --cyan: #46d7ff; --green: #2ecc71; --orange: #ff9e54; 
+        --purple: #b88bff; --red: #ff5e5e; --muted: #9cafc3;
+    }
+    body {
+        margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+        font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+        display: flex; flex-direction: column; align-items: center; padding: 20px;
+    }
+    .header { text-align: center; margin-bottom: 20px; }
+    h1 { color: var(--cyan); margin: 0 0 10px; font-size: 26px; }
+    p.sub { color: var(--muted); margin: 0; max-width: 800px; line-height: 1.5; }
+    
+    .dashboard { display: flex; flex-direction: column; gap: 20px; max-width: 900px; width: 100%; align-items: center; }
+    
+    .slider-panel {
+        background: var(--panel); border: 1px solid #1d3145; border-radius: 12px; padding: 25px; 
+        width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .slider-group { display: flex; flex-direction: column; gap: 10px; width: 80%; max-width: 500px; }
+    .slider-group label { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: var(--text); }
+    .slider-group span { color: var(--orange); font-family: monospace; font-size: 20px;}
+    input[type=range] { width: 100%; accent-color: var(--orange); cursor: pointer; height: 8px; }
+
+    .comparison-area { display: flex; gap: 20px; width: 100%; flex-wrap: wrap; justify-content: center; }
+    
+    .signal-card {
+        background: #080f1a; border: 1px solid #1d3145; border-radius: 12px; padding: 20px;
+        flex: 1; min-width: 350px; display: flex; flex-direction: column; gap: 15px; position: relative;
+    }
+    .signal-card h3 { margin: 0; color: #fff; font-size: 20px; text-align: center; }
+    .signal-card.analog { border-top: 4px solid var(--cyan); }
+    .signal-card.digital { border-top: 4px solid var(--green); }
+
+    .readout-box {
+        background: #04070c; border: 1px solid #29445b; border-radius: 8px; padding: 15px;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .readout-box .val { font-size: 28px; font-family: monospace; font-weight: bold; }
+    .analog .val { color: var(--cyan); }
+    .digital .val { color: var(--green); }
+
+    .led-container { display: flex; align-items: center; gap: 15px; }
+    .led {
+        width: 30px; height: 30px; border-radius: 50%; background: #222; border: 2px solid #444;
+        transition: all 0.1s ease; box-shadow: inset 0 0 10px #000;
+    }
+    .led.on { background: #2ecc71; border-color: #fff; box-shadow: 0 0 20px #2ecc71, inset 0 0 10px #fff; }
+    .led.off { background: #3a1a1a; border-color: #555; }
+
+    canvas { background: #04070c; border-radius: 8px; border: 1px solid #1a2c3f; width: 100%; height: 180px; display: block; }
+
+    .desc { font-size: 14px; color: var(--muted); text-align: center; line-height: 1.5; min-height: 40px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>ප්‍රතිසම (Analog) සහ ඩිජිටල් (Digital) සංඥා</h1>
+    <p class="sub">ස්වභාවධර්මයේ අඛණ්ඩ සංඥා සහ පරිගණකයේ 1/0 සංඥා අතර වෙනස නිරීක්ෂණය කරන්න.</p>
+</div>
+
+<div class="dashboard">
+    <div class="slider-panel">
+        <div class="slider-group">
+            <label>විද්‍යුත් වෝල්ටීයතාවය (Voltage Level) <span id="main-volts">0.00 V</span></label>
+            <input type="range" id="volt-slider" min="0" max="5" step="0.01" value="0">
+        </div>
+        <div style="font-size: 13px; color: #888;">ස්ලයිඩරය වමට සහ දකුණට චලනය කරමින් තරංග සටහන් වන ආකාරය බලන්න</div>
+    </div>
+
+    <div class="comparison-area">
+        <div class="signal-card analog">
+            <h3>ප්‍රතිසම සංඥාව (Analog)</h3>
+            <div class="readout-box">
+                <div>
+                    <div style="font-size: 12px; color: #888;">මනින ලද අගය:</div>
+                    <div class="val" id="analog-val">0.00 V</div>
+                </div>
+            </div>
+            <canvas id="analogCanvas"></canvas>
+            <div class="desc">
+                ඕනෑම අගයක් (දශමස්ථාන සහිතව වුවද) අඛණ්ඩව සහ සුමටව ලබා ගත හැක. මෙය ස්වභාවික සංඥාවල හැසිරීමයි.
+            </div>
+        </div>
+
+        <div class="signal-card digital">
+            <h3>ඩිජිටල් සංඥාව (Digital)</h3>
+            <div class="readout-box">
+                <div>
+                    <div style="font-size: 12px; color: #888;">තාර්කික අගය (Logic):</div>
+                    <div class="val" id="digital-val">0 (OFF)</div>
+                </div>
+                <div class="led-container">
+                    <span style="font-size: 12px; color: #888; font-weight:bold;">දර්ශකය:</span>
+                    <div class="led off" id="digi-led"></div>
+                </div>
+            </div>
+            <canvas id="digitalCanvas"></canvas>
+            <div class="desc">
+                මැද අගයන් නොමැත! 2.5V ට අඩු නම් <strong>0 (OFF)</strong> ලෙසත්, ඊට වැඩි නම් <strong>1 (ON)</strong> ලෙසත් ක්ෂණිකව පනියි.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const voltSlider = document.getElementById('volt-slider');
+const analogValTxt = document.getElementById('analog-val');
+const digitalValTxt = document.getElementById('digital-val');
+const mainVoltTxt = document.getElementById('main-volts');
+const digiLed = document.getElementById('digi-led');
+
+const aCanvas = document.getElementById('analogCanvas');
+const aCtx = aCanvas.getContext('2d');
+const dCanvas = document.getElementById('digitalCanvas');
+const dCtx = dCanvas.getContext('2d');
+
+// Arrays to store history of values for the scrolling graph
+const historySize = 300;
+const history = new Array(historySize).fill(0);
+
+// Setup Hi-DPI Canvases
+function setupCanvas(canvas, ctx) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = 180 * dpr; // Fixed height in CSS
+    ctx.scale(dpr, dpr);
+}
+
+function initCanvases() {
+    setupCanvas(aCanvas, aCtx);
+    setupCanvas(dCanvas, dCtx);
+}
+initCanvases();
+window.addEventListener('resize', initCanvases);
+
+function drawAxes(ctx, width, height, color) {
+    ctx.strokeStyle = '#1d3145';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    // Middle line (2.5V threshold)
+    ctx.setLineDash([5, 5]);
+    ctx.moveTo(0, height / 2);
+    ctx.lineTo(width, height / 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Y-Axis Labels
+    ctx.fillStyle = '#555';
+    ctx.font = '10px Arial';
+    ctx.fillText("5V", 5, 15);
+    ctx.fillText("2.5V", 5, height / 2 - 5);
+    ctx.fillText("0V", 5, height - 5);
+}
+
+function drawAnalogGraph() {
+    const width = aCanvas.width / (window.devicePixelRatio || 1);
+    const height = aCanvas.height / (window.devicePixelRatio || 1);
+    
+    aCtx.clearRect(0, 0, width, height);
+    drawAxes(aCtx, width, height, '#46d7ff');
+
+    aCtx.strokeStyle = '#46d7ff';
+    aCtx.lineWidth = 3;
+    aCtx.shadowColor = '#46d7ff';
+    aCtx.shadowBlur = 10;
+
+    aCtx.beginPath();
+    for (let i = 0; i < historySize; i++) {
+        let x = (i / (historySize - 1)) * width;
+        // Map 0-5V to canvas height (inverted Y)
+        let y = height - (history[i] / 5) * height; 
+        
+        // Keep within bounds
+        y = Math.max(2, Math.min(height - 2, y));
+        
+        if (i === 0) aCtx.moveTo(x, y);
+        else aCtx.lineTo(x, y);
+    }
+    aCtx.stroke();
+    aCtx.shadowBlur = 0;
+}
+
+function drawDigitalGraph() {
+    const width = dCanvas.width / (window.devicePixelRatio || 1);
+    const height = dCanvas.height / (window.devicePixelRatio || 1);
+    
+    dCtx.clearRect(0, 0, width, height);
+    drawAxes(dCtx, width, height, '#2ecc71');
+
+    dCtx.strokeStyle = '#2ecc71';
+    dCtx.lineWidth = 3;
+    dCtx.shadowColor = '#2ecc71';
+    dCtx.shadowBlur = 10;
+
+    dCtx.beginPath();
+    
+    // Draw Square Wave (Step interpolation)
+    let prevState = history[0] >= 2.5 ? 1 : 0;
+    let prevY = height - prevState * height * 0.9 - (height * 0.05); // Margin
+    
+    dCtx.moveTo(0, prevY);
+    
+    for (let i = 1; i < historySize; i++) {
+        let x = (i / (historySize - 1)) * width;
+        let state = history[i] >= 2.5 ? 1 : 0;
+        let y = height - state * height * 0.9 - (height * 0.05);
+        
+        // To make a square wave, draw horizontal to current X, then vertical to current Y
+        dCtx.lineTo(x, prevY);
+        dCtx.lineTo(x, y);
+        
+        prevY = y;
+    }
+    dCtx.stroke();
+    dCtx.shadowBlur = 0;
+}
+
+function animate() {
+    let currentVolt = parseFloat(voltSlider.value);
+    
+    // Update texts
+    mainVoltTxt.textContent = currentVolt.toFixed(2) + " V";
+    analogValTxt.textContent = currentVolt.toFixed(2) + " V";
+    
+    // Digital Logic (Threshold at 2.5V)
+    let isHigh = currentVolt >= 2.5;
+    if (isHigh) {
+        digitalValTxt.textContent = "1 (ON)";
+        digitalValTxt.style.color = "var(--green)";
+        digiLed.className = "led on";
+    } else {
+        digitalValTxt.textContent = "0 (OFF)";
+        digitalValTxt.style.color = "#888";
+        digiLed.className = "led off";
+    }
+
+    // Update History Array
+    history.push(currentVolt);
+    history.shift(); // Remove oldest
+
+    // Draw Graphs
+    drawAnalogGraph();
+    drawDigitalGraph();
+
+    requestAnimationFrame(animate);
+}
+
+// Start Animation
+animate();
+</script>
+</body>
+</html>
