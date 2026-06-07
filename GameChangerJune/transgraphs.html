@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transistor Characteristics Viewer</title>
+<style>
+    :root {
+        --bg: #050a12; --panel: #0d1624; --text: #eff6ff; 
+        --cyan: #46d7ff; --green: #2ecc71; --orange: #ff9e54; 
+        --purple: #b88bff; --red: #ff5e5e; --yellow: #ffd055; --muted: #9cafc3;
+    }
+    body {
+        margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+        font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+        display: flex; flex-direction: column; align-items: center; padding: 20px;
+    }
+    .header { text-align: center; margin-bottom: 20px; }
+    h1 { color: var(--cyan); margin: 0 0 10px; font-size: 26px; }
+    p.sub { color: var(--muted); margin: 0; max-width: 800px; line-height: 1.5; }
+    
+    .dashboard { display: flex; flex-direction: column; gap: 20px; max-width: 900px; width: 100%; align-items: center; }
+    
+    .mode-selector { 
+        display: flex; gap: 15px; background: var(--panel); padding: 15px 25px; 
+        border-radius: 12px; border: 1px solid #1a2c3f; flex-wrap: wrap; justify-content: center;
+    }
+    button {
+        background: #112131; color: var(--text); border: 1px solid #29445b; 
+        padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: bold; transition: 0.3s;
+    }
+    button:hover { background: #1a334a; }
+    button.active { background: #081a24; border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 15px rgba(70, 215, 255, 0.2); }
+
+    .canvas-container { 
+        background: #080f1a; border: 1px solid #1d3145; border-radius: 12px; 
+        padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%;
+        position: relative;
+    }
+    canvas { background: #04070c; border-radius: 8px; display: block; width: 100%; height: 450px; }
+
+    .explanation { 
+        background: var(--panel); border: 1px solid #1d3145; border-radius: 12px; padding: 20px;
+        text-align: left; color: var(--text); font-size: 16px; width: 100%; line-height: 1.6;
+    }
+    .explanation strong { color: var(--yellow); }
+    .explanation ul { margin: 10px 0 0 0; padding-left: 20px; color: var(--muted); }
+    .explanation li { margin-bottom: 5px; }
+
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>පොදු විමෝචක (CE) ට්‍රාන්සිස්ටරයේ ලාක්ෂණික ප්‍රස්ථාර</h1>
+    <p class="sub">ආදාන, ප්‍රතිදාන සහ සම්ප්‍රේෂණ යන අවස්ථා 3හිදී විභවයන් සහ ධාරාවන් අතර සම්බන්ධය අධ්‍යයනය කරන්න.</p>
+</div>
+
+<div class="dashboard">
+    <div class="mode-selector">
+        <button id="btn-input" class="active" onclick="setMode('input')">1. ආදාන ලාක්ෂණිකය (Input)</button>
+        <button id="btn-output" onclick="setMode('output')">2. ප්‍රතිදාන ලාක්ෂණිකය (Output)</button>
+        <button id="btn-transfer" onclick="setMode('transfer')">3. සම්ප්‍රේෂණ ලාක්ෂණිකය (Transfer)</button>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="graphCanvas"></canvas>
+    </div>
+
+    <div class="explanation" id="exp-text">
+        </div>
+</div>
+
+<script>
+const canvas = document.getElementById('graphCanvas');
+const ctx = canvas.getContext('2d');
+let currentMode = 'input';
+
+// Data configs
+const cfg = {
+    margin: { top: 30, right: 30, bottom: 60, left: 70 },
+    get w() { return canvas.width / (window.devicePixelRatio || 1) - this.margin.left - this.margin.right; },
+    get h() { return canvas.height / (window.devicePixelRatio || 1) - this.margin.top - this.margin.bottom; }
+};
+
+function setupCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr; // 450px from CSS
+    ctx.scale(dpr, dpr);
+    drawGraph();
+}
+window.addEventListener('resize', setupCanvas);
+
+function mapXY(x, y, maxX, maxY) {
+    return {
+        cx: cfg.margin.left + (x / maxX) * cfg.w,
+        cy: cfg.margin.top + cfg.h - (y / maxY) * cfg.h
+    };
+}
+
+function drawAxes(xLabel, yLabel, maxX, maxY, xStep, yStep) {
+    ctx.strokeStyle = '#29445b'; ctx.lineWidth = 2;
+    const origin = mapXY(0, 0, maxX, maxY);
+    
+    // Y-Axis
+    ctx.beginPath(); ctx.moveTo(origin.cx, origin.cy); ctx.lineTo(origin.cx, cfg.margin.top - 10); ctx.stroke();
+    // X-Axis
+    ctx.beginPath(); ctx.moveTo(origin.cx, origin.cy); ctx.lineTo(origin.cx + cfg.w + 10, origin.cy); ctx.stroke();
+
+    // Arrows
+    ctx.fillStyle = '#29445b';
+    ctx.beginPath(); ctx.moveTo(origin.cx - 5, cfg.margin.top - 10); ctx.lineTo(origin.cx + 5, cfg.margin.top - 10); ctx.lineTo(origin.cx, cfg.margin.top - 20); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(origin.cx + cfg.w + 10, origin.cy - 5); ctx.lineTo(origin.cx + cfg.w + 10, origin.cy + 5); ctx.lineTo(origin.cx + cfg.w + 20, origin.cy); ctx.fill();
+
+    // Labels
+    ctx.fillStyle = '#46d7ff'; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'center';
+    ctx.fillText(xLabel, origin.cx + cfg.w / 2, origin.cy + 45);
+    ctx.save();
+    ctx.translate(origin.cx - 45, origin.cy - cfg.h / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(yLabel, 0, 0);
+    ctx.restore();
+
+    // Ticks & Grid
+    ctx.font = '12px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.strokeStyle = '#1d3145'; ctx.lineWidth = 1;
+
+    for (let x = 0; x <= maxX; x += xStep) {
+        let p = mapXY(x, 0, maxX, maxY);
+        if (x > 0) {
+            ctx.fillStyle = '#9cafc3'; ctx.fillText(x.toFixed(1).replace('.0',''), p.cx, p.cy + 10);
+            ctx.beginPath(); ctx.setLineDash([3, 3]); ctx.moveTo(p.cx, origin.cy); ctx.lineTo(p.cx, cfg.margin.top); ctx.stroke();
+        }
+    }
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let y = 0; y <= maxY; y += yStep) {
+        let p = mapXY(0, y, maxX, maxY);
+        if (y > 0) {
+            ctx.fillStyle = '#9cafc3'; ctx.fillText(y.toFixed(1).replace('.0',''), p.cx - 10, p.cy);
+            ctx.beginPath(); ctx.setLineDash([3, 3]); ctx.moveTo(origin.cx, p.cy); ctx.lineTo(origin.cx + cfg.w, p.cy); ctx.stroke();
+        }
+    }
+    ctx.setLineDash([]);
+}
+
+function drawInput() {
+    const maxX = 1.0, maxY = 100; // V_BE, I_B
+    drawAxes("V_BE (V) - ආදාන විභවය", "I_B (μA) - පාදම ධාරාව", maxX, maxY, 0.2, 20);
+
+    // Diode Curve
+    ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 3;
+    ctx.shadowColor = '#2ecc71'; ctx.shadowBlur = 10;
+    ctx.beginPath();
+    for (let v = 0; v <= 0.85; v += 0.01) {
+        let i = 0;
+        if (v > 0.6) i = Math.pow((v - 0.6) * 4, 3) * 100; // Pseudo exponential
+        if (i > maxY) i = maxY;
+        let p = mapXY(v, i, maxX, maxY);
+        if (v === 0) ctx.moveTo(p.cx, p.cy);
+        else ctx.lineTo(p.cx, p.cy);
+    }
+    ctx.stroke(); ctx.shadowBlur = 0;
+
+    // Cut-in marker
+    let pCut = mapXY(0.7, 0, maxX, maxY);
+    ctx.strokeStyle = '#ff9e54'; ctx.lineWidth = 2; ctx.setLineDash([5,5]);
+    ctx.beginPath(); ctx.moveTo(pCut.cx, pCut.cy); ctx.lineTo(pCut.cx, pCut.cy - cfg.h); ctx.stroke(); ctx.setLineDash([]);
+    
+    ctx.fillStyle = '#ff9e54'; ctx.textAlign = 'left'; ctx.font = 'bold 14px Arial';
+    ctx.fillText("කඩඉම් වෝල්ටීයතාව (~0.7V)", pCut.cx + 10, pCut.cy - 50);
+}
+
+function drawOutput() {
+    const maxX = 10, maxY = 10; // V_CE, I_C
+    
+    // Draw Zones first (Background)
+    const origin = mapXY(0, 0, maxX, maxY);
+    const pSat = mapXY(0.5, 0, maxX, maxY);
+    
+    // Saturation Zone
+    ctx.fillStyle = 'rgba(255, 94, 94, 0.15)'; 
+    ctx.fillRect(origin.cx, cfg.margin.top, pSat.cx - origin.cx, cfg.h);
+    ctx.fillStyle = '#ff5e5e'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center';
+    ctx.save(); ctx.translate(origin.cx + 25, cfg.margin.top + cfg.h/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText("සංතෘප්ත කලාපය", 0, 0); ctx.restore();
+
+    // Cut-off Zone
+    const pCut = mapXY(0, 0.5, maxX, maxY); // Y=0.5mA line
+    ctx.fillStyle = 'rgba(156, 175, 195, 0.2)';
+    ctx.fillRect(origin.cx, pCut.cy, cfg.w, origin.cy - pCut.cy);
+    ctx.fillStyle = '#9cafc3'; ctx.textAlign = 'center';
+    ctx.fillText("කපා හැරීමේ කලාපය (I_B = 0)", origin.cx + cfg.w/2, origin.cy - 10);
+
+    // Active Zone Label
+    ctx.fillStyle = '#2ecc71'; ctx.font = 'bold 16px Arial';
+    ctx.fillText("සක්‍රීය කලාපය (Active Region)", origin.cx + cfg.w/2 + 50, cfg.margin.top + 40);
+
+    drawAxes("V_CE (V) - සංග්‍රාහක විභවය", "I_C (mA) - සංග්‍රාහක ධාරාව", maxX, maxY, 2, 2);
+
+    // Family of Curves
+    const iBs = [20, 40, 60, 80];
+    const beta = 100;
+    const colors = ['#46d7ff', '#b88bff', '#ffd055', '#2ecc71'];
+
+    iBs.forEach((ib, index) => {
+        let ic_target = (ib * beta) / 1000; // mA
+        ctx.strokeStyle = colors[index]; ctx.lineWidth = 3;
+        ctx.beginPath();
+        // Knee point (~0.5V V_CE)
+        let p0 = mapXY(0, 0, maxX, maxY);
+        let pKnee = mapXY(0.5, ic_target, maxX, maxY);
+        let pEnd = mapXY(maxX, ic_target + 0.5, maxX, maxY); // Slight slope (Early effect)
+        
+        ctx.moveTo(p0.cx, p0.cy);
+        ctx.quadraticCurveTo(pKnee.cx - 10, pKnee.cy, pKnee.cx, pKnee.cy);
+        ctx.lineTo(pEnd.cx, pEnd.cy);
+        ctx.stroke();
+
+        // Label
+        ctx.fillStyle = colors[index]; ctx.textAlign = 'left'; ctx.font = '12px Arial';
+        ctx.fillText(`I_B = ${ib}μA`, pEnd.cx + 5, pEnd.cy);
+    });
+}
+
+function drawTransfer() {
+    const maxX = 100, maxY = 10; // I_B, I_C
+    drawAxes("I_B (μA) - පාදම ධාරාව", "I_C (mA) - සංග්‍රාහක ධාරාව", maxX, maxY, 20, 2);
+
+    ctx.strokeStyle = '#b88bff'; ctx.lineWidth = 3;
+    ctx.shadowColor = '#b88bff'; ctx.shadowBlur = 10;
+    
+    let p0 = mapXY(0, 0, maxX, maxY);
+    let pEnd = mapXY(100, 10, maxX, maxY);
+    
+    ctx.beginPath(); ctx.moveTo(p0.cx, p0.cy); ctx.lineTo(pEnd.cx, pEnd.cy); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Slope Triangle
+    let p1 = mapXY(40, 4, maxX, maxY);
+    let p2 = mapXY(80, 4, maxX, maxY);
+    let p3 = mapXY(80, 8, maxX, maxY);
+    
+    ctx.strokeStyle = '#ffd055'; ctx.lineWidth = 2; ctx.setLineDash([5,5]);
+    ctx.beginPath(); ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.lineTo(p3.cx, p3.cy); ctx.stroke();
+    ctx.setLineDash([]);
+    
+    ctx.fillStyle = '#ffd055'; ctx.textAlign = 'left'; ctx.font = '14px Arial';
+    ctx.fillText("ΔI_B", p1.cx + 40, p1.cy + 15);
+    ctx.fillText("ΔI_C", p2.cx + 10, p2.cy - 30);
+    
+    ctx.font = 'bold 16px Arial';
+    ctx.fillText("අනුක්‍රමණය = ධාරා ලාභය (β)", p2.cx + 20, p1.cy + 30);
+}
+
+function drawGraph() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (currentMode === 'input') drawInput();
+    else if (currentMode === 'output') drawOutput();
+    else if (currentMode === 'transfer') drawTransfer();
+}
+
+window.setMode = function(newMode) {
+    currentMode = newMode;
+    document.getElementById('btn-input').classList.remove('active');
+    document.getElementById('btn-output').classList.remove('active');
+    document.getElementById('btn-transfer').classList.remove('active');
+    document.getElementById('btn-' + currentMode).classList.add('active');
+    
+    let exp = document.getElementById('exp-text');
+    if (currentMode === 'input') {
+        exp.innerHTML = "<strong>1. ආදාන ලාක්ෂණිකය:</strong> මෙහිදී V<sub>CE</sub> නියතව තබා, ආදාන විභවය (V<sub>BE</sub>) වෙනස් කරන විට ආදාන ධාරාව (I<sub>B</sub>) හැසිරෙන අයුරු පෙන්වයි. මෙය පෙර නැඹුරු කළ P-N සන්ධියක ප්‍රස්ථාරයට සමාන වන අතර <strong>0.7V කඩඉම් වෝල්ටීයතාවයෙන්</strong> පසු ධාරාව ගැලීම අරඹයි.";
+    } else if (currentMode === 'output') {
+        exp.innerHTML = "<strong>2. ප්‍රතිදාන ලාක්ෂණිකය:</strong> මෙය ට්‍රාන්සිස්ටරයේ වැදගත්ම ප්‍රස්ථාරයයි. මෙහි කලාප 3ක් දැකිය හැක:<br><ul><li><strong>සංතෘප්ත කලාපය (Saturation):</strong> V<sub>CE</sub> අගය 0.5V ට වඩා කුඩා, ප්‍රස්ථාරය සීඝ්‍රයෙන් ඉහළ යන වම්පස තීරුව. (ස්විචය ON)</li><li><strong>සක්‍රීය කලාපය (Active):</strong> V<sub>CE</sub> වෙනස් වුවද I<sub>C</sub> නියතව පවතින මැද තිරස් කලාපය. මෙහිදී I<sub>C</sub> රඳා පවතින්නේ I<sub>B</sub> මත පමණි. (වර්ධකයකි)</li><li><strong>කපා හැරීමේ කලාපය (Cut-off):</strong> I<sub>B</sub> = 0 වන පහළම තිරස් රේඛාව. (ස්විචය OFF)</li></ul>";
+    } else {
+        exp.innerHTML = "<strong>3. සම්ප්‍රේෂණ ලාක්ෂණිකය:</strong> සක්‍රීය කලාපයේදී ආදාන ධාරාව (I<sub>B</sub>) සහ ප්‍රතිදාන ධාරාව (I<sub>C</sub>) අතර ඇති සමානුපාතික සම්බන්ධය මින් පෙන්වයි. මෙහි සරල රේඛාවේ <strong>අනුක්‍රමණය මගින් ධාරා ලාභය (β)</strong> ලබා දේ.";
+    }
+    drawGraph();
+};
+
+// Init
+setupCanvas();
+setMode('input');
+</script>
+</body>
+</html>

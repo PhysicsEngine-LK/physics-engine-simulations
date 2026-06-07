@@ -1,0 +1,699 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GameChanger June | Cyber Interface</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --cyan: #00f3ff;
+      --purple: #bc13fe;
+      --dark: #050814;
+      --panel-bg: rgba(6, 11, 25, 0.6);
+      --glass-border: rgba(0, 243, 255, 0.3);
+      --text-main: #e0f8ff;
+      --text-muted: #8ab4f8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background-color: var(--dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* 3D Grid Background */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -50vw -50vw -50vw -50vw;
+      background: 
+        linear-gradient(transparent 96%, rgba(0, 243, 255, 0.2) 96%),
+        linear-gradient(90deg, transparent 96%, rgba(0, 243, 255, 0.2) 96%);
+      background-size: 50px 50px;
+      z-index: -2;
+      transform: perspective(600px) rotateX(70deg) translateY(-200px) translateZ(-200px);
+      opacity: 0.3;
+      animation: gridMove 15s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes gridMove {
+      0% { transform: perspective(600px) rotateX(70deg) translateY(0px) translateZ(-200px); }
+      100% { transform: perspective(600px) rotateX(70deg) translateY(50px) translateZ(-200px); }
+    }
+
+    /* Ambient Glows */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: 
+        radial-gradient(circle at 15% 30%, rgba(188, 19, 254, 0.15), transparent 45%),
+        radial-gradient(circle at 85% 70%, rgba(0, 243, 255, 0.15), transparent 45%);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* CRT Scanlines Overlay */
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+      background-size: 100% 4px;
+      z-index: 100;
+      pointer-events: none;
+      opacity: 0.4;
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 60px 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Futuristic Header Styling */
+    header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 70px;
+      position: relative;
+    }
+
+    .logo-outer-ring {
+      position: relative;
+      width: 170px;
+      height: 170px;
+      margin-bottom: 25px;
+      border-radius: 50%;
+      border: 2px dashed var(--cyan);
+      animation: spinBorder 12s linear infinite;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 30px rgba(0, 243, 255, 0.2), inset 0 0 20px rgba(188, 19, 254, 0.2);
+    }
+
+    @keyframes spinBorder {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .logo-container {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: rgba(6, 11, 25, 0.8);
+      padding: 15px;
+      animation: counterSpin 12s linear infinite;
+      border: 1px solid var(--purple);
+      box-shadow: 0 0 20px var(--purple);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @keyframes counterSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(-360deg); }
+    }
+
+    .logo-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 0 8px var(--cyan)) brightness(1.2);
+    }
+
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 6px;
+      color: #fff;
+      text-shadow: 
+        0 0 5px #fff,
+        0 0 10px var(--cyan),
+        0 0 20px var(--cyan),
+        0 0 40px var(--cyan);
+      margin-bottom: 10px;
+      position: relative;
+    }
+
+    .subtitle {
+      font-size: 1.3rem;
+      color: var(--cyan);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .subtitle::before, .subtitle::after {
+      content: "";
+      height: 2px;
+      width: 60px;
+      background: var(--purple);
+      box-shadow: 0 0 10px var(--purple);
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      background: rgba(188, 19, 254, 0.05);
+      border: 1px solid var(--purple);
+      color: var(--text-main);
+      text-decoration: none;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      position: relative;
+      overflow: hidden;
+      transition: 0.3s;
+      clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+    }
+
+    .back-btn::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--purple);
+      box-shadow: 0 0 10px var(--purple);
+      transition: width 0.3s ease;
+      z-index: -1;
+    }
+
+    .back-btn:hover {
+      color: #fff;
+      text-shadow: 0 0 5px #fff;
+      box-shadow: 0 0 20px rgba(188, 19, 254, 0.4);
+    }
+    
+    .back-btn:hover::before {
+      width: 100%;
+      background: rgba(188, 19, 254, 0.3);
+    }
+
+    /* Grid Layout */
+    .sim-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 35px;
+    }
+
+    /* Sci-Fi Cards */
+    .sim-card {
+      position: relative;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 2px;
+      clip-path: polygon(
+        0 20px,
+        20px 0,
+        100% 0,
+        100% calc(100% - 20px),
+        calc(100% - 20px) 100%,
+        0 100%
+      );
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 1;
+    }
+
+    .sim-card-inner {
+      background: var(--dark);
+      padding: 25px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      clip-path: polygon(
+        0 19px,
+        19px 0,
+        100% 0,
+        100% calc(100% - 19px),
+        calc(100% - 19px) 100%,
+        0 100%
+      );
+      position: relative;
+    }
+
+    /* Glowing borders */
+    .sim-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--cyan), transparent 40%, transparent 60%, var(--purple));
+      z-index: -1;
+      opacity: 0.6;
+      transition: 0.4s;
+    }
+
+    .sim-card:hover {
+      transform: translateY(-8px);
+    }
+
+    .sim-card:hover::before {
+      opacity: 1;
+      background: linear-gradient(135deg, var(--cyan) 20%, transparent 50%, transparent 50%, var(--purple) 80%);
+      filter: blur(2px);
+    }
+
+    .sim-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 18px;
+      border-bottom: 1px solid rgba(0, 243, 255, 0.2);
+      padding-bottom: 12px;
+      position: relative;
+    }
+
+    .sim-card-header::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 30%;
+      height: 1px;
+      background: var(--cyan);
+      box-shadow: 0 0 10px var(--cyan);
+    }
+
+    .sim-card h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.3rem;
+      color: #fff;
+      letter-spacing: 1px;
+      text-shadow: 0 0 8px rgba(0, 243, 255, 0.4);
+    }
+
+    .sim-id {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.75rem;
+      color: var(--purple);
+      border: 1px solid var(--purple);
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+      background: rgba(188, 19, 254, 0.1);
+    }
+
+    .sim-card p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      line-height: 1.6;
+      flex-grow: 1;
+      margin-bottom: 25px;
+    }
+
+    .sim-link {
+      display: inline-block;
+      text-align: center;
+      padding: 14px 20px;
+      background: rgba(0, 243, 255, 0.05);
+      color: var(--cyan);
+      text-decoration: none;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border: 1px solid var(--cyan);
+      clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+      transition: 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sim-link::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.5), transparent);
+      transition: 0.6s;
+    }
+
+    .sim-card:hover .sim-link::before {
+      left: 100%;
+      transition: 0.6s 0.1s;
+    }
+
+    .sim-link:hover {
+      background: var(--cyan);
+      color: var(--dark);
+      box-shadow: 0 0 20px var(--cyan);
+      text-shadow: none;
+    }
+
+    /* Cyber Decoration Lines */
+    .cyber-dec {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-right: 2px solid var(--cyan);
+      border-bottom: 2px solid var(--cyan);
+      bottom: 5px;
+      right: 5px;
+      opacity: 0.5;
+      transition: 0.3s;
+    }
+    
+    .sim-card:hover .cyber-dec {
+      opacity: 1;
+      box-shadow: inset -4px -4px 10px rgba(0, 243, 255, 0.2);
+    }
+
+    @media (max-width: 768px) {
+      .sim-grid {
+        grid-template-columns: 1fr;
+      }
+      h1 {
+        font-size: 2.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scanlines"></div>
+
+  <div class="container">
+    <header>
+      <div class="logo-outer-ring">
+        <div class="logo-container">
+          <img src="../assets/PHYSICSENGINEL.png" alt="GameChanger Logo" />
+        </div>
+      </div>
+      
+      <h1>♠️♥️Game Changer♦️♣️</h1>
+      <div class="subtitle">මාස 3යි - Result එක කණපිට!</div>
+      
+    </header>
+
+    <div class="sim-grid">
+      <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>අර්ධ සන්නායක</h2>
+            <span class="sim-id">SYS-01</span>
+          </div>
+          <p>අර්ධ සන්නායකවල මූලික ගුණාංග, ඉලෙක්ට්‍රෝන හා කුහරවල හැසිරීම සහ මාත්‍රණය (doping) පිළිබඳ අන්තර්ක්‍රියාකාරී අනුකරණයකි.</p>
+          <a href="semiconductor_simulation.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article>
+
+  
+
+      <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>p-n සන්ධි</h2>
+            <span class="sim-id">SYS-02</span>
+          </div>
+          <p>p-n සන්ධියක පෙර නැඹුරුව (forward bias) සහ පසු නැඹුරුව (reverse bias) යටතේ ක්‍රියාකාරීත්වය සහ හායන කලාපයේ හැසිරීම අධ්‍යයනය කරන්න.</p>
+          <a href="pn-junction.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article>
+
+      <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>V-I ලාක්ෂණිකය</h2>
+            <span class="sim-id">SYS-03</span>
+          </div>
+          <p>p-n සන්ධියක වෝල්ටීයතා-ධාරා (V-I) ලාක්ෂණික වක්‍රය විශ්ලේෂණය කරන්න.</p>
+          <a href="VI.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article>
+
+      <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>සෘජුකරණය</h2>
+            <span class="sim-id">SYS-04</span>
+          </div>
+          <p>අර්ධ තරංග සහ පූර්ණ තරංග සෘජුකරණ (rectification) ක්‍රියාවලිය සහ ධාරිත්‍රක භාවිතයෙන් තරංග සුමටනය කිරීම නිරූපණය කරයි.</p>
+          <a href="rectifier.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article>
+
+      <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>Zener Diode</h2>
+            <span class="sim-id">SYS-05</span>
+          </div>
+          <p>සෙනර් දියෝඩයක බිඳවැටීමේ (breakdown) ලාක්ෂණික සහ එය වෝල්ටීයතා නියාමකයක් ලෙස ක්‍රියා කරන ආකාරය පිළිබඳ අනුකරණයකි.</p>
+          <a href="zener.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article>
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>Comparator Graph</h2>
+            <span class="sim-id">SYS-07</span>
+          </div>
+          <p>Real-time graph analysis of operational amplifiers functioning in comparator mode.</p>
+          <a href="opampcomparatorgrph.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>Inverting Matrix</h2>
+            <span class="sim-id">SYS-08</span>
+          </div>
+          <p>Compare and toggle between inverting and non-inverting configurations of Op-Amps.</p>
+          <a href="opampinvertnonin.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>Light Sensor</h2>
+            <span class="sim-id">SYS-09</span>
+          </div>
+          <p>Integrated circuit simulation utilizing an Op-Amp connected to a dynamic light sensor.</p>
+          <a href="opamplight.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>Real Op-Amp</h2>
+            <span class="sim-id">SYS-10</span>
+          </div>
+          <p>In-depth analysis of real-world operational amplifier physical characteristics and faults.</p>
+          <a href="opampreal.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>Op-Amps Overview</h2>
+            <span class="sim-id">SYS-11</span>
+          </div>
+          <p>General overview module and practical setups for optimized Op-Amps.</p>
+          <a href="opampsnice.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>Applied Circuits</h2>
+            <span class="sim-id">SYS-12</span>
+          </div>
+          <p>Common uses, edge cases, and applied circuits using Operational Amplifiers.</p>
+          <a href="opampuse.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>Wave Generation</h2>
+            <span class="sim-id">SYS-13</span>
+          </div>
+          <p>Complex waveform generation, shaping, and modification using cascaded Op-Amps.</p>
+          <a href="opampwaves.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>PN Junction</h2>
+            <span class="sim-id">SYS-14</span>
+          </div>
+          <p>Microscopic simulation detailing the inner workings and electron flow of a PN junction.</p>
+          <a href="pn-junction.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>P-Type Material</h2>
+            <span class="sim-id">SYS-15</span>
+          </div>
+          <p>Investigate the behavioral physics of P-type doped semiconductor materials.</p>
+          <a href="ptype.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>Basic Rectifier</h2>
+            <span class="sim-id">SYS-16</span>
+          </div>
+          <p>Study basic rectifier circuits and fundamental wave modification techniques.</p>
+          <a href="rectifier.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>Region Graphs</h2>
+            <span class="sim-id">SYS-17</span>
+          </div>
+          <p>Interactive graphical analysis of various operating regions and saturation limits.</p>
+          <a href="regiongraphs.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>Semiconductor Core</h2>
+            <span class="sim-id">SYS-18</span>
+          </div>
+          <p>Comprehensive macro-simulation model for semiconductor physics and band gaps.</p>
+          <a href="semiconductor_simulation.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>Band Theory</h2>
+            <span class="sim-id">SYS-19</span>
+          </div>
+          <p>Fundamental concepts of semiconductors, covalent bonds, and energy band theory.</p>
+          <a href="semicondustors.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>Transistor Topologies</h2>
+            <span class="sim-id">SYS-20</span>
+          </div>
+          <p>Explore dynamic graph plotting for various complex transistor configurations.</p>
+          <a href="transgraphs.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>BJT Operations</h2>
+            <span class="sim-id">SYS-21</span>
+          </div>
+          <p>Basic simulation covering Bipolar Junction Transistor switching and amplification.</p>
+          <a href="transistor.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>Transistor Regions</h2>
+            <span class="sim-id">SYS-22</span>
+          </div>
+          <p>Analyze and plot cutoff, active, and saturation regions in transistors.</p>
+          <a href="transistorregions.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>V-I Characteristics</h2>
+            <span class="sim-id">SYS-23</span>
+          </div>
+          <p>Voltage-Current vector characteristics plotting for raw electronic components.</p>
+          <a href="VI.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+
+      <!-- <article class="sim-card">
+        <div class="sim-card-inner">
+          <div class="sim-card-header">
+            <h2>Zener Protocol</h2>
+            <span class="sim-id">SYS-24</span>
+          </div>
+          <p>Interactive simulation demonstrating Zener diode breakdown and voltage regulation.</p>
+          <a href="zener.html" class="sim-link">Initialize</a>
+          <div class="cyber-dec"></div>
+        </div>
+      </article> -->
+    </div>
+  </div>
+</body>
+</html>

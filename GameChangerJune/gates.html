@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logic Gates Interactive Simulator</title>
+<style>
+    :root {
+        --bg: #050a12; --panel: #0d1624; --text: #eff6ff; 
+        --cyan: #46d7ff; --green: #2ecc71; --orange: #ff9e54; 
+        --purple: #b88bff; --red: #ff5e5e; --yellow: #ffd055; --muted: #9cafc3;
+    }
+    body {
+        margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+        font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+        display: flex; flex-direction: column; align-items: center; padding: 20px;
+    }
+    .header { text-align: center; margin-bottom: 20px; }
+    h1 { color: var(--cyan); margin: 0 0 10px; font-size: 26px; }
+    p.sub { color: var(--muted); margin: 0; max-width: 800px; line-height: 1.5; }
+    
+    .dashboard { display: flex; flex-direction: column; gap: 20px; max-width: 1000px; width: 100%; align-items: center; }
+    
+    .controls-top {
+        background: var(--panel); border: 1px solid #1d3145; border-radius: 12px; padding: 20px; 
+        display: flex; gap: 30px; justify-content: center; align-items: center; width: 100%; flex-wrap: wrap;
+    }
+    
+    .gate-selector { display: flex; flex-direction: column; gap: 8px; }
+    .gate-selector label { font-size: 14px; color: var(--muted); font-weight: bold; }
+    select {
+        background: #112131; color: #fff; border: 1px solid var(--cyan); padding: 10px 15px; 
+        border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; outline: none;
+    }
+    
+    .invert-toggle {
+        display: flex; align-items: center; gap: 10px; background: #112131; border: 1px solid #29445b;
+        padding: 10px 15px; border-radius: 8px; cursor: pointer; transition: 0.3s;
+    }
+    .invert-toggle:hover { background: #1a334a; }
+    .invert-toggle input { width: 18px; height: 18px; accent-color: var(--purple); cursor: pointer; }
+    .invert-toggle label { font-size: 15px; color: #fff; cursor: pointer; font-weight: bold; }
+    .invert-toggle.disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .main-area { display: flex; gap: 20px; width: 100%; flex-wrap: wrap; justify-content: center; }
+    
+    .canvas-container { 
+        background: #080f1a; border: 1px solid #1d3145; border-radius: 12px; 
+        padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative;
+        display: flex; flex-direction: column; align-items: center; gap: 15px; flex: 2; min-width: 500px;
+    }
+    
+    .input-switches { display: flex; flex-direction: column; gap: 30px; position: absolute; left: 30px; top: 120px; }
+    .switch-group { display: flex; align-items: center; gap: 10px; }
+    .switch-label { font-weight: bold; font-size: 16px; width: 25px; }
+    .switch-btn {
+        width: 50px; height: 50px; border-radius: 10px; font-size: 20px; font-weight: bold; font-family: monospace;
+        border: 2px solid #29445b; background: #112131; color: var(--muted); cursor: pointer; transition: 0.2s;
+    }
+    .switch-btn.on { background: #0b2219; border-color: var(--green); color: var(--green); box-shadow: 0 0 15px rgba(46,204,113,0.3); }
+
+    canvas { display: block; border-radius: 8px; width: 100%; height: 250px; margin-top: 10px; }
+
+    .table-container {
+        background: var(--panel); border: 1px solid #1d3145; border-radius: 12px; padding: 20px; 
+        flex: 1; min-width: 300px;
+    }
+    .table-container h3 { margin: 0 0 15px; color: var(--yellow); text-align: center; }
+    table { width: 100%; border-collapse: collapse; text-align: center; font-size: 18px; }
+    th { background: #112131; color: var(--cyan); padding: 10px; border: 1px solid #29445b; }
+    td { padding: 12px 10px; border: 1px solid #29445b; font-family: monospace; font-weight: bold; }
+    tr.active-row { background: rgba(46, 204, 113, 0.2); box-shadow: inset 0 0 10px rgba(46,204,113,0.5); }
+    tr.active-row td { color: var(--green); }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>තාර්කික ද්වාර (Logic Gates) සහ සත්‍යතා වගු</h1>
+    <p class="sub">ස්විච මගින් ආදාන (0/1) වෙනස් කරමින් ගේට්ටුව තීරණ ගන්නා ආකාරය සත්‍යතා වගුව සමඟ අධ්‍යයනය කරන්න.</p>
+</div>
+
+<div class="dashboard">
+    <div class="controls-top">
+        <div class="gate-selector">
+            <label>මූලික ද්වාරය තෝරන්න (Base Gate):</label>
+            <select id="gate-select" onchange="updateSystem()">
+                <option value="AND">AND (සහ)</option>
+                <option value="OR">OR (හෝ)</option>
+                <option value="XOR">XOR (අනන්‍ය හෝ)</option>
+                <option value="NOT">NOT (අපවර්තකය)</option>
+            </select>
+        </div>
+        
+        <label class="invert-toggle" id="invert-container">
+            <input type="checkbox" id="invert-check" onchange="updateSystem()">
+            <span>ප්‍රතිදානයට NOT ද්වාරයක් (Bubble) එක් කරන්න</span>
+        </label>
+    </div>
+
+    <div class="main-area">
+        <div class="canvas-container">
+            <div style="font-size: 22px; font-weight: bold; color: #fff; margin-bottom: -10px;" id="gate-name-display">AND Gate</div>
+            
+            <div class="input-switches">
+                <div class="switch-group" id="swA-group">
+                    <span class="switch-label" style="color: var(--cyan);">A</span>
+                    <button class="switch-btn" id="swA" onclick="toggleSwitch('A')">0</button>
+                </div>
+                <div class="switch-group" id="swB-group">
+                    <span class="switch-label" style="color: var(--purple);">B</span>
+                    <button class="switch-btn" id="swB" onclick="toggleSwitch('B')">0</button>
+                </div>
+            </div>
+
+            <canvas id="circuitCanvas" width="600" height="250"></canvas>
+        </div>
+
+        <div class="table-container">
+            <h3 id="table-title">සත්‍යතා වගුව</h3>
+            <table id="truth-table">
+                </table>
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('circuitCanvas');
+const ctx = canvas.getContext('2d');
+const gateSelect = document.getElementById('gate-select');
+const invertCheck = document.getElementById('invert-check');
+const invertContainer = document.getElementById('invert-container');
+
+let state = { A: 0, B: 0 };
+let currentGate = 'AND';
+let isInverted = false;
+let outputQ = 0;
+
+function setupCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = 250 * dpr;
+    ctx.scale(dpr, dpr);
+}
+setupCanvas();
+
+function toggleSwitch(sw) {
+    state[sw] = state[sw] === 0 ? 1 : 0;
+    
+    let btn = document.getElementById('sw' + sw);
+    btn.textContent = state[sw];
+    if (state[sw] === 1) btn.classList.add('on');
+    else btn.classList.remove('on');
+    
+    updateSystem();
+}
+
+function calculateLogic(a, b, gate, invert) {
+    let q = 0;
+    if (gate === 'AND') q = (a && b) ? 1 : 0;
+    else if (gate === 'OR') q = (a || b) ? 1 : 0;
+    else if (gate === 'XOR') q = (a !== b) ? 1 : 0;
+    else if (gate === 'NOT') q = a ? 0 : 1;
+    
+    if (invert && gate !== 'NOT') q = q === 0 ? 1 : 0; // Don't invert NOT again for simplicity
+    return q;
+}
+
+function drawGateSymbol(cx, cy, gate, invert) {
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
+    ctx.fillStyle = '#112131';
+    
+    ctx.beginPath();
+    
+    if (gate === 'AND') {
+        ctx.moveTo(cx - 30, cy - 30);
+        ctx.lineTo(cx, cy - 30);
+        ctx.arc(cx, cy, 30, -Math.PI/2, Math.PI/2);
+        ctx.lineTo(cx - 30, cy + 30);
+        ctx.closePath();
+    } 
+    else if (gate === 'OR' || gate === 'XOR') {
+        if (gate === 'XOR') {
+            ctx.moveTo(cx - 40, cy - 30);
+            ctx.quadraticCurveTo(cx - 20, cy, cx - 40, cy + 30);
+            ctx.stroke();
+            ctx.beginPath();
+        }
+        ctx.moveTo(cx - 30, cy - 30);
+        ctx.quadraticCurveTo(cx + 10, cy - 30, cx + 40, cy);
+        ctx.quadraticCurveTo(cx + 10, cy + 30, cx - 30, cy + 30);
+        ctx.quadraticCurveTo(cx - 10, cy, cx - 30, cy - 30);
+    }
+    else if (gate === 'NOT') {
+        ctx.moveTo(cx - 20, cy - 25);
+        ctx.lineTo(cx + 30, cy);
+        ctx.lineTo(cx - 20, cy + 25);
+        ctx.closePath();
+    }
+    
+    ctx.fill();
+    ctx.stroke();
+
+    // Inversion Bubble
+    let tipX = cx + (gate === 'NOT' ? 30 : 40);
+    if (gate === 'AND') tipX = cx + 30;
+    
+    if (invert || gate === 'NOT') {
+        ctx.beginPath();
+        ctx.arc(tipX + 6, cy, 6, 0, Math.PI*2);
+        ctx.fillStyle = '#080f1a';
+        ctx.fill();
+        ctx.stroke();
+    }
+}
+
+function drawCircuit() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const width = canvas.width / (window.devicePixelRatio || 1);
+    const cx = width / 2;
+    const cy = 125;
+    
+    // Draw Input Wires
+    ctx.lineWidth = 4;
+    
+    // Wire A
+    ctx.strokeStyle = state.A ? '#2ecc71' : '#344e65';
+    ctx.beginPath(); ctx.moveTo(0, cy - 20); ctx.lineTo(cx - 35, cy - 20); ctx.stroke();
+    ctx.fillStyle = state.A ? '#2ecc71' : '#888';
+    ctx.font = '16px monospace'; ctx.fillText(state.A, 110, cy - 30);
+
+    // Wire B (If not NOT gate)
+    if (currentGate !== 'NOT') {
+        ctx.strokeStyle = state.B ? '#2ecc71' : '#344e65';
+        ctx.beginPath(); ctx.moveTo(0, cy + 20); ctx.lineTo(cx - 35, cy + 20); ctx.stroke();
+        ctx.fillStyle = state.B ? '#2ecc71' : '#888';
+        ctx.fillText(state.B, 110, cy + 15);
+    } else {
+        // Draw centered wire for NOT
+        ctx.clearRect(0, cy-30, 150, 60); // Clear offset wire
+        ctx.strokeStyle = state.A ? '#2ecc71' : '#344e65';
+        ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(cx - 20, cy); ctx.stroke();
+        ctx.fillStyle = state.A ? '#2ecc71' : '#888';
+        ctx.fillText(state.A, 110, cy - 10);
+    }
+
+    // Draw Gate
+    drawGateSymbol(cx, cy, currentGate, isInverted);
+
+    // Draw Output Wire
+    let tipX = cx + (currentGate === 'NOT' ? 30 : 40);
+    if (currentGate === 'AND') tipX = cx + 30;
+    if (isInverted || currentGate === 'NOT') tipX += 12;
+
+    ctx.strokeStyle = outputQ ? '#ff9e54' : '#344e65';
+    ctx.beginPath(); ctx.moveTo(tipX, cy); ctx.lineTo(width - 80, cy); ctx.stroke();
+    
+    ctx.fillStyle = outputQ ? '#ff9e54' : '#888';
+    ctx.fillText(outputQ, tipX + 30, cy - 10);
+
+    // Draw Bulb
+    ctx.beginPath();
+    ctx.arc(width - 50, cy, 25, 0, Math.PI*2);
+    if (outputQ) {
+        ctx.fillStyle = '#ffd055';
+        ctx.shadowColor = '#ffd055'; ctx.shadowBlur = 30;
+    } else {
+        ctx.fillStyle = '#111';
+        ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+    }
+    ctx.fill();
+    ctx.strokeStyle = '#555'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Bulb Base
+    ctx.fillStyle = '#555'; ctx.fillRect(width - 60, cy + 25, 20, 15);
+    
+    // Output Label
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 16px Arial';
+    ctx.fillText("Q", width - 55, cy + 60);
+}
+
+function updateTable() {
+    let tbody = "<tr><th>A</th>";
+    if (currentGate !== 'NOT') tbody += "<th>B</th>";
+    tbody += `<th>Q (${document.getElementById('gate-name-display').textContent})</th></tr>`;
+
+    let rows = currentGate === 'NOT' ? [[0], [1]] : [[0,0], [0,1], [1,0], [1,1]];
+
+    rows.forEach(r => {
+        let a = r[0], b = r[1];
+        let q = calculateLogic(a, b, currentGate, isInverted);
+        let isActive = (currentGate === 'NOT') ? (a === state.A) : (a === state.A && b === state.B);
+        
+        tbody += `<tr class="${isActive ? 'active-row' : ''}">
+                    <td>${a}</td>`;
+        if (currentGate !== 'NOT') tbody += `<td>${b}</td>`;
+        tbody += `<td>${q}</td></tr>`;
+    });
+
+    document.getElementById('truth-table').innerHTML = tbody;
+}
+
+function updateSystem() {
+    currentGate = gateSelect.value;
+    
+    // Disable Invert option for NOT gate to keep it simple
+    if (currentGate === 'NOT') {
+        invertCheck.checked = false;
+        invertCheck.disabled = true;
+        invertContainer.classList.add('disabled');
+        document.getElementById('swB-group').style.display = 'none';
+        state.B = 0; // Reset
+    } else {
+        invertCheck.disabled = false;
+        invertContainer.classList.remove('disabled');
+        document.getElementById('swB-group').style.display = 'flex';
+    }
+    
+    isInverted = invertCheck.checked;
+    
+    // Determine Name
+    let displayName = currentGate;
+    if (isInverted && currentGate !== 'NOT') {
+        if (currentGate === 'AND') displayName = "NAND";
+        else if (currentGate === 'OR') displayName = "NOR";
+        else if (currentGate === 'XOR') displayName = "XNOR";
+    }
+    document.getElementById('gate-name-display').textContent = displayName + " Gate";
+    document.getElementById('table-title').textContent = `${displayName} සත්‍යතා වගුව`;
+
+    outputQ = calculateLogic(state.A, state.B, currentGate, isInverted);
+    
+    drawCircuit();
+    updateTable();
+}
+
+// Init
+document.getElementById('swA').textContent = state.A;
+document.getElementById('swB').textContent = state.B;
+updateSystem();
+</script>
+</body>
+</html>
