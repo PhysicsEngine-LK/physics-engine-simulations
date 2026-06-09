@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Op-Amp Pro Simulator</title>
+<style>
+    :root {
+        --bg: #050a12; --panel: #0d1624; --panel-light: #162436; --text: #eff6ff; 
+        --cyan: #46d7ff; --green: #2ecc71; --orange: #ff9e54; 
+        --purple: #b88bff; --red: #ff5e5e; --yellow: #ffd055; --muted: #9cafc3;
+    }
+    body {
+        margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+        font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+        display: flex; flex-direction: column; align-items: center; padding: 20px;
+    }
+    .header { text-align: center; margin-bottom: 20px; }
+    h1 { color: var(--cyan); margin: 0 0 10px; font-size: 26px; }
+    p.sub { color: var(--muted); margin: 0; max-width: 800px; line-height: 1.5; }
+    
+    .dashboard { display: flex; flex-direction: column; gap: 20px; max-width: 1200px; width: 100%; align-items: center; }
+    
+    /* Controls Panel */
+    .controls-panel {
+        background: var(--panel); border: 1px solid #1d3145; border-radius: 12px; padding: 20px; 
+        display: flex; gap: 30px; justify-content: center; align-items: center; width: 100%; flex-wrap: wrap;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    }
+    
+    .mode-selector { display: flex; gap: 10px; }
+    button {
+        background: #112131; color: var(--text); border: 1px solid #29445b; 
+        padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: bold; transition: 0.3s;
+    }
+    button:hover { background: #1a334a; }
+    button.active-inv { background: #1a0b1c; border-color: var(--purple); color: var(--purple); box-shadow: 0 0 15px rgba(184, 139, 255, 0.2); }
+    button.active-non { background: #0b2219; border-color: var(--green); color: var(--green); box-shadow: 0 0 15px rgba(46, 204, 113, 0.2); }
+
+    .slider-group { display: flex; flex-direction: column; gap: 8px; width: 180px; }
+    .slider-group label { display: flex; justify-content: space-between; font-size: 14px; font-weight: bold; color: var(--muted); }
+    .slider-group span { color: var(--orange); }
+    input[type=range] { width: 100%; accent-color: var(--cyan); cursor: pointer; }
+
+    /* Visual Row: Circuit + Waves */
+    .visual-row { display: flex; gap: 20px; width: 100%; justify-content: center; align-items: stretch; flex-wrap: wrap;}
+    
+    .circuit-container { 
+        background: #080f1a; border: 1px solid #1d3145; border-radius: 12px; 
+        padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        display: flex; flex-direction: column; align-items: center; width: 400px; flex-shrink: 0;
+    }
+    .circuit-container h3 { margin: 0 0 15px 0; color: #fff; font-size: 16px; text-align: center;}
+    
+    .wave-container {
+        background: #080f1a; border: 1px solid #1d3145; border-radius: 12px; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5); flex-grow: 1; min-width: 500px;
+        position: relative; overflow: hidden; display: flex; flex-direction: column;
+    }
+    
+    canvas { background: transparent; display: block; width: 100%; }
+    #circuitCanvas { height: 350px; }
+    #waveCanvas { flex-grow: 1; height: 350px; }
+
+    /* Equation Overlay styling (Real Fractions) */
+    .eq-overlay {
+        position: absolute; top: 15px; left: 15px; background: rgba(8, 15, 26, 0.85);
+        border: 1px solid #29445b; padding: 12px 20px; border-radius: 8px;
+        display: flex; flex-direction: column; gap: 8px; font-family: monospace; font-size: 16px; font-weight: bold;
+    }
+    .math-line { display: flex; align-items: center; }
+    .fraction { display: inline-flex; flex-direction: column; align-items: center; margin: 0 8px; line-height: 1.2; }
+    .fraction span:first-child { border-bottom: 2px solid currentColor; padding: 0 4px; }
+    .fraction span:last-child { padding-top: 2px; }
+
+    /* Theory Panel */
+    .theory-row { display: flex; gap: 20px; width: 100%; flex-wrap: wrap;}
+    
+    .math-panel {
+        background: var(--panel); border: 1px solid #1d3145; border-radius: 12px; padding: 20px; 
+        flex: 2; min-width: 400px; display: flex; flex-direction: column; gap: 15px;
+    }
+    .math-panel h3 { margin: 0 0 5px 0; color: var(--yellow); font-size: 18px; border-bottom: 1px solid #29445b; padding-bottom: 10px;}
+    
+    .steps-container { display: flex; gap: 15px; flex-wrap: wrap; }
+    .step { background: var(--panel-light); padding: 12px; border-radius: 8px; border-left: 4px solid var(--cyan); flex: 1; min-width: 200px;}
+    .step h4 { margin: 0 0 5px 0; color: var(--cyan); font-size: 14px; }
+    .step p { margin: 0; font-size: 14px; color: #d3dfe9; line-height: 1.5; font-family: monospace;}
+    
+    .info-panel {
+        background: var(--panel); border: 1px solid #1d3145; border-radius: 12px; padding: 20px;
+        flex: 1; min-width: 300px; display: flex; flex-direction: column; justify-content: center; text-align: center;
+        font-size: 16px; line-height: 1.6;
+    }
+    .info-panel strong { color: var(--yellow); }
+    
+    .warning {
+        background: rgba(255, 94, 94, 0.1); border: 1px solid var(--red); color: var(--red);
+        padding: 10px; border-radius: 8px; text-align: center; font-size: 14px; font-weight: bold;
+        margin-top: -5px; display: none; width: 100%; box-sizing: border-box;
+    }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Op-Amp වර්ධක විශ්ලේෂකය</h1>
+    <p class="sub">ප්‍රදාන අගයන් වෙනස් කරමින් පරිපථයේ සහ වක්‍රවල සජීවී හැසිරීම නිරීක්ෂණය කරන්න.</p>
+</div>
+
+<div class="dashboard">
+    <div class="controls-panel">
+        <div class="mode-selector">
+            <button id="btn-inv" class="active-inv" onclick="setMode('inv')">ප්‍රතිවර්තක (Inverting)</button>
+            <button id="btn-non" onclick="setMode('non')">අප්‍රතිවර්තක (Non-Inverting)</button>
+        </div>
+        <div class="slider-group">
+            <label>V<sub>in</sub> විස්තාරය <span id="vin-txt">2.0 V</span></label>
+            <input type="range" id="vin-slider" min="0.5" max="5" step="0.1" value="2.0">
+        </div>
+        <div class="slider-group">
+            <label>R<sub>in</sub> <span id="rin-txt">10 kΩ</span></label>
+            <input type="range" id="rin-slider" min="1" max="50" step="1" value="10">
+        </div>
+        <div class="slider-group">
+            <label>R<sub>f</sub> <span id="rf-txt">20 kΩ</span></label>
+            <input type="range" id="rf-slider" min="10" max="100" step="1" value="20">
+        </div>
+    </div>
+    
+    <div class="warning" id="sat-warning">
+        ⚠️ උපරිම වෝල්ටීයතා සීමාව (±15V) ඉක්මවා ඇත! වක්‍රය කැපී යයි (Clipping).
+    </div>
+
+    <div class="visual-row">
+        <div class="circuit-container">
+            <h3 id="circuit-title">ප්‍රතිවර්තක වර්ධක පරිපථය (Inverting)</h3>
+            <canvas id="circuitCanvas"></canvas>
+        </div>
+
+        <div class="wave-container">
+            <div class="eq-overlay" id="dynamic-eq">
+                </div>
+            <canvas id="waveCanvas"></canvas>
+        </div>
+    </div>
+
+    <div class="theory-row">
+        <div class="math-panel">
+            <h3>ගණිතමය සාධනය (Mathematical Derivation)</h3>
+            <div class="steps-container">
+                <div class="step" style="border-left-color: var(--green);">
+                    <h4>පියවර 1: අතාත්වික භූගතය</h4>
+                    <p id="math-step1">V<sub>+</sub> = 0V. එබැවින් V<sub>-</sub> = 0V.</p>
+                </div>
+                <div class="step" style="border-left-color: var(--orange);">
+                    <h4>පියවර 2: ධාරා නියමය</h4>
+                    <p>I<sub>in</sub> = I<sub>f</sub> (Op-Amp තුළට ධාරා නොගලයි)</p>
+                </div>
+                <div class="step" style="border-left-color: var(--cyan);">
+                    <h4>පියවර 3: ආදේශය</h4>
+                    <p id="math-step3">(V<sub>in</sub> - 0) / R<sub>in</sub> = (0 - V<sub>out</sub>) / R<sub>f</sub></p>
+                    <p id="math-step4" style="color: var(--yellow); margin-top: 5px;">(2.0 - 0) / 10 = (0 - V<sub>out</sub>) / 20</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-panel" id="exp-text">
+            ප්‍රදානය <strong>සෘණ (-)</strong> අග්‍රයට ලබා දෙන බැවින්, සංඥාව විශාලනය වන අතරම කලාව (Phase) <strong>180° කින් හැරේ</strong>. (එකක් ඉහළ යන විට අනෙක පහළ යයි).
+        </div>
+    </div>
+</div>
+
+<script>
+const cCanvas = document.getElementById('circuitCanvas');
+const cCtx = cCanvas.getContext('2d');
+const wCanvas = document.getElementById('waveCanvas');
+const wCtx = wCanvas.getContext('2d');
+
+const vinSlider = document.getElementById('vin-slider');
+const rinSlider = document.getElementById('rin-slider');
+const rfSlider = document.getElementById('rf-slider');
+
+let mode = 'inv';
+let time = 0;
+let currentVin = 2.0;
+let currentRin = 10;
+let currentRf = 20;
+let currentVout = 4.0;
+let isSaturated = false;
+
+function setupCanvases() {
+    const dpr = window.devicePixelRatio || 1;
+    let cRect = cCanvas.getBoundingClientRect();
+    cCanvas.width = cRect.width * dpr; cCanvas.height = 350 * dpr;
+    cCtx.scale(dpr, dpr);
+    
+    let wRect = wCanvas.getBoundingClientRect();
+    wCanvas.width = wRect.width * dpr; wCanvas.height = 350 * dpr;
+    wCtx.scale(dpr, dpr);
+}
+setupCanvases();
+window.addEventListener('resize', () => { setupCanvases(); updateLogic(); });
+
+// Helper to center text with subscript
+function drawCenteredLabel(ctx, text, sub, x, y, color) {
+    ctx.fillStyle = color;
+    ctx.font = "bold 14px Arial";
+    let w1 = ctx.measureText(text).width;
+    ctx.font = "bold 10px Arial";
+    let w2 = ctx.measureText(sub).width;
+    let totalW = w1 + w2;
+    let startX = x - (totalW / 2);
+    
+    ctx.font = "bold 14px Arial";
+    ctx.fillText(text, startX, y);
+    ctx.font = "bold 10px Arial";
+    ctx.fillText(sub, startX + w1 + 1, y + 4);
+}
+
+function drawResistor(ctx, x, y, label, sub, val, isVertical=false) {
+    ctx.save();
+    ctx.translate(x, y);
+    if(isVertical) ctx.rotate(Math.PI/2);
+    
+    // Draw Box
+    ctx.fillStyle = '#111'; ctx.strokeStyle = '#46d7ff'; ctx.lineWidth = 2;
+    ctx.fillRect(-22, -12, 44, 24); ctx.strokeRect(-22, -12, 44, 24);
+    
+    // Draw Value perfectly centered INSIDE the box
+    ctx.fillStyle = '#ffd055'; ctx.font = 'bold 12px Arial'; 
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(val + 'kΩ', 0, 0);
+    ctx.restore();
+    
+    // Draw Label OUTSIDE the box
+    if(isVertical) {
+        drawCenteredLabel(ctx, label, sub, x + 25, y, '#fff');
+    } else {
+        drawCenteredLabel(ctx, label, sub, x, y - 20, '#fff');
+    }
+}
+
+function drawCircuit() {
+    const width = cCanvas.width / (window.devicePixelRatio || 1);
+    const height = cCanvas.height / (window.devicePixelRatio || 1);
+    cCtx.clearRect(0, 0, width, height);
+    
+    cCtx.save();
+    cCtx.translate(15, 20); // Center adjustment
+    cCtx.scale(0.85, 0.85);
+
+    cCtx.strokeStyle = '#344e65'; cCtx.lineWidth = 3; cCtx.beginPath();
+    
+    // Op-Amp
+    cCtx.fillStyle = '#0d1624';
+    cCtx.moveTo(220, 140); cCtx.lineTo(320, 200); cCtx.lineTo(220, 260); cCtx.closePath();
+    cCtx.fill(); cCtx.stroke();
+    cCtx.fillStyle = '#fff'; cCtx.font = 'bold 20px Arial'; cCtx.textAlign = 'left'; cCtx.textBaseline = 'alphabetic';
+    cCtx.fillText("-", 230, 186); cCtx.fillText("+", 230, 236);
+
+    cCtx.beginPath();
+    if (mode === 'inv') {
+        cCtx.moveTo(60, 180); cCtx.lineTo(220, 180);
+        cCtx.moveTo(180, 230); cCtx.lineTo(220, 230);
+        cCtx.moveTo(180, 230); cCtx.lineTo(180, 280);
+        cCtx.moveTo(160, 280); cCtx.lineTo(200, 280);
+        cCtx.moveTo(170, 288); cCtx.lineTo(190, 288);
+        cCtx.moveTo(177, 296); cCtx.lineTo(183, 296);
+        cCtx.moveTo(190, 180); cCtx.lineTo(190, 80); cCtx.lineTo(370, 80); cCtx.lineTo(370, 200);
+        cCtx.stroke();
+        
+        drawResistor(cCtx, 125, 180, "R", "in", currentRin);
+        drawResistor(cCtx, 280, 80, "R", "f", currentRf);
+        
+        drawCenteredLabel(cCtx, "V", "in", 30, 175, '#46d7ff');
+        
+        cCtx.fillStyle = '#2ecc71'; cCtx.beginPath(); cCtx.arc(190, 180, 5, 0, Math.PI*2); cCtx.fill();
+        drawCenteredLabel(cCtx, "V", "-  = 0V", 145, 160, '#2ecc71');
+    } else {
+        cCtx.moveTo(180, 180); cCtx.lineTo(220, 180);
+        cCtx.moveTo(180, 180); cCtx.lineTo(180, 280);
+        cCtx.moveTo(160, 280); cCtx.lineTo(200, 280);
+        cCtx.moveTo(170, 288); cCtx.lineTo(190, 288);
+        cCtx.moveTo(177, 296); cCtx.lineTo(183, 296);
+        cCtx.moveTo(60, 230); cCtx.lineTo(220, 230);
+        cCtx.moveTo(180, 180); cCtx.lineTo(180, 80); cCtx.lineTo(370, 80); cCtx.lineTo(370, 200);
+        cCtx.stroke();
+        
+        drawResistor(cCtx, 180, 225, "R", "in", currentRin, true);
+        drawResistor(cCtx, 280, 80, "R", "f", currentRf);
+        
+        drawCenteredLabel(cCtx, "V", "in", 30, 225, '#46d7ff');
+        
+        cCtx.fillStyle = '#2ecc71'; cCtx.beginPath(); cCtx.arc(180, 180, 5, 0, Math.PI*2); cCtx.fill();
+        drawCenteredLabel(cCtx, "V", "-  = Vin", 120, 160, '#2ecc71');
+    }
+    
+    cCtx.strokeStyle = '#344e65'; cCtx.beginPath();
+    cCtx.moveTo(320, 200); cCtx.lineTo(430, 200); cCtx.stroke();
+    drawCenteredLabel(cCtx, "V", "out", 440, 195, '#ff5e5e');
+
+    cCtx.restore();
+}
+
+function drawWaveAxes(cy, label, color) {
+    const width = wCanvas.width / (window.devicePixelRatio || 1);
+    wCtx.strokeStyle = '#29445b'; wCtx.lineWidth = 2;
+    wCtx.beginPath(); wCtx.moveTo(0, cy); wCtx.lineTo(width, cy); wCtx.stroke();
+    
+    wCtx.fillStyle = color; wCtx.font = 'bold 14px Arial'; wCtx.textAlign = 'left';
+    wCtx.fillText(label, 20, cy - 10);
+    
+    wCtx.strokeStyle = '#1d3145'; wCtx.lineWidth = 1; wCtx.setLineDash([5, 5]);
+    wCtx.beginPath();
+    for (let x = 50; x < width; x += 100) { wCtx.moveTo(x, cy - 60); wCtx.lineTo(x, cy + 60); }
+    wCtx.stroke(); wCtx.setLineDash([]);
+}
+
+function drawWave(cy, amplitude, frequency, phase, color) {
+    const width = wCanvas.width / (window.devicePixelRatio || 1);
+    wCtx.strokeStyle = color; wCtx.lineWidth = 3;
+    wCtx.shadowColor = color; wCtx.shadowBlur = 8;
+    
+    wCtx.beginPath();
+    for (let x = 0; x < width; x++) {
+        let y = cy - amplitude * Math.sin((x * frequency) + time + phase);
+        let maxDev = 120; // Visual Clipping boundary
+        if (y < cy - maxDev) y = cy - maxDev;
+        if (y > cy + maxDev) y = cy + maxDev;
+
+        if (x === 0) wCtx.moveTo(x, y);
+        else wCtx.lineTo(x, y);
+    }
+    wCtx.stroke();
+    wCtx.shadowBlur = 0;
+}
+
+function animateWaves() {
+    wCtx.clearRect(0, 0, wCanvas.width, wCanvas.height);
+    const height = wCanvas.height / (window.devicePixelRatio || 1);
+    const cy1 = height * 0.35; 
+    const cy2 = height * 0.75; 
+    const frequency = 0.02; 
+    
+    let pxVin = currentVin * 8;
+    let pxVout = Math.abs(currentVout) * 8; 
+
+    drawWaveAxes(cy1, `Vin = ${currentVin.toFixed(1)}V`, "#46d7ff");
+    drawWaveAxes(cy2, `Vout = ${Math.abs(currentVout).toFixed(1)}V`, mode === 'inv' ? "#b88bff" : "#2ecc71");
+    
+    drawWave(cy1, pxVin, frequency, 0, '#46d7ff');
+    if (mode === 'inv') drawWave(cy2, pxVout, frequency, Math.PI, isSaturated ? '#ff5e5e' : '#b88bff');
+    else drawWave(cy2, pxVout, frequency, 0, isSaturated ? '#ff5e5e' : '#2ecc71');
+    
+    time += 0.04;
+    requestAnimationFrame(animateWaves);
+}
+
+// Generate the beautiful HTML fractions for the overlay
+function getFraction(num, den, color) {
+    return `<div class="fraction" style="color: ${color};">
+                <span>${num}</span>
+                <span>${den}</span>
+            </div>`;
+}
+
+function updateLogic() {
+    currentVin = parseFloat(vinSlider.value);
+    currentRin = parseFloat(rinSlider.value);
+    currentRf = parseFloat(rfSlider.value);
+    
+    document.getElementById('vin-txt').textContent = currentVin.toFixed(1) + " V";
+    document.getElementById('rin-txt').textContent = currentRin + " kΩ";
+    document.getElementById('rf-txt').textContent = currentRf + " kΩ";
+
+    let step1, step3, step4, eqHTML;
+    let targetVout = 0;
+    
+    if (mode === 'inv') {
+        document.getElementById('circuit-title').textContent = "ප්‍රතිවර්තක වර්ධක පරිපථය (Inverting)";
+        targetVout = -(currentRf / currentRin) * currentVin;
+        
+        step1 = `V<sub>+</sub> = 0V (භූගතයි). අතාත්වික භූගතය අනුව V<sub>-</sub> = 0V.`;
+        step3 = `(V<sub>in</sub> - 0) / R<sub>in</sub> = (0 - V<sub>out</sub>) / R<sub>f</sub>`;
+        step4 = `(${currentVin.toFixed(1)} - 0) / ${currentRin} = (0 - V<sub>out</sub>) / ${currentRf}`;
+        
+        // Build the HTML Math equation overlay
+        eqHTML = `
+            <div class="math-line" style="color: #b88bff;">
+                <span>V<sub>out</sub> = -</span> ${getFraction('R<sub>f</sub>', 'R<sub>in</sub>', '#b88bff')} <span>&times; V<sub>in</sub></span>
+            </div>
+            <div class="math-line" style="color: #fff;">
+                <span>V<sub>out</sub> = -</span> ${getFraction(currentRf, currentRin, '#fff')} <span>&times; ${currentVin.toFixed(1)}V = <span style="color:${isSaturated ? '#ff5e5e' : '#b88bff'}">${targetVout > 15 ? "-15.00V (Max)" : targetVout < -15 ? "15.00V (Max)" : targetVout.toFixed(2) + "V"}</span></span>
+            </div>`;
+            
+    } else {
+        document.getElementById('circuit-title').textContent = "අප්‍රතිවර්තක වර්ධක පරිපථය (Non-Inverting)";
+        targetVout = (1 + (currentRf / currentRin)) * currentVin;
+        
+        step1 = `V<sub>+</sub> = V<sub>in</sub> = ${currentVin.toFixed(1)}V. අතාත්වික භූගතය අනුව V<sub>-</sub> = ${currentVin.toFixed(1)}V.`;
+        step3 = `(0 - V<sub>-</sub>) / R<sub>in</sub> = (V<sub>-</sub> - V<sub>out</sub>) / R<sub>f</sub>`;
+        step4 = `(0 - ${currentVin.toFixed(1)}) / ${currentRin} = (${currentVin.toFixed(1)} - V<sub>out</sub>) / ${currentRf}`;
+        
+        eqHTML = `
+            <div class="math-line" style="color: #2ecc71;">
+                <span>V<sub>out</sub> = ( 1 + </span> ${getFraction('R<sub>f</sub>', 'R<sub>in</sub>', '#2ecc71')} <span>) &times; V<sub>in</sub></span>
+            </div>
+            <div class="math-line" style="color: #fff;">
+                <span>V<sub>out</sub> = ( 1 + </span> ${getFraction(currentRf, currentRin, '#fff')} <span>) &times; ${currentVin.toFixed(1)}V = <span style="color:${isSaturated ? '#ff5e5e' : '#2ecc71'}">${targetVout > 15 ? "15.00V (Max)" : targetVout.toFixed(2) + "V"}</span></span>
+            </div>`;
+    }
+    
+    // Saturation limit
+    currentVout = targetVout;
+    isSaturated = false;
+    if (currentVout > 15) { currentVout = 15; isSaturated = true; }
+    if (currentVout < -15) { currentVout = -15; isSaturated = true; }
+
+    document.getElementById('dynamic-eq').innerHTML = eqHTML;
+    document.getElementById('math-step1').innerHTML = step1;
+    document.getElementById('math-step3').innerHTML = step3;
+    document.getElementById('math-step4').innerHTML = step4;
+    
+    document.getElementById('sat-warning').style.display = isSaturated ? 'block' : 'none';
+
+    drawCircuit();
+}
+
+window.setMode = function(newMode) {
+    mode = newMode;
+    document.getElementById('btn-inv').classList.remove('active-inv');
+    document.getElementById('btn-non').classList.remove('active-non');
+    
+    let expText = document.getElementById('exp-text');
+    if (mode === 'inv') {
+        document.getElementById('btn-inv').classList.add('active-inv');
+        expText.innerHTML = "ප්‍රදානය <strong>සෘණ (-)</strong> අග්‍රයට ලබා දෙන බැවින්, සංඥාව විශාලනය වන අතරම කලාව (Phase) <strong>180° කින් හැරේ</strong>. (එකක් ඉහළ යන විට අනෙක පහළ යයි).";
+    } else {
+        document.getElementById('btn-non').classList.add('active-non');
+        expText.innerHTML = "ප්‍රදානය <strong>ධන (+)</strong> අග්‍රයට ලබා දෙන බැවින්, සංඥාවේ හැඩය සහ කලාව <strong>කිසිසේත් වෙනස් නොවී</strong> විශාලනය වේ. (දෙකම එකට ඉහළ යයි).";
+    }
+    updateLogic();
+};
+
+vinSlider.addEventListener('input', updateLogic);
+rinSlider.addEventListener('input', updateLogic);
+rfSlider.addEventListener('input', updateLogic);
+
+updateLogic();
+animateWaves();
+</script>
+</body>
+</html>
