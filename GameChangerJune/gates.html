@@ -225,24 +225,24 @@ function drawCircuit() {
     // Draw Input Wires
     ctx.lineWidth = 4;
     
-    // Wire A
-    ctx.strokeStyle = state.A ? '#2ecc71' : '#344e65';
-    ctx.beginPath(); ctx.moveTo(0, cy - 20); ctx.lineTo(cx - 35, cy - 20); ctx.stroke();
-    ctx.fillStyle = state.A ? '#2ecc71' : '#888';
-    ctx.font = '16px monospace'; ctx.fillText(state.A, 110, cy - 30);
-
-    // Wire B (If not NOT gate)
     if (currentGate !== 'NOT') {
+        // Wire A
+        ctx.strokeStyle = state.A ? '#2ecc71' : '#344e65';
+        ctx.beginPath(); ctx.moveTo(0, cy - 20); ctx.lineTo(cx - 35, cy - 20); ctx.stroke();
+        ctx.fillStyle = state.A ? '#2ecc71' : '#888';
+        ctx.font = '16px monospace'; ctx.fillText(state.A, 110, cy - 30);
+
+        // Wire B
         ctx.strokeStyle = state.B ? '#2ecc71' : '#344e65';
         ctx.beginPath(); ctx.moveTo(0, cy + 20); ctx.lineTo(cx - 35, cy + 20); ctx.stroke();
         ctx.fillStyle = state.B ? '#2ecc71' : '#888';
         ctx.fillText(state.B, 110, cy + 15);
     } else {
-        // Draw centered wire for NOT
-        ctx.clearRect(0, cy-30, 150, 60); // Clear offset wire
+        // Draw centered input wire for NOT without rendering the second input path.
         ctx.strokeStyle = state.A ? '#2ecc71' : '#344e65';
         ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(cx - 20, cy); ctx.stroke();
         ctx.fillStyle = state.A ? '#2ecc71' : '#888';
+        ctx.font = '16px monospace';
         ctx.fillText(state.A, 110, cy - 10);
     }
 
