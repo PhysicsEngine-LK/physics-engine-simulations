@@ -5,10 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ට්‍රාන්සිස්ටරය - ජල කරාම උපමාව (Animated)</title>
     <style>
+        :root {
+            --bg: #050a12;
+            --panel: #0d1624;
+            --text: #eff6ff;
+            --cyan: #46d7ff;
+            --purple: #b88bff;
+            --border: #1d3145;
+            --green: #2ecc71;
+            --orange: #ff9e54;
+            --red: #ff5e5e;
+        }
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #05050a;
-            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -17,161 +28,227 @@
             padding: 20px;
         }
         .container {
-            background-color: #0f0f16;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 0 30px rgba(176, 38, 255, 0.15);
-            border: 1px solid #33154d;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            max-width: 1050px;
+            width: 100%;
+        }
+        .header {
             text-align: center;
-            width: 850px;
         }
         h2 {
-            color: #00ffff;
-            letter-spacing: 1px;
-            text-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
-            margin-bottom: 30px;
+            color: var(--cyan);
+            margin: 0 0 5px 0;
+            font-size: 26px;
+            text-shadow: 0 0 10px rgba(70, 215, 255, 0.3);
         }
-        .simulation-area {
+        .sub-text {
+            color: #9cafc3;
+            margin: 0;
+            font-size: 15px;
+        }
+
+        /* Layout Grid */
+        .layout-row {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #151520;
+            gap: 25px;
+            align-items: stretch;
+        }
+
+        /* Left Side: Visuals */
+        .visuals-col {
+            display: flex;
+            flex: 2;
+            gap: 20px;
+            background: var(--panel);
             padding: 20px;
-            border-radius: 10px;
-            border: 1px solid #2a2a3d;
-            margin-bottom: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
         }
         .panel {
-            width: 48%;
-            background: #0a0a10;
+            flex: 1;
+            background: #080f1a;
             border-radius: 8px;
             padding: 15px 0;
-            border: 1px solid #222;
+            border: 1px solid var(--border);
+            text-align: center;
+            position: relative;
         }
         .panel h3 {
-            color: #b026ff;
+            color: var(--purple);
             margin-top: 0;
+            margin-bottom: 15px;
             font-size: 16px;
-            text-transform: uppercase;
             letter-spacing: 1px;
         }
+
+        /* Right Side: Controls & Status */
+        .controls-col {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            gap: 25px;
+            justify-content: space-between;
+        }
+        
         .slider-section {
-            background-color: #1a1a26;
-            padding: 25px;
-            border-radius: 8px;
-            border: 1px solid #333;
+            background: var(--panel);
+            padding: 30px 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .slider-section label {
+            font-size: 16px;
+            color: #9cafc3;
+            display: block;
             margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .val-display {
+            display: block;
+            font-size: 36px;
+            color: var(--cyan);
+            margin: 15px 0;
+            font-weight: bold;
+            font-family: monospace;
+            text-shadow: 0 0 15px rgba(70, 215, 255, 0.4);
         }
         input[type="range"] {
-            width: 85%;
-            margin: 15px 0;
-            accent-color: #00ffff;
+            width: 100%;
+            height: 6px;
+            background: #1a2c3f;
+            border-radius: 5px;
+            outline: none;
+            accent-color: var(--cyan);
             cursor: pointer;
         }
+
         .status-box {
             font-size: 18px;
             font-weight: bold;
-            padding: 15px;
-            border-radius: 6px;
-            color: white;
+            padding: 25px 20px;
+            border-radius: 12px;
+            text-align: center;
             transition: all 0.3s ease;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100px;
+            border: 2px solid transparent;
+            line-height: 1.4;
         }
+        .status-sub {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-top: 8px;
+            font-weight: normal;
+        }
+
         /* SVG Styling */
-        .wire { fill: none; stroke: #333; stroke-width: 4; stroke-linecap: round; }
+        .wire { fill: none; stroke: #29445b; stroke-width: 4; stroke-linecap: round; }
         .flow-path { 
             fill: none; 
             stroke-width: 4; 
             stroke-dasharray: 10, 15; 
             stroke-linecap: round;
         }
-        .flow-ic { stroke: #00ffff; } /* Collector current color */
-        .flow-ib { stroke: #b026ff; } /* Base current color */
+        .flow-ic { stroke: var(--cyan); }
+        .flow-ib { stroke: var(--purple); }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>ට්‍රාන්සිස්ටර ක්‍රියාකාරිත්වය සහ ජල කරාම උපමාව</h2>
+        <div class="header">
+            <h2>PHYSICS ENGINE - ට්‍රාන්සිස්ටර ක්‍රියාකාරිත්වය: ජල කරාම උපමාව</h2>
+            <p class="sub-text">කුඩා ආදානයක් මගින් විශාල ප්‍රතිදානයක් පාලනය වන අයුරු නිරීක්ෂණය කරන්න.</p>
+        </div>
         
-        <div class="slider-section">
-            <label for="main-slider" style="font-size: 18px; color: #ccc;">
-                ආදානය පාලනය කරන්න (කරාමය / පාදම): <span id="val-display" style="color: #00ffff; font-weight:bold;">0</span>%
-            </label><br>
-            <input type="range" id="main-slider" min="0" max="100" value="0">
-        </div>
-
-        <div class="simulation-area">
+        <div class="layout-row">
             
-            <div class="panel">
-                <h3>ජල පද්ධතිය</h3>
-                <svg width="300" height="350" viewBox="0 0 300 350">
-                    <rect x="100" y="20" width="100" height="70" fill="rgba(30, 136, 229, 0.2)" stroke="#1e88e5" stroke-width="2"/>
-                    <text x="150" y="60" fill="#1e88e5" font-size="14" text-anchor="middle">විශාල ටැංකිය</text>
-                    
-                    <rect x="135" y="90" width="30" height="70" fill="#111" stroke="#555" stroke-width="2"/>
-                    <rect x="137" y="90" width="26" height="70" fill="#1e88e5" opacity="0.6"/>
+            <div class="visuals-col">
+                <div class="panel">
+                    <h3>ජල පද්ධතිය (Water Analogy)</h3>
+                    <svg width="280" height="350" viewBox="0 0 300 350">
+                        <rect x="100" y="20" width="100" height="70" fill="rgba(70, 215, 255, 0.1)" stroke="var(--cyan)" stroke-width="2"/>
+                        <text x="150" y="60" fill="var(--cyan)" font-size="14" font-weight="bold" text-anchor="middle">විශාල ටැංකිය</text>
+                        
+                        <rect x="135" y="90" width="30" height="70" fill="#080f1a" stroke="#29445b" stroke-width="2"/>
+                        <rect x="137" y="90" width="26" height="70" fill="var(--cyan)" opacity="0.4"/>
 
-                    <circle cx="150" cy="175" r="30" fill="#1a1a26" stroke="#b026ff" stroke-width="3"/>
-                    <line id="valve-handle" x1="150" y1="145" x2="150" y2="205" stroke="#b026ff" stroke-width="6" stroke-linecap="round" transform="rotate(90 150 175)"/>
-                    
-                    <rect x="135" y="205" width="30" height="110" fill="#111" stroke="#555" stroke-width="2"/>
-                    
-                    <rect id="water-flow" x="150" y="205" width="0" height="110" fill="#00ffff" opacity="0.8"/>
-                    
-                    <path id="water-drops" d="M 150 205 L 150 315" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="10, 20" opacity="0"/>
+                        <circle cx="150" cy="175" r="30" fill="#112131" stroke="var(--purple)" stroke-width="3"/>
+                        <line id="valve-handle" x1="150" y1="145" x2="150" y2="205" stroke="var(--purple)" stroke-width="6" stroke-linecap="round" transform="rotate(90 150 175)"/>
+                        
+                        <rect x="135" y="205" width="30" height="110" fill="#080f1a" stroke="#29445b" stroke-width="2"/>
+                        
+                        <rect id="water-flow" x="150" y="205" width="0" height="110" fill="var(--cyan)" opacity="0.7"/>
+                        <path id="water-drops" d="M 150 205 L 150 315" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="8, 16" opacity="0"/>
 
-                    <text x="50" y="180" fill="#b026ff" font-size="14" font-weight="bold">කරාමය</text>
-                    <path d="M 90 175 L 115 175" stroke="#b026ff" stroke-width="2" marker-end="url(#arrow)"/>
-                    <text x="220" y="260" fill="#00ffff" font-size="14">ජල ප්‍රවාහය</text>
-                </svg>
+                        <text x="50" y="180" fill="var(--purple)" font-size="14" font-weight="bold">කරාමය</text>
+                        <path d="M 90 175 L 115 175" stroke="var(--purple)" stroke-width="2" marker-end="url(#arrow)"/>
+                        <text x="215" y="260" fill="var(--cyan)" font-size="13" font-weight="bold">ජල ප්‍රවාහය</text>
+                    </svg>
+                </div>
+
+                <div class="panel">
+                    <h3>ට්‍රාන්සිස්ටරය (NPN Transistor)</h3>
+                    <svg width="280" height="350" viewBox="0 0 300 350">
+                        <path class="wire" d="M 150 40 L 150 90"/> <path class="wire" d="M 150 140 L 150 190"/> <path class="wire" d="M 50 210 L 120 210"/> <path class="wire" d="M 150 250 L 150 310"/> <path class="wire" d="M 130 310 L 170 310 M 140 318 L 160 318"/> 
+                        
+                        <text x="160" y="35" fill="var(--cyan)" font-size="14" font-weight="bold">+ Vcc</text>
+                        <text x="160" y="180" fill="#9cafc3" font-size="12">C (සංග්‍රාහකය)</text>
+                        <text x="105" y="195" fill="#9cafc3" font-size="12">B</text>
+                        <text x="160" y="265" fill="#9cafc3" font-size="12">E (විමෝචකය)</text>
+                        <text x="25" y="195" fill="var(--purple)" font-size="13" font-weight="bold">ආදානය</text>
+
+                        <path id="ic-flow" class="flow-path flow-ic" d="M 150 40 L 150 90 M 150 140 L 150 190 L 135 210 L 150 230 L 150 310"/>
+                        <path id="ib-flow" class="flow-path flow-ib" d="M 50 210 L 120 210 L 135 210 L 150 230 L 150 310"/>
+
+                        <line x1="120" y1="190" x2="120" y2="230" stroke="#fff" stroke-width="4"/> 
+                        <line x1="120" y1="200" x2="150" y2="190" stroke="#fff" stroke-width="3"/> 
+                        <line x1="120" y1="220" x2="150" y2="250" stroke="#fff" stroke-width="3"/> 
+                        <polygon points="145,248 135,236 140,230" fill="#fff"/> 
+                        <circle cx="135" cy="210" r="45" stroke="#29445b" stroke-width="2" fill="none"/>
+
+                        <circle id="circuit-bulb" cx="150" cy="115" r="25" fill="#080f1a" stroke="#29445b" stroke-width="2"/>
+                        <path id="filament" d="M 135 105 L 165 125 M 135 125 L 165 105" stroke="#29445b" stroke-width="3"/>
+                    </svg>
+                </div>
             </div>
 
-            <div class="panel">
-                <h3>ට්‍රාන්සිස්ටර පරිපථය</h3>
-                <svg width="300" height="350" viewBox="0 0 300 350">
-                    
-                    <path class="wire" d="M 150 40 L 150 90"/> <path class="wire" d="M 150 140 L 150 190"/> <path class="wire" d="M 60 210 L 120 210"/> <path class="wire" d="M 150 250 L 150 310"/> <path class="wire" d="M 130 310 L 170 310 M 140 318 L 160 318"/> <text x="160" y="35" fill="#1e88e5" font-size="14" font-weight="bold">+ Vcc</text>
-                    <text x="160" y="180" fill="#aaa" font-size="12">C</text>
-                    <text x="125" y="195" fill="#aaa" font-size="12">B</text>
-                    <text x="160" y="260" fill="#aaa" font-size="12">E</text>
-                    <text x="15" y="215" fill="#b026ff" font-size="14">ආදානය</text>
+            <div class="controls-col">
+                <div class="slider-section">
+                    <label for="main-slider">ආදානය පාලනය කරන්න (කරාමය / පාදම)</label>
+                    <span class="val-display" id="val-display">0%</span>
+                    <input type="range" id="main-slider" min="0" max="100" value="0">
+                </div>
 
-                    <path id="ic-flow" class="flow-path flow-ic" d="M 150 40 L 150 90 M 150 140 L 150 190 L 135 210 L 150 230 L 150 310"/>
-                    <path id="ib-flow" class="flow-path flow-ib" d="M 60 210 L 120 210 L 135 210 L 150 230 L 150 310"/>
-
-                    <line x1="120" y1="190" x2="120" y2="230" stroke="#fff" stroke-width="4"/> <line x1="120" y1="200" x2="150" y2="190" stroke="#fff" stroke-width="3"/> <line x1="120" y1="220" x2="150" y2="250" stroke="#fff" stroke-width="3"/> <polygon points="145,248 135,236 140,230" fill="#fff"/> <circle cx="135" cy="210" r="45" stroke="#444" stroke-width="2" fill="none"/>
-
-                    <circle id="circuit-bulb" cx="150" cy="115" r="25" fill="#111" stroke="#555" stroke-width="2"/>
-                    <path id="filament" d="M 135 105 L 165 125 M 135 125 L 165 105" stroke="#333" stroke-width="3"/>
-                    
-                    <defs>
-                        <filter id="glow-bulb">
-                            <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
-                            <feMerge>
-                                <feMergeNode in="coloredBlur"/>
-                                <feMergeNode in="SourceGraphic"/>
-                            </feMerge>
-                        </filter>
-                    </defs>
-
-                </svg>
+                <div class="status-box" id="status-display">
+                    </div>
             </div>
+
         </div>
-
-        <div class="status-box" id="status-display">කපා හැරීම (Cut-off)</div>
     </div>
 
     <script>
         const slider = document.getElementById('main-slider');
         const valDisplay = document.getElementById('val-display');
         
-        // Water
+        // Water elements
         const valveHandle = document.getElementById('valve-handle');
         const waterFlow = document.getElementById('water-flow');
         const waterDrops = document.getElementById('water-drops');
         
-        // Circuit
+        // Circuit elements
         const bulb = document.getElementById('circuit-bulb');
         const filament = document.getElementById('filament');
         const icFlow = document.getElementById('ic-flow');
@@ -182,7 +259,7 @@
 
         function updateSimulation() {
             let val = parseInt(slider.value);
-            valDisplay.textContent = val;
+            valDisplay.textContent = val + "%";
             let ratio = val / 100;
 
             // --- Water Animation ---
@@ -195,69 +272,68 @@
             
             // --- Circuit Animation ---
             if (val > 0) {
-                // Bulb Glow
-                bulb.setAttribute('fill', `rgba(0, 255, 255, ${0.1 + ratio * 0.8})`);
-                bulb.setAttribute('stroke', `rgba(0, 255, 255, ${0.5 + ratio * 0.5})`);
-                bulb.style.filter = `drop-shadow(0 0 ${10 + ratio * 30}px rgba(0, 255, 255, ${ratio}))`;
+                // Bulb Glow (Neon Cyan)
+                bulb.setAttribute('fill', `rgba(70, 215, 255, ${0.1 + ratio * 0.7})`);
+                bulb.setAttribute('stroke', `rgba(70, 215, 255, ${0.5 + ratio * 0.5})`);
+                bulb.style.filter = `drop-shadow(0 0 ${10 + ratio * 30}px rgba(70, 215, 255, ${ratio}))`;
                 filament.setAttribute('stroke', '#ffffff');
 
-                // Flow opacities
                 icFlow.style.opacity = 0.2 + (ratio * 0.8);
-                ibFlow.style.opacity = 0.4 + (ratio * 0.6); // Base current is always somewhat visible if val > 0
+                ibFlow.style.opacity = 0.4 + (ratio * 0.6); 
                 waterDrops.style.opacity = ratio;
-
-                // Flow width
                 icFlow.style.strokeWidth = 2 + (ratio * 4);
                 
             } else {
                 // OFF State
-                bulb.setAttribute('fill', '#111');
-                bulb.setAttribute('stroke', '#555');
+                bulb.setAttribute('fill', '#080f1a');
+                bulb.setAttribute('stroke', '#29445b');
                 bulb.style.filter = 'none';
-                filament.setAttribute('stroke', '#333');
+                filament.setAttribute('stroke', '#29445b');
                 
                 icFlow.style.opacity = 0;
                 ibFlow.style.opacity = 0;
                 waterDrops.style.opacity = 0;
             }
 
-            // --- Status ---
+            // --- Status Box Styling ---
             if (val === 0) {
-                statusDisplay.innerHTML = 'කපා හැරීමේ කලාපය (Cut-off) - ස්විචය OFF';
-                statusDisplay.style.backgroundColor = '#8c0032'; // Dark Red
-                statusDisplay.style.boxShadow = '0 0 15px #8c0032';
+                statusDisplay.innerHTML = 'කපා හැරීමේ කලාපය (Cut-off)<div class="status-sub">ස්විචය OFF - ධාරාවක් නොගලයි</div>';
+                statusDisplay.style.backgroundColor = 'rgba(255, 94, 94, 0.1)';
+                statusDisplay.style.borderColor = 'var(--red)';
+                statusDisplay.style.color = 'var(--red)';
+                statusDisplay.style.boxShadow = '0 0 15px rgba(255, 94, 94, 0.1)';
             } else if (val === 100) {
-                statusDisplay.innerHTML = 'සංතෘප්ත කලාපය (Saturation) - ස්විචය ON';
-                statusDisplay.style.backgroundColor = '#007a33'; // Dark Green
-                statusDisplay.style.boxShadow = '0 0 15px #007a33';
+                statusDisplay.innerHTML = 'සංතෘප්ත කලාපය (Saturation)<div class="status-sub">ස්විචය ON - උපරිම ධාරාව ගලයි</div>';
+                statusDisplay.style.backgroundColor = 'rgba(46, 204, 113, 0.1)';
+                statusDisplay.style.borderColor = 'var(--green)';
+                statusDisplay.style.color = 'var(--green)';
+                statusDisplay.style.boxShadow = '0 0 15px rgba(46, 204, 113, 0.15)';
             } else {
-                statusDisplay.innerHTML = 'සක්‍රීය කලාපය (Active) - වර්ධකයක් ලෙස';
-                statusDisplay.style.backgroundColor = '#a85b00'; // Dark Orange
-                statusDisplay.style.boxShadow = '0 0 15px #a85b00';
+                statusDisplay.innerHTML = 'සක්‍රීය කලාපය (Active)<div class="status-sub">වර්ධකයක් ලෙස ක්‍රියා කරයි</div>';
+                statusDisplay.style.backgroundColor = 'rgba(255, 158, 84, 0.1)';
+                statusDisplay.style.borderColor = 'var(--orange)';
+                statusDisplay.style.color = 'var(--orange)';
+                statusDisplay.style.boxShadow = '0 0 15px rgba(255, 158, 84, 0.1)';
             }
         }
 
-        // Animation Loop for Current Flow (Dots moving)
+        // Animation Loop
         function animateFlow() {
             let val = parseInt(slider.value);
             if(val > 0) {
-                let speed = 0.5 + (val / 25); // Speed increases with slider
+                let speed = 0.5 + (val / 25); 
                 dashOffset -= speed;
                 icFlow.style.strokeDashoffset = dashOffset;
-                // Base current moves a bit slower
                 ibFlow.style.strokeDashoffset = dashOffset * 0.8; 
                 waterDrops.style.strokeDashoffset = dashOffset * 1.5;
             }
             requestAnimationFrame(animateFlow);
         }
 
-        // Listeners
         slider.addEventListener('input', updateSimulation);
         
-        // Init
         updateSimulation();
         animateFlow();
-
     </script>
 </body>
 </html>

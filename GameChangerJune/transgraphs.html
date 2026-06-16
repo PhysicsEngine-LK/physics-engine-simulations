@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Transistor Characteristics Viewer</title>
+<title>Transistor Characteristics Viewer - Interactive</title>
 <style>
     :root {
         --bg: #050a12; --panel: #0d1624; --text: #eff6ff; 
@@ -19,66 +19,121 @@
     h1 { color: var(--cyan); margin: 0 0 10px; font-size: 26px; }
     p.sub { color: var(--muted); margin: 0; max-width: 800px; line-height: 1.5; }
     
-    .dashboard { display: flex; flex-direction: column; gap: 20px; max-width: 900px; width: 100%; align-items: center; }
+    .dashboard { 
+        display: flex; 
+        flex-direction: row; 
+        gap: 25px; 
+        max-width: 1100px; 
+        width: 100%; 
+        align-items: stretch;
+        justify-content: center;
+    }
+    
+    /* Left Panel - Canvas */
+    .left-panel {
+        flex: 2;
+        display: flex;
+        flex-direction: column;
+        min-width: 600px;
+    }
+    .canvas-container { 
+        background: #080f1a; border: 1px solid #1d3145; border-radius: 12px; 
+        padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; height: 100%;
+        position: relative; box-sizing: border-box; cursor: crosshair;
+    }
+    canvas { background: #04070c; border-radius: 8px; display: block; width: 100%; height: 500px; }
+
+    /* Right Panel - Controls and Outputs */
+    .right-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        min-width: 350px;
+    }
     
     .mode-selector { 
-        display: flex; gap: 15px; background: var(--panel); padding: 15px 25px; 
-        border-radius: 12px; border: 1px solid #1a2c3f; flex-wrap: wrap; justify-content: center;
+        display: flex; flex-direction: column; gap: 10px; background: var(--panel); padding: 20px; 
+        border-radius: 12px; border: 1px solid #1a2c3f; 
     }
     button {
         background: #112131; color: var(--text); border: 1px solid #29445b; 
         padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: bold; transition: 0.3s;
+        text-align: left;
     }
     button:hover { background: #1a334a; }
-    button.active { background: #081a24; border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 15px rgba(70, 215, 255, 0.2); }
-
-    .canvas-container { 
-        background: #080f1a; border: 1px solid #1d3145; border-radius: 12px; 
-        padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%;
-        position: relative;
-    }
-    canvas { background: #04070c; border-radius: 8px; display: block; width: 100%; height: 450px; }
+    button.active { background: #081a24; border-color: var(--cyan); color: var(--cyan); box-shadow: inset 5px 0 0 var(--cyan), 0 0 15px rgba(70, 215, 255, 0.1); }
 
     .explanation { 
         background: var(--panel); border: 1px solid #1d3145; border-radius: 12px; padding: 20px;
-        text-align: left; color: var(--text); font-size: 16px; width: 100%; line-height: 1.6;
+        text-align: left; color: var(--text); font-size: 15px; line-height: 1.6; flex-grow: 1;
     }
     .explanation strong { color: var(--yellow); }
     .explanation ul { margin: 10px 0 0 0; padding-left: 20px; color: var(--muted); }
     .explanation li { margin-bottom: 5px; }
 
+    /* Live Interactive Readout Box */
+    .readout-box {
+        background: #04070c; border: 2px solid #29445b; border-radius: 12px; padding: 15px 20px;
+        display: flex; flex-direction: column; gap: 8px;
+    }
+    .readout-title { color: var(--orange); font-size: 14px; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;}
+    .readout-val { color: var(--green); font-size: 22px; font-family: monospace; font-weight: bold; display: flex; align-items: center;}
+    .readout-val sub { font-size: 14px; margin-top: 8px; margin-right: 5px;}
+    .readout-note { color: #555; font-size: 12px; margin-top: 5px; }
+    
 </style>
 </head>
 <body>
 
 <div class="header">
-    <h1>පොදු විමෝචක (CE) ට්‍රාන්සිස්ටරයේ ලාක්ෂණික ප්‍රස්ථාර</h1>
-    <p class="sub">ආදාන, ප්‍රතිදාන සහ සම්ප්‍රේෂණ යන අවස්ථා 3හිදී විභවයන් සහ ධාරාවන් අතර සම්බන්ධය අධ්‍යයනය කරන්න.</p>
+    <h1>PHYSICS ENGINE - පොදු විමෝචක (CE) ලාක්ෂණික වක්‍ර අධ්‍යයනය</h1>
+    <p class="sub">ප්‍රදාන, ප්‍රතිදාන සහ සංක්‍රමණ යන අවස්ථා 3හිදී ට්‍රාන්සිස්ටරයේ හැසිරීම සජීවීව නිරීක්ෂණය කරන්න.</p>
 </div>
 
 <div class="dashboard">
-    <div class="mode-selector">
-        <button id="btn-input" class="active" onclick="setMode('input')">1. ආදාන ලාක්ෂණිකය (Input)</button>
-        <button id="btn-output" onclick="setMode('output')">2. ප්‍රතිදාන ලාක්ෂණිකය (Output)</button>
-        <button id="btn-transfer" onclick="setMode('transfer')">3. සම්ප්‍රේෂණ ලාක්ෂණිකය (Transfer)</button>
-    </div>
-
-    <div class="canvas-container">
-        <canvas id="graphCanvas"></canvas>
-    </div>
-
-    <div class="explanation" id="exp-text">
+    <div class="left-panel">
+        <div class="canvas-container" id="canvas-wrapper">
+            <canvas id="graphCanvas"></canvas>
         </div>
+    </div>
+
+    <div class="right-panel">
+        <div class="mode-selector">
+            <button id="btn-input" class="active" onclick="setMode('input')">1. ප්‍රදාන ලාක්ෂණිකය (Input)</button>
+            <button id="btn-output" onclick="setMode('output')">2. ප්‍රතිදාන ලාක්ෂණිකය (Output)</button>
+            <button id="btn-transfer" onclick="setMode('transfer')">3. සංක්‍රමණ ලාක්ෂණිකය (Transfer)</button>
+        </div>
+        
+        <div class="readout-box">
+            <div class="readout-title">සජීවී දත්ත (Live Tracker)</div>
+            <div class="readout-val" id="val-x">--</div>
+            <div class="readout-val" id="val-y">--</div>
+            <div class="readout-note">වක්‍රය මත මූසිකය (Mouse) ගෙන යන්න</div>
+        </div>
+
+        <div class="explanation" id="exp-text">
+            </div>
+    </div>
 </div>
 
 <script>
 const canvas = document.getElementById('graphCanvas');
 const ctx = canvas.getContext('2d');
+const canvasWrapper = document.getElementById('canvas-wrapper');
+
 let currentMode = 'input';
 
-// Data configs
+// Hover state variables
+let hoverX = null;
+let hoverY = null;
+let isHovering = false;
+
+// Axis mapping configurations
+let axisConfig = { maxX: 1, maxY: 1, labelX: "", labelY: "", unitX: "", unitY: "" };
+
 const cfg = {
-    margin: { top: 30, right: 30, bottom: 60, left: 70 },
+    margin: { top: 40, right: 30, bottom: 60, left: 80 },
     get w() { return canvas.width / (window.devicePixelRatio || 1) - this.margin.left - this.margin.right; },
     get h() { return canvas.height / (window.devicePixelRatio || 1) - this.margin.top - this.margin.bottom; }
 };
@@ -87,11 +142,62 @@ function setupCanvas() {
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr; // 450px from CSS
+    canvas.height = rect.height * dpr; // 500px from CSS
     ctx.scale(dpr, dpr);
     drawGraph();
 }
 window.addEventListener('resize', setupCanvas);
+
+// ---- Custom Text Renderer for Subscripts (e.g. V_CE -> V sub CE) ----
+function drawRichText(ctx, text, x, y, align = 'left', baseline = 'alphabetic') {
+    ctx.save();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = baseline;
+    
+    let tokens = [];
+    let current = "";
+    
+    for(let i = 0; i < text.length; i++) {
+        if(text[i] === '_') {
+            if(current) tokens.push({text: current, sub: false});
+            current = "";
+            let subStr = "";
+            i++;
+            while(i < text.length && text[i] !== ' ' && text[i] !== '=') {
+                subStr += text[i];
+                i++;
+            }
+            tokens.push({text: subStr, sub: true});
+            i--; 
+        } else {
+            current += text[i];
+        }
+    }
+    if(current) tokens.push({text: current, sub: false});
+    
+    let baseFont = ctx.font;
+    let subFont = baseFont.replace(/(\d+)px/, (m, p1) => Math.round(p1 * 0.75) + "px"); 
+    
+    let totalW = 0;
+    tokens.forEach(t => {
+        ctx.font = t.sub ? subFont : baseFont;
+        totalW += ctx.measureText(t.text).width;
+    });
+    
+    let startX = x;
+    if(align === 'center') startX = x - totalW/2;
+    if(align === 'right') startX = x - totalW;
+    
+    let currentX = startX;
+    tokens.forEach(t => {
+        ctx.font = t.sub ? subFont : baseFont;
+        let yOffset = t.sub ? 5 : 0; 
+        ctx.fillText(t.text, currentX, y + yOffset);
+        currentX += ctx.measureText(t.text).width;
+    });
+    
+    ctx.restore();
+}
 
 function mapXY(x, y, maxX, maxY) {
     return {
@@ -104,26 +210,22 @@ function drawAxes(xLabel, yLabel, maxX, maxY, xStep, yStep) {
     ctx.strokeStyle = '#29445b'; ctx.lineWidth = 2;
     const origin = mapXY(0, 0, maxX, maxY);
     
-    // Y-Axis
-    ctx.beginPath(); ctx.moveTo(origin.cx, origin.cy); ctx.lineTo(origin.cx, cfg.margin.top - 10); ctx.stroke();
-    // X-Axis
-    ctx.beginPath(); ctx.moveTo(origin.cx, origin.cy); ctx.lineTo(origin.cx + cfg.w + 10, origin.cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(origin.cx, origin.cy); ctx.lineTo(origin.cx, cfg.margin.top - 20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(origin.cx, origin.cy); ctx.lineTo(origin.cx + cfg.w + 20, origin.cy); ctx.stroke();
 
-    // Arrows
     ctx.fillStyle = '#29445b';
-    ctx.beginPath(); ctx.moveTo(origin.cx - 5, cfg.margin.top - 10); ctx.lineTo(origin.cx + 5, cfg.margin.top - 10); ctx.lineTo(origin.cx, cfg.margin.top - 20); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(origin.cx + cfg.w + 10, origin.cy - 5); ctx.lineTo(origin.cx + cfg.w + 10, origin.cy + 5); ctx.lineTo(origin.cx + cfg.w + 20, origin.cy); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(origin.cx - 5, cfg.margin.top - 20); ctx.lineTo(origin.cx + 5, cfg.margin.top - 20); ctx.lineTo(origin.cx, cfg.margin.top - 30); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(origin.cx + cfg.w + 20, origin.cy - 5); ctx.lineTo(origin.cx + cfg.w + 20, origin.cy + 5); ctx.lineTo(origin.cx + cfg.w + 30, origin.cy); ctx.fill();
 
-    // Labels
-    ctx.fillStyle = '#46d7ff'; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'center';
-    ctx.fillText(xLabel, origin.cx + cfg.w / 2, origin.cy + 45);
+    ctx.fillStyle = '#46d7ff'; ctx.font = 'bold 16px Arial';
+    drawRichText(ctx, xLabel, origin.cx + cfg.w / 2, origin.cy + 45, 'center');
+    
     ctx.save();
-    ctx.translate(origin.cx - 45, origin.cy - cfg.h / 2);
+    ctx.translate(origin.cx - 50, origin.cy - cfg.h / 2);
     ctx.rotate(-Math.PI / 2);
-    ctx.fillText(yLabel, 0, 0);
+    drawRichText(ctx, yLabel, 0, 0, 'center', 'middle');
     ctx.restore();
 
-    // Ticks & Grid
     ctx.font = '12px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
     ctx.strokeStyle = '#1d3145'; ctx.lineWidth = 1;
 
@@ -146,119 +248,166 @@ function drawAxes(xLabel, yLabel, maxX, maxY, xStep, yStep) {
 }
 
 function drawInput() {
-    const maxX = 1.0, maxY = 100; // V_BE, I_B
-    drawAxes("V_BE (V) - ආදාන විභවය", "I_B (μA) - පාදම ධාරාව", maxX, maxY, 0.2, 20);
+    axisConfig = { maxX: 1.0, maxY: 100, labelX: "V_BE", labelY: "I_B", unitX: "V", unitY: "μA" };
+    drawAxes("V_BE (V) - ප්‍රදාන විභවය", "I_B (μA) - පාදම ධාරාව", axisConfig.maxX, axisConfig.maxY, 0.2, 20);
 
-    // Diode Curve
     ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 3;
     ctx.shadowColor = '#2ecc71'; ctx.shadowBlur = 10;
     ctx.beginPath();
     for (let v = 0; v <= 0.85; v += 0.01) {
         let i = 0;
-        if (v > 0.6) i = Math.pow((v - 0.6) * 4, 3) * 100; // Pseudo exponential
-        if (i > maxY) i = maxY;
-        let p = mapXY(v, i, maxX, maxY);
+        if (v > 0.6) i = Math.pow((v - 0.6) * 4, 3) * 100; 
+        if (i > axisConfig.maxY) i = axisConfig.maxY;
+        let p = mapXY(v, i, axisConfig.maxX, axisConfig.maxY);
         if (v === 0) ctx.moveTo(p.cx, p.cy);
         else ctx.lineTo(p.cx, p.cy);
     }
     ctx.stroke(); ctx.shadowBlur = 0;
 
-    // Cut-in marker
-    let pCut = mapXY(0.7, 0, maxX, maxY);
+    let pCut = mapXY(0.7, 0, axisConfig.maxX, axisConfig.maxY);
     ctx.strokeStyle = '#ff9e54'; ctx.lineWidth = 2; ctx.setLineDash([5,5]);
     ctx.beginPath(); ctx.moveTo(pCut.cx, pCut.cy); ctx.lineTo(pCut.cx, pCut.cy - cfg.h); ctx.stroke(); ctx.setLineDash([]);
     
-    ctx.fillStyle = '#ff9e54'; ctx.textAlign = 'left'; ctx.font = 'bold 14px Arial';
+    ctx.fillStyle = '#ff9e54'; ctx.font = 'bold 14px Arial';
     ctx.fillText("කඩඉම් වෝල්ටීයතාව (~0.7V)", pCut.cx + 10, pCut.cy - 50);
 }
 
 function drawOutput() {
-    const maxX = 10, maxY = 10; // V_CE, I_C
+    axisConfig = { maxX: 10, maxY: 10, labelX: "V_CE", labelY: "I_C", unitX: "V", unitY: "mA" };
+    const origin = mapXY(0, 0, axisConfig.maxX, axisConfig.maxY);
+    const pSat = mapXY(0.5, 0, axisConfig.maxX, axisConfig.maxY);
     
-    // Draw Zones first (Background)
-    const origin = mapXY(0, 0, maxX, maxY);
-    const pSat = mapXY(0.5, 0, maxX, maxY);
-    
-    // Saturation Zone
     ctx.fillStyle = 'rgba(255, 94, 94, 0.15)'; 
     ctx.fillRect(origin.cx, cfg.margin.top, pSat.cx - origin.cx, cfg.h);
     ctx.fillStyle = '#ff5e5e'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center';
     ctx.save(); ctx.translate(origin.cx + 25, cfg.margin.top + cfg.h/2); ctx.rotate(-Math.PI/2);
     ctx.fillText("සංතෘප්ත කලාපය", 0, 0); ctx.restore();
 
-    // Cut-off Zone
-    const pCut = mapXY(0, 0.5, maxX, maxY); // Y=0.5mA line
+    const pCut = mapXY(0, 0.5, axisConfig.maxX, axisConfig.maxY);
     ctx.fillStyle = 'rgba(156, 175, 195, 0.2)';
     ctx.fillRect(origin.cx, pCut.cy, cfg.w, origin.cy - pCut.cy);
-    ctx.fillStyle = '#9cafc3'; ctx.textAlign = 'center';
-    ctx.fillText("කපා හැරීමේ කලාපය (I_B = 0)", origin.cx + cfg.w/2, origin.cy - 10);
+    ctx.fillStyle = '#9cafc3'; ctx.font = 'bold 14px Arial';
+    drawRichText(ctx, "කපා හැරීමේ කලාපය (I_B = 0)", origin.cx + cfg.w/2, origin.cy - 10, 'center');
 
-    // Active Zone Label
     ctx.fillStyle = '#2ecc71'; ctx.font = 'bold 16px Arial';
     ctx.fillText("සක්‍රීය කලාපය (Active Region)", origin.cx + cfg.w/2 + 50, cfg.margin.top + 40);
 
-    drawAxes("V_CE (V) - සංග්‍රාහක විභවය", "I_C (mA) - සංග්‍රාහක ධාරාව", maxX, maxY, 2, 2);
+    drawAxes("V_CE (V) - සංග්‍රාහක විභවය", "I_C (mA) - සංග්‍රාහක ධාරාව", axisConfig.maxX, axisConfig.maxY, 2, 2);
 
-    // Family of Curves
     const iBs = [20, 40, 60, 80];
     const beta = 100;
     const colors = ['#46d7ff', '#b88bff', '#ffd055', '#2ecc71'];
 
     iBs.forEach((ib, index) => {
-        let ic_target = (ib * beta) / 1000; // mA
+        let ic_target = (ib * beta) / 1000; 
         ctx.strokeStyle = colors[index]; ctx.lineWidth = 3;
         ctx.beginPath();
-        // Knee point (~0.5V V_CE)
-        let p0 = mapXY(0, 0, maxX, maxY);
-        let pKnee = mapXY(0.5, ic_target, maxX, maxY);
-        let pEnd = mapXY(maxX, ic_target + 0.5, maxX, maxY); // Slight slope (Early effect)
+        let p0 = mapXY(0, 0, axisConfig.maxX, axisConfig.maxY);
+        let pKnee = mapXY(0.5, ic_target, axisConfig.maxX, axisConfig.maxY);
+        let pEnd = mapXY(axisConfig.maxX, ic_target + 0.5, axisConfig.maxX, axisConfig.maxY); 
         
         ctx.moveTo(p0.cx, p0.cy);
         ctx.quadraticCurveTo(pKnee.cx - 10, pKnee.cy, pKnee.cx, pKnee.cy);
         ctx.lineTo(pEnd.cx, pEnd.cy);
         ctx.stroke();
 
-        // Label
-        ctx.fillStyle = colors[index]; ctx.textAlign = 'left'; ctx.font = '12px Arial';
-        ctx.fillText(`I_B = ${ib}μA`, pEnd.cx + 5, pEnd.cy);
+        ctx.fillStyle = colors[index]; ctx.font = 'bold 12px Arial';
+        drawRichText(ctx, `I_B = ${ib}μA`, pEnd.cx + 10, pEnd.cy, 'left', 'middle');
     });
 }
 
 function drawTransfer() {
-    const maxX = 100, maxY = 10; // I_B, I_C
-    drawAxes("I_B (μA) - පාදම ධාරාව", "I_C (mA) - සංග්‍රාහක ධාරාව", maxX, maxY, 20, 2);
+    axisConfig = { maxX: 100, maxY: 10, labelX: "I_B", labelY: "I_C", unitX: "μA", unitY: "mA" };
+    drawAxes("I_B (μA) - ප්‍රදාන ධාරාව", "I_C (mA) - සංග්‍රාහක ධාරාව", axisConfig.maxX, axisConfig.maxY, 20, 2);
 
     ctx.strokeStyle = '#b88bff'; ctx.lineWidth = 3;
     ctx.shadowColor = '#b88bff'; ctx.shadowBlur = 10;
     
-    let p0 = mapXY(0, 0, maxX, maxY);
-    let pEnd = mapXY(100, 10, maxX, maxY);
+    let p0 = mapXY(0, 0, axisConfig.maxX, axisConfig.maxY);
+    let pEnd = mapXY(100, 10, axisConfig.maxX, axisConfig.maxY);
     
     ctx.beginPath(); ctx.moveTo(p0.cx, p0.cy); ctx.lineTo(pEnd.cx, pEnd.cy); ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // Slope Triangle
-    let p1 = mapXY(40, 4, maxX, maxY);
-    let p2 = mapXY(80, 4, maxX, maxY);
-    let p3 = mapXY(80, 8, maxX, maxY);
+    let p1 = mapXY(40, 4, axisConfig.maxX, axisConfig.maxY);
+    let p2 = mapXY(80, 4, axisConfig.maxX, axisConfig.maxY);
+    let p3 = mapXY(80, 8, axisConfig.maxX, axisConfig.maxY);
     
     ctx.strokeStyle = '#ffd055'; ctx.lineWidth = 2; ctx.setLineDash([5,5]);
     ctx.beginPath(); ctx.moveTo(p1.cx, p1.cy); ctx.lineTo(p2.cx, p2.cy); ctx.lineTo(p3.cx, p3.cy); ctx.stroke();
     ctx.setLineDash([]);
     
-    ctx.fillStyle = '#ffd055'; ctx.textAlign = 'left'; ctx.font = '14px Arial';
-    ctx.fillText("ΔI_B", p1.cx + 40, p1.cy + 15);
-    ctx.fillText("ΔI_C", p2.cx + 10, p2.cy - 30);
+    ctx.fillStyle = '#ffd055'; ctx.font = 'bold 14px Arial';
+    drawRichText(ctx, "ΔI_B", p1.cx + 40, p1.cy + 15, 'center');
+    drawRichText(ctx, "ΔI_C", p2.cx + 10, p2.cy - 30, 'left');
     
     ctx.font = 'bold 16px Arial';
-    ctx.fillText("අනුක්‍රමණය = ධාරා ලාභය (β)", p2.cx + 20, p1.cy + 30);
+    ctx.fillText("අනුක්‍රමණය = ධාරා ලාභය (β)", p2.cx + 20, p1.cy + 40);
 }
+
+// ---- INTERACTIVE HOVER TRACKING ----
+function drawHoverOverlay() {
+    if (!isHovering) return;
+
+    // Use raw mouse coordinates since context scaling aligns 1:1 with CSS pixels
+    let logicalX = hoverX;
+    let logicalY = hoverY;
+
+    if (logicalX >= cfg.margin.left && logicalX <= cfg.margin.left + cfg.w &&
+        logicalY >= cfg.margin.top && logicalY <= cfg.margin.top + cfg.h) {
+        
+        let dataX = ((logicalX - cfg.margin.left) / cfg.w) * axisConfig.maxX;
+        let dataY = ((cfg.margin.top + cfg.h - logicalY) / cfg.h) * axisConfig.maxY;
+
+        ctx.strokeStyle = 'rgba(70, 215, 255, 0.7)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(cfg.margin.left, logicalY); ctx.lineTo(logicalX, logicalY); 
+        ctx.moveTo(logicalX, cfg.margin.top + cfg.h); ctx.lineTo(logicalX, logicalY); 
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#ffd055';
+        ctx.beginPath(); ctx.arc(logicalX, logicalY, 4, 0, Math.PI*2); ctx.fill();
+
+        const formatHTML = (str) => {
+            const parts = str.split('_');
+            if(parts.length > 1) return `${parts[0]}<sub>${parts[1]}</sub>`;
+            return str;
+        };
+
+        document.getElementById('val-x').innerHTML = `<span style="color:#fff; font-size:16px; margin-right:8px;">${formatHTML(axisConfig.labelX)} : </span> ${dataX.toFixed(2)} <span style="font-size:14px; color:#888;">${axisConfig.unitX}</span>`;
+        document.getElementById('val-y').innerHTML = `<span style="color:#fff; font-size:16px; margin-right:8px;">${formatHTML(axisConfig.labelY)} : </span> ${dataY.toFixed(2)} <span style="font-size:14px; color:#888;">${axisConfig.unitY}</span>`;
+    } else {
+        document.getElementById('val-x').innerHTML = `--`;
+        document.getElementById('val-y').innerHTML = `--`;
+    }
+}
+
+// Mouse Events attached directly to canvas
+canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    hoverX = e.clientX - rect.left;
+    hoverY = e.clientY - rect.top;
+    isHovering = true;
+    drawGraph();
+});
+
+canvas.addEventListener('mouseleave', () => {
+    isHovering = false;
+    document.getElementById('val-x').innerHTML = `--`;
+    document.getElementById('val-y').innerHTML = `--`;
+    drawGraph();
+});
 
 function drawGraph() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (currentMode === 'input') drawInput();
     else if (currentMode === 'output') drawOutput();
     else if (currentMode === 'transfer') drawTransfer();
+    
+    drawHoverOverlay();
 }
 
 window.setMode = function(newMode) {
@@ -270,12 +419,16 @@ window.setMode = function(newMode) {
     
     let exp = document.getElementById('exp-text');
     if (currentMode === 'input') {
-        exp.innerHTML = "<strong>1. ආදාන ලාක්ෂණිකය:</strong> මෙහිදී V<sub>CE</sub> නියතව තබා, ආදාන විභවය (V<sub>BE</sub>) වෙනස් කරන විට ආදාන ධාරාව (I<sub>B</sub>) හැසිරෙන අයුරු පෙන්වයි. මෙය පෙර නැඹුරු කළ P-N සන්ධියක ප්‍රස්ථාරයට සමාන වන අතර <strong>0.7V කඩඉම් වෝල්ටීයතාවයෙන්</strong> පසු ධාරාව ගැලීම අරඹයි.";
+        exp.innerHTML = "<strong>1. ප්‍රදාන ලාක්ෂණිකය:</strong> මෙහිදී V<sub>CE</sub> නියතව තබා, ප්‍රදාන විභවය (V<sub>BE</sub>) වෙනස් කරන විට ප්‍රදාන ධාරාව (I<sub>B</sub>) හැසිරෙන අයුරු පෙන්වයි. මෙය පෙර නැඹුරු කළ P-N සන්ධියක වක්‍රයට සමාන වන අතර <strong>0.7V කඩඉම් වෝල්ටීයතාවයෙන්</strong> පසු ධාරාව ගැලීම අරඹයි.";
     } else if (currentMode === 'output') {
-        exp.innerHTML = "<strong>2. ප්‍රතිදාන ලාක්ෂණිකය:</strong> මෙය ට්‍රාන්සිස්ටරයේ වැදගත්ම ප්‍රස්ථාරයයි. මෙහි කලාප 3ක් දැකිය හැක:<br><ul><li><strong>සංතෘප්ත කලාපය (Saturation):</strong> V<sub>CE</sub> අගය 0.5V ට වඩා කුඩා, ප්‍රස්ථාරය සීඝ්‍රයෙන් ඉහළ යන වම්පස තීරුව. (ස්විචය ON)</li><li><strong>සක්‍රීය කලාපය (Active):</strong> V<sub>CE</sub> වෙනස් වුවද I<sub>C</sub> නියතව පවතින මැද තිරස් කලාපය. මෙහිදී I<sub>C</sub> රඳා පවතින්නේ I<sub>B</sub> මත පමණි. (වර්ධකයකි)</li><li><strong>කපා හැරීමේ කලාපය (Cut-off):</strong> I<sub>B</sub> = 0 වන පහළම තිරස් රේඛාව. (ස්විචය OFF)</li></ul>";
+        exp.innerHTML = "<strong>2. ප්‍රතිදාන ලාක්ෂණිකය:</strong> මෙය ට්‍රාන්සිස්ටරයේ වැදගත්ම වක්‍රයයි. මෙහි කලාප 3ක් දැකිය හැක:<br><ul><li><strong>සංතෘප්ත කලාපය (Saturation):</strong> V<sub>CE</sub> අගය 0.5V ට වඩා කුඩා, වක්‍රය සීඝ්‍රයෙන් ඉහළ යන වම්පස තීරුව. (ස්විචය ON)</li><li><strong>සක්‍රීය කලාපය (Active):</strong> V<sub>CE</sub> වෙනස් වුවද I<sub>C</sub> නියතව පවතින මැද තිරස් කලාපය. මෙහිදී I<sub>C</sub> රඳා පවතින්නේ I<sub>B</sub> මත පමණි. (වර්ධකයකි)</li><li><strong>කපා හැරීමේ කලාපය (Cut-off):</strong> I<sub>B</sub> = 0 වන පහළම තිරස් රේඛාව. (ස්විචය OFF)</li></ul>";
     } else {
-        exp.innerHTML = "<strong>3. සම්ප්‍රේෂණ ලාක්ෂණිකය:</strong> සක්‍රීය කලාපයේදී ආදාන ධාරාව (I<sub>B</sub>) සහ ප්‍රතිදාන ධාරාව (I<sub>C</sub>) අතර ඇති සමානුපාතික සම්බන්ධය මින් පෙන්වයි. මෙහි සරල රේඛාවේ <strong>අනුක්‍රමණය මගින් ධාරා ලාභය (β)</strong> ලබා දේ.";
+        exp.innerHTML = "<strong>3. සංක්‍රමණ ලාක්ෂණිකය:</strong> සක්‍රීය කලාපයේදී ප්‍රදාන ධාරාව (I<sub>B</sub>) සහ ප්‍රතිදාන ධාරාව (I<sub>C</sub>) අතර ඇති සමානුපාතික සම්බන්ධය මින් පෙන්වයි. මෙහි සරල රේඛාවේ <strong>අනුක්‍රමණය මගින් ධාරා ලාභය (β)</strong> ලබා දේ.";
     }
+    
+    isHovering = false;
+    document.getElementById('val-x').innerHTML = `--`;
+    document.getElementById('val-y').innerHTML = `--`;
     drawGraph();
 };
 
