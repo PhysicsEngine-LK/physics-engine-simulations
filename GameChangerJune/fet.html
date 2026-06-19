@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>N-Channel JFET - Accurate Locus Tracking</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+  :root {
+    --bg: #0b0e14;
+    --panel: #151a22;
+    --panel-2: #1e2532;
+    --line: #2a3441;
+    --ink: #e2e8f0;
+    --ink-dim: #94a3b8;
+    --cyan: #38bdf8;
+    --green: #4ade80;
+    --orange: #fb923c;
+    --red: #f87171;
+    --pink: #ffbdfa;
+    --depletion: #c785b4;
+    --yellow: #fff48f;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px;
+    background: var(--bg); color: var(--ink);
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    min-height: 100vh;
+  }
+
+  .header {
+    text-align: center; margin-bottom: 20px;
+    border-bottom: 2px solid var(--line); padding-bottom: 15px;
+  }
+  .header h1 { margin: 0; font-size: 24px; color: var(--cyan); letter-spacing: 1px;}
+  .header p { margin: 5px 0 0; color: var(--ink-dim); font-size: 14px; }
+
+  .grid-container {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .grid-container { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; padding: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+  }
+  .panel h2 { margin: 0 0 15px; font-size: 16px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 1px; }
+
+  .visual-wrapper {
+    background: #ffffff; 
+    border-radius: 6px; padding: 10px; overflow: hidden;
+    display: flex; justify-content: center;
+  }
+  svg#device { width: 100%; max-width: 500px; height: auto; }
+
+  .controls-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;
+  }
+  .knob-box {
+    background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 6px; padding: 15px;
+  }
+  .knob-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
+  .knob-head .name { font-size: 14px; font-weight: bold; color: var(--ink); }
+  .knob-head .val { font-size: 18px; font-weight: bold; color: var(--cyan); font-family: 'JetBrains Mono', monospace;}
+  
+  input[type=range] {
+    width: 100%; -webkit-appearance: none; height: 6px; background: #0f131a; border-radius: 3px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--cyan); cursor: pointer;
+  }
+  #vds::-webkit-slider-thumb { background: var(--orange); }
+  .knob-note { font-size: 11px; color: var(--ink-dim); margin-top: 8px; line-height: 1.4;}
+
+  .readout-row { display: flex; gap: 15px; margin-bottom: 20px; }
+  .readout {
+    flex: 1; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px;
+    padding: 12px; text-align: center;
+  }
+  .readout .lbl { font-size: 11px; color: var(--ink-dim); text-transform: uppercase; margin-bottom: 5px; }
+  .readout .val { font-size: 24px; font-weight: bold; color: var(--green); font-family: 'JetBrains Mono', monospace;}
+  .readout.region .val { font-size: 16px; margin-top: 5px; color: var(--orange); }
+
+  .graph-wrapper {
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px;
+    padding: 15px; position: relative;
+  }
+  svg#curve { width: 100%; height: auto; }
+
+  .legend-box {
+    display: flex; justify-content: center; gap: 20px; font-size: 12px; color: var(--ink-dim); margin-top: 15px;
+  }
+  .legend-box span { display: flex; align-items: center; gap: 5px; }
+  
+  .explanation { 
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 15px;
+    text-align: left; color: var(--ink); font-size: 14px; line-height: 1.5; margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>N-Channel JFET සම්පූර්ණ විශ්ලේෂකය</h1>
+  <p>හායිත පෙදෙසෙහි සත්‍ය හැසිරීම සහ ලාක්ෂණික ප්‍රස්ථාරයේ කෙනෙහුම් වක්‍රය (Pinch-off Locus) සජීවීව නිරීක්ෂණය කරන්න.</p>
+</div>
+
+<div class="grid-container">
+  
+  <div class="panel">
+    <h2>JFET අභ්‍යන්තර හරස්කඩ</h2>
+    <div class="visual-wrapper">
+      <svg id="device" viewBox="0 0 500 550" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrowHead" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto">
+            <path d="M 0 0 L 8 4 L 0 8 Z" fill="#000" />
+          </marker>
+          <marker id="redArrow" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto">
+            <path d="M 0 0 L 8 4 L 0 8 Z" fill="#ff0000" />
+          </marker>
+        </defs>
+
+        <polyline points="250,50 250,90" fill="none" stroke="#000" stroke-width="2"/>
+        <polyline points="250,450 250,490" fill="none" stroke="#000" stroke-width="2"/>
+        <polyline points="100,270 50,270" fill="none" stroke="#000" stroke-width="2"/>
+        <polyline points="400,270 450,270 450,80 250,80" fill="none" stroke="#000" stroke-width="1.5"/>
+        <polyline points="100,270 100,470 250,470" fill="none" stroke="#000" stroke-width="1.5"/>
+        
+        <circle cx="250" cy="50" r="4" fill="#fff" stroke="#000" stroke-width="2"/>
+        <text x="235" y="55" font-family="Arial" font-size="18" font-weight="bold" fill="#000">D</text>
+
+        <circle cx="250" cy="490" r="4" fill="#fff" stroke="#000" stroke-width="2"/>
+        <text x="235" y="495" font-family="Arial" font-size="18" font-weight="bold" fill="#000">S</text>
+
+        <circle cx="50" cy="270" r="4" fill="#fff" stroke="#000" stroke-width="2"/>
+        <text x="30" y="275" font-family="Arial" font-size="18" font-weight="bold" fill="#000">G</text>
+
+        <g transform="translate(425, 270)">
+          <line x1="10" y1="-20" x2="10" y2="20" stroke="#000" stroke-width="2"/>
+          <line x1="20" y1="-10" x2="20" y2="10" stroke="#000" stroke-width="4"/>
+          <line x1="0" y1="20" x2="30" y2="-20" stroke="#000" stroke-width="1.5" marker-end="url(#arrowHead)"/>
+          <text x="30" y="5" font-family="Arial" font-size="14" font-weight="bold">V<tspan font-size="10" dy="5">DD</tspan></text>
+          <text x="0" y="-20" font-family="Arial" font-size="16" font-weight="bold">+</text>
+          <text x="25" y="20" font-family="Arial" font-size="18" font-weight="bold">-</text>
+        </g>
+
+        <text x="50" y="250" font-family="Arial" font-size="16" font-weight="bold" fill="#000" id="svg-vgs-lbl">V<tspan font-size="12" dy="4">GS</tspan><tspan dy="-4"> = 0V</tspan></text>
+
+        <rect x="150" y="90" width="200" height="360" fill="var(--pink)" stroke="#000" stroke-width="2"/>
+        
+        <text x="320" y="140" font-family="Arial" font-size="16" font-weight="bold" fill="#000">n - නාලිකාව</text>
+        <path d="M 320 145 L 280 180" stroke="#000" stroke-width="1.5" marker-end="url(#arrowHead)"/>
+
+        <path id="depLeft" d="" fill="var(--depletion)" stroke="#000" stroke-width="1.5" stroke-dasharray="5,4"/>
+        <path id="depRight" d="" fill="var(--depletion)" stroke="#000" stroke-width="1.5" stroke-dasharray="5,4"/>
+
+        <rect x="150" y="170" width="40" height="200" fill="var(--yellow)" stroke="#000" stroke-width="2"/>
+        <rect x="310" y="170" width="40" height="200" fill="var(--yellow)" stroke="#000" stroke-width="2"/>
+        
+        <text x="170" y="275" font-family="Arial" font-size="18" font-weight="bold" fill="#000" text-anchor="middle">p</text>
+        <text x="330" y="275" font-family="Arial" font-size="18" font-weight="bold" fill="#000" text-anchor="middle">p</text>
+
+        <text x="135" y="150" font-family="Arial" font-size="16" font-weight="bold" fill="#000" text-anchor="end">හායිත</text>
+        <text x="135" y="175" font-family="Arial" font-size="16" font-weight="bold" fill="#000" text-anchor="end">පෙදෙස</text>
+        <path id="lblArrowL" d="" stroke="#000" stroke-width="1.5" marker-end="url(#arrowHead)"/>
+        <path id="lblArrowR" d="" stroke="#000" stroke-width="1.5" marker-end="url(#arrowHead)"/>
+
+        <line x1="250" y1="45" x2="250" y2="70" stroke="#ff0000" stroke-width="2" marker-end="url(#redArrow)"/>
+        <text x="260" y="65" font-family="Arial" font-size="14" font-weight="bold" fill="#ff0000">I<tspan font-size="10" dy="4">D</tspan></text>
+
+        <line x1="250" y1="460" x2="250" y2="480" stroke="#ff0000" stroke-width="2" marker-end="url(#redArrow)"/>
+        <text x="260" y="475" font-family="Arial" font-size="14" font-weight="bold" fill="#ff0000">I<tspan font-size="10" dy="4">S</tspan></text>
+
+        <line x1="250" y1="490" x2="250" y2="520" stroke="#000" stroke-width="2"/>
+        <line x1="230" y1="520" x2="270" y2="520" stroke="#000" stroke-width="2"/>
+        <line x1="235" y1="525" x2="265" y2="525" stroke="#000" stroke-width="2"/>
+        <line x1="242" y1="530" x2="258" y2="530" stroke="#000" stroke-width="2"/>
+
+        <g id="electrons"></g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="panel">
+    
+    <div class="controls-grid">
+      <div class="knob-box">
+        <div class="knob-head">
+          <div class="name">V<sub>GS</sub> (ද්වාර විභවය)</div>
+          <div class="val" id="vgsVal" style="color:var(--cyan);">0.0V</div>
+        </div>
+        <input type="range" id="vgs" min="-4" max="0" step="0.1" value="0">
+        <div class="knob-note">සෘණ විභවය වැඩි කරන විට සමස්ත හායිත පෙදෙසම විශාල වී පාර අවහිර වේ.</div>
+      </div>
+
+      <div class="knob-box">
+        <div class="knob-head">
+          <div class="name">V<sub>DS</sub> (සොරොව් විභවය)</div>
+          <div class="val" id="vdsVal" style="color:var(--orange);">2.0V</div>
+        </div>
+        <input type="range" id="vds" min="0" max="10" step="0.1" value="2">
+        <div class="knob-note">මෙය වැඩි වන විට නාලිකාවේ ඉහළින් පමණක් හායිත පෙදෙස විශාල වේ.</div>
+      </div>
+    </div>
+
+    <div class="readout-row">
+      <div class="readout">
+        <div class="lbl">සොරොව් ධාරාව (I<sub>D</sub>)</div>
+        <div class="val" id="idVal">-- mA</div>
+      </div>
+      <div class="readout region">
+        <div class="lbl">ක්‍රියාකාරී කලාපය</div>
+        <div class="val" id="regionVal" style="font-weight:bold;">OHMIC</div>
+      </div>
+    </div>
+
+    <div class="graph-wrapper">
+      <svg id="curve" viewBox="0 0 450 260" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="legend-box">
+        <span><svg width="12" height="12"><circle cx="6" cy="6" r="5" fill="var(--orange)" stroke="#fff" stroke-width="1.5"/></svg> ක්‍රියාකාරී ලක්ෂ්‍යය</span>
+        <span><svg width="12" height="12"><circle cx="6" cy="6" r="4" fill="var(--panel-2)" stroke="var(--cyan)" stroke-width="2"/></svg> කෙනෙහුම් ලක්ෂ්‍යය (Pinch-off)</span>
+      </div>
+    </div>
+
+    <div class="explanation" id="exp-text"></div>
+
+  </div>
+
+</div>
+
+<script>
+(function() {
+  const vgsSlider = document.getElementById('vgs');
+  const vdsSlider = document.getElementById('vds');
+  const vgsVal = document.getElementById('vgsVal');
+  const vdsVal = document.getElementById('vdsVal');
+  const idVal = document.getElementById('idVal');
+  const regionVal = document.getElementById('regionVal');
+  const svgVgsLbl = document.getElementById('svg-vgs-lbl');
+  
+  const depLeft = document.getElementById('depLeft');
+  const depRight = document.getElementById('depRight');
+  const electronsG = document.getElementById('electrons');
+  const curveSvg = document.getElementById('curve');
+  const expText = document.getElementById('exp-text');
+
+  const VP = -4; 
+  const IDSS = 10; 
+
+  const chTop = 90, chBot = 450, chLeft = 150, chRight = 350;
+  const gTop = 170, gBot = 370, gW = 40;
+  
+  const lG_inner = chLeft + gW; 
+  const rG_inner = chRight - gW; 
+  const maxHalf = (rG_inner - lG_inner) / 2; 
+  const overhang = 20;
+
+  function calculateState(vgs, vds) {
+    vgs = Math.max(VP, Math.min(0, vgs));
+    let id = 0; let region = ''; let vdsSat = vgs - VP; 
+
+    if (vgs <= VP) {
+      id = 0; region = 'කපා හැරීම (Cut-off)';
+    } else if (vds < vdsSat) {
+      let k = IDSS / (VP * VP);
+      id = 2 * k * ((vgs - VP) * vds - (vds * vds) / 2);
+      if(id < 0) id = 0;
+      region = 'ඕමික (Ohmic)';
+    } else {
+      id = IDSS * Math.pow(1 - vgs/VP, 2);
+      region = 'සන්තෘප්ත (Saturation)';
+    }
+    return { id, region, vdsSat };
+  }
+
+  function getDepletionWidths(vgs, vds) {
+    const vgsClamped = Math.max(VP, Math.min(0, vgs));
+    const vgd = vgsClamped - vds; 
+
+    let fracBot = Math.sqrt(Math.abs(vgsClamped / VP));
+    let fracTop = Math.sqrt(Math.abs(vgd / VP));
+
+    if (vgsClamped > VP) {
+      if (fracTop > 0.82) fracTop = 0.82; 
+    } else {
+      fracTop = 1.0; 
+      fracBot = 1.0;
+    }
+    
+    if (fracBot > 1) fracBot = 1;
+    if (fracTop > 1) fracTop = 1;
+
+    return { fracTop, fracBot };
+  }
+
+  let electrons = [];
+  const N_ELECTRONS = 12;
+  function initElectrons() {
+    electronsG.innerHTML = '';
+    for(let i=0; i<N_ELECTRONS; i++) {
+      let g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      
+      let text = document.createElementNS('http://www.w3.org/2000/svg','text');
+      text.setAttribute('font-family','Arial');
+      text.setAttribute('font-size','15');
+      text.setAttribute('font-weight','bold');
+      text.setAttribute('fill','#000');
+      text.setAttribute('text-anchor','middle');
+      text.textContent = 'e';
+
+      let arrow = document.createElementNS('http://www.w3.org/2000/svg','path');
+      arrow.setAttribute('d','M -4 -16 L 0 -22 L 4 -16 M 0 -11 L 0 -22');
+      arrow.setAttribute('stroke','#000');
+      arrow.setAttribute('stroke-width','2');
+      arrow.setAttribute('fill','none');
+
+      g.appendChild(text);
+      g.appendChild(arrow);
+      electronsG.appendChild(g);
+      
+      electrons.push({ el: g, t: i/N_ELECTRONS, xOffset: (Math.random() - 0.5) });
+    }
+  }
+  initElectrons();
+
+  const graphPad = { l: 40, r: 20, t: 20, b: 30 };
+  const graphW = 450 - graphPad.l - graphPad.r;
+  const graphH = 260 - graphPad.t - graphPad.b;
+
+  function vToX(v) { return graphPad.l + (v/10) * graphW; }
+  function iToY(i) { return graphPad.t + graphH - (i/IDSS) * graphH; }
+
+  function drawStaticGraph() {
+    let svg = '';
+    
+    // Axes
+    svg += `<line x1="${graphPad.l}" y1="${graphPad.t}" x2="${graphPad.l}" y2="${graphPad.t+graphH}" stroke="#334155" stroke-width="2"/>`;
+    svg += `<line x1="${graphPad.l}" y1="${graphPad.t+graphH}" x2="${graphPad.l+graphW}" y2="${graphPad.t+graphH}" stroke="#334155" stroke-width="2"/>`;
+    
+    // Ticks
+    for(let v=0; v<=10; v+=2){
+      let x = vToX(v);
+      svg += `<line x1="${x}" y1="${graphPad.t+graphH}" x2="${x}" y2="${graphPad.t+graphH+5}" stroke="#334155"/>`;
+      svg += `<text x="${x}" y="${graphPad.t+graphH+18}" text-anchor="middle" font-size="10" fill="#94a3b8">${v}</text>`;
+    }
+    for(let i=0; i<=IDSS; i+=2){
+      let y = iToY(i);
+      svg += `<line x1="${graphPad.l-5}" y1="${y}" x2="${graphPad.l}" y2="${y}" stroke="#334155"/>`;
+      svg += `<text x="${graphPad.l-8}" y="${y+4}" text-anchor="end" font-size="10" fill="#94a3b8">${i}</text>`;
+    }
+    svg += `<text x="${graphPad.l+graphW/2}" y="${255}" text-anchor="middle" font-size="12" font-weight="bold" fill="#94a3b8">V&#7866;&#7825; (V)</text>`;
+    svg += `<text x="12" y="${graphPad.t+graphH/2}" text-anchor="middle" font-size="12" font-weight="bold" fill="#94a3b8" transform="rotate(-90 12 ${graphPad.t+graphH/2})">I&#7866; (mA)</text>`;
+
+    // --- PARABOLIC LOCUS CURVE ---
+    let pinchPath = '';
+    for (let vgs_loc = 0; vgs_loc >= VP; vgs_loc -= 0.1) {
+        let vds_loc = vgs_loc - VP;
+        let id_loc = IDSS * Math.pow(1 - vgs_loc/VP, 2);
+        pinchPath += (pinchPath === '' ? 'M' : 'L') + vToX(vds_loc).toFixed(1) + ' ' + iToY(id_loc).toFixed(1) + ' ';
+    }
+    svg += `<path d="${pinchPath}" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5,4"/>`;
+    
+    // Region Labels
+    svg += `<text x="${vToX(1.5)}" y="${iToY(10)}" font-size="12" font-weight="bold" fill="#94a3b8" font-family="Arial">Ohmic Region</text>`;
+    svg += `<text x="${vToX(6.0)}" y="${iToY(10)}" font-size="12" font-weight="bold" fill="#94a3b8" font-family="Arial">Saturation Region</text>`;
+
+    // Cut-off label
+    svg += `<text x="${vToX(4.5)}" y="${iToY(0) - 15}" font-size="11" fill="#94a3b8" font-family="Arial">Cut-off Region (-V_GS = V_P)</text>`;
+    svg += `<path d="M ${vToX(4.5)} ${iToY(0)-12} Q ${vToX(4.0)} ${iToY(0)-2} ${vToX(3.5)} ${iToY(0)-2}" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowHead)"/>`;
+
+    // Background Curves
+    const steps = [0, -1, -2, -3, -4];
+    steps.forEach((vg) => {
+      let d = '';
+      for(let v=0; v<=10; v+=0.2){
+        let {id} = calculateState(vg, v);
+        d += (d===''?'M':'L') + vToX(v).toFixed(1) + ' ' + iToY(id).toFixed(1) + ' ';
+      }
+      svg += `<path d="${d}" fill="none" stroke="#334155" stroke-width="1.5"/>`;
+      let endY = iToY(calculateState(vg, 10).id);
+      svg += `<text x="${vToX(10)+4}" y="${endY+4}" font-size="10" font-weight="bold" fill="#64748b">V<tspan dy="2" font-size="8">GS</tspan><tspan dy="-2">=${vg}V</tspan></text>`;
+    });
+
+    curveSvg.innerHTML = svg;
+  }
+  drawStaticGraph();
+
+  let activeCurve = document.createElementNS('http://www.w3.org/2000/svg','path');
+  activeCurve.setAttribute('fill','none'); activeCurve.setAttribute('stroke','var(--cyan)'); activeCurve.setAttribute('stroke-width','2.5');
+  curveSvg.appendChild(activeCurve);
+
+  // Pinch-off Knee Ring (Cyan)
+  let pinchRing = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  pinchRing.setAttribute('r','4'); pinchRing.setAttribute('fill','var(--panel-2)');
+  pinchRing.setAttribute('stroke','var(--cyan)'); pinchRing.setAttribute('stroke-width','2');
+  curveSvg.appendChild(pinchRing);
+
+  // Single Orange Marker for Operating Point
+  let marker = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  marker.setAttribute('r','5.5'); marker.setAttribute('fill','var(--orange)');
+  marker.setAttribute('stroke','#fff'); marker.setAttribute('stroke-width','1.5');
+  curveSvg.appendChild(marker);
+
+  let lastId = 0;
+  function render() {
+    let vgs = parseFloat(vgsSlider.value);
+    let vds = parseFloat(vdsSlider.value);
+
+    vgsVal.textContent = vgs.toFixed(1) + 'V';
+    vdsVal.textContent = vds.toFixed(1) + 'V';
+    svgVgsLbl.innerHTML = `V<tspan font-size="12" dy="4">GS</tspan><tspan dy="-4"> = ${vgs.toFixed(1)}V</tspan>`;
+
+    let {id, region} = calculateState(vgs, vds);
+    lastId = id;
+    idVal.textContent = id.toFixed(2) + ' mA';
+    regionVal.textContent = region;
+
+    if (region === 'කපා හැරීම (Cut-off)') {
+        regionVal.style.color = "var(--red)";
+        expText.innerHTML = `<strong>කපා හැරීමේ අවස්ථාව (Cut-off):</strong> V<sub>GS</sub> අගය ${VP}V ට වඩා සෘණ බැවින්, හායිත පෙදෙස් එකිනෙක <b>සම්පූර්ණයෙන්ම ස්පර්ශ වී</b> නාලිකාව වැසී ඇත. ධාරාව ශුන්‍ය වේ.`;
+    } else if (region === 'ඕමික (Ohmic)') {
+        regionVal.style.color = "var(--cyan)";
+        expText.innerHTML = `<strong>ඕමික ප්‍රදේශය (Ohmic Region):</strong><br>තැඹිලි ලක්ෂ්‍යය කඩ ඉරෙන් වම් පස පිහිටයි. ඔබ V<sub>DS</sub> නියතව තබා V<sub>GS</sub> වෙනස් කරන විට, ලක්ෂ්‍යය සිරස්ව පහළට එන අතර කෙනෙහුම් වළල්ල (Pinch-off point) කඩ ඉර දිගේ පහළට යයි.`;
+    } else {
+        regionVal.style.color = "var(--green)";
+        expText.innerHTML = `<strong>සන්තෘප්ත ප්‍රදේශය (Saturation Region):</strong><br>තැඹිලි ලක්ෂ්‍යය කඩ ඉර පසු කර ඇත. හායිත පෙදෙස් ඉතා ආසන්න වී "කෙනෙහුම් වැසීම" (Pinch-off) සිදුවී ඇත. එතැන් පටන් ධාරාව නියතව පවතී.`;
+    }
+    
+    // Operating Point Marker (Orange)
+    marker.setAttribute('cx', vToX(vds));
+    marker.setAttribute('cy', iToY(id));
+    marker.setAttribute('opacity', vgs <= VP ? 0 : 1);
+    
+    // Pinch-off Ring Marker tracking the locus
+    let vdsSatPoint = vgs - VP;
+    let idSatPoint = IDSS * Math.pow(1 - vgs/VP, 2);
+    if (vgs <= VP) { vdsSatPoint = 0; idSatPoint = 0; }
+    pinchRing.setAttribute('cx', vToX(vdsSatPoint));
+    pinchRing.setAttribute('cy', iToY(idSatPoint));
+    pinchRing.setAttribute('opacity', vgs <= VP ? 0 : 1);
+    
+    let activeD = '';
+    for(let v=0; v<=10; v+=0.2){
+      let {id: i} = calculateState(vgs, v);
+      activeD += (activeD===''?'M':'L') + vToX(v).toFixed(1) + ' ' + iToY(i).toFixed(1) + ' ';
+    }
+    activeCurve.setAttribute('d', activeD);
+
+    // Update Depletion Shapes
+    let {fracTop, fracBot} = getDepletionWidths(vgs, vds);
+    
+    let dTop = maxHalf * fracTop;
+    let dBot = maxHalf * fracBot;
+
+    let pathL = `M ${lG_inner} ${gTop - overhang} L ${lG_inner+dTop} ${gTop - overhang} Q ${lG_inner+dTop*0.6 + dBot*0.4} ${gTop + (gBot-gTop)/2} ${lG_inner+dBot} ${gBot + overhang} L ${lG_inner} ${gBot + overhang} Z`;
+    let pathR = `M ${rG_inner} ${gTop - overhang} L ${rG_inner-dTop} ${gTop - overhang} Q ${rG_inner-dTop*0.6 - dBot*0.4} ${gTop + (gBot-gTop)/2} ${rG_inner-dBot} ${gBot + overhang} L ${rG_inner} ${gBot + overhang} Z`;
+
+    depLeft.setAttribute('d', pathL);
+    depRight.setAttribute('d', pathR);
+
+    document.getElementById('lblArrowL').setAttribute('d', `M 140 160 L ${lG_inner+dTop*0.8} 200`);
+    document.getElementById('lblArrowR').setAttribute('d', `M 140 170 L ${rG_inner-dBot*0.8} 280`);
+  }
+
+  // Animation Loop for Electrons
+  function animate() {
+    let vgs = parseFloat(vgsSlider.value);
+    let vds = parseFloat(vdsSlider.value);
+    let {fracTop, fracBot} = getDepletionWidths(vgs, vds);
+
+    let speed = Math.max(0, Math.min(0.015, lastId/IDSS * 0.02));
+    if (vds > 0 && lastId === 0 && vgs > VP) speed = 0.005;
+
+    electrons.forEach(e => {
+      if(lastId > 0 || (vds>0 && vgs>VP)) {
+        e.t += speed;
+        if(e.t > 1) e.t -= 1;
+      }
+      
+      let y = chBot - e.t * (chBot - chTop);
+      let localY = y - (gTop - overhang);
+      let yRatio = localY / ((gBot - gTop) + 2*overhang);
+      
+      if(yRatio < 0) yRatio = 0; if(yRatio > 1) yRatio = 1;
+      
+      let currentFrac = fracBot + (fracTop - fracBot) * yRatio;
+      let availableW = (rG_inner - lG_inner) - 2 * (maxHalf * currentFrac); 
+      if (availableW < 18) availableW = 18;
+      
+      let x = 250 + e.xOffset * availableW; 
+      
+      e.el.setAttribute('transform', `translate(${x}, ${y})`);
+      e.el.setAttribute('opacity', vgs <= VP ? 0 : 1);
+    });
+
+    requestAnimationFrame(animate);
+  }
+
+  vgsSlider.addEventListener('input', render);
+  vdsSlider.addEventListener('input', render);
+  render();
+  animate();
+
+})();
+</script>
+</body>
+</html>
