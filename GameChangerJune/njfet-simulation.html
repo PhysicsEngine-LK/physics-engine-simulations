@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>N-Channel JFET — Operation Bench</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --bg:        #0b0e0c;
+    --panel:     #141a16;
+    --panel-2:   #1a2420;
+    --line:      #2c3530;
+    --line-soft: #1f2622;
+    --ink:       #e8e6df;
+    --ink-dim:   #8b948c;
+    --green:     #5ee6a8;
+    --green-dim: #2a5a47;
+    --orange:    #ff6b4a;
+    --orange-dim:#5a2f24;
+    --amber:     #f0b94d;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'JetBrains Mono', monospace;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  body{
+    min-height:100vh;
+    padding:28px 16px 60px;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(232,230,223,0.035) 1px, transparent 1px);
+    background-size:22px 22px;
+  }
+
+  .bench{
+    max-width:920px;
+    margin:0 auto;
+  }
+
+  /* ---------- HEADER ---------- */
+  .bench-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    border-bottom:2px solid var(--line);
+    padding-bottom:14px;
+    margin-bottom:6px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .bench-head h1{
+    font-size:20px;
+    letter-spacing:0.04em;
+    margin:0;
+    font-weight:800;
+    color:var(--ink);
+  }
+  .bench-head h1 span{ color:var(--green); }
+  .bench-tag{
+    font-size:11px;
+    color:var(--ink-dim);
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    border:1px solid var(--line);
+    padding:4px 8px;
+    border-radius:3px;
+  }
+
+  .lede{
+    font-size:13px;
+    line-height:1.65;
+    color:var(--ink-dim);
+    max-width:640px;
+    margin:14px 0 26px;
+  }
+  .lede b{ color:var(--ink); font-weight:600; }
+
+  /* ---------- PANEL SHELL ---------- */
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:18px 18px 20px;
+    margin-bottom:16px;
+    position:relative;
+  }
+  .panel::before{
+    content:attr(data-label);
+    position:absolute;
+    top:-9px;
+    left:14px;
+    background:var(--bg);
+    padding:0 8px;
+    font-size:10px;
+    letter-spacing:0.14em;
+    color:var(--green);
+    text-transform:uppercase;
+  }
+
+  /* ---------- DEVICE CROSS SECTION ---------- */
+  .device-wrap{ display:flex; flex-direction:column; align-items:center; }
+  svg#device{ width:100%; max-width:760px; height:auto; display:block; }
+
+  .legend{
+    display:flex; gap:18px; flex-wrap:wrap; justify-content:center;
+    margin-top:10px; font-size:10.5px; color:var(--ink-dim);
+  }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .swatch{ width:10px; height:10px; border-radius:2px; display:inline-block; }
+
+  .readout-row{
+    display:flex; justify-content:center; gap:28px; margin-top:14px; flex-wrap:wrap;
+  }
+  .readout{
+    text-align:center;
+    background:var(--panel-2);
+    border:1px solid var(--line-soft);
+    border-radius:5px;
+    padding:8px 18px;
+    min-width:120px;
+  }
+  .readout .val{ font-size:20px; font-weight:700; color:var(--green); }
+  .readout .lbl{ font-size:10px; color:var(--ink-dim); letter-spacing:0.08em; text-transform:uppercase; margin-top:3px;}
+  .readout.state .val{ color:var(--amber); font-size:14px; }
+  .readout.pinch .val{ color:var(--orange); }
+
+  /* ---------- CONTROLS ---------- */
+  .controls{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+  }
+  @media (max-width:600px){ .controls{ grid-template-columns:1fr; } }
+
+  .knob-box{
+    background:var(--panel-2);
+    border:1px solid var(--line-soft);
+    border-radius:5px;
+    padding:14px 16px 16px;
+  }
+  .knob-head{
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-bottom:10px;
+  }
+  .knob-head .name{ font-size:12px; font-weight:700; letter-spacing:0.04em; }
+  .knob-head .name small{ color:var(--ink-dim); font-weight:400; }
+  .knob-head .num{ font-size:16px; font-weight:700; color:var(--green); }
+
+  input[type=range]{
+    width:100%;
+    -webkit-appearance:none;
+    appearance:none;
+    height:4px;
+    background:var(--line);
+    border-radius:2px;
+    outline:none;
+    margin:8px 0 4px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:16px; height:16px;
+    border-radius:50%;
+    background:var(--green);
+    border:2px solid #0b0e0c;
+    cursor:pointer;
+    box-shadow:0 0 0 3px rgba(94,230,168,0.18);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:16px; height:16px;
+    border-radius:50%;
+    background:var(--green);
+    border:2px solid #0b0e0c;
+    cursor:pointer;
+  }
+  #vds::-webkit-slider-thumb{ background:var(--amber); box-shadow:0 0 0 3px rgba(240,185,77,0.18); }
+  #vds::-moz-range-thumb{ background:var(--amber); }
+
+  .tickline{
+    display:flex; justify-content:space-between;
+    font-size:9.5px; color:var(--ink-dim);
+  }
+  .knob-note{
+    font-size:10.5px; color:var(--ink-dim); margin-top:8px; line-height:1.5;
+  }
+
+  /* ---------- GRAPH ---------- */
+  .graph-row{
+    display:flex; gap:16px; flex-wrap:wrap;
+  }
+  .graph-col{ flex:1 1 360px; min-width:280px; }
+  svg#curve{ width:100%; height:auto; display:block; }
+  .graph-caption{
+    font-size:10.5px; color:var(--ink-dim); margin-top:8px; line-height:1.6;
+  }
+
+  /* ---------- EXPLAIN STEPS ---------- */
+  .stages{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+  }
+  @media (max-width:700px){ .stages{ grid-template-columns:1fr; } }
+  .stage{
+    border:1px solid var(--line-soft);
+    background:var(--panel-2);
+    border-radius:5px;
+    padding:12px 14px;
+    font-size:11.5px;
+    line-height:1.55;
+    color:var(--ink-dim);
+    transition:border-color .25s, color .25s;
+  }
+  .stage b{ color:var(--ink); display:block; font-size:11.5px; margin-bottom:5px; letter-spacing:0.02em;}
+  .stage.active{
+    border-color:var(--green);
+    color:var(--ink);
+  }
+  .stage.active b{ color:var(--green); }
+
+  footer{
+    text-align:center;
+    color:var(--line);
+    font-size:10px;
+    letter-spacing:0.1em;
+    margin-top:28px;
+    text-transform:uppercase;
+  }
+</style>
+</head>
+<body>
+<div class="bench">
+
+  <div class="bench-head">
+    <h1>N-CHANNEL <span>JFET</span> — OPERATION BENCH</h1>
+    <div class="bench-tag">JUNCTION FIELD-EFFECT TRANSISTOR</div>
+  </div>
+
+  <p class="lede">
+    A JFET is a voltage-controlled tap on a current. Electrons flow through an
+    <b>n-type silicon channel</b> from source to drain. Two <b>p-type gate</b> regions sit
+    on either side of that channel. Drag the controls below: <b>V<sub>GS</sub></b> squeezes the channel
+    by growing the depletion region; <b>V<sub>DS</sub></b> pushes current through whatever
+    channel is left.
+  </p>
+
+  <!-- ===================== DEVICE CROSS SECTION ===================== -->
+  <div class="panel" data-label="Cross-section — live">
+    <div class="device-wrap">
+      <svg id="device" viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg">
+
+        <!-- Source / Drain metal contacts + leads -->
+        <line x1="120" y1="40" x2="120" y2="80" stroke="#8b948c" stroke-width="3"/>
+        <line x1="640" y1="40" x2="640" y2="80" stroke="#8b948c" stroke-width="3"/>
+        <text x="120" y="30" text-anchor="middle" fill="#e8e6df" font-size="13" font-weight="700">SOURCE</text>
+        <text x="640" y="30" text-anchor="middle" fill="#e8e6df" font-size="13" font-weight="700">DRAIN</text>
+
+        <!-- Gate lead (top) -->
+        <line x1="380" y1="20" x2="380" y2="62" stroke="#ff6b4a" stroke-width="3"/>
+        <text x="380" y="12" text-anchor="middle" fill="#ff6b4a" font-size="13" font-weight="700">GATE</text>
+
+        <!-- N-type bulk channel block -->
+        <rect x="80" y="80" width="600" height="200" fill="#173024" stroke="#2c3530" stroke-width="1.5" rx="4"/>
+        <text x="100" y="270" fill="#5ee6a8" font-size="11" opacity="0.55">n-type silicon</text>
+
+        <!-- source/drain contact pads -->
+        <rect x="100" y="80" width="40" height="18" fill="#8b948c"/>
+        <rect x="620" y="80" width="40" height="18" fill="#8b948c"/>
+
+        <!-- Channel flow track (where electrons travel) -->
+        <rect id="channelTrack" x="80" y="150" width="600" height="60" fill="#0e1f17"/>
+
+        <!-- Depletion wedges (top gate, bottom gate) — animated -->
+        <path id="depTop" d="M 280 80 L 480 80 L 460 150 L 300 150 Z" fill="#ff6b4a" opacity="0.55"/>
+        <path id="depBot" d="M 280 280 L 480 280 L 460 210 L 300 210 Z" fill="#ff6b4a" opacity="0.55"/>
+
+        <!-- Gate p-type bodies -->
+        <rect x="260" y="60" width="240" height="22" fill="#5a2f24" stroke="#ff6b4a" stroke-width="1"/>
+        <rect x="260" y="278" width="240" height="22" fill="#5a2f24" stroke="#ff6b4a" stroke-width="1"/>
+        <text x="380" y="55" text-anchor="middle" fill="#ff6b4a" font-size="10" opacity="0.8">p-type gate</text>
+        <text x="380" y="312" text-anchor="middle" fill="#ff6b4a" font-size="10" opacity="0.8">p-type gate</text>
+
+        <!-- Channel outline (drawn after depletion so border reads clean) -->
+        <rect x="80" y="80" width="600" height="200" fill="none" stroke="#3d4540" stroke-width="1.5" rx="4"/>
+
+        <!-- electron dots, injected via JS -->
+        <g id="electrons"></g>
+
+        <!-- pinch-off label -->
+        <text id="pinchLabel" x="380" y="200" text-anchor="middle" fill="#ff6b4a" font-size="13" font-weight="700" opacity="0">CHANNEL PINCHED OFF</text>
+
+        <!-- battery symbols (decorative, static) -->
+        <text x="380" y="345" text-anchor="middle" fill="#8b948c" font-size="10">V&#7866;&#7841; widens the depletion region · V&#7866;&#7825; drives drain current</text>
+      </svg>
+
+      <div class="legend">
+        <span><i class="swatch" style="background:#173024;border:1px solid #2c3530"></i> n-type silicon body</span>
+        <span><i class="swatch" style="background:#5a2f24;border:1px solid #ff6b4a"></i> p-type gate</span>
+        <span><i class="swatch" style="background:#ff6b4a;opacity:.55"></i> depletion region</span>
+        <span><i class="swatch" style="background:#5ee6a8"></i> electron flow</span>
+      </div>
+
+      <div class="readout-row">
+        <div class="readout"><div class="val" id="rVgs">0.0 V</div><div class="lbl">V<sub>GS</sub></div></div>
+        <div class="readout"><div class="val" id="rVds">2.0 V</div><div class="lbl">V<sub>DS</sub></div></div>
+        <div class="readout"><div class="val" id="rId">— mA</div><div class="lbl">I<sub>D</sub> (drain current)</div></div>
+        <div class="readout state"><div class="val" id="rState">OHMIC</div><div class="lbl">region</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== CONTROLS ===================== -->
+  <div class="panel" data-label="Controls">
+    <div class="controls">
+      <div class="knob-box">
+        <div class="knob-head">
+          <div class="name">V<sub>GS</sub> <small>gate&ndash;source voltage</small></div>
+          <div class="num" id="vgsNum">0.0 V</div>
+        </div>
+        <input type="range" id="vgs" min="-5" max="0" step="0.1" value="0">
+        <div class="tickline"><span>V<sub>P</sub> = &minus;5 V (pinch-off)</span><span>0 V</span></div>
+        <div class="knob-note">More negative V<sub>GS</sub> reverse-biases the gate junctions harder, growing the depletion region and narrowing the conductive channel.</div>
+      </div>
+
+      <div class="knob-box">
+        <div class="knob-head">
+          <div class="name">V<sub>DS</sub> <small>drain&ndash;source voltage</small></div>
+          <div class="num" id="vdsNum">2.0 V</div>
+        </div>
+        <input type="range" id="vds" min="0" max="10" step="0.1" value="2">
+        <div class="tickline"><span>0 V</span><span>10 V</span></div>
+        <div class="knob-note">Drives electrons from source to drain. Past a few volts the channel current flattens out — the device saturates.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== CHARACTERISTIC CURVE ===================== -->
+  <div class="panel" data-label="I&#8345;&ndash;V&#8345;&#7866; characteristic">
+    <div class="graph-row">
+      <div class="graph-col">
+        <svg id="curve" viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg"></svg>
+        <p class="graph-caption">
+          Each curve is one fixed V<sub>GS</sub>. The dot marks where the device sits right now.
+          Notice the curve flattens (saturates) once V<sub>DS</sub> is large enough to pinch the channel off at the drain end.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== STAGES ===================== -->
+  <div class="panel" data-label="What's happening">
+    <div class="stages">
+      <div class="stage" id="stageA">
+        <b>Open channel</b>
+        V<sub>GS</sub> near 0 V means almost no depletion. The n-type channel is at its widest, so it behaves like a simple resistor — current rises roughly linearly with V<sub>DS</sub>.
+      </div>
+      <div class="stage" id="stageB">
+        <b>Channel narrowing</b>
+        As V<sub>GS</sub> goes more negative, the gate–channel junctions reverse-bias further. Their depletion regions swell inward from both sides, leaving a thinner path for electrons.
+      </div>
+      <div class="stage" id="stageC">
+        <b>Pinch-off &amp; saturation</b>
+        Even before the channel fully closes, rising V<sub>DS</sub> pinches it off near the drain end first. Past that point I<sub>D</sub> barely increases — the JFET is now acting as a current source set by V<sub>GS</sub>.
+      </div>
+    </div>
+  </div>
+
+  <footer>silicon · depletion · drift — interactive model, not to scale</footer>
+</div>
+
+<script>
+(function(){
+  const vgsSlider = document.getElementById('vgs');
+  const vdsSlider = document.getElementById('vds');
+  const vgsNum = document.getElementById('vgsNum');
+  const vdsNum = document.getElementById('vdsNum');
+  const rVgs = document.getElementById('rVgs');
+  const rVds = document.getElementById('rVds');
+  const rId  = document.getElementById('rId');
+  const rState = document.getElementById('rState');
+
+  const depTop = document.getElementById('depTop');
+  const depBot = document.getElementById('depBot');
+  const pinchLabel = document.getElementById('pinchLabel');
+  const electronsG = document.getElementById('electrons');
+
+  const VP = -5;     // pinch-off voltage
+  const IDSS = 10;   // mA, max drain current at Vgs=0
+
+  // channel geometry constants (svg coords)
+  const chTop = 80, chBot = 280, chLeft = 80, chRight = 680;
+  const gateLeft = 280, gateRight = 480; // x-span where gates sit
+  const trackTop = 150, trackBot = 210; // visual "flow band" center area
+
+  // ---- Shockley DC model for triode/saturation ----
+  function idForVgsVds(vgs, vds){
+    vgs = Math.max(VP, Math.min(0, vgs));
+    const vgsOverVp = 1 - vgs/VP; // 0..1, 1 at Vgs=0
+    const vp_eff = VP * (1); // pinch off ref
+    // Effective saturation drain current at this Vgs (Shockley)
+    const idSat = IDSS * Math.pow(vgsOverVp, 2);
+    // Vds at which channel pinches off for this Vgs
+    const vdsSat = -vgs + VP*0; // = (Vgs - Vp) magnitude... compute properly:
+    const vdsSatActual = vgs - VP; // since VP negative, vgs-VP >=0
+    let id;
+    let region;
+    if (vds < vdsSatActual){
+      // triode/ohmic region (quadratic approx of Shockley triode eq)
+      const k = IDSS / (-VP*-VP); // scaling
+      id = 2*k*((vgs-VP)*vds - (vds*vds)/2);
+      region = vds < vdsSatActual*0.3 ? 'OHMIC' : 'TRIODE';
+    } else {
+      id = idSat;
+      region = 'SATURATION';
+    }
+    if (vgs <= VP+0.001) { id = 0; region = 'CUT-OFF'; }
+    id = Math.max(0, id);
+    return {id, region, vdsSatActual};
+  }
+
+  function depletionFraction(vgs, vds){
+    // how far depletion has eaten into channel half-width, 0..1 (1 = fully pinched)
+    // depends on vgs AND local vds drop along channel; approximate worst case at drain end using vgd
+    const vgsClamped = Math.max(VP, Math.min(0, vgs));
+    const vgd = vgsClamped - vds; // gate-drain voltage, more negative near drain end
+    const fracSource = Math.min(1, Math.max(0, vgsClamped/VP)); // depletion at source end
+    const fracDrain  = Math.min(1, Math.max(0, vgd/VP));        // depletion at drain end
+    return {fracSource, fracDrain};
+  }
+
+  let electronDots = [];
+  const N_DOTS = 14;
+  function buildElectrons(){
+    electronsG.innerHTML = '';
+    electronDots = [];
+    for(let i=0;i<N_DOTS;i++){
+      const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('r','3.4');
+      c.setAttribute('fill','#5ee6a8');
+      c.setAttribute('cy', 180);
+      electronsG.appendChild(c);
+      electronDots.push({el:c, t: i/N_DOTS});
+    }
+  }
+  buildElectrons();
+
+  function widthAt(xFrac, fracSource, fracDrain){
+    // xFrac 0 at source end, 1 at drain end, within gate span
+    const localFrac = fracSource + (fracDrain - fracSource) * xFrac;
+    return localFrac; // 0..1 depletion amount at this point
+  }
+
+  let lastId = 0;
+
+  function render(){
+    const vgs = parseFloat(vgsSlider.value);
+    const vds = parseFloat(vdsSlider.value);
+
+    vgsNum.textContent = vgs.toFixed(1) + ' V';
+    vdsNum.textContent = vds.toFixed(1) + ' V';
+    rVgs.textContent = vgs.toFixed(1) + ' V';
+    rVds.textContent = vds.toFixed(1) + ' V';
+
+    const {id, region, vdsSatActual} = idForVgsVds(vgs, vds);
+    lastId = id;
+    rId.textContent = id.toFixed(2) + ' mA';
+    rState.textContent = region;
+    rState.parentElement.classList.toggle('pinch', region==='SATURATION' || region==='CUT-OFF');
+
+    const {fracSource, fracDrain} = depletionFraction(vgs, vds);
+
+    // channel half height available = (chBot-chTop)/2 - margin, draw wedges shrinking the open band
+    const midY = (chTop+chBot)/2;
+    const maxHalf = 65; // max half-channel opening in px from mid
+
+    const openHalfSource = maxHalf * (1 - fracSource);
+    const openHalfDrain  = maxHalf * (1 - fracDrain);
+
+    const yTopSource = midY - openHalfSource;
+    const yTopDrain  = midY - openHalfDrain;
+    const yBotSource = midY + openHalfSource;
+    const yBotDrain  = midY + openHalfDrain;
+
+    depTop.setAttribute('d', `M ${gateLeft} 80 L ${gateRight} 80 L ${gateRight} ${yTopDrain} L ${gateLeft} ${yTopSource} Z`);
+    depBot.setAttribute('d', `M ${gateLeft} 280 L ${gateRight} 280 L ${gateRight} ${yBotDrain} L ${gateLeft} ${yBotSource} Z`);
+
+    const fullyPinched = (fracSource >= 0.999 && fracDrain >= 0.999) || (vgs <= VP+0.001);
+    pinchLabel.style.opacity = fullyPinched ? 1 : 0;
+
+    // electron speed scales with current (normalized), density visually constant
+    const speed = Math.max(0.0006, Math.min(0.01, id/IDSS * 0.01));
+    electronDots.forEach(d=>{
+      d.speed = speed;
+    });
+
+    updateStages(vgs, vds, region);
+    updateCurveMarker(vgs, vds, id);
+  }
+
+  function animate(){
+    electronDots.forEach(d=>{
+      if(lastId > 0.01){
+        d.t += d.speed;
+        if(d.t > 1) d.t -= 1;
+      }
+      const x = chLeft + 20 + d.t * (chRight - chLeft - 40);
+      d.el.setAttribute('cx', x);
+      // fade/squeeze dot vertically if inside gate span depending on local depletion - simple visual only
+      let opacity = 1;
+      if (x >= gateLeft && x <= gateRight){
+        const xf = (x-gateLeft)/(gateRight-gateLeft);
+        const vgs = parseFloat(vgsSlider.value);
+        const vds = parseFloat(vdsSlider.value);
+        const {fracSource, fracDrain} = depletionFraction(vgs, vds);
+        const localDep = fracSource + (fracDrain-fracSource)*xf;
+        opacity = Math.max(0.15, 1-localDep);
+      }
+      d.el.setAttribute('opacity', lastId>0.01 ? opacity : 0.12);
+    });
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+
+  // ---------------- stages highlight ----------------
+  function updateStages(vgs, vds, region){
+    const a = document.getElementById('stageA');
+    const b = document.getElementById('stageB');
+    const c = document.getElementById('stageC');
+    a.classList.remove('active'); b.classList.remove('active'); c.classList.remove('active');
+    if (region === 'SATURATION' || region === 'CUT-OFF'){
+      c.classList.add('active');
+    } else if (vgs <= -0.6){
+      b.classList.add('active');
+    } else {
+      a.classList.add('active');
+    }
+  }
+
+  // ---------------- characteristic curve ----------------
+  const curveSvg = document.getElementById('curve');
+  const W=400, H=260, padL=42, padR=14, padT=14, padB=34;
+  const plotW = W-padL-padR, plotH = H-padT-padB;
+
+  function vdsToX(v){ return padL + (v/10)*plotW; }
+  function idToY(i){ return padT + plotH - (i/IDSS)*plotH; }
+
+  function buildCurveStatic(){
+    let svg = '';
+    // axes
+    svg += `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+plotH}" stroke="#3d4540" stroke-width="1"/>`;
+    svg += `<line x1="${padL}" y1="${padT+plotH}" x2="${padL+plotW}" y2="${padT+plotH}" stroke="#3d4540" stroke-width="1"/>`;
+    // y ticks
+    for(let i=0;i<=IDSS;i+=2){
+      const y = idToY(i);
+      svg += `<line x1="${padL-4}" y1="${y}" x2="${padL}" y2="${y}" stroke="#3d4540"/>`;
+      svg += `<text x="${padL-8}" y="${y+3}" text-anchor="end" font-size="8" fill="#8b948c">${i}</text>`;
+    }
+    // x ticks
+    for(let v=0;v<=10;v+=2){
+      const x = vdsToX(v);
+      svg += `<line x1="${x}" y1="${padT+plotH}" x2="${x}" y2="${padT+plotH+4}" stroke="#3d4540"/>`;
+      svg += `<text x="${x}" y="${padT+plotH+16}" text-anchor="middle" font-size="8" fill="#8b948c">${v}</text>`;
+    }
+    svg += `<text x="${padL+plotW/2}" y="${H-4}" text-anchor="middle" font-size="9" fill="#8b948c">V&#7866;&#7825; (V)</text>`;
+    svg += `<text x="12" y="${padT+plotH/2}" text-anchor="middle" font-size="9" fill="#8b948c" transform="rotate(-90 12 ${padT+plotH/2})">I&#7866; (mA)</text>`;
+
+    // family of curves at fixed vgs steps
+    const steps = [0,-1,-2,-3,-4];
+    steps.forEach((vg)=>{
+      let d = '';
+      for(let v=0; v<=10; v+=0.25){
+        const {id} = idForVgsVds(vg, v);
+        const x = vdsToX(v), y = idToY(id);
+        d += (d==='' ? 'M':'L') + x.toFixed(1) + ' ' + y.toFixed(1) + ' ';
+      }
+      svg += `<path d="${d}" fill="none" stroke="#2c3530" stroke-width="1.3"/>`;
+      // label at right end
+      const {id:idEnd} = idForVgsVds(vg, 10);
+      svg += `<text x="${vdsToX(10)+2}" y="${idToY(idEnd)+3}" font-size="7.5" fill="#5b6660">${vg}V</text>`;
+    });
+
+    curveSvg.innerHTML = svg;
+  }
+  buildCurveStatic();
+
+  let markerEl = null, activeCurveEl = null;
+  function ensureMarker(){
+    if(!markerEl){
+      markerEl = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      markerEl.setAttribute('r','4.5');
+      markerEl.setAttribute('fill','#5ee6a8');
+      markerEl.setAttribute('stroke','#0b0e0c');
+      markerEl.setAttribute('stroke-width','1.5');
+      curveSvg.appendChild(markerEl);
+    }
+    if(!activeCurveEl){
+      activeCurveEl = document.createElementNS('http://www.w3.org/2000/svg','path');
+      activeCurveEl.setAttribute('fill','none');
+      activeCurveEl.setAttribute('stroke','#5ee6a8');
+      activeCurveEl.setAttribute('stroke-width','2');
+      activeCurveEl.setAttribute('opacity','0.85');
+      curveSvg.insertBefore(activeCurveEl, markerEl);
+    }
+  }
+  ensureMarker();
+
+  function updateCurveMarker(vgs, vds, id){
+    const x = vdsToX(vds), y = idToY(id);
+    markerEl.setAttribute('cx', x);
+    markerEl.setAttribute('cy', y);
+
+    let d = '';
+    for(let v=0; v<=10; v+=0.25){
+      const {id:idv} = idForVgsVds(vgs, v);
+      const xx = vdsToX(v), yy = idToY(idv);
+      d += (d==='' ? 'M':'L') + xx.toFixed(1) + ' ' + yy.toFixed(1) + ' ';
+    }
+    activeCurveEl.setAttribute('d', d);
+  }
+
+  vgsSlider.addEventListener('input', render);
+  vdsSlider.addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>
