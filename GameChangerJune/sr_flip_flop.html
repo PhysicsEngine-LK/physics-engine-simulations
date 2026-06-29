@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SR Flip-Flop Simulator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+  :root {
+    --bg: #0b0e14;
+    --panel: #151a22;
+    --panel-2: #1e2532;
+    --line: #2a3441;
+    --ink: #e2e8f0;
+    --ink-dim: #94a3b8;
+    --cyan: #38bdf8;
+    --green: #4ade80;
+    --orange: #fb923c;
+    --red: #f87171;
+    --yellow: #ffff66;
+    --led-off: #1e293b;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px;
+    background: var(--bg); color: var(--ink);
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    min-height: 100vh;
+  }
+
+  .header {
+    text-align: center; margin-bottom: 20px;
+    border-bottom: 2px solid var(--line); padding-bottom: 15px;
+  }
+  .header h1 { margin: 0; font-size: 24px; color: var(--cyan); letter-spacing: 1px;}
+  .header p { margin: 5px 0 0; color: var(--ink-dim); font-size: 14px; }
+
+  .grid-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+    align-items: start;
+  }
+
+  @media (max-width: 850px) {
+    .grid-container { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; padding: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+  }
+  .panel h2 { margin: 0 0 15px; font-size: 16px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 1px; text-align: center;}
+
+  /* Diagram Area - Rebuilt with Flexbox */
+  .diagram-area {
+    display: flex; justify-content: center; align-items: center;
+    padding: 30px 10px; background: var(--panel-2); border-radius: 8px;
+    border: 1px solid var(--line); margin-bottom: 20px;
+    overflow-x: auto; /* Ensures scaling on very tiny mobile screens */
+  }
+
+  /* Columns for inputs, main box, and outputs */
+  .inputs-col, .outputs-col {
+    display: flex; flex-direction: column; justify-content: space-between;
+    height: 140px;
+  }
+
+  .switch-row, .led-row {
+    display: flex; align-items: center;
+  }
+
+  /* Flip Flop Box */
+  .ff-box {
+    width: 140px; height: 180px; border: 3px solid var(--cyan);
+    background: #0f172a; border-radius: 6px; position: relative;
+    display: flex; flex-direction: column; justify-content: center;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+    z-index: 2;
+  }
+  .ff-title { text-align: center; font-size: 24px; font-weight: bold; color: var(--ink); }
+  
+  /* Inner Labels */
+  .ff-labels-left, .ff-labels-right {
+    position: absolute; top: 0; bottom: 0;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 30px 10px;
+  }
+  .ff-labels-left { left: 0; }
+  .ff-labels-right { right: 0; text-align: right; }
+  .ff-label { font-size: 20px; font-weight: bold; color: var(--ink); font-family: 'JetBrains Mono', monospace; line-height: 20px;}
+  
+  /* Wires */
+  .wire {
+    width: 40px; height: 3px; background: var(--line); transition: 0.3s;
+  }
+  .wire.active { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+  /* Input Switches */
+  .btn-switch {
+    width: 50px; height: 40px; border-radius: 6px; border: 2px solid var(--line);
+    background: var(--bg); color: var(--ink); font-size: 20px; font-weight: bold;
+    cursor: pointer; transition: 0.2s; font-family: 'JetBrains Mono', monospace;
+  }
+  .btn-switch:active { transform: scale(0.95); }
+  .btn-switch.active { background: var(--green); border-color: var(--green); color: #000; box-shadow: 0 0 10px var(--green);}
+
+  /* Output LEDs */
+  .led {
+    width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--line);
+    background: var(--led-off); transition: 0.3s;
+  }
+  .led.active { background: var(--orange); border-color: var(--orange); box-shadow: 0 0 20px var(--orange); }
+
+  /* Controls/Info */
+  .status-box {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+    padding: 15px; text-align: center; margin-bottom: 20px; transition: 0.3s;
+  }
+  .status-title { font-size: 13px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;}
+  .status-val { font-size: 20px; font-weight: bold; color: var(--cyan); }
+
+  /* Truth Table */
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; background: var(--panel-2); border-radius: 6px; overflow: hidden;}
+  th, td { padding: 12px; text-align: center; border: 1px solid var(--line); font-family: 'JetBrains Mono', monospace;}
+  th { background: #0f172a; color: var(--cyan); font-family: sans-serif; font-size: 14px;}
+  tr { transition: 0.3s; }
+  tr.active-row { background: rgba(74, 222, 128, 0.15); font-weight: bold; color: var(--green); }
+  
+  .explanation {
+    margin-top: 20px; padding: 15px; background: var(--bg);
+    border-left: 4px solid var(--cyan); border-radius: 4px;
+    font-size: 14px; line-height: 1.6; color: var(--ink);
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>SR ෆ්ලිප්-ෆ්ලොපය (Set-Reset Flip-Flop)</h1>
+  <p>S සහ R ආදානයන් වෙනස් කරමින් දත්ත මතකයේ රඳවා ගන්නා ආකාරය නිරීක්ෂණය කරන්න.</p>
+</div>
+
+<div class="grid-container">
+  
+  <!-- LEFT: Interactive Diagram -->
+  <div class="panel">
+    <h2>පරිපථ සටහන</h2>
+    <div class="diagram-area">
+      
+      <!-- Inputs Column -->
+      <div class="inputs-col">
+        <div class="switch-row">
+          <button class="btn-switch" id="btn-s" onclick="toggleInput('S')">0</button>
+          <div class="wire" id="wire-s"></div>
+        </div>
+        <div class="switch-row">
+          <button class="btn-switch" id="btn-r" onclick="toggleInput('R')">0</button>
+          <div class="wire" id="wire-r"></div>
+        </div>
+      </div>
+
+      <!-- Main SR Box -->
+      <div class="ff-box">
+        <div class="ff-labels-left">
+          <div class="ff-label">S</div>
+          <div class="ff-label">R</div>
+        </div>
+        <div class="ff-title">SR</div>
+        <div class="ff-labels-right">
+          <div class="ff-label">Q</div>
+          <div class="ff-label">Q'</div>
+        </div>
+      </div>
+
+      <!-- Outputs Column -->
+      <div class="outputs-col">
+        <div class="led-row">
+          <div class="wire" id="wire-q"></div>
+          <div class="led active" id="led-q" style="margin-right: 12px;"></div>
+          <div class="ff-label">Q</div>
+        </div>
+        <div class="led-row">
+          <div class="wire" id="wire-qnot"></div>
+          <div class="led" id="led-qnot" style="margin-right: 12px;"></div>
+          <div class="ff-label">Q'</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="status-box" id="status-box">
+      <div class="status-title">වත්මන් අවස්ථාව (Current State)</div>
+      <div class="status-val" id="status-text">Set අවස්ථාව (Q = 1)</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Truth Table & Explanation -->
+  <div class="panel">
+    <h2>සත්‍යතා වගුව (Truth Table)</h2>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>S (Set)</th>
+          <th>R (Reset)</th>
+          <th>Q (ප්‍රතිදානය)</th>
+          <th>අවස්ථාව (State)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr id="row-00">
+          <td>0</td>
+          <td>0</td>
+          <td>No Change</td>
+          <td>මතකය (Hold)</td>
+        </tr>
+        <tr id="row-01">
+          <td>0</td>
+          <td>1</td>
+          <td>0</td>
+          <td>Reset</td>
+        </tr>
+        <tr id="row-10" class="active-row">
+          <td>1</td>
+          <td>0</td>
+          <td>1</td>
+          <td>Set</td>
+        </tr>
+        <tr id="row-11">
+          <td>1</td>
+          <td>1</td>
+          <td>Invalid</td>
+          <td>අවලංගුයි</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="explanation" id="exp-text">
+      <strong>Set අවස්ථාව:</strong> S=1 සහ R=0 වූ විට, ෆ්ලිප්-ෆ්ලොපයේ ප්‍රතිදානය (Q) 1 බවට පත් වේ. දැන් S=0 කළද (0,0 අවස්ථාවට ගියද) මෙම අගය වෙනස් නොවී මතකයේ රැඳී පවතිනු ඇත.
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let state = { S: 1, R: 0, Q: 1, Qnot: 0 };
+
+  // DOM Elements
+  const btnS = document.getElementById('btn-s');
+  const btnR = document.getElementById('btn-r');
+  const wireS = document.getElementById('wire-s');
+  const wireR = document.getElementById('wire-r');
+  const wireQ = document.getElementById('wire-q');
+  const wireQnot = document.getElementById('wire-qnot');
+  const ledQ = document.getElementById('led-q');
+  const ledQnot = document.getElementById('led-qnot');
+  
+  const statusBox = document.getElementById('status-box');
+  const statusText = document.getElementById('status-text');
+  const expText = document.getElementById('exp-text');
+
+  function toggleInput(input) {
+    if (input === 'S') {
+      state.S = state.S === 1 ? 0 : 1;
+    } else {
+      state.R = state.R === 1 ? 0 : 1;
+    }
+    updateLogic();
+  }
+
+  function updateLogic() {
+    // 1. Calculate outputs based on SR logic
+    let condition = "";
+    
+    if (state.S === 0 && state.R === 0) {
+      condition = "HOLD";
+      // Q and Qnot remain the same (Memory)
+    } else if (state.S === 1 && state.R === 0) {
+      condition = "SET";
+      state.Q = 1;
+      state.Qnot = 0;
+    } else if (state.S === 0 && state.R === 1) {
+      condition = "RESET";
+      state.Q = 0;
+      state.Qnot = 1;
+    } else if (state.S === 1 && state.R === 1) {
+      condition = "INVALID";
+      state.Q = 0;
+      state.Qnot = 0; // In standard NOR SR latch, 1,1 forces both to 0
+    }
+
+    // 2. Update UI (Buttons & Wires)
+    btnS.textContent = state.S;
+    btnS.className = state.S === 1 ? "btn-switch active" : "btn-switch";
+    wireS.className = state.S === 1 ? "wire active" : "wire";
+
+    btnR.textContent = state.R;
+    btnR.className = state.R === 1 ? "btn-switch active" : "btn-switch";
+    wireR.className = state.R === 1 ? "wire active" : "wire";
+
+    // 3. Update Outputs (LEDs & Wires)
+    ledQ.className = state.Q === 1 ? "led active" : "led";
+    wireQ.className = state.Q === 1 ? "wire active" : "wire";
+
+    ledQnot.className = state.Qnot === 1 ? "led active" : "led";
+    wireQnot.className = state.Qnot === 1 ? "wire active" : "wire";
+
+    // 4. Update Truth Table Highlighting
+    document.querySelectorAll('tr').forEach(tr => tr.classList.remove('active-row'));
+    document.getElementById(`row-${state.S}${state.R}`).classList.add('active-row');
+
+    // 5. Update Status & Explanation
+    if (condition === "HOLD") {
+      statusText.textContent = `මතක අවස්ථාව (Q = ${state.Q})`;
+      statusBox.style.borderColor = "var(--cyan)";
+      statusText.style.color = "var(--cyan)";
+      expText.innerHTML = `<strong>මතක අවස්ථාව (Hold State):</strong> S=0 සහ R=0 ලබා දී ඇත. ආදාන ඉවත් කළද පෙර තිබූ Q අගයම (Q=${state.Q}) වෙනස් නොවී දිගටම පවතියි. ඩිජිටල් මතකයක් ක්‍රියා කරන්නේ මෙලෙසිනි!`;
+    
+    } else if (condition === "SET") {
+      statusText.textContent = "Set අවස්ථාව (Q = 1)";
+      statusBox.style.borderColor = "var(--green)";
+      statusText.style.color = "var(--green)";
+      expText.innerHTML = `<strong>Set අවස්ථාව:</strong> S=1 සහ R=0 වූ විට, ෆ්ලිප්-ෆ්ලොපයේ ප්‍රතිදානය (Q) 1 බවට පත් වේ. දැන් නැවත S=0 කළද මෙම '1' අගය මතකයේ රැඳී පවතිනු ඇත.`;
+    
+    } else if (condition === "RESET") {
+      statusText.textContent = "Reset අවස්ථාව (Q = 0)";
+      statusBox.style.borderColor = "var(--orange)";
+      statusText.style.color = "var(--orange)";
+      expText.innerHTML = `<strong>Reset අවස්ථාව:</strong> S=0 සහ R=1 වූ විට, ෆ්ලිප්-ෆ්ලොපයේ ප්‍රතිදානය (Q) 0 බවට පත් වී මකා දැමේ. විලෝම ප්‍රතිදානය (Q') 1 බවට පත්වේ.`;
+    
+    } else if (condition === "INVALID") {
+      statusText.textContent = "අවලංගු අවස්ථාව (Invalid)";
+      statusBox.style.borderColor = "var(--red)";
+      statusText.style.color = "var(--red)";
+      expText.innerHTML = `<strong>අවලංගු අවස්ථාව (Invalid State):</strong> <span style="color:var(--red);">අවවාදයයි!</span> S සහ R දෙකටම එකවර '1' ලබා දිය නොහැක. එවිට Q සහ Q' යන දෙකම 0 වී පද්ධතිය අස්ථායී (Unstable) වේ. මෙය පරිපථයේ දෝෂයකි.`;
+    }
+  }
+
+  // Initialize
+  updateLogic();
+
+</script>
+</body>
+</html>
