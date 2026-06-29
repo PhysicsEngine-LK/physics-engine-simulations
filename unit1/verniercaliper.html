@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Physics Engine | System 05: Vernier Caliper</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;500;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-green: #39FF14;
+            --neon-purple: #b026ff;
+            --glass: rgba(15, 15, 15, 0.9);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: #050505;
+            background-image: radial-gradient(circle, #151515 1px, transparent 1px);
+            background-size: 30px 30px;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 360px;
+            background: var(--glass);
+            border-right: 1px solid var(--border);
+            backdrop-filter: blur(15px);
+            display: flex;
+            flex-direction: column;
+            padding: 40px 25px;
+            z-index: 10;
+        }
+
+        .brand-title { font-size: 1.4em; font-weight: 800; letter-spacing: 4px; color: var(--neon-blue); margin-bottom: 5px; }
+        .brand-sub { font-size: 0.7em; color: #555; letter-spacing: 2px; margin-bottom: 30px; text-transform: uppercase; }
+
+        .ui-group { margin-bottom: 25px; }
+        .ui-label { font-size: 0.75em; color: #888; display: block; margin-bottom: 10px; text-transform: uppercase; }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: #222;
+            height: 4px;
+            border-radius: 2px;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px; width: 18px;
+            border-radius: 50%;
+            background: var(--neon-blue);
+            box-shadow: 0 0 10px var(--neon-blue);
+            cursor: pointer;
+        }
+
+        #errorSlider::-webkit-slider-thumb { background: var(--neon-purple); box-shadow: 0 0 10px var(--neon-purple); }
+
+        .telemetry {
+            background: rgba(0,0,0,0.5);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #222;
+        }
+
+        .data-row { display: flex; justify-content: space-between; font-size: 0.85em; margin: 10px 0; border-bottom: 1px dashed #222; padding-bottom: 5px; }
+        .data-row:last-child { border-bottom: none; }
+        .val { font-weight: bold; }
+
+        .viewport {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        canvas {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .helper-text { font-size: 0.8em; color: #666; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="brand-title">PHYSICS_ENGINE</div>
+        <div class="brand-sub">SYSTEM 05: PRECISION MEASUREMENT</div>
+
+        <div class="ui-group">
+            <span class="ui-label">Jaw Displacement (mm)</span>
+            <input type="range" id="jawSlider" min="0" max="40" step="0.1" value="12.3">
+        </div>
+
+        <div class="ui-group">
+            <span class="ui-label" style="color: var(--neon-purple);">Zero Error Calibration (mm)</span>
+            <input type="range" id="errorSlider" min="-0.5" max="0.5" step="0.1" value="0.0">
+            <div style="font-size: 0.7em; color: #555; margin-top: 5px;">Negative = Under-reading | Positive = Over-reading</div>
+        </div>
+
+        <div class="telemetry">
+            <span class="ui-label" style="color: var(--neon-green);">Readout Telemetry</span>
+            <div class="data-row"><span>Main Scale (MSR):</span><span class="val" id="msrVal">-</span></div>
+            <div class="data-row"><span>Vernier Coincidence (VSR):</span><span class="val" id="vsrVal" style="color:var(--neon-green)">-</span></div>
+            <div class="data-row"><span>Least Count:</span><span class="val">0.1 mm</span></div>
+            <div class="data-row"><span>Zero Error (ZE):</span><span class="val" id="zeVal" style="color:var(--neon-purple)">0.0 mm</span></div>
+            <div class="data-row" style="margin-top: 15px; font-size: 1em; color: var(--neon-blue);">
+                <span>FINAL READING:</span><span class="val" id="finalVal">-</span>
+            </div>
+        </div>
+        
+        <p style="font-size: 0.65em; color: #444; margin-top: auto; line-height: 1.6;">
+            10 Vernier Divisions = 9 Main Scale Divisions. Least count = 1mm - 0.9mm = 0.1mm. Formula: MSR + (VSR * 0.1) - ZE.
+        </p>
+    </div>
+
+    <div class="viewport">
+        <div class="helper-text" style="margin-bottom: 10px; color: var(--neon-blue); letter-spacing: 2px;">STANDARD VIEW</div>
+        <canvas id="caliperCanvas" width="800" height="200"></canvas>
+        
+        <div class="helper-text" style="margin-bottom: 10px; margin-top: 10px; color: var(--neon-green); letter-spacing: 2px;">MAGNIFIED COINCIDENCE VIEW</div>
+        <canvas id="zoomCanvas" width="800" height="150"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('caliperCanvas');
+        const ctx = canvas.getContext('2d');
+        const zCanvas = document.getElementById('zoomCanvas');
+        const zCtx = zCanvas.getContext('2d');
+        
+        const jawSlider = document.getElementById('jawSlider');
+        const errorSlider = document.getElementById('errorSlider');
+
+        // Scale Engine Parameters
+        const pxPerMM = 15; // 1mm = 15px on screen
+        const msrStartY = 100;
+        const vsrStartY = 100;
+        const scaleStartX = 50;
+
+        function drawScale(context, startX, startY, isMain, offsetPx, highlightTick, zoomFactor = 1) {
+            context.lineWidth = 1.5 * zoomFactor;
+            context.font = `${12 * zoomFactor}px JetBrains Mono`;
+            context.textAlign = "center";
+
+            let totalTicks = isMain ? 60 : 10;
+            let spacing = isMain ? pxPerMM * zoomFactor : (pxPerMM * 0.9) * zoomFactor; 
+            
+            // Draw baseline
+            context.strokeStyle = "#555";
+            context.beginPath();
+            context.moveTo(startX, startY);
+            context.lineTo(startX + totalTicks * pxPerMM * zoomFactor, startY);
+            context.stroke();
+
+            for (let i = 0; i <= totalTicks; i++) {
+                let x = startX + offsetPx + (i * spacing);
+                let tickHeight = (i % 10 === 0) ? 20 : (i % 5 === 0) ? 15 : 10;
+                tickHeight *= zoomFactor;
+                
+                let yEnd = isMain ? startY - tickHeight : startY + tickHeight;
+
+                // Highlight coinciding line
+                if (!isMain && i === highlightTick) {
+                    context.strokeStyle = "#39FF14"; // Neon green
+                    context.lineWidth = 2.5 * zoomFactor;
+                } else {
+                    context.strokeStyle = "#ccc";
+                    context.lineWidth = 1.5 * zoomFactor;
+                }
+
+                context.beginPath();
+                context.moveTo(x, startY);
+                context.lineTo(x, yEnd);
+                context.stroke();
+
+                // Labels
+                if (isMain && i % 10 === 0) {
+                    context.fillStyle = "#888";
+                    context.fillText(i, x, startY - tickHeight - (5 * zoomFactor));
+                } else if (!isMain) {
+                    context.fillStyle = i === highlightTick ? "#39FF14" : "#888";
+                    context.fillText(i, x, startY + tickHeight + (12 * zoomFactor));
+                }
+            }
+        }
+
+        function updateEngine() {
+            let actualDisplacement = parseFloat(jawSlider.value);
+            let zeroError = parseFloat(errorSlider.value);
+            
+            // The position of the vernier zero line in mm
+            let vZeroMM = actualDisplacement + zeroError; 
+            
+            // Physics Calculations
+            let msr = Math.floor(vZeroMM);
+            // Handling floating point precision issues for exact alignments
+            let vsr = Math.round((vZeroMM % 1) * 10);
+            if (vsr === 10) { vsr = 0; msr += 1; }
+            
+            let calculatedReading = msr + (vsr * 0.1) - zeroError;
+
+            // UI Updates
+            document.getElementById('msrVal').innerText = msr + " mm";
+            document.getElementById('vsrVal').innerText = vsr;
+            document.getElementById('zeVal').innerText = (zeroError > 0 ? "+" : "") + zeroError.toFixed(1) + " mm";
+            document.getElementById('finalVal').innerText = calculatedReading.toFixed(1) + " mm";
+
+            // --- RENDER STANDARD VIEW ---
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let vOffsetPx = vZeroMM * pxPerMM;
+            
+            // Main Scale
+            drawScale(ctx, scaleStartX, msrStartY, true, 0, -1);
+            // Vernier Scale
+            drawScale(ctx, scaleStartX, vsrStartY, false, vOffsetPx, vsr);
+
+            // --- RENDER MAGNIFIED VIEW ---
+            zCtx.clearRect(0, 0, zCanvas.width, zCanvas.height);
+            let zoom = 3;
+            // Center the zoom view on the highlighted tick
+            let centerPointMM = vZeroMM + (vsr * 0.9);
+            let centerPointPx = scaleStartX + (centerPointMM * pxPerMM);
+            
+            // Calculate shift to keep the highlighted tick in the middle of the zoom canvas
+            let zoomShiftX = (zCanvas.width / 2) - (centerPointPx * zoom);
+            
+            let zMainStartY = 75;
+            let zVsrStartY = 75;
+
+            drawScale(zCtx, scaleStartX * zoom + zoomShiftX, zMainStartY, true, 0, -1, zoom);
+            drawScale(zCtx, scaleStartX * zoom + zoomShiftX, zVsrStartY, false, vOffsetPx * zoom, vsr, zoom);
+            
+            // Alignment indicator in Zoom View
+            zCtx.strokeStyle = "rgba(57, 255, 20, 0.2)";
+            zCtx.lineWidth = 20;
+            zCtx.beginPath();
+            zCtx.moveTo(zCanvas.width / 2, 0);
+            zCtx.lineTo(zCanvas.width / 2, zCanvas.height);
+            zCtx.stroke();
+        }
+
+        jawSlider.addEventListener('input', updateEngine);
+        errorSlider.addEventListener('input', updateEngine);
+        
+        // Initial Draw
+        updateEngine();
+    </script>
+</body>
+</html>
