@@ -1,0 +1,1031 @@
+<!doctype html>
+<html>
+<head>
+    <title>Vernier Caliper Simulator</title>
+    <meta name="keywords" content="vernier simulation physics measurement">
+    <meta name="author" content="Mahesh Kurmi">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <style>
+        body {
+            background: white;
+            color: #323232;
+            font-weight: 300;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-family: Helvetica neue, roboto;
+        }
+
+        img {
+            width: 56px;
+            height: 48px;
+        }
+
+        h1 {
+            font-weight: 200;
+            margin: 10px;
+        }
+        #container canvas{
+            position: relative;
+        }
+        #container #overlay {
+            position: absolute;
+        }
+
+        .hover_bkgr_fricc{
+            background:rgba(0,0,0,.4);
+            cursor:pointer;
+            display:none;
+            height:100%;
+            position:fixed;
+            text-align:center;
+            top:0;
+            width:100%;
+            z-index:10000;
+        }
+        .hover_bkgr_fricc .helper{
+            display:inline-block;
+            height:100%;
+            vertical-align:middle;
+        }
+        .hover_bkgr_fricc > div {
+            background-color: #fff;
+            box-shadow: 10px 10px 60px #555;
+            display: inline-block;
+            height: auto;
+            max-width: 551px;
+            min-height: 100px;
+            vertical-align: middle;
+            width: 60%;
+            position: relative;
+            border-radius: 8px;
+            padding: 15px 5%;
+        }
+        .popupCloseButton {
+            background-color: #fff;
+            border: 3px solid #999;
+            border-radius: 50px;
+            cursor: pointer;
+            display: inline-block;
+            font-family: arial;
+            font-weight: bold;
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            font-size: 25px;
+            line-height: 30px;
+            width: 30px;
+            height: 30px;
+            text-align: center;
+        }
+        .popupCloseButton:hover {
+            background-color: #ccc;
+        }
+        .trigger_popup_fricc {
+            background-color: #fff;
+            border: 3px solid #999;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 20px;
+            position:absolute;
+            font-family: arial;
+            font-weight: bold;
+            position: absolute;
+            top:5px;
+            left:5px;
+            zindex:2;
+            margin: 10px;
+            display: inline-block;
+            font-weight: bold;
+            right: -20px;
+            font-size: 25px;
+            line-height: 30px;
+            width: 30px;
+            height: 30px;
+            text-align: center;
+        }
+        #gui {
+            font-size: 15px;
+            position:absolute;
+            font-family: arial;
+            transform:scale(1.2);
+            transform-origin: top right;
+            font-weight: bold;
+            position: absolute;
+            right:5px;
+            margin-left: auto;
+            zindex:2;
+            font-weight: bold;
+            font-size: 25px;
+        }
+        :root {
+            --tp-base-background-color: hsla(200, 6%, 15%, 0.8);
+            --tp-base-shadow-color: hsla(0, 0%, 0%, 0.26);
+            --tp-button-background-color: hsla(230, 7%, 70%, 1.00);
+            --tp-button-background-color-active: hsla(229, 7%, 55%, 1.00);
+            --tp-button-background-color-focus: hsla(231, 7%, 60%, 1.00);
+            --tp-button-background-color-hover: hsla(230, 7%, 65%, 1.00);
+            --tp-button-foreground-color: hsla(230, 7%, 20%, 1.00);
+            --tp-container-background-color: hsla(230, 7%, 75%, 0.10);
+            --tp-container-background-color-active: hsla(230, 7%, 75%, 0.25);
+            --tp-container-background-color-focus: hsla(230, 7%, 75%, 0.20);
+            --tp-container-background-color-hover: hsla(230, 7%, 75%, 0.15);
+            --tp-container-foreground-color: hsla(230, 7%, 75%, 1.00);
+            --tp-groove-foreground-color: hsla(230, 7%, 0%, 0.20);
+            --tp-input-background-color: hsla(230, 0%, 0%, 0.55);
+            --tp-input-background-color-active: hsla(230, 7%, 0%, 0.35);
+            --tp-input-background-color-focus: hsla(230, 7%, 0%, 0.30);
+            --tp-input-background-color-hover: hsla(230, 7%, 0%, 0.25);
+            --tp-input-foreground-color: hsla(230, 9%, 81%, 1.00);
+            --tp-label-foreground-color: hsla(230, 6%, 83%, 0.70);
+            --tp-monitor-background-color: hsla(230, 7%, 0%, 0.20);
+            --tp-monitor-foreground-color: hsla(230, 7%, 75%, 0.70);
+        }
+
+    </style>
+    <script src="hammer.js"></script>
+    <script src="tweakpane3.js"></script>
+</head>
+
+<body>
+
+
+<div class="container">
+    <div id="gui" style="position: absolute">
+
+    </div>
+    <canvas id="myCanvas" style="border: 1px solid #c3c3c3;">
+        Your browser does not support the HTML5 canvas tag.
+    </canvas>
+    <a class="trigger_popup_fricc">	&#8505;</a>
+    <div id="overlay">
+
+        <div class="hover_bkgr_fricc">
+            <span class="helper"></span>
+            <div>
+                <div class="popupCloseButton">&times;</div>
+                <h3>Vernier Simulation</h3>
+                <p> Customise main scale divisions, vernier scale divisions and zero error using the sliders at the top right panel.<br/>
+                    Create problem by clicking create problem button, and drag the created object near the <i>internal jaws</i>, <i>external jaws</i> or <i> depth blade</i> to snap, now move vernier to read its width.
+                <h4>Controls</h4>
+                Pinch or use keys Page Up/down to zoom.<br>
+                Use mouse wheel, arrow keys or drag thimble to rotate vernier.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type='text/javascript'>
+    /*drawing offset*/
+    var scale;
+    var xOffset=30;
+    var yOffset=40;
+    var dragMode=0;//0==none, 1=world, 2=vernier, 3= object
+
+    var mx, my; //prev mouse positions
+    var bgColor = "rgb(0,64,84)";
+    var fgColor="orange";//rgb(255,255,255)";
+    const scaleColor="black";
+
+    var loadedItems=0;
+    const itemsToLoad=7;
+    //gauge variables
+    var imgVernier=new Image();
+    imgVernier.src="vernier.png"
+    imgVernier.onload=itemloaded;
+    var imgVernier1=new Image();
+    imgVernier1.src="vernier1.png"
+    imgVernier1.onload=itemloaded;
+    var imgVernier2=new Image();
+    imgVernier2.src="vernier2.png"
+    imgVernier2.onload=itemloaded;
+    var imgVernier3=new Image();
+    imgVernier3.src="vernier3.png"
+    imgVernier3.onload=itemloaded;
+    var imgBlade=new Image();
+    imgBlade.src="blade.png"
+    imgBlade.onload=itemloaded;
+    var imgBase=new Image();
+    imgBase.src="vernier_base.png"
+    imgBase.onload=itemloaded;
+    var imgSimphy=new Image();
+    imgSimphy.src="simphy-logo.png"
+    imgSimphy.onload=itemloaded;
+
+    var tickSound = new Audio("tick.wav");
+    tickSound.onload=itemloaded;
+    //tickSound.preload = 'auto';
+    //tickSound.load();
+    const scaleOriginX=67; //jaw Left position
+    const scaleOriginY0=105; //scale top position
+    const scaleOriginY=162; //scale bottom position
+    const offsetOriginX=12; //distance of scale origin level from scaleOriginX
+    const vernierOriginX=55; //distance of vernier origin in pixel in vernier.png
+    const vernierOriginY=161;
+
+    const rulerWidthPixel=915
+    const majorTickLengthPixels=22;
+    const minorTickLengthPixels=13;
+    const vernierMajorTickLengthPixels=10;
+    const vernierMinorTickLengthPixels=8;
+    const mainScaleLengthPixels=600; //600
+
+    const vernierScaleHeightPixels=354;
+    const bladeWidthPixel=716;
+    const bladeHeightPixel=20;
+    const rulerMidPointY=135;
+
+    const unit="cm";
+    var mainScaleDivisions=50;
+    var msdValue=0.1;
+    var vernierScaleDivisions=10;
+    var msd_pixels=mainScaleLengthPixels/mainScaleDivisions;
+    var vsd_pixels=mainScaleLengthPixels/mainScaleDivisions;
+    var vernierScaleLengthPixels=180;
+
+    var precision=2;
+    var LC=0;
+    var msr=0;
+    var vsr=0;
+    var zeroError=0;
+    var displayInfo=false;
+    var objectWidthPixel=25;
+    var drawSubDivision=false;
+    var randomZeroError=true;
+    var randomMainScaleDivisions=true;
+    var randomVernierScaleDivision=true;
+    var randomObjectWidthPixel=true;
+    var objectTobeMeasured={path:null,x:0,y:0,length:100,w:100,h:100,R1:30,R2:50,h2:100,h1:80,th:0,mode:0,state:0};//state =0=hide, 1= visible but not snapped, 2=snapped
+
+    //create gui
+    const pane = new Tweakpane.Pane({container:document.getElementById("gui"),title:"Vernier Settings"});
+
+    const tab = pane.addTab({
+        pages: [
+            {title: 'Device settings'},
+            {title: 'Create Problem'},
+        ],
+    });
+    //gui.remember(window);
+    // var deviceFolder=pane.addFolder({title:"Device Settings",expanded:true});
+    tab.pages[0].addInput(window, "mainScaleDivisions",{label:"MSD Count",min:20,max:100,step:10}).on('change',update);
+    var csController= tab.pages[0].addInput(window, "vernierScaleDivisions",{label:"VSD Count",min:5,max:25,step:5});
+    csController.on('change',update);
+    var zeController=tab.pages[0].addInput(window, "zeroError",{label:"Zero Error",min:-vernierScaleDivisions+1,max:vernierScaleDivisions-1,step:1});
+    zeController.on('change',update);
+    tab.pages[0].addInput(window, "drawSubDivision",{label:"Virtual Divisions"}).on('change',paint);
+
+    tab.pages[0].addInput(window, "displayInfo",{label:"Display values"}).on('change',paint);
+    tab.pages[0].addSeparator();
+    tab.pages[0].addInput(window, "bgColor",{label:"Background",picker: 'inline'}).on('change',paint);
+
+    console.log(csController);
+    // var problemFolder=pane.addFolder({title:"Problem Settings",expanded:false});
+
+    var problemFolder=tab.pages[1].addFolder({title:"Check to randomize"});
+    problemFolder.addInput(window,"randomZeroError",{label:"Zero Error"});
+    problemFolder.addInput(window,"randomMainScaleDivisions",{label:"MSD Count"});
+    problemFolder.addInput(window,"randomVernierScaleDivision",{label:"VSD Count"});
+    problemFolder.addInput(window,"randomObjectWidthPixel",{label:"Object Dimensions"});
+    tab.pages[1].addButton({title:"createProblem"}).on('click',createProblem);
+
+
+    var canvas=document.getElementById("myCanvas");
+    //canvas.width = Math.max(900,window.innerWidth);
+    //canvas.height = Math.max(600,window.innerHeight);
+    //scale=canvas.width/1500;
+    canvas.width=window.innerWidth* devicePixelRatio;
+            canvas.height=window.innerHeight* devicePixelRatio;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+    scale=(canvas.width/1500);
+    tab.pages[0].addInput(window, "scale",{label:"Scale",min:0.5,max:3,step:0.1}).on('change',update);
+ 
+    var ctx=canvas.getContext("2d");
+    ctx.font = "30px Arial";
+    //Add event listeners
+    window.addEventListener('resize',function(ev) { return resize(ev); });
+    paint();
+    function itemloaded(){
+        loadedItems++;
+        if(loadedItems==itemsToLoad){
+            hammertime = new Hammer(canvas);
+            hammertime.get('pinch').set({ enable: true });
+            hammertime.get('pan').set({ direction: Hammer.DIRECTION_ALL, threshold: 0, });
+            hammertime.on('panstart', function(ev) {
+                let mouseEvent = new MouseEvent("mousedown", {
+                    clientX: ev.center.x,
+                    clientY: ev.center.y
+                });
+                //console.log(ev);
+                mousePressed(mouseEvent);
+                //canvas.dispatchEvent(mouseEvent);
+            });
+            hammertime.on('panend', function(ev) {
+                let mouseEvent = new MouseEvent("mouseup", {
+                    clientX: ev.center.x,
+                    clientY: ev.center.y
+                });
+                // console.log(ev.type);
+                // canvas.dispatchEvent(mouseEvent);
+                mouseReleased(mouseEvent);
+            });
+            hammertime.on('panmove', function(ev) {
+
+                let mouseEvent = new MouseEvent("mousemove", {
+                    clientX: ev.center.x,
+                    clientY: ev.center.y
+                });
+                mouseDragged(mouseEvent);
+                // console.log(ev.type);
+                // canvas.dispatchEvent(mouseEvent);
+            });
+
+
+            hammertime.on('pinchstart', function(ev) {
+                intiScale=scale;
+
+            });
+
+            //can use pinch in pinchout separately
+            hammertime.on('pinch', function(ev) {
+
+                console.log(ev.type+" scale="+ev.scale);
+                let oldScale=scale;
+
+                let x = ev.center.x/scale;
+                let y = ev.center.y/scale;
+                scale=intiScale*ev.scale;
+
+                xOffset-= x*(scale-oldScale);
+                yOffset-= y*(scale-oldScale);
+
+                //xOffset=(xOffset+canvas.width/2-ev.center.x);//*scale;
+                //yOffset=(yOffset+canvas.height/2-ev.center.y)//*scale;
+                paint();
+            });
+
+
+            canvas.addEventListener("mousewheel",mouseWheelMoved);
+            window.addEventListener('keydown',onKeyEvent,false);
+            document.querySelector(".trigger_popup_fricc").onclick=function(){
+                document.querySelector('.hover_bkgr_fricc').style.display = "block";
+            };
+            document.querySelector('.hover_bkgr_fricc').onclick =function(){
+                document.querySelector('.hover_bkgr_fricc').style.display = "none";
+            };
+            document.querySelector('.popupCloseButton').onclick=function(){
+                document.querySelector('.hover_bkgr_fricc').style.display = "none";
+            };
+
+        }
+        paint();
+    }
+
+    function resize(){
+        if(window.innerWidth<10||window.innerHeight<10)return;
+       // scale*=window.innerWidth/canvas.width;
+        //canvas.width = window.innerWidth;
+        //canvas.height = window.innerHeight;
+        canvas.width=window.innerWidth* devicePixelRatio;
+            canvas.height=window.innerHeight* devicePixelRatio;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+        scale*=(window.innerWidth/canvas.width);
+        pane.refresh();
+        update();
+    }
+
+    init();
+
+    function init(){
+        resize();
+    }
+
+    function createProblem() {
+        if (randomMainScaleDivisions) mainScaleDivisions = 50 * (1 + Math.round(2 * Math.random()));
+        if (randomVernierScaleDivision) vernierScaleDivisions = (1 + Math.round(Math.random() * 5)) * 5;
+        if (vernierScaleDivisions > mainScaleDivisions / 4) vernierScaleDivisions = Math.round(mainScaleDivisions / 20) * 5;
+        if (randomZeroError) zeroError = Math.round(2 * vernierScaleDivisions * (Math.random() - 0.5));
+        if (randomObjectWidthPixel || objectTobeMeasured.path==null) {
+            objectWidthPixel = mainScaleLengthPixels * (1 + 3 * Math.random()) / 10;
+
+            //objectTobeMeasured.state=1;
+            objectTobeMeasured.R2 = (0.3 + 0.7 * Math.random()) * mainScaleLengthPixels / 4;
+            objectTobeMeasured.R1 = (0.7 + 0.2 * Math.random()) * objectTobeMeasured.R2;
+            objectTobeMeasured.h2 = (0.4 + 0.6 * Math.random()) * mainScaleLengthPixels / 5;
+            objectTobeMeasured.h1 = (0.7 + 0.2 * Math.random()) * objectTobeMeasured.h2;
+            objectTobeMeasured.w = 2 * objectTobeMeasured.R2;
+            objectTobeMeasured.h = objectTobeMeasured.h2;
+            objectTobeMeasured.length = 2 * objectTobeMeasured.R2;
+
+            let path = new Path2D()
+            path.moveTo(0, 0);
+            path.lineTo(2 * objectTobeMeasured.R2, 0);
+            path.lineTo(2 * objectTobeMeasured.R2, objectTobeMeasured.h2);
+            path.lineTo(objectTobeMeasured.R1 + objectTobeMeasured.R2, objectTobeMeasured.h2)
+            path.lineTo(objectTobeMeasured.R2 + objectTobeMeasured.R1, objectTobeMeasured.h2 - objectTobeMeasured.h1);
+            path.lineTo(objectTobeMeasured.R2 - objectTobeMeasured.R1, objectTobeMeasured.h2 - objectTobeMeasured.h1);
+            path.lineTo(objectTobeMeasured.R2 - objectTobeMeasured.R1, objectTobeMeasured.h2);
+            path.lineTo(0, objectTobeMeasured.h2);
+            path.closePath();
+            objectTobeMeasured.path = path;
+        }
+
+        //objectTobeMeasured.x=xOffset+canvas.width-objectTobeMeasured.w-10;
+        //objectTobeMeasured.y=yOffset+canvas.height-objectTobeMeasured.h-10;
+        if(objectTobeMeasured.state==2){
+            //objectTobeMeasured.x=scaleOriginX   ;
+            //objectTobeMeasured.y=scaleOriginY+objectTobeMeasured.h/2;
+            if(objectTobeMeasured.mode==1){
+                objectTobeMeasured.w=2*objectTobeMeasured.R2;
+                objectTobeMeasured.h=objectTobeMeasured.h2;
+                objectTobeMeasured.th=0;
+                objectTobeMeasured.mode=1;
+                objectTobeMeasured.state=2;
+                objectTobeMeasured.x=32-objectTobeMeasured.R2+objectTobeMeasured.R1;
+                objectTobeMeasured.y=3-objectTobeMeasured.h2+objectTobeMeasured.h1;
+                objectTobeMeasured.length=2*objectTobeMeasured.R1;
+             }else if(objectTobeMeasured.mode==0){
+                objectTobeMeasured.w=2*objectTobeMeasured.R2;
+                objectTobeMeasured.h=objectTobeMeasured.h2;
+                objectTobeMeasured.th=0;
+                objectTobeMeasured.mode=0;
+                objectTobeMeasured.state=2;
+                objectTobeMeasured.x=scaleOriginX;
+                objectTobeMeasured.y=imgVernier.height-50-objectTobeMeasured.h/2;
+                objectTobeMeasured.length=2*objectTobeMeasured.R2;
+            }else if( objectTobeMeasured.mode==2){
+                objectTobeMeasured.th=Math.PI/2;
+                objectTobeMeasured.w=-objectTobeMeasured.h2;
+                objectTobeMeasured.h=objectTobeMeasured.R2*2;
+                objectTobeMeasured.x=rulerWidthPixel-objectTobeMeasured.w;
+                objectTobeMeasured.y=rulerMidPointY-objectTobeMeasured.R2;
+                objectTobeMeasured.state=2;
+                objectTobeMeasured.mode=2;
+                objectTobeMeasured.length=objectTobeMeasured.h1;
+            }
+            objectTobeMeasured.state=2;
+        }else {
+            objectTobeMeasured.state=1;
+            objectTobeMeasured.mode=0;
+            objectTobeMeasured.th = 0;
+            objectTobeMeasured.w = 2 * objectTobeMeasured.R2;
+            objectTobeMeasured.h = objectTobeMeasured.h2;
+            objectTobeMeasured.length = 2 * objectTobeMeasured.R2;
+            if(objectTobeMeasured.x<-xOffset) objectTobeMeasured.x=-xOffset;
+            if(objectTobeMeasured.y<-yOffset) objectTobeMeasured.y=-yOffset;
+            //if(objectTobeMeasured.x>-xOffset+canvas.width-objectTobeMeasured.w-50) objectTobeMeasured.x = -xOffset+canvas.width-objectTobeMeasured.w-100;
+           // if(objectTobeMeasured.y>-yOffset+canvas.height-objectTobeMeasured.h-50) objectTobeMeasured.y = -yOffset+canvas.height-objectTobeMeasured.h-100;
+
+        }
+
+        csController.maxValue= mainScaleDivisions/3;
+        zeController.minValue=-vernierScaleDivisions+1;
+        zeController.maxValue= vernierScaleDivisions-1;
+
+        /*
+        for (let i in deviceFolder.__controllers) {
+            if (deviceFolder.__controllers[i].property == "zeroError"){
+                deviceFolder.__controllers[i].min(-vernierScaleDivisions+1).max(vernierScaleDivisions-1).step(1);
+            }
+            if (deviceFolder.__controllers[i].property == "vernierScaleDivisions"){
+                deviceFolder.__controllers[i].min(5).max(mainScaleDivisions/3).step(1);
+            }
+            deviceFolder.__controllers[i].updateDisplay();
+
+        }*/
+        pane.refresh();
+
+        translateVernier(0);
+    }
+
+    function translateVernier(div){
+        vsr+=div;
+        if (vsr<0) {
+            vsr=vernierScaleDivisions+vsr;
+            msr-=1;
+
+        }else if(vsr>=vernierScaleDivisions){
+            vsr=vsr-vernierScaleDivisions;
+            msr+=1;
+
+        }
+        let correctedReading=getCorrectedReading();
+
+        if(correctedReading<=0){
+            msr=0;
+            vsr=0;
+            tickSound.muted=false;
+            if(tickSound.paused)tickSound.play();
+        }
+        if(correctedReading>=mainScaleDivisions*msdValue){
+            msr=mainScaleDivisions;
+            vsr=0;
+            tickSound.muted=false;
+            if(tickSound.paused)tickSound.play();
+        }
+        if(objectWidthPixel!=0){
+            //if(msr*vernierScaleDivisions+vsr)*mainScaleLengthPixels
+        }
+        update();
+    }
+
+    function update(ev){
+        if(ev)console.log(ev.value.toFixed(2));
+        LC=msdValue/vernierScaleDivisions;
+        msd_pixels=mainScaleLengthPixels/mainScaleDivisions;
+        vsd_pixels=msd_pixels*(1-1/vernierScaleDivisions);
+        vernierScaleLengthPixels=Math.max(imgVernier1.width+imgVernier3.width,50+vsd_pixels*vernierScaleDivisions+50);//imgVernier3.width;
+         precision=(vernierScaleDivisions%3==0||vernierScaleDivisions%7==0)?3:2;
+        if(objectTobeMeasured.state==2){
+            let v=(msr+vsr/vernierScaleDivisions)*msd_pixels
+            let ol=objectTobeMeasured.length;
+            if((objectTobeMeasured.mode==0 && v<ol) || (objectTobeMeasured.mode!=0 && v>ol)){
+                msr=Math.floor(ol/msd_pixels);
+                vsr=Math.floor((ol/msd_pixels-msr)*vernierScaleDivisions);
+                if(tickSound.paused)tickSound.play();
+            }
+        }
+        if(csController) {
+            csController.maxValue = mainScaleDivisions / 3;
+            zeController.minValue = -vernierScaleDivisions + 1;
+            zeController.maxValue = vernierScaleDivisions - 1;
+        }
+        csController.maxValue= mainScaleDivisions/3;
+        zeController.minValue=-vernierScaleDivisions+1;
+        zeController.maxValue= vernierScaleDivisions-1;
+        paint();
+    }
+
+
+    function paint(){
+         //	ctx.clear();
+        ctx.lineWidth=1.5;
+        ctx.fillStyle=bgColor;
+        ctx.strokeStyle=fgColor;
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        if(loadedItems<itemsToLoad){
+           ctx.font = "30px Arial";
+           ctx.fillStyle=fgColor;
+           outString(canvas.width/2,canvas.height/2,"Loading ..."+(loadedItems*100/itemsToLoad).toFixed(0)+"%",1,1);
+           return;
+        }
+        ctx.font = '10pt sans-serif';
+
+        ctx.scale(scale*devicePixelRatio,scale*devicePixelRatio);
+        ctx.translate(xOffset,yOffset);
+        ctx.save();
+
+        //draw  blade first
+        let shift=(msr+vsr/vernierScaleDivisions)*msd_pixels;
+        let x=rulerWidthPixel+shift-bladeWidthPixel;
+        let y=(scaleOriginY0+scaleOriginY)/2-bladeHeightPixel/2;
+        ctx.drawImage(imgBlade,x,y);
+
+        //draw Base of gauge
+        ctx.drawImage(imgBase,0,0);
+
+        //draw ruler on main scale
+        ctx.translate(scaleOriginX+offsetOriginX,scaleOriginY);
+        //Rectangle2D.Double rect = new Rectangle2D.Double(Xoffset,Yoffset,mainscaleWidth,mainscaleHeight);
+        ctx.fillStyle=scaleColor;//"rgb(210,210,210)";
+        ctx.strokeStyle=scaleColor;
+        x=-msd_pixels*zeroError/vernierScaleDivisions,y=0;
+        let ticklength=0;
+        let labelGap=0;
+        while(msd_pixels*labelGap<50){
+            labelGap+=5;
+        }
+        for (let i=0;i<=mainScaleDivisions;i++){
+            ticklength=(i % 5==0)?majorTickLengthPixels:minorTickLengthPixels;
+            drawLine(x,y,x,y-ticklength);
+            if (i%labelGap==0)outString(x, (y-ticklength-3),i*msdValue,1,2);
+            x+=msd_pixels;
+        }
+
+        if(drawSubDivision){
+            ctx.lineWidth=0.5;
+            let dx=msd_pixels/vernierScaleDivisions;
+            let x=-msd_pixels*zeroError/vernierScaleDivisions + getMainScaleReading()*msd_pixels;
+            ticklength=minorTickLengthPixels-3;
+            for (let i=0;i<=vernierScaleDivisions;i++){
+                drawLine(x,y,x,y-ticklength);
+                x+=dx;
+            }
+            ctx.lineWidth=1.5;
+        }
+
+        ctx.restore();
+        ctx.strokeStyle=scaleColor;
+        ctx.fillStyle=scaleColor;
+
+        //ctx.translate(scaleOriginX+shift,scaleOriginY)
+        outString(844, 117,"1 MSD = "+msdValue+unit,1,0);
+        ctx.fillStyle=fgColor;
+        outString(844, 135,"www.simphy.com",1,0);
+        ctx.fillStyle=scaleColor;
+        //draw Vernier scale
+        x=scaleOriginX-offsetOriginX+shift-vernierOriginX;
+        y=scaleOriginY-vernierOriginY;
+        ctx.drawImage(imgVernier1,x,y);
+        let w=vernierScaleLengthPixels-imgVernier1.width-imgVernier3.width;
+        if(w>0){
+            let h=imgVernier1.height;
+            ctx.drawImage(imgVernier2,0,0,w,h,x+imgVernier1.width,y,w,h);
+        }
+
+        ctx.drawImage(imgVernier3,x+imgVernier1.width+w,y);
+
+        x=scaleOriginX+shift+offsetOriginX  ;
+        y=vernierOriginY-1;
+        ctx.font = '8pt sans-serif';
+
+        let N=vernierScaleDivisions;
+
+        labelGap=0;
+        while(vsd_pixels*labelGap<20){
+            labelGap+=1;
+        }
+        for (let i=0;i<=N;i++){
+            ticklength=vernierMinorTickLengthPixels;
+            if(i%labelGap==0){
+                ticklength=vernierMajorTickLengthPixels;
+                outString(x,y+ticklength+1,i,1,0 );
+            }
+            drawLine(x,y,x,y+ticklength);
+            x+=vsd_pixels;
+        }
+        ctx.fillStyle=fgColor;
+        ctx.font = '12pt sans-serif';
+
+        /**
+        if(objectTobeMeasured.state>0){
+            let grd=ctx.createLinearGradient(objectTobeMeasured.x,objectTobeMeasured.y,objectTobeMeasured.x+objectTobeMeasured.w,objectTobeMeasured.y);
+            grd.addColorStop(0,"rgb(120,120,120)")
+            grd.addColorStop(0.5,"rgb(220,230,210)")
+            grd.addColorStop(1,"rgb(120,120,120)")
+            ctx.fillStyle=grd;
+            ctx.fillRect(objectTobeMeasured.x+1,objectTobeMeasured.y,objectTobeMeasured.w,objectTobeMeasured.h);
+            ctx.strokeStyle=scaleColor;
+            ctx.strokeRect(objectTobeMeasured.x+1,objectTobeMeasured.y,objectTobeMeasured.w,objectTobeMeasured.h);
+            ctx.fillStyle=fgColor;
+        }
+        */
+
+        //draw Base of gauge
+        ctx.drawImage(imgBase,0,0,64,102,0,0,64,102);
+        if(objectTobeMeasured.state>0){
+            ctx.save();
+            ctx.fillStyle="rgb(130,190,140)";
+            ctx.strokeStyle=scaleColor;
+            ctx.translate(objectTobeMeasured.x,objectTobeMeasured.y);
+            ctx.rotate(objectTobeMeasured.th);
+            ctx.fill(objectTobeMeasured.path);
+            ctx.stroke(objectTobeMeasured.path);
+            ctx.restore();
+        }
+
+        if(displayInfo)drawInfo();
+        ctx.resetTransform();
+
+       // ctx.drawImage(imgSimphy,5,5,100,30);
+    }
+
+    function drawInfo(){
+        //draw MSD Info and VSD Info
+
+        ctx.fillStyle=fgColor;
+        ctx.strokeStyle=fgColor;
+        //dra MSD Hint
+        let x=scaleOriginX+offsetOriginX-msd_pixels*zeroError/vernierScaleDivisions + getMainScaleReading()*msd_pixels;
+        let y=scaleOriginY-majorTickLengthPixels;
+        let arrowSize=5;
+        drawLineWithArrows(x,y,x, y-80,arrowSize,arrowSize,true,false);
+        outString(x, y-83,getMainScaleReading()+"MSD = "+formatValue(getMainScaleReading()*msdValue),1,0);
+
+        //Draw VSD Hint
+        let gappixel=msd_pixels*(msr+vsr/vernierScaleDivisions);
+        x=scaleOriginX+gappixel+offsetOriginX+getVernierScaleReading()*vsd_pixels;
+        y=scaleOriginY+majorTickLengthPixels;
+        drawLineWithArrows(x,y,x, y+20,arrowSize,arrowSize,true,false);
+        outString(x, y+22,getVernierScaleReading()+"VSD = "+formatValue(msdValue*getVernierScaleReading()/vernierScaleDivisions),1,0);
+
+        //Draw SCrew gauge Reading
+        let mr=getMeasuredReading();
+        let cr=getCorrectedReading();
+        let ze=getZeroError();
+        x=scaleOriginX-1;
+        y=imgVernier.height+5;
+        let xs=[scaleOriginX,scaleOriginX-34,rulerWidthPixel];
+        let ys=[imgVernier.height+5,4,scaleOriginY-70];
+        for(let i=0;i<3;i++){
+            x=xs[i];
+            y=ys[i];
+            drawLine(x,y-8,x,y+8);
+            drawLineWithArrows(x-30,y,x, y,arrowSize,arrowSize,false,true);
+            x+=gappixel;
+            drawLine(x,y-8,x,y+8);
+            drawLineWithArrows(x,y,x+30, y,arrowSize,arrowSize,true,false);
+            x-=gappixel/2;
+            y=y+20;
+            if(ze==0){
+                outString(x, y,formatValue(cr),1,1);
+            }else if(ze>0){
+                outString(x, y,formatValue(mr)+' - '+formatValue(ze)+" = "+formatValue(cr),1,1);
+            }else{
+                outString(x, y,formatValue(mr)+' + '+formatValue(-ze)+" = "+formatValue(cr),1,1);
+            }
+        }
+
+
+        /*
+        let objw=(objectTobeMeasured.w/msd_pixels)*msdValue;
+        outString(20, 550," msr="+getMainScaleReading()+"  vsr="+getVernierScaleReading(),0,2);
+        outString(20, 575,"Measured Reading="+mr.toFixed(3)+" ZeroError="+ze.toFixed(3)+ " Corrected Reading ="+cr.toFixed(3),0,2);
+        outString(20, 625,"Obj Width pixels="+objectTobeMeasured.w.toFixed(3)+"pixels , msd in pixels =  "+msd_pixels.toFixed(3)+" cm",0,2);
+        outString(20, 600,"Actual Object Width = ="+objw.toFixed(3),0,2);
+        */
+    }
+
+
+    function getZeroError(){
+        return (zeroError/vernierScaleDivisions)*msdValue;
+    }
+
+    function formatValue(s){
+        return s.toFixed(precision)+unit;
+    }
+    function getMainScaleReading(){
+        return Math.floor((msr*vernierScaleDivisions+vsr+zeroError)/vernierScaleDivisions);
+    }
+
+    function getVernierScaleReading(){
+        return mod(vsr+zeroError,vernierScaleDivisions);
+    }
+
+    function getMeasuredReading(){
+        return getCorrectedReading()+getZeroError();
+    }
+
+    function getCorrectedReading(){
+        return (msr+vsr/vernierScaleDivisions)*msdValue;
+    }
+
+
+    /**
+     * returns +ve remainder whn a is divided by n
+     * */
+    function mod(a,n){
+        return ((a % n ) + n ) % n;
+    }
+    function drawLine(x1,y1,x2,y2){
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    // x0,y0: the line's starting point
+    // x1,y1: the line's ending point
+    // width: the distance the arrowhead perpendicularly extends away from the line
+    // height: the distance the arrowhead extends backward from the endpoint
+    // arrowStart: true/false directing to draw arrowhead at the line's starting point
+    // arrowEnd: true/false directing to draw arrowhead at the line's ending point
+    function drawLineWithArrows(x0,y0,x1,y1,aWidth,aLength,arrowStart,arrowEnd){
+        var dx=x1-x0;
+        var dy=y1-y0;
+        var angle=Math.atan2(dy,dx);
+        var length=Math.sqrt(dx*dx+dy*dy);
+        //
+        ctx.save();
+        ctx.translate(x0,y0);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0,0);
+        ctx.lineTo(length,0);
+        if(arrowStart){
+            ctx.moveTo(aLength,-aWidth);
+            ctx.lineTo(0,0);
+            ctx.lineTo(aLength,aWidth);
+        }
+        if(arrowEnd){
+            ctx.moveTo(length-aLength,-aWidth);
+            ctx.lineTo(length,0);
+            ctx.lineTo(length-aLength,aWidth);
+        }
+        //
+        ctx.stroke();
+        ctx.restore();
+    }
+    function outString( x,y, s, x_align, y_align) {
+        var fm=ctx.measureText(s);
+        var h=10;//fm.height not supported in browsers
+        switch (y_align) {
+            case 0:
+                y += h;
+                break;
+            case 1:
+                y += h / 2;
+                break;
+            case 2:
+                break;
+        }
+        switch (x_align) {
+            case 0:
+                ctx.fillText(s, x+3, y);
+                break;
+            case 1:
+                ctx.fillText(s, x - fm.width/2, y);
+                break;
+            case 2:
+                ctx.fillText(s, x - fm.width / 2, y);
+                break;
+        }
+    }
+
+
+    function myTouchMove(te){
+        te.preventDefault();
+        var touch = te.touches[0];
+        var mouseEvent = new MouseEvent("mousemove", {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+    }
+
+    function myTouchStart(te){
+        te.preventDefault();
+        var touch = te.touches[0];
+        var mouseEvent = new MouseEvent("mousedown", {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+    }
+
+    function myTouchEnd(te){
+        te.preventDefault();
+        //var touch = te.touches[0];
+        var mouseEvent = new MouseEvent("mouseup", {
+            clientX: -1,
+            clientY: -1
+        });
+        canvas.dispatchEvent(mouseEvent);
+    }
+
+    function getMousePos(event){
+        //let rect = canvas.getBoundingClientRect();
+        return [ event.clientX ,event.clientY ];
+    }
+
+    function mousePressed( me) {
+        let m=getMousePos(me);
+
+        //convert mouse pos in world coordinates taking translation and scale in account
+        let x = m[0]/scale-xOffset;
+        let y = m[1]/scale-yOffset;
+        let shift=scaleOriginX+(msr+vsr/vernierScaleDivisions)*msd_pixels;
+        if((x>shift && x<shift+imgVernier1.width-60 && y>scaleOriginY-100 && y<vernierScaleHeightPixels)||
+            (x>shift+imgVernier1.width-60 && x<shift+vernierScaleLengthPixels-imgVernier3.width && y>scaleOriginY-100 && y<scaleOriginY+35)) {
+            dragMode = 2;
+        }else if(objectTobeMeasured.state>0 && Math.abs(x-objectTobeMeasured.x-objectTobeMeasured.w/2)<Math.abs(objectTobeMeasured.w/2) && Math.abs(y-objectTobeMeasured.y-Math.abs(objectTobeMeasured.h/2))<Math.abs(objectTobeMeasured.h/2) ){
+            dragMode = 3;
+            objectTobeMeasured.state=1;
+        }else{
+            dragMode=1;
+        }
+        paint();
+        mx = m[0];
+        my = m[1];
+        me.preventDefault();
+    }
+
+    function mouseReleased( me) {
+        if(dragMode==3) { //move object
+            let x=objectTobeMeasured.x;
+            let y=objectTobeMeasured.y
+            let w= Math.abs(objectTobeMeasured.w);
+            let h= Math.abs(objectTobeMeasured.h) ;
+            //find center of object
+            x+=w/2;
+            y+=h/2;
+            //check if object is snapped to main jaws
+            if(Math.abs(x-scaleOriginX)<w+20){
+                if(Math.abs(y-30)<h+50){
+                    objectTobeMeasured.w=2*objectTobeMeasured.R2;
+                    objectTobeMeasured.h=objectTobeMeasured.h2;
+                    objectTobeMeasured.th=0;
+                    objectTobeMeasured.mode=1;
+                    objectTobeMeasured.state=2;
+                    objectTobeMeasured.x=32-objectTobeMeasured.R2+objectTobeMeasured.R1;
+                    objectTobeMeasured.y=3-objectTobeMeasured.h2+objectTobeMeasured.h1;
+                    objectTobeMeasured.length=2*objectTobeMeasured.R1;
+                }else if( Math.abs(y-scaleOriginY-100)<h+50){
+                    objectTobeMeasured.w=2*objectTobeMeasured.R2;
+                    objectTobeMeasured.h=objectTobeMeasured.h2;
+                    objectTobeMeasured.th=0;
+                    objectTobeMeasured.mode=0;
+                    objectTobeMeasured.state=2;
+                    objectTobeMeasured.x=scaleOriginX;
+                    objectTobeMeasured.y=imgVernier.height-50-objectTobeMeasured.h/2;
+                    objectTobeMeasured.length=2*objectTobeMeasured.R2;
+                }
+            }else if( Math.abs(x-rulerWidthPixel)<w+20 && Math.abs(y-rulerMidPointY)<h+20){
+                objectTobeMeasured.th=Math.PI/2;
+                objectTobeMeasured.w=-objectTobeMeasured.h2;
+                objectTobeMeasured.h=objectTobeMeasured.R2*2;
+                objectTobeMeasured.x=rulerWidthPixel-objectTobeMeasured.w;
+                objectTobeMeasured.y=rulerMidPointY-objectTobeMeasured.R2;
+
+                objectTobeMeasured.state=2;
+                objectTobeMeasured.mode=2;
+                objectTobeMeasured.length=objectTobeMeasured.h1;
+            }
+            update();
+         }
+        dragMode=0;
+    }
+
+    function mouseWheelMoved(me) {
+        //console.log(e.wheelDelta);
+        var scroll=me.wheelDelta>0?1:-1;
+        translateVernier(scroll);
+        me.preventDefault();
+    }
+
+    function mouseDragged( me) {
+        if (dragMode==0) return false;
+        let m=getMousePos(me);
+        //console.log(m);
+        let dx,dy;
+        dx = (m[0]- mx)/scale;
+        dy = (m[1]- my)/scale;
+        mx = m[0];
+        my = m[1];
+        if(dragMode==1) { //move scene
+            xOffset += dx;
+            yOffset += dy;
+            paint();
+        }else if(dragMode==3){ //move object
+            objectTobeMeasured.x+=dx;
+            objectTobeMeasured.y+=dy;
+            paint();
+        }else if(dragMode==2){ //move vernier
+
+            if (msr>=mainScaleDivisions&&dx>0){
+                paint();
+                return;
+            }
+            if (msr== 0&& vsr==0 && (dx<0)){
+                paint();
+                return;
+            }
+            translateVernier( Math.round(dx));
+        }else{//move object
+
+        }
+
+        //update();
+        me.preventDefault();
+    }
+
+
+
+    /**
+     * Runs when widget recieves key event (events are similar to java.awt events).
+     * @param keyChar {char} : the character(if any) associated with keyevent
+     * @param keyCode {Number} : key code {@see https://docs.oracle.com/javase/7/docs/api/java/awt/event/KeyEvent.html} for keycodes
+     * @param key {String} : the identifier of the key (like 'ArrowLeft','a','Enter','F11) that was pressed when a key event occured
+     * @param id {Number} : EventType 401(keyPressed), 402(KeyReleased)
+     * @return if true is returned event is consumed and not further handled by simphy world*/
+    function onKeyEvent(e){
+        //if(id==401){
+
+        if(e.keyCode==37 ||e.keyCode==38){
+            translateVernier(-1);
+        }
+        else if (e.keyCode==39||e.keyCode==40){
+            translateVernier(1);
+        }
+        else if (e.keyCode==33){//page up
+            scale*=1.05;
+            update();
+        }
+        else if (e.keyCode==34){//page down
+            scale*=0.96;
+            update();
+        }else {
+            return false;
+        }
+
+        e.preventDefault();
+    }
+</script>
+</body>
+</html>

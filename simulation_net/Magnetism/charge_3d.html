@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>spiral</title>
+    <meta charset="UTF-8">
+    <style>
+        html, body {
+            background: rgb(0,64,84);
+            color: white;
+            font-weight: 300;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-family: Arial;
+        }
+
+        img {
+            width: 56px;
+            height: 48px;
+        }
+
+        h1 {
+            font-weight: 200;
+            font-style: 26px;
+            margin: 10px;
+        }
+
+        #container canvas{
+            position: relative;
+            touch-action: none;
+        }
+        #container #overlay {
+            position: absolute;
+            color:rgb(0,44,64);
+        }
+
+        .hover_bkgr_fricc{
+            background:rgba(0,0,0,.4);
+            cursor:pointer;
+            display:none;
+            height:100%;
+            position:fixed;
+            text-align:center;
+            top:0;
+            width:100%;
+            z-index:10000;
+        }
+        .hover_bkgr_fricc .helper{
+            display:inline-block;
+            height:100%;
+            vertical-align:middle;
+        }
+        .hover_bkgr_fricc > div {
+            background-color: #fff;
+            box-shadow: 10px 10px 60px #555;
+            display: inline-block;
+            height: auto;
+            max-width: 551px;
+            min-height: 100px;
+            vertical-align: middle;
+            width: 60%;
+            position: relative;
+            border-radius: 8px;
+            padding: 15px 5%;
+        }
+        .popupCloseButton {
+            background-color: #fff;
+            color:rgb(0,44,64);
+            border: 3px solid #999;
+            border-radius: 50px;
+            cursor: pointer;
+            display: inline-block;
+            font-family: arial;
+            font-weight: bold;
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            font-size: 25px;
+            line-height: 30px;
+            width: 30px;
+            height: 30px;
+            text-align: center;
+        }
+        .popupCloseButton:hover {
+            background-color: #ccc;
+        }
+        .trigger_popup_fricc {
+            background-color: #fff;
+            color:rgb(0,44,64);
+            border: 3px solid #999;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 20px;
+            position:absolute;
+            font-family: arial;
+            font-weight: bold;
+            position: absolute;
+            top:5px;
+            left:5px;
+            zindex:2;
+            margin: 10px;
+            display: inline-block;
+            font-weight: bold;
+            right: -20px;
+            font-size: 25px;
+            line-height: 30px;
+            width: 30px;
+            height: 30px;
+            text-align: center;
+        }
+        #gui {
+            font-size: 15px;
+            position:absolute;
+            font-family: arial;
+            transform:scale(1.2);
+            transform-origin: top right;
+            font-weight: bold;
+            position: absolute;
+            right:5px;
+            margin-left: auto;
+            zindex:2;
+            font-weight: bold;
+            font-size: 25px;
+        }
+        #loading-screen {
+            position: absolute;
+            z-index: 2;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgb(0,64,84);
+            opacity: 1;
+            transition: 1s opacity;
+        }
+
+        #loading-screen.fade-out {
+            opacity: 0;
+        }
+
+        #loader {
+            display: block;
+            position: relative;
+            left: 50%;
+            top: 50%;
+            width: 150px;
+            height: 150px;
+            margin: -75px 0 0 -75px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: #9370DB;
+            -webkit-animation: spin 2s linear infinite;
+            animation: spin 2s linear infinite;
+        }
+        #loader:before {
+            content: "";
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: #BA55D3;
+            -webkit-animation: spin 3s linear infinite;
+            animation: spin 3s linear infinite;
+        }
+        #loader:after {
+            content: "";
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            bottom: 15px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: #FF00FF;
+            -webkit-animation: spin 1.5s linear infinite;
+            animation: spin 1.5s linear infinite;
+        }
+        @-webkit-keyframes spin {
+            0%   {
+                -webkit-transform: rotate(0deg);
+                -ms-transform: rotate(0deg);
+                transform: rotate(0deg);
+            }
+            100% {
+                -webkit-transform: rotate(360deg);
+                -ms-transform: rotate(360deg);
+                transform: rotate(360deg);
+            }
+        }
+        @keyframes spin {
+            0%   {
+                -webkit-transform: rotate(0deg);
+                -ms-transform: rotate(0deg);
+                transform: rotate(0deg);
+            }
+            100% {
+                -webkit-transform: rotate(360deg);
+                -ms-transform: rotate(360deg);
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+    <script src="../jslibs/three.min.js"></script>
+    <script src="../jslibs/OrbitControls.js"></script>
+    <script src="../jslibs/dat.gui.min.js"></script>
+</head>
+<body>
+
+
+
+<div id="container" class="container">
+
+     <section id="loading-screen">
+
+        <div id="loader"></div>
+
+    </section>
+    <canvas id="canvas" width="1000" height=500" border="1"></canvas>
+
+
+    <a class="trigger_popup_fricc">	&#8505;</a>
+    <div id="overlay">
+
+        <div class="hover_bkgr_fricc">
+            <span class="helper"></span>
+            <div>
+                <div class="popupCloseButton">&times;</div>
+
+                    <h2> Motion of a charge in a uniform magnetic field</h2>
+
+
+                <p>A <span style = "color:orange">proton (positive charge, orange)</span> and an <span style = "color:cyan">anti-proton (negative
+	charge, cyan)</span> move in a magnetic field <b>B</b> = 10<sup>-3</sup> T <b>i</b>.&nbsp; At t = 0 both particles are at x = y = z = 0.&nbsp; You can choose the initial velocity components of the particles in units of 10<sup>3</sup> m/s.&nbsp; The tick marks on the axes are spaced in units of cm, and at a screen refresh rate of 60 Hz one second of real time represents ~ 0 microseconds of animation time.
+                <h3> Controls</h3>
+                <p>Use the mouse to change your viewing angle and zoom in or out.</p>
+
+            </div>
+        </div>
+    </div>
+
+
+
+</div>
+
+
+<script>
+
+
+    function draw() {
+        sphera.position.set(xs, ys, zs);
+        spherb.position.set(xs, ys, zs);
+        vx = vxs; vya = vys; vza = vzs;
+        vyb = vys; vzb = vzs;
+        pointsa = list(200);
+        fielda = starfielda();
+        fieldObject.add(fielda);
+        fieldObject.add(sphera);
+        if (single_q === 'no') {
+            pointsb = list(200);
+            fieldb = starfieldb();
+            fieldObject.add(spherb);
+            fieldObject.add(fieldb);
+        }
+        scene.add(fieldObject);
+        count = 0;
+        renderer.render(scene, camera);
+
+        function renderScene() {
+            if(!guicontrols.running ){
+                renderer.render(scene, camera);
+                myReq = requestAnimationFrame(renderScene)
+                return;
+            }
+            for (k = 0; k < 5; k++) {
+                xold = sphera.position.x;
+                yolda = sphera.position.y;
+                zolda = sphera.position.z;
+                sphera.position.x = xold + vx * 0.01;
+                sphera.position.y = yolda + vya * 0.01;
+                sphera.position.z = zolda + vza * 0.01;
+                vya = vya + vza * 0.01;
+                vza = vza - vya * 0.01;
+
+                if (single_q === 'no') {
+                    yoldb = spherb.position.y;
+                    zoldb = spherb.position.z;
+                    spherb.position.x = xold + vx * 0.01;
+                    spherb.position.y = yoldb + vyb * 0.01;
+                    spherb.position.z = zoldb + vzb * 0.01;
+                    vyb = vyb - vzb * 0.01;
+                    vzb = vzb + vyb * 0.01;
+                }
+            }
+
+            count = count + 1;
+            if (count % 2 != 0) {
+                pointsa.shift();
+                pointsa.push([sphera.position.x, sphera.position.y, sphera.position.z]);
+                pointsa.forEach(updatePointa);
+                starsGeometrya.verticesNeedUpdate = true;
+
+                if (single_q === 'no') {
+                    pointsb.shift();
+                    pointsb.push([spherb.position.x, spherb.position.y, spherb.position.z]);
+                    pointsb.forEach(updatePointb);
+                    starsGeometryb.verticesNeedUpdate = true;
+                }
+            }
+
+            if (xold > 30) {
+                while (fieldObject.children.length) {
+                    fieldObject.remove(fieldObject.children[0]);
+                }
+                xstop = 1;
+            }
+
+            renderer.render(scene, camera);
+
+            if (xstop != 1) {
+                myReq = requestAnimationFrame(renderScene)
+            }
+            else {
+                cancelAnimationFrame(myReq);
+                xstop = 0;
+                draw();
+            }
+        }
+
+        myReq = requestAnimationFrame(renderScene);
+    }
+
+    function updatePointa(dots, i) {
+        x = dots[0], y = dots[1], z = dots[2];
+        starsGeometrya.vertices[i].set(x, y, z);
+    }
+
+    function updatePointb(dots, i) {
+        x = dots[0], y = dots[1], z = dots[2];
+        starsGeometryb.vertices[i].set(x, y, z);
+    }
+
+    //draw the B-field arrows
+    function myArrow() {
+        const material = new THREE.LineBasicMaterial({ color: "darkgrey", opacity: 0.1 });
+        const gridObject = new THREE.Object3D();
+        const gridGeo = new THREE.Geometry();
+
+        let dir = new THREE.Vector3(1, 0, 0);
+        let origin = new THREE.Vector3(0, 0, 0);
+        let hex = 0xcccccc;
+        for (k = -5; k < 6; k += 5) {
+            for (j = -5; j < 6; j += 5) {
+                origin.set(-16 + Math.floor((Math.random() * 20) + 1), j, k)
+                let arrowHelper = new THREE.ArrowHelper(dir, origin, 10, hex);
+                gridObject.add(arrowHelper);
+            }
+        }
+        gridGeo.vertices.push(new THREE.Vector3(-16, 0, 0));
+        gridGeo.vertices.push(new THREE.Vector3(14, 0, 0));
+
+        gridGeo.vertices.push(new THREE.Vector3(-16, -6, 0));
+        gridGeo.vertices.push(new THREE.Vector3(-16, 6, 0));
+
+        gridGeo.vertices.push(new THREE.Vector3(-16, 0, -6));
+        gridGeo.vertices.push(new THREE.Vector3(-16, 0, 6));
+
+        for (i = -16; i < 15; i += 1) {
+            gridGeo.vertices.push(new THREE.Vector3(i, -0.5, 0));
+            gridGeo.vertices.push(new THREE.Vector3(i, 0.5, 0));
+        }
+
+        for (i = -6; i < 7; i += 1) {
+            gridGeo.vertices.push(new THREE.Vector3(-16, -0.5, i));
+            gridGeo.vertices.push(new THREE.Vector3(-16, 0.5, i));
+        }
+
+        for (i = -6; i < 7; i += 1) {
+            gridGeo.vertices.push(new THREE.Vector3(-16, i, -0.5));
+            gridGeo.vertices.push(new THREE.Vector3(-16, i, 0.5));
+        }
+
+        const line = new THREE.LineSegments(gridGeo, material);
+        gridObject.add(line);
+
+        const spritex = makeTextSprite("x");
+        const spritey = makeTextSprite("y");
+        const spritez = makeTextSprite("z");
+        const spriteB = makeTextSprite("B");
+        spritex.position.set(15.5, 0, 0);
+        gridObject.add(spritex);
+        spritey.position.set(-16, 6.5, 0);
+        gridObject.add(spritey);
+        spritez.position.set(-16, 0, 6.5);
+        gridObject.add(spritez);
+        spriteB.position.set(14, 4.5, 0);
+        gridObject.add(spriteB);
+
+
+        scene.add(gridObject);
+    }
+
+    // define the initial points for the trail
+    function list(N) {
+        let allpoints = [];
+        for (i = 0; i < N + 1; i++) {
+            point = [];
+            x = xs;
+            y = ys;
+            z = zs;
+            point.push(x);
+            point.push(y);
+            point.push(z);
+            allpoints.push(point);
+        }
+        return allpoints;
+    }
+
+    function starfielda() {
+        pointsa.forEach(makePointa);
+        const starsMateriala = new THREE.PointsMaterial({ color: "orange", size: 3 });
+        const starFielda = new THREE.Points(starsGeometrya, starsMateriala);
+        return (starFielda);
+    }
+    function starfieldb() {
+        pointsb.forEach(makePointb);
+        const starsMaterialb = new THREE.PointsMaterial({ color: "cyan", size: 3 });
+        const starFieldb = new THREE.Points(starsGeometryb, starsMaterialb);
+        return (starFieldb);
+    }
+
+    function makePointa(dots) {
+        x = dots[0], y = dots[1], z = dots[2];
+        const star = new THREE.Vector3();
+        star.x = x;
+        star.y = y;
+        star.z = z;
+        starsGeometrya.vertices.push(star);
+    }
+
+    function makePointb(dots) {
+        x = dots[0], y = dots[1], z = dots[2];
+        const star = new THREE.Vector3();
+        star.x = x;
+        star.y = y;
+        star.z = z;
+        starsGeometryb.vertices.push(star);
+    }
+
+    function makeTextSprite(message) {
+        const ctx = document.createElement('canvas').getContext('2d');
+        ctx.canvas.width = 16;
+        ctx.canvas.height = 32;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0)';
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.fillStyle = 'rgba(255, 255, 100, 1)';
+        ctx.font = "24px Arial";
+        ctx.fillText(message, 0, 24);
+        const texture = new THREE.CanvasTexture(ctx.canvas);
+        texture.needsUpdate = true;
+        const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+        const sprite = new THREE.Sprite(spriteMaterial);
+        sprite.scale.set(0.5, 1, 1);
+        return sprite;
+    }
+
+    let myReq;
+    let count = 0;
+    let xstop = 0;
+    let single_q = 'no';
+    let xs = -16; let ys = 0; let zs = 0;
+    let vxs = 1; let vys = 0; let vzs = -1.5;
+    let vxa = vxs; let vya = vys; let vza = vzs;
+    let vxb = vxs; let vyb = vys; let vzb = vzs;
+
+
+    //set up gui.
+    let guicontrols = new function () {
+        this.velocity_x = vxs;
+        this.velocity_y = vys;
+        this.velocity_z = vzs;
+        this.single_q = single_q;
+        this.running=true;
+        this.resetCamera=function(){
+            camera.position.set(18, 0,0);
+            camera.lookAt(new THREE.Vector3(0, 0, 0));
+        }
+    };
+    const gui = new dat.GUI({ autoPlace: true });
+    let gui1 = gui.add(guicontrols, 'velocity_x', 0, 1);
+    let gui2 = gui.add(guicontrols, 'velocity_y', -2, 2);
+    let gui3 = gui.add(guicontrols, 'velocity_z', -2, 2);
+    let gui4 = gui.add(guicontrols, 'single_q', ['yes', 'no']);
+    let gui5 = gui.add(guicontrols, 'running').name("Running");
+    let gui6 = gui.add(guicontrols, 'resetCamera').name("See Top View");
+
+    // const guiContainer = document.getElementById('mygui');
+   // guiContainer.appendChild(gui.domElement);
+   // const para = document.createElement("P");   // Create a <p> node
+   // para.innerHTML = "<br> You can choose to only show <br> the motion of the proton";
+    //guiContainer.appendChild(para);
+
+
+    const canvas = document.querySelector('#canvas');
+    canvas.width=window.innerWidth;
+    canvas.height=window.innerHeight;
+
+    const renderer = new THREE.WebGLRenderer({ canvas });
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    const camera = new THREE.OrthographicCamera(-18, 18, 9, -9, 0.1, 50);
+
+    camera.position.set(18, 1, 8);
+    camera.lookAt(new THREE.Vector3(0, 0, 0));
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color("rgb(0,64,84)");
+    const orbitControls = new THREE.OrbitControls(camera, canvas);
+    const starsGeometrya = new THREE.Geometry();
+    const starsGeometryb = new THREE.Geometry();
+    let pointsa = list(100);
+    let pointsb = list(100);
+
+    //draw the field lines
+    myArrow();
+
+    //define the object whose geometry changes
+    const fieldObject = new THREE.Group();
+
+    //define the objects whose geometry will not change
+    const sgeo = new THREE.SphereGeometry(0.25, 16, 16);
+    const smata = new THREE.MeshBasicMaterial();
+    const sphera = new THREE.Mesh(sgeo, smata);
+    const smatb = new THREE.MeshBasicMaterial();
+    const spherb = new THREE.Mesh(sgeo, smatb);
+    sphera.material.color.set("orange");
+    spherb.material.color.set("cyan");
+
+
+    //react to user input
+    gui1.onFinishChange(function (value) {
+        cancelAnimationFrame(myReq);
+        vxs = 1 * value;
+        while (fieldObject.children.length) {
+            fieldObject.remove(fieldObject.children[0]);
+        }
+        xstop = 0;
+        draw();
+    });
+
+    gui2.onFinishChange(function (value) {
+        cancelAnimationFrame(myReq);
+        vys = 1 * value;
+        while (fieldObject.children.length) {
+            fieldObject.remove(fieldObject.children[0]);
+        }
+        xstop = 0;
+        draw();
+    });
+
+
+    gui3.onFinishChange(function (value) {
+        cancelAnimationFrame(myReq);
+        vzs = 1 * value;
+        while (fieldObject.children.length) {
+            fieldObject.remove(fieldObject.children[0]);
+        }
+        xstop = 0;
+        draw();
+    });
+
+    gui4.onFinishChange(function (value) {
+        cancelAnimationFrame(myReq);
+        single_q = value;
+        while (fieldObject.children.length) {
+            fieldObject.remove(fieldObject.children[0]);
+        }
+        xstop = 0;
+
+        draw();
+    });
+
+
+
+    load();
+
+    function load(){
+
+            //init();
+            const loadingScreen = document.getElementById( 'loading-screen' );
+            loadingScreen.classList.add( 'fade-out' );
+            // optional: remove loader from DOM via event listener
+            loadingScreen.addEventListener( 'transitionend', loadingCompleted );
+    }
+
+    function loadingCompleted( event ) {
+        event.target.remove();
+        document.querySelector(".trigger_popup_fricc").onclick=function(){
+            document.querySelector('.hover_bkgr_fricc').style.display = "block";
+        };
+        document.querySelector('.hover_bkgr_fricc').onclick =function(){
+            document.querySelector('.hover_bkgr_fricc').style.display = "none";
+        };
+        document.querySelector('.popupCloseButton').onclick=function(){
+            document.querySelector('.hover_bkgr_fricc').style.display = "none";
+        };
+        draw();
+        window.addEventListener( 'resize', onWindowResize, false );
+
+    }
+
+    function onWindowResize() {
+        canvas.width=window.innerWidth;
+        canvas.height=window.innerHeight;
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+    }
+
+</script>
+</body>
+
+</html>

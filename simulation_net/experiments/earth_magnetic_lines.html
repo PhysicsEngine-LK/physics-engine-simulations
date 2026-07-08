@@ -1,0 +1,965 @@
+<!doctype html>
+<head>
+    <title>Earth's Magnetic Field Motor</title>
+    <meta name="keywords" content=" magnetic field angle of declination dip meridian simulation physics">
+    <meta name="author" content="Mahesh Kurmi">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <style>
+        html, body {
+            padding: 0;
+            margin: 0;
+            background: rgb(0,64,84);
+        }
+
+        img {
+            width: 56px;
+            height: 48px;
+        }
+
+        h1 {
+            font-weight: 200;
+            font-style: 26px;
+            margin: 10px;
+        }
+
+        #container canvas{
+            position: relative;
+            touch-action: none;
+        }
+        #container #overlay {
+            position: absolute;
+        }
+
+        .hover_bkgr_fricc{
+            background:rgba(0,0,0,.4);
+            cursor:pointer;
+            display:none;
+            height:100%;
+            position:fixed;
+            text-align:center;
+            top:0;
+            width:100%;
+            z-index:10000;
+        }
+        .hover_bkgr_fricc .helper{
+            display:inline-block;
+            height:100%;
+            vertical-align:middle;
+        }
+        .hover_bkgr_fricc > div {
+            background-color: #fff;
+            box-shadow: 10px 10px 60px #555;
+            display: inline-block;
+            height: auto;
+            max-width: 551px;
+            min-height: 100px;
+            vertical-align: middle;
+            width: 60%;
+            position: relative;
+            border-radius: 8px;
+            padding: 15px 5%;
+        }
+        .popupCloseButton {
+            background-color: #fff;
+            border: 3px solid #999;
+            border-radius: 50px;
+            cursor: pointer;
+            display: inline-block;
+            font-family: arial;
+            font-weight: bold;
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            font-size: 25px;
+            line-height: 30px;
+            width: 30px;
+            height: 30px;
+            text-align: center;
+        }
+        .popupCloseButton:hover {
+            background-color: #ccc;
+        }
+        .trigger_popup_fricc {
+            background-color: #fff;
+            border: 3px solid #999;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 20px;
+            position:absolute;
+            font-family: arial;
+            font-weight: bold;
+            position: absolute;
+            top:5px;
+            left:5px;
+            zindex:2;
+            margin: 10px;
+            display: inline-block;
+            font-weight: bold;
+            right: -20px;
+            font-size: 25px;
+            line-height: 30px;
+            width: 30px;
+            height: 30px;
+            text-align: center;
+        }
+        #gui {
+            font-size: 15px;
+            position:absolute;
+            font-family: arial;
+            transform:scale(1.2);
+            transform-origin: top right;
+            font-weight: bold;
+            position: absolute;
+            right:5px;
+            margin-left: auto;
+            zindex:2;
+            font-weight: bold;
+            font-size: 25px;
+        }
+        #loading-screen {
+            position: absolute;
+            z-index: 2;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgb(0,64,84);
+            opacity: 1;
+            transition: 1s opacity;
+        }
+
+        #loading-screen.fade-out {
+            opacity: 0;
+        }
+
+        #loader {
+            display: block;
+            position: relative;
+            left: 50%;
+            top: 50%;
+            width: 150px;
+            height: 150px;
+            margin: -75px 0 0 -75px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: #9370DB;
+            -webkit-animation: spin 2s linear infinite;
+            animation: spin 2s linear infinite;
+        }
+        #loader:before {
+            content: "";
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: #BA55D3;
+            -webkit-animation: spin 3s linear infinite;
+            animation: spin 3s linear infinite;
+        }
+        #loader:after {
+            content: "";
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            bottom: 15px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: #FF00FF;
+            -webkit-animation: spin 1.5s linear infinite;
+            animation: spin 1.5s linear infinite;
+        }
+        @-webkit-keyframes spin {
+            0%   {
+                -webkit-transform: rotate(0deg);
+                -ms-transform: rotate(0deg);
+                transform: rotate(0deg);
+            }
+            100% {
+                -webkit-transform: rotate(360deg);
+                -ms-transform: rotate(360deg);
+                transform: rotate(360deg);
+            }
+        }
+        @keyframes spin {
+            0%   {
+                -webkit-transform: rotate(0deg);
+                -ms-transform: rotate(0deg);
+                transform: rotate(0deg);
+            }
+            100% {
+                -webkit-transform: rotate(360deg);
+                -ms-transform: rotate(360deg);
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="container">
+    <div id="gui" style="position: absolute">
+    </div>
+
+    <section id="loading-screen">
+
+        <div id="loader"></div>
+
+    </section>
+
+
+    <a class="trigger_popup_fricc">	&#8505;</a>
+    <div id="overlay">
+
+        <div class="hover_bkgr_fricc">
+            <span class="helper"></span>
+            <div>
+                <div class="popupCloseButton">&times;</div>
+                <h3>Earth's Magnetic Field</h3>
+                <p> The simulation displays the magnetic field of earth in 3D.You can show/hide different objects from the gui panel.<br>
+                    Red thick arrow and circle represents magnetic axis and magnetic meridian respectively, while greenish-blue arrow and circle represent geographic axia and meridian respectively. <br>
+                    You can also enable vertical and horizontal compass to visualise  the variation in apparent declination and actual dip at any point.
+                <h4>Controls</h4>
+                Drag the yellow dot on compass to move around the globe.<br>
+                </p>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script src="tweakpane3.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.158.0/three.js"></script>
+<script src="https://unpkg.com/@seregpie/three.text-texture"></script>
+<script src="https://unpkg.com/@seregpie/three.text-sprite"></script>
+
+
+<script type="module">
+
+   // import * as THREE from "https://threejs.org/build/three.module.js";
+   import { DragControls } from 'https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/controls/DragControls.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/controls/OrbitControls.js';
+
+
+   // import { OrbitControls } from "https://threejs.org/examples/jsm/controls/OrbitControls.js";
+    //import { Line2 } from 'https://threejs.org/examples/jsm/lines/Line2.js';
+   // import { LineMaterial } from 'https://threejs.org/examples/jsm/lines/LineMaterial.js';
+   // import { LineGeometry } from 'https://threejs.org/examples/jsm/lines/LineGeometry.js';
+   // import { DragControls } from 'https://threejs.org/examples/jsm/controls/DragControls.js';
+  //  import gsap from "https://cdn.skypack.dev/gsap"
+  // import { MeshLine, MeshLineMaterial, MeshLineRaycast } from 'three.meshline';
+
+    //const loader = new THREE.TextureLoader();
+    var renderer, scene, camera;
+    var groundTex,earthTex,compassTex1,compassTex2;
+    var equator,magnet,earth, compassH,compassV,needle,arrowNS,location,magMeridian,geogMeridian,meridianfield, magCircle, geogCircle,compassArrow,planeGM, planeMM, field
+    var bgColor=new THREE.Color("rgb(0,12,0)");
+    var pane;
+
+
+    var resourcePaths=['checker.png','earth.jpg','compass.png','compass.png'];
+    var resources=[];
+    var loadedResources=0;
+    var src0=new THREE.Vector3(0,0.06,0),src1=new THREE.Vector3(0,-0.06,0);
+    var vField=new VectorField();
+    var dragControls,orbitControls;
+
+    var magColor="#ff0000"
+    var geogColor="#00ffaa"
+
+    for(let i=0;i<=3;i++){
+        resources[i]= document.createElement('img');
+        resources[i].src = 'resources/'+resourcePaths[i];
+        resources[i].onload=load;
+    }
+
+    function load(obj){
+        loadedResources++;
+        if(loadedResources==resourcePaths.length){
+            init();
+            const loadingScreen = document.getElementById( 'loading-screen' );
+            loadingScreen.classList.add( 'fade-out' );
+            // optional: remove loader from DOM via event listener
+            loadingScreen.addEventListener( 'transitionend', loadingCompleted );
+        }
+    }
+
+    function loadingCompleted( event ) {
+        event.target.remove();
+    }
+
+    function loadTexture(index,repeat,n){
+        let texture=new THREE.Texture( resources[index] );
+        if(repeat){
+            texture.wrapS= THREE.RepeatWrapping;
+            texture.wrapT= THREE.RepeatWrapping;
+            texture.repeat.set( n,n );
+            texture.encoding = THREE.sRGBEncoding;
+            texture.colorSpace = THREE.SRGBColorSpace;
+        }
+        texture.needsUpdate = true;
+        return texture;
+    }
+
+    var settings={
+        intensity:0.2,
+        declination:11,
+        earthOpacity:0.7,
+        showMeridian:true,
+        horizontalCompass:true,
+        verticalCompass:true,
+        showCompassField:false,
+        isRunning:false
+    }
+
+    function BodyPhysics(mesh){
+        this.mesh=mesh;
+        this.velocity=new THREE.Vector3();
+        this.angularVelocity=new THREE.Vector3();
+        this.acceleration=new THREE.Vector3();
+        this.angularAcceleration=new THREE.Vector3();
+        this.update=function(dt){
+            this.velocity.addScaledVector(this.acceleration,dt);
+            this.angularVelocity.addScaledVector(this.angularAcceleration,dt);
+            this.mesh.position.addScaledVector(this.velocity,dt);
+            let v=this.mesh.rotation;
+            v=new THREE.Vector3(v.x,v.y,v.z);
+            v.addScaledVector(this.angularVelocity,dt);
+            this.mesh.rotation.set(v.x,v.y,v.z);
+        }
+    }
+
+
+
+    function init() {
+        pane = new Tweakpane.Pane({container:document.getElementById("gui"),title:"Earth's Magnetic Field",expanded: true});
+        pane.addInput(settings, "intensity",{label:"Field Intensity",min:0,max:1,step:0.05}).on('change',updateParams);
+        pane.addInput(settings, "declination",{label:"Declination (degree)",min:-180,max:180,step:1}).on('change',updateParams);
+        pane.addInput(settings, "earthOpacity",{label:"Earth Opacity",min:0,max:1,step:0.01}).on('change',updateParams);
+        pane.addInput(settings, "showMeridian",{label:"Show Meridian"}).on('change',updateParams);
+        pane.addInput(settings, "verticalCompass",{label:"Vertical compass"}).on('change',updateParams);
+        pane.addInput(settings, "horizontalCompass",{label:"Horizontal Compass"}).on('change',updateParams);
+        pane.addInput(settings, "showCompassField",{label:"Compass field Lines"}).on('change',updateParams);
+        pane.addInput(settings, "isRunning",{label:"Earth Rotation"}).on('change',updateParams);
+
+
+        // pane.addInput(settings, "isRunning",{label:"Run"}).on('change',updateParams);
+       // pane.addButton({title:"Reset"}).on('click',reset);
+
+        document.querySelector(".trigger_popup_fricc").onclick=function(){
+            document.querySelector('.hover_bkgr_fricc').style.display = "block";
+        };
+        document.querySelector('.hover_bkgr_fricc').onclick =function(){
+            document.querySelector('.hover_bkgr_fricc').style.display = "none";
+        };
+        document.querySelector('.popupCloseButton').onclick=function(){
+            document.querySelector('.hover_bkgr_fricc').style.display = "none";
+        };
+        window.addEventListener( 'resize', onWindowResize, false );
+
+        groundTex=loadTexture(0,true,3,3);
+        earthTex=loadTexture(1);
+        compassTex1=loadTexture(2);
+        compassTex2=loadTexture(3,true,-1);
+        //compassTex2.flipX=true;
+        compassTex2.wrapS = THREE.RepeatWrapping; compassTex2.repeat.x = - 1
+        // renderer
+        renderer = new THREE.WebGLRenderer({antialias :true});
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMapSoft = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.physicallyBasedShading = true;
+        renderer.outputEncoding = THREE.sRGBEncoding;
+     
+        document.body.appendChild( renderer.domElement );
+
+        // scene
+        scene = new THREE.Scene();
+        scene.background=bgColor;
+
+        // camera
+        camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 30 );
+        camera.position.set( 0, 0, 5 );
+
+        // controls
+        orbitControls = new OrbitControls( camera, renderer.domElement );
+        orbitControls.zoomSpeed=0.33;
+        // ambient
+        scene.add( new THREE.AmbientLight( 0x222222 ) );
+
+        // light
+        var light = new THREE.DirectionalLight( 0xaaaaaa, 1);
+        light.position.set(1,3,2 ); //20,20,0
+        //light.castShadow=true;
+
+        light.shadow.camera.left = -2;
+        light.shadow.camera.top = 2;
+        light.shadow.camera.right = 2;
+        light.shadow.camera.bottom = -2;
+        light.shadow.camera.near = 1;
+        light.shadow.camera.far = 5;
+        light.shadow.bias=-0.005;
+
+        	//light.shadowBias = 2;
+        	//light.shadowMapWidth = light.shadowMapHeight = 2040;
+        light.shadow.darkness = 1;
+        //light.shadowCameraVisible = true;
+        //scene.add( new THREE.DirectionalLight(light, 2.5) );
+        scene.add( light );
+
+        var light = new THREE.DirectionalLight( 0xffffff, 1.6);
+        light.position.set(20,20,20 ); //20,20,0
+        scene.add( light );
+
+        // axes
+        //scene.add( new THREE.AxesHelper( 20 ) );
+
+        light = new THREE.PointLight( 0xffffff,1.65 ); // soft white light
+        light.position.set(0,0,0);
+        camera.add( light );
+        scene.add(camera);
+
+
+        const magnetGeom = new THREE.BoxGeometry(0.03,0.1,0.05);
+        let magnetMat = new THREE.MeshPhongMaterial( {
+            color: 0xff0000,
+        } );
+        magnet = new THREE.Group();
+
+        let northPole=new THREE.Mesh( magnetGeom, magnetMat );
+        northPole.position.set(0,-0.05,0);
+        magnetMat=new THREE.MeshPhongMaterial( {
+            color: 0x0000ff,
+        } );
+        let southPole=new THREE.Mesh( magnetGeom, magnetMat );
+        southPole.position.set(0,0.05,0);
+        magnet.add(northPole);
+        magnet.add(southPole);
+        magnet.castShadow=false;
+        magnet.rotation.set(0,0,settings.declination*Math.PI/180);
+
+
+       // meridian=new THREE.Group();
+
+
+        magMeridian = new THREE.Group();// meridianGeom, meridianMat );
+        arrowNS = createArrow( new THREE.Vector3(0,-0.85,0),new THREE.Vector3(0,1,0),1.7, 0.01,magColor);//new THREE.ArrowHelper( new THREE.Vector3(0,1,0), new THREE.Vector3(0,-1,0),2, magColor,1.5*vField.arrowSize,vField.arrowSize);
+        magnet.add(arrowNS);
+
+        let MN_text = createText("M.N.",new THREE.Vector3(0,1.75,0),0.06,magColor);
+        arrowNS.add(MN_text);
+
+        let MS_text = createText("M.S.",new THREE.Vector3(0,-0.05,0),0.06,magColor);
+        //instance.rotation.set(Math.PI/2,0,Math.PI/2);
+        arrowNS.add(MS_text);
+
+
+        let circleGeometry = new THREE.TorusGeometry( 0.498, 0.005, 10, 100 );
+        let circleMaterial = new THREE.MeshPhongMaterial( { color: magColor } );
+        magCircle = new THREE.Mesh( circleGeometry, circleMaterial );
+        magMeridian.add( magCircle );
+
+        magnet.add(magMeridian);
+        const compassGeom=new THREE.CylinderGeometry(0.1,0.1,0.01,30);
+        const compassMat1=new THREE.MeshPhongMaterial( {
+            map:compassTex1,
+            color: 0xcccccc,
+        } );
+        const compassMat2=new THREE.MeshPhongMaterial( {
+            map:compassTex2,
+            color: 0xcccccc,
+        } );
+        const materials = [
+            compassMat1,
+            compassMat1,
+            compassMat2
+        ]
+        compassH = new THREE.Mesh( compassGeom, materials );
+        //compass.rotation.set(0,0,Math.PI/2);
+        compassH.position.set(0,0,1);
+        compassV=compassH.clone();
+        magnet.add(compassH);
+        magnet.add(compassV);
+
+
+
+        field = new THREE.Group();
+        magnet.add(field);
+
+        meridianfield=new THREE.Group();
+        magnet.add(meridianfield);
+        //field.castShadow=true;
+
+        const axesHelper = new THREE.AxesHelper( 0.5 );
+       // scene.add( axesHelper );
+
+
+        const earthGeom = new THREE.SphereGeometry(0.5,40,40);
+        const earthMat = new THREE.MeshPhongMaterial( {
+            map:earthTex,
+            color: 0xffffff,
+            transparent: true,
+            depthWrite: false,
+            opacity: 0.8,
+        } );
+        earth = new THREE.Mesh( earthGeom, earthMat );
+        earth.physics=new BodyPhysics(earth);
+        earth.physics.angularVelocity=new THREE.Vector3(0,0.1,0);
+       // earth.renderOrder=1;
+        // earth.castShadow=true;
+        geogMeridian=new THREE.Group();
+        earth.add( magnet );
+
+        earth.add(geogMeridian);
+
+
+        const arrowGNS =  createArrow( new THREE.Vector3(0,-0.75,0),new THREE.Vector3(0,1,0),1.5, 0.012,geogColor);//geogColor,1.5*vField.arrowSize,vField.arrowSize);
+        earth.add(arrowGNS);
+        const arrowGEW =  createArrow( new THREE.Vector3(-0.75,0,0),new THREE.Vector3(1,0,0),1.5, 0.012,geogColor);//geogColor,1.5*vField.arrowSize,vField.arrowSize);
+        earth.add(arrowGEW);
+
+        let GN_text = createText("N",new THREE.Vector3(0,0.8,0),0.06,geogColor);
+        earth.add(GN_text);
+
+        let GS_text = createText("S",new THREE.Vector3(0,-0.8,0),0.06,geogColor);
+        earth.add(GS_text);
+
+        let GE_text = createText("E",new THREE.Vector3(0.8,0,0),0.06,geogColor);
+        earth.add(GE_text);
+
+        let GW_text = createText("W",new THREE.Vector3(-0.8,0,0),0.06,geogColor);
+        earth.add(GW_text);
+
+        circleMaterial = new THREE.MeshPhongMaterial( { color: geogColor } );
+        geogCircle = new THREE.Mesh( circleGeometry, circleMaterial );
+        geogMeridian.add( geogCircle );
+
+        scene.add( earth );
+
+        //Ground
+        const  equatorGeo = new THREE.PlaneGeometry(3, 3);
+        const equatorMat = new THREE.MeshPhongMaterial({
+            map: groundTex,
+            shininess:0,
+            color:0xAAAABB,
+            specular:0x000000
+            //side: THREE.DoubleSide,
+        });
+
+        let locationGeom=new THREE.SphereGeometry(0.15,10,10);
+        let locationMat=new THREE.MeshPhongMaterial( {
+            // map:earthTex,
+            color: 0xffff00,
+            opacity: 1,
+        } );
+
+        location = new THREE.Mesh( locationGeom, locationMat );
+        location.position.set(0,0,1);
+        magnet.add(location);
+        magnet.add(compassH);
+
+        equatorMat.color.setRGB(1.5, 1.5, 1.5);
+        equator = new THREE.Mesh(equatorGeo, equatorMat);
+        equator.rotation.x=-Math.PI/2;
+        location.visible=false;
+
+        renderer.sortObjects = true
+        // renderer.depth=false;
+        let draggables=[location];
+        dragControls = new DragControls( draggables, camera, renderer.domElement );
+        //  dragControls.transformGroup=true;
+        dragControls.addEventListener("hoveron", function (e) {
+            orbitControls.enabled = false;
+        });
+        dragControls.addEventListener("dragstart", function (e) {
+            orbitControls.enabled = false;
+        });
+        dragControls.addEventListener("hoveroff", function (e) {
+            orbitControls.enabled = true;
+        });
+        dragControls.addEventListener("dragend", function (e) {
+            orbitControls.enabled = true;
+        });
+        dragControls.addEventListener("drag", function (e) {
+            updateMeridians();
+        });
+
+        updateParams();
+        animate();
+
+    }
+
+
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+    }
+
+    function animate() {
+        requestAnimationFrame( animate );
+        //controls.update();
+        if(settings.isRunning==true) {
+            updatePhysics(0.02);//clock.getDelta()/1000);
+        }
+        renderer.render(scene, camera);
+    }
+
+    function updateMeridians() {
+        vField.fieldColor = "#ffff00";
+        vField.arrowLoc = 0;
+        vField.useTube = true;
+        vField.arrowColor = "#ffff00";
+        let p = location.position.clone();
+        p.setLength(0.5);
+        location.position.set(p.x, p.y, p.z);
+        compassH.position.set(p.x, p.y, p.z);
+        if(settings.verticalCompass)p.setLength(0.6);
+        compassV.position.set(p.x, p.y, p.z);
+
+        //compass.clear();
+        meridianfield.clear();
+        p = magnet.localToWorld(p);
+        p=earth.worldToLocal(p);
+        let q = p.clone().sub(src1);
+        let normal = p.clone().sub(src0).cross(q);
+        let th = normal.angleTo(new THREE.Vector3(0, 0, 1));
+        //console.log(th);
+        if (p.z > 0) th = -th;
+        geogMeridian.rotation.set(0, th, 0);
+        //geogMeridian.quaternion.premultiply(earth.quaternion);
+
+
+        p = location.position.clone();
+        q = p.clone().sub(src1);
+        normal = p.clone().sub(src0).cross(q);
+        th = normal.angleTo(new THREE.Vector3(0, 0, 1));
+        //console.log(th);
+        if (p.z > 0) th = -th;
+        magMeridian.rotation.set(0, th, 0);
+
+        if (settings.showCompassField) {
+            //Add field at compass location
+            p=(settings.verticalCompass?compassV:compassH).position.clone();
+            //p=magnet.worldToLocal(p);
+            let f1 = vField.createField(p, false);
+            vField.arrowLoc = 0.5;
+            vField.step = 0.01;
+            vField.maxSteps = 500;
+            p=(settings.verticalCompass?compassV:compassH).position.clone();
+            let f2 = vField.createField(p, true);
+            meridianfield.add(f1);
+            meridianfield.add(f2);
+        }
+
+        p=(settings.verticalCompass?compassV:compassH).position.clone();
+        //p=magnet.worldToLocal(p);
+        let B=fieldEvaluator(p);
+        let dir=B.clone().normalize();
+
+        let Bv=B.clone().projectOnVector(p);
+        let Bh=B.clone().sub(Bv);
+
+        if(settings.showCompassField){
+            //Add net Magnetic field vector
+            let arrowB = new THREE.ArrowHelper(dir, p,B.length(), vField.arrowColor,1.5*vField.arrowSize,vField.arrowSize);
+            arrowB.add(createText("B",new THREE.Vector3(0,B.length()+0.05,0),0.06,'#ffffff'))
+            meridianfield.add(arrowB);
+            //Add vertical component
+            dir=Bv.clone().normalize();
+            const arrowBv = new THREE.ArrowHelper(dir, p,Bv.length(), '#ffffff',1.5*vField.arrowSize,vField.arrowSize);
+            arrowBv.add(createText("Bv",new THREE.Vector3(0,Bv.length()+0.05,0),0.06))
+            meridianfield.add(arrowBv);
+            //Add horizontal component
+            dir=Bh.clone().normalize();
+            const arrowBh = new THREE.ArrowHelper(dir, p,Bh.length(), '#ffffff',1.5*vField.arrowSize,vField.arrowSize);
+            arrowBh.add(createText("Bh",new THREE.Vector3(0,Bh.length()+0.05,0),0.06))
+            meridianfield.add(arrowBh);
+        }
+
+        //Align compass
+        if(settings.horizontalCompass) {
+            p=compassH.position.clone();
+            //p=magnet.worldToLocal(p);
+            B=fieldEvaluator(p);
+            dir=B.clone().normalize();
+
+            Bv=B.clone().projectOnVector(p);
+            Bh=B.clone().sub(Bv);
+
+            Bh.applyQuaternion(magnet.quaternion);
+            Bh.applyQuaternion(earth.quaternion);
+            compassH.up.set(Bh.x, Bh.y, Bh.z);
+            compassH.lookAt(0, 0, 0);
+            //compass.quaternion.premultiply(magnet.quaternion);
+            compassH.rotateOnAxis(new THREE.Vector3(0, 0, -1), -Math.PI / 2);
+            compassH.rotateOnAxis(new THREE.Vector3(1, 0, 0),  Math.PI / 2);
+        }
+        if(settings.verticalCompass){
+            p=compassH.position.clone();
+            //p=magnet.worldToLocal(p);
+            B=fieldEvaluator(p);
+            dir=B.clone().normalize();
+
+            Bv=B.clone().projectOnVector(p);
+            Bh=B.clone().sub(Bv);
+            Bh.applyQuaternion(magnet.quaternion);
+            Bh.applyQuaternion(earth.quaternion);
+            compassV.up.set(Bh.x,Bh.y,Bh.z);
+            compassV.lookAt(0,0,0);
+            //compass.rotation.set(0,th,0);
+            th=Math.atan2(Bv.length(),Bh.length());
+            if(Bv.dot(p)<0)th=-th;
+            compassV.rotateOnAxis(new THREE.Vector3(0, 0, 1), Math.PI / 2);
+            compassV.rotateOnAxis(new THREE.Vector3(0, 1, 0), th);
+            //compass.quaternion.premultiply(magnet.quaternion);
+        }
+
+
+    }
+
+    function updateParams(){
+       earth.material.opacity=settings.earthOpacity;
+       magMeridian.visible=settings.showMeridian;
+       geogMeridian.visible=settings.showMeridian;
+       arrowNS.visible=settings.showMeridian;
+       compassH.visible=settings.horizontalCompass;
+       compassV.visible=settings.verticalCompass;
+       magnet.rotation.set(0,0,settings.declination*Math.PI/180);
+
+       updateField();
+       updateMeridians();
+    }
+
+    function updateField(){
+
+        let I=settings.intensity;
+        field.clear();
+        if(I==0)return;
+        let N= 40*(I);
+
+        vField.fieldColor="#ffffff";
+        vField.arrowLoc=0.3;
+        vField.step=0.1;
+        vField.maxSteps=200;
+        vField.useTube=false;
+        //vField.arrowColor="#ffffaa";
+        // wire.physics.angularVelocity.set(0,2*B,0);
+        //create field
+
+        if(N==0)return;
+        //field.add(vField.createField(new THREE.Vector3(0,0.2,0),false));
+        //field.add(vField.createField(new THREE.Vector3(0,-0.2,0),true));
+        let fields= new THREE.Group();
+       // field.add(vField.createField(new THREE.Vector3(0.0,src0.y+0.05,0.0),true));
+        //field.add(vField.createField(new THREE.Vector3(0.0,src1.y-0.05,0.0),false));
+
+        // fields.add(vField.createField(new THREE.Vector3(0.01,0.15,0.01),false));
+        fields.add(vField.createField(new THREE.Vector3(0.01,src0.y+0.05,0.01),true));
+        let f=vField.createField(new THREE.Vector3(0.02,src0.y+0.05,0.02),true);
+        //f.rotation.set(0,Math.PI/N,0);
+        fields.add(f);
+       // fields.add(vField.createField(new THREE.Vector3(0.01,-0.15,0.02),true));
+       // f=vField.createField(new THREE.Vector3(0.03,-0.15,0.03),true);
+       // f.rotation.set(0,Math.PI/N,0);
+       // fields.add(f);
+
+        for(let i=0;i<=N;i++){
+            field.add(fields);
+            fields = fields.clone();
+            fields.rotation.set(0,2*i*Math.PI/N,0);
+        }
+    }
+
+    function updatePhysics(dt){
+        earth.physics.update(dt);
+    }
+
+   /**
+    * returns field vector at point p
+    */
+   var fieldEvaluator=function(p){
+       let factor=0.7;
+       let AP=p.clone().sub(src0);
+       let BP=p.clone().sub(src1);
+
+       let d1=AP.length();
+       let d2=BP.length();
+
+       AP=AP.multiplyScalar (factor/(d1*d1*d1));
+       BP=BP.multiplyScalar (factor/(d2*d2*d2));
+
+       BP=BP.sub(AP);
+       // console.log(p);
+       //console.log(AP);
+       return BP;
+   }
+
+    /**
+     * @param field
+     * @param options {minBounds, maxBounds,arrowLoc (0 to 1), arrowSize, stopPoints (array),fieldColor, arrowColor}
+     * @constructor
+     */
+    function VectorField(options){
+        this.minBounds=new THREE.Vector3(-2,-3,-2);
+        this.maxBounds=new THREE.Vector3(2,3,2);
+        this.arrowLoc=0.35;
+        this.arrowSize=0.03;
+        this.maxSteps=50;
+        this.stopPoints=[];
+        this.fieldColor="#ffffff";
+        this.arrowColor="#ffffff";
+        this.min=1E-12;
+        this.max=1E12;
+        this.step=0.5;
+        this.useTube=false;
+
+        if(options){
+            if(options.minBounds)this.minBounds=options.minBounds;
+            if(options.maxBounds)this.maxBounds=options.maxBounds;
+            if(options.arrowLoc)this.arrowLoc=options.arrowLoc;
+            if(options.arrowSize)this.arrowSize=options.arrowSize;
+            if(options.maxSteps)this.maxSteps=options.maxSteps;
+            if(options.fieldColor)this.fieldColor=options.fieldColor;
+            if(options.arrowColor)this.arrowColor=options.arrowColor;
+            if(options.stopPoints)this.stopPoints=options.stopPoints;
+            if(options.fieldEvaluator)this.fieldEvaluator=options.fieldEvaluator;
+            if(options.min)this.min=options.min;
+            if(options.max)this.max=options.max;
+            if(options.step)this.step=options.step;
+        }
+
+        this.addStopPoints=function(p){
+            this.stopPoints[ this.stopPoints.length]=p;
+        }
+
+        this.getFieldAt=function(p){
+            return fieldEvaluator(p);
+        }
+
+        this.createField=function(pt, moveAgainstField,opacity) {
+            let vertices = [];
+            let dir = fieldEvaluator(pt).normalize();
+            let prevDir = new THREE.Vector3();
+            prevDir.set(dir.x, dir.y, dir.z);
+            if (!dir) return;
+            vertices[vertices.length] = pt;
+            let p = pt.clone();
+            let k = moveAgainstField ? -1 : 1;
+            let n = 0;
+            outer:
+                while (n < this.maxSteps) {
+                    if (!dir) break;
+                    let E = dir.normalize();
+                    //avoid abrupt change in field
+                    if (dir.dot(prevDir) < -0.5) break;
+                    prevDir.set(dir.x, dir.y, dir.z);
+                    if (E < this.min || E > this.max) break;
+                    dir = dir.multiplyScalar(k * this.step);
+                    p.add(dir);
+                    if (!withinBounds(p, this.minBounds, this.maxBounds)) break;
+
+                    if (p.distanceTo(pt) < this.step / 2) {
+                        vertices[vertices.length] = new THREE.Vector3(pt.x, pt.y, pt.z);
+                        break;
+                    }
+                    for (let i = 0; i < this.stopPoints.length; i++) {
+                        let stopPoint = this.stopPoints[i];
+                        if (p.distanceTo(stopPoint) < step / 2) {
+                            vertices[vertices.length] = new THREE.Vector3(stopPoint.x, stopPoint.y, stopPoint.z);
+                            break outer;
+                        }
+                    }
+
+                    vertices[vertices.length] = new THREE.Vector3(p.x, p.y, p.z);
+                    dir = fieldEvaluator(p);
+                    n++;
+                }
+            //console.log(vertices);
+            if (vertices.length < 2) return;
+            let curve = new THREE.CatmullRomCurve3(vertices);
+            let geometry;
+            let material;
+            let curveObject;
+            if (this.useTube) {
+                geometry = new THREE.TubeGeometry(curve, 40, this.arrowSize/5, 5);
+                material=new THREE.MeshPhongMaterial( {
+                    color: this.fieldColor,
+                } );
+                curveObject = new THREE.Mesh(geometry, material);
+            } else {
+                let points = curve.getPoints(50);
+                geometry = new THREE.BufferGeometry().setFromPoints(points);
+                material = new THREE.LineBasicMaterial({color: this.fieldColor, linewidth: 4});
+                curveObject = new THREE.Line(geometry, material);
+                //material = new MeshLineMaterial({
+                  //  lineWidth:2.5,
+                   // color:this.fieldColor
+                //});
+                //const line = new MeshLine();
+               // line.setPoints(points);
+               // curveObject = new THREE.Line(geometry, material);
+            }
+
+            let ap1=curve.getPoint(this.arrowLoc);
+            //let ap2=curve.getPoint(this.arrowLoc+this.arrowSize);
+            dir=fieldEvaluator(ap1).normalize();
+            const arrowHelper = new THREE.ArrowHelper(dir, ap1, this.arrowSize, this.arrowColor,1.5*this.arrowSize,this.arrowSize);
+            curveObject.add(arrowHelper);
+
+            if(opacity)material.opacity=opacity;
+            return curveObject;
+        }
+
+        function withinBounds(p,minBounds,maxBounds){
+            if(p.x<minBounds.x||p.y<minBounds.y||p.z<minBounds.z ||
+                p.x>maxBounds.x ||p.y>maxBounds.y||p.z>maxBounds.z)return false;
+            return true;
+        }
+    }
+
+    function createArrow(start,dir,length, thickness,color){
+        let cylinderGeom=new THREE.CylinderGeometry( thickness/2, thickness/2, length-thickness*2, 12 );
+        let headGeom =new THREE.ConeGeometry( thickness*1.5, thickness*4, 12 );
+        let material=new THREE.MeshPhongMaterial( {
+            color: color,
+        } );
+        let cylinder=new THREE.Mesh( cylinderGeom, material );
+        cylinder.position.set(0,length/2-thickness,0);
+        let head=new THREE.Mesh( headGeom, material );
+
+        head.position.set(0,length-thickness*2,0);
+        let arrow=new THREE.Group();
+        arrow.add(cylinder);
+        arrow.add(head);
+        var axis = new THREE.Vector3(0, 1, 0);
+        arrow.quaternion.setFromUnitVectors(axis, dir.clone().normalize());
+        arrow.position.set(start.x,start.y,start.z);
+        return arrow;
+    }
+
+
+    function createText(text,pos,size, color){
+        if(!color)color="#ffffff";
+        if(!size)size=0.1;
+
+        let textSprite = new THREE.TextSprite({
+            alignment: 'center',
+            color: color,
+            fontFamily: 'Arial, Times, serif',
+            fontSize: size,
+            fontStyle: "bold",
+            text: text,
+        });
+        textSprite.position.set(pos.x,pos.y,pos.z);
+        return textSprite;
+    }
+
+</script>
+</body>
+</html>
