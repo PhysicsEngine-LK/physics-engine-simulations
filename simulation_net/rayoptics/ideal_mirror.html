@@ -1,0 +1,574 @@
+<!doctype html>
+<html>
+<head>
+    <title>Ideal Mirror Simulator</title>
+    <style>
+        body {
+            background: white;
+            color: #323232;
+            font-weight: 300;
+            width:  100%;
+            height: 100%;
+        //height: 100vh;
+            margin: 0;
+            overflow: hidden; /*  Disable scrollbars */
+            display: block;  /* No floating content on sides */
+        //display: flex;
+        //align-items: center;
+        //justify-content: center;
+        //text-align: center;
+        //font-family: Helvetica neue, roboto;
+        }
+
+        #gui {
+            font-size: 15px;
+            position:absolute;
+            font-family: arial;
+            transform:scale(1.2);
+            transform-origin: top right;
+            font-weight: bold;
+            position: absolute;
+            right:5px;
+            margin-left: auto;
+            zindex:2;
+            font-weight: bold;
+            font-size: 25px;
+        }
+        :root {
+            --tp-base-background-color: hsla(200, 6%, 15%, 0.8);
+            --tp-base-shadow-color: hsla(0, 0%, 0%, 0.26);
+            --tp-button-background-color: hsla(230, 7%, 70%, 1.00);
+            --tp-button-background-color-active: hsla(229, 7%, 55%, 1.00);
+            --tp-button-background-color-focus: hsla(231, 7%, 60%, 1.00);
+            --tp-button-background-color-hover: hsla(230, 7%, 65%, 1.00);
+            --tp-button-foreground-color: hsla(230, 7%, 20%, 1.00);
+            --tp-container-background-color: hsla(230, 7%, 75%, 0.10);
+            --tp-container-background-color-active: hsla(230, 7%, 75%, 0.25);
+            --tp-container-background-color-focus: hsla(230, 7%, 75%, 0.20);
+            --tp-container-background-color-hover: hsla(230, 7%, 75%, 0.15);
+            --tp-container-foreground-color: hsla(230, 7%, 75%, 1.00);
+            --tp-groove-foreground-color: hsla(230, 7%, 0%, 0.20);
+            --tp-input-background-color: hsla(230, 0%, 0%, 0.55);
+            --tp-input-background-color-active: hsla(230, 7%, 0%, 0.35);
+            --tp-input-background-color-focus: hsla(230, 7%, 0%, 0.30);
+            --tp-input-background-color-hover: hsla(230, 7%, 0%, 0.25);
+            --tp-input-foreground-color: hsla(230, 9%, 81%, 1.00);
+            --tp-label-foreground-color: hsla(230, 6%, 83%, 0.70);
+            --tp-monitor-background-color: hsla(230, 7%, 0%, 0.20);
+            --tp-monitor-foreground-color: hsla(230, 7%, 75%, 0.70);
+        }
+    </style>
+    <script  src="tweakpane3.js"></script>
+    <script src="hammer.js"></script>
+</head>
+
+<body>
+<div id="canvasdiv" class="container" align="center">
+    <div id="gui" style="position: absolute">
+
+    </div>
+    <canvas id="canvas" >Your browser does not support the HTML5 canvas tag.</canvas>
+
+</div>
+
+<script type='text/javascript'>
+    //keyboad support arrow, zoom, f
+    //?virtual object
+    //?option for point object
+    //color of mirror
+    //range of u
+    //axis render
+    var loadedItems=0;
+    const itemsToLoad=3;
+
+    var canvas =document.getElementById('canvas');
+    var ctx=canvas.getContext("2d");
+    ctx.font="Arial 12 bold";
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+
+    var initScale;
+    var hammertime = new Hammer(canvas);
+    hammertime.get('pinch').set({ enable: true });
+    hammertime.get('pan').set({ direction: Hammer.DIRECTION_ALL, threshold: 0, });
+    hammertime.on('panstart', function(ev) {
+        doMouse(ev.center.x,ev.center.y,"mousedown");
+    });
+    hammertime.on('panend', function(ev) {
+        doMouse(ev.center.x,ev.center.y,"mouseup");
+    });
+    hammertime.on('panmove', function(ev) {
+        doMouse(ev.center.x,ev.center.y,"mousemove");
+
+    });
+
+
+    hammertime.on('pinchstart', function(ev) {
+        intiScale=scale;
+
+    });
+
+    //can use pinch in pinchout separately
+    hammertime.on('pinch', function(ev) {
+
+        // console.log(ev.type+" scale="+ev.scale);
+        let oldScale=scale;
+
+        let x = ev.center.x/scale;
+        let y = ev.center.y/scale;
+        scale=intiScale*ev.scale;
+
+        offset.x-= x*(scale-oldScale);
+        offset.y-= y*(scale-oldScale);
+
+        //xOffset=(xOffset+canvas.width/2-ev.center.x);//*scale;
+        //yOffset=(yOffset+canvas.height/2-ev.center.y)//*scale;
+        update();
+        pane.refresh();
+    });
+
+
+
+    canvas.addEventListener('wheel',function(event){
+        zoom(event.wheelDelta);
+        event.preventDefault();
+    }, false);
+
+    window.addEventListener('resize',function(ev) { return resize(ev); });
+
+    window.addEventListener('keydown',doKeyBoard,false);
+
+    function resize(){
+        if(window.innerWidth<10||window.innerHeight<10)return;
+       // canvas.width = window.innerWidth;
+       // canvas.height = window.innerHeight;
+        canvas.width=window.innerWidth* devicePixelRatio;
+            canvas.height=window.innerHeight* devicePixelRatio;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+        scale=canvas.width/800;
+        update();
+    }
+
+    function zoom(wheelDelta){
+        if(wheelDelta>0){
+            scale*=1.025;
+            if(scale>5)scale=5;
+        }else {
+            scale *= 0.98;
+            if(scale<0.1)scale=0.1;
+        }
+
+        pane.refresh();
+        update();
+    }
+
+    function doKeyBoard(e) {
+        var code = e.keyCode;
+        let consumed=true;
+        switch (code) {
+            case 37:
+                if(e.ctrlKey)u-=1;
+                else if(e.shiftKey)f-=1;
+                else offset.x-=5;//alert("Left"); break; //Left key
+                break;
+            case 39: //Right key
+                if(e.ctrlKey)u+=1;
+                else if(e.shiftKey)f+=1;
+                else offset.x+=5;
+                if(u>-10)u=-10;
+                break;
+            case 38: //up
+                offset.y-=5;
+                break;
+            case 40: //down
+                offset.y+=5;
+                break;
+            case 33: //page up
+                zoom(1);
+                break;
+            case 34: //page down
+                zoom(-1);
+                break;
+            default:
+                consumed=false;
+        }
+
+        if(consumed){
+            if(f<-300)f=-300;
+            if(f>300)f=300;
+
+            pane.refresh();
+            update();
+        }
+    }
+    function doMouse(x,y,type){
+        x*=devicePixelRatio;
+        y*=devicePixelRatio;
+        if(type === 'mousedown' ){//|| ev.type ==='touchstart') {
+            // See if we're clicking a charge.
+            prevMouseDown={x:x,y:y};
+            x-=(offset.x+canvas.width/2);
+            y-=(offset.y+canvas.height/2);
+            x/=scale;
+            y/=scale;
+            if(x>u-6*scale && x<u+8.5*scale&& y>-100 && y<0){
+                dragMode=1;
+            }else{
+                dragMode=0;
+            }
+            update();
+        }
+        if(type === 'mousemove' ){//|| ev.type ==='touchmove') {
+            if(prevMouseDown!=null) {
+                let dx=(x - prevMouseDown.x);
+                let dy=(y - prevMouseDown.y);
+                if(dragMode==0){
+                    offset.x += dx;
+                    offset.y += dy;
+                }else{
+                    u+=dx/scale;
+                    //if(u<-400)u=-400;
+                    if(u>-10)u=-10;
+                }
+
+                prevMouseDown={x:x,y:y};
+                update();
+                pane.refresh();
+            }
+        }
+        if(type === 'mouseup' ){//|| ev.type ==='touchend') {
+            prevMouseDown=null;
+            update();
+        }
+
+
+    }
+
+
+
+    function sign(f){
+        return f>0?1:(f<0?-1:0);
+    }
+
+    var u=-90,v=180,f=60,m=-2;
+
+    var displayEye=true;
+    var displayRays=true;
+    var displayResult=true;
+    canvas.width = Math.max(900,window.innerWidth);
+    canvas.height = Math.max(600,window.innerHeight);
+    var scale=canvas.width/800;
+    var offset={x:0,y:0};
+    var prevMouseDown=null;
+    var dragMode=0; //0 ==drag world, 1=drag object
+    //create gui
+    var pane = new Tweakpane.Pane({container:document.getElementById("gui"),title:"Simulation Controls",expanded: true});
+
+
+    pane.addInput(window, "f",{label:"Focal length",min:-300,max:300,step:1}).on('change',update);
+    pane.addInput(window, "displayEye",{label:"Draw Eyes"}).on('change',update);
+    pane.addInput(window, "displayRays",{label:"Display Rays"}).on('change',update);
+    pane.addInput(window, "displayResult",{label:"Display Result"}).on('change',update);
+    pane.addInput(window, "scale",{label:"Scale",min:0.1,max:5,step:0.01}).on('change',update);
+
+    //var customContainer = document.getElementsByClassName('moveGUI')[0].append(gui.domElement);
+    var bg_color="rgb(0,64,84)";
+    var fg_color="rgb(255,255,255)";
+    var lensHeight=100;
+    var objHeight=lensHeight*0.6;
+    var dragMode=0;
+    //0 means none, 1 means object and 2 means lens
+    var imageEye=new Image();
+    imageEye.src="eye.png";
+    var imageRO=new Image();
+    imageRO.src="img_Object.png";
+    var imageVO=new Image();
+    imageVO.src="img_Virtual.png";
+
+    var imageEye=new Image();
+    imageEye.src="eye.png";
+    imageEye.onload=itemloaded;
+    var imageRO=new Image();
+    imageRO.src="img_Object.png";
+    imageRO.onload=itemloaded;
+    var imageVO=new Image();
+    imageVO.src="img_Virtual.png";
+    imageVO.onload=itemloaded;
+
+    resize();
+    update();
+
+    function itemloaded() {
+        loadedItems++;
+        if (loadedItems == itemsToLoad) {
+            update();
+        }
+    }
+
+    function update(){
+
+        if(f==0){
+            v=-u;
+            m=1;
+        }else if(u==f){
+            v=Infinity;
+            m=Infinity;
+        }else{
+            v=u*f/(u-f);
+            m=-v/u;
+        }
+        draw();
+
+    }
+
+    //render with center at world
+    function draw(){
+        ctx.fillStyle=bg_color;
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        if(loadedItems<itemsToLoad){
+            ctx.font = "30px Arial";
+            ctx.fillStyle=fg_color;
+            outString(canvas.width/2,canvas.height/2,"Loading ..."+(loadedItems*100/itemsToLoad).toFixed(0)+"%",1,1);
+            return;
+        }
+        this.ctx.font = '12pt sans-serif';
+
+        ctx.resetTransform();
+        //scale=World.getCamera().getScale()/100;
+        //let tx=World.getCamera().getOffset();
+        ctx.translate(canvas.width/2+offset.x,canvas.height/2+offset.y);
+        ctx.scale(scale,scale);
+        //ctx.translate(canvas.width/2+offset.x,canvas.height/2+offset.y);
+        drawAxis();
+        drawMirror();
+        drawObject();
+        if(m!=Infinity && displayEye)drawImage();
+        if(displayRays){
+            drawRays();
+        }
+        ctx.resetTransform();
+        if(displayResult){
+            ctx.scale(devicePixelRatio,devicePixelRatio);
+            drawSolution();
+        }
+    }
+
+    function drawSolution(){
+        this.ctx.font = '12pt sans-serif';
+        ctx.textAlign="left";
+        let x=40,y=canvas.height/devicePixelRatio-120;
+
+        if(f!=0){
+            ctx.fillText("u = "+u.toFixed(0)+"cm ," +" f = "+f.toFixed(0)+"cm", x, y);
+            y+=30;
+            ctx.fillText("using 1/u+1/v = 1/f  \u{27F9} "+"v = "+v.toFixed(1)+"cm", x, y);
+            y+=30;
+            ctx.fillStyle="yellow";
+            ctx.fillText("Nature of image is "+(v<0?"Real,":"Virtual,")+(m>0?" Erect &":" Inverted &") +(Math.abs(m)>1?" Magnified":" Diminished")+" (m="+m.toFixed(2)+")", x, y);
+        }else{
+            ctx.fillText("u = "+u.toFixed(0)+"cm ," +" f = ∞ cm", x, y);
+            y+=30;
+            ctx.fillText("Plane Mirror ⟹ "+"v = -u = "+v.toFixed(1)+"cm", x, y);
+            y+=30;
+            ctx.fillStyle="yellow";
+            ctx.fillText("Nature of image is Virtual, Erect and same Size (m = 1)",x,y);
+        }
+        y+=30;
+        ctx.fillStyle="lightgreen";
+        ctx.fillText("Arrow Keys(drag with mouse): Move Scene,  Ctr+Arrow Keys (drag with mouse): Move Object,  Shift+Arrow keys: Change focal length , Page Up/Down to zoom",x,y);
+        ctx.textAlign="center";
+    }
+
+
+    function drawRay(x1,y1,x2,y2,t){
+        if(!t)t=0.5;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        let x=x1*(1-t)+x2*t;
+        let y=y1*(1-t)+y2*t;
+        ctx.moveTo(x,y);
+        let d=Math.hypot(x2-x1,y2-y1);
+        let qx=8*(x2-x1)/d;
+        let qy=8*(y2-y1)/d;
+
+        let px=-0.5*qy;
+        let py= 0.5*qx;
+        //  p.setMagnitude(5).rotate(3*Math.PI/4);
+        ctx.moveTo(x+qx,y+qy);
+        ctx.lineTo(x+px,y+py);
+        ctx.moveTo(x+qx,y+qy);
+        ctx.lineTo(x-px,y-py);
+        ctx.stroke();
+
+    }
+
+    function drawRays(){
+        ctx.strokeStyle="yellow";
+        ctx.lineWidth=1.5;
+
+        if(m==Infinity){
+            ctx.beginPath();
+            drawRay(0, -objHeight,4*f, objHeight*3,0.5);
+            drawRay(0, 0,4*f, objHeight*4*f/u);
+        }else{
+            let vy=-objHeight*m;
+            if(v<0){
+                ctx.beginPath();
+                drawRay(0, -objHeight,v, vy,0.2);
+                drawRay(0, 0,v, vy,0.2);
+            }
+            else{
+                let i=sign(f);
+                ctx.beginPath();
+
+                ctx.lineWidth=2;
+                ctx.save();
+                ctx.strokeStyle="orange";
+                ctx.setLineDash([5, 3]);
+                ctx.moveTo(0, -objHeight);
+                ctx.lineTo(v, vy);
+                ctx.moveTo(0, 0);
+                ctx.lineTo(v, vy);
+                ctx.stroke();
+                ctx.restore();
+                ctx.beginPath();
+                ctx.lineWidth=1.5;
+                ctx.strokeStyle="yellow";
+                if(f==0){
+                    drawRay(0, -objHeight,3*u, -objHeight,0.5);
+                    drawRay(0, 0, 3*u, objHeight*3,0.5);
+                }else{
+                    drawRay(0, -objHeight,-i*10*f, -i*9*objHeight,0.2);
+                    drawRay(0, 0,-i*10*f, -i*objHeight*10*f/u,0.2);
+                }
+            }
+        }
+        ctx.strokeStyle="yellow";
+        drawRay(u, -objHeight,0, -objHeight);
+        drawRay(u, -objHeight,0, 0);
+        ctx.strokeStyle="white";
+    }
+
+
+    function drawAxis(){
+        ctx.strokeStyle="white";
+        ctx.fillStyle=ctx.strokeStyle;
+        ctx.beginPath();
+        ctx.moveTo((-offset.x-canvas.width/2)/scale, 0);
+        ctx.lineTo((-offset.x+canvas.width/2)/scale, 0);
+        ctx.stroke();
+        if(f!=0)ctx.fillText("F", f,15);
+    }
+
+    function drawObject(){
+        let img=u<0?imageRO:imageVO;
+        ctx.drawImage(img, 0,0,img.width,img.height,u-objHeight/10,-objHeight,objHeight/5,objHeight);
+        ctx.fillText("O", u,15);
+    }
+
+    function drawImage() {
+        let img = u < 0 ? imageRO : imageVO;
+        if (f > 0) ctx.drawImage(img, 0, 0, img.width, img.height, v - m * objHeight / 10, -m * objHeight, m * objHeight / 5, m * objHeight);
+        img = v < 0 ? imageRO : imageVO;
+        if (v < 0) {
+            ctx.scale(1, -1);
+            ctx.drawImage(imageRO, 0, 0, img.width, img.height, v - m * objHeight / 10, m * objHeight, m * objHeight / 5, -m * objHeight);
+            ctx.scale(1,-1);
+        }else {
+            ctx.drawImage(imageVO, 0, 0, img.width, img.height, v - m * objHeight / 10, -m * objHeight, m * objHeight / 5, m * objHeight);
+        }
+        ctx.fillText("I", v,m>0?15:-5);
+
+    }
+
+
+    function drawMirror(){
+        ctx.lineWidth = 2.5;
+        ctx.fillStyle="rgba(135,206,235,0.6)";
+        ctx.beginPath();
+        ctx.strokeStyle="green";
+        if(f==0){
+            ctx.translate(4,0);
+            ctx.moveTo(0,-lensHeight);
+            ctx.lineTo(0,lensHeight);
+            ctx.stroke();
+            ctx.translate(-4,0);
+            ctx.beginPath();
+            ctx.moveTo(0,-lensHeight);
+            ctx.lineTo(0,lensHeight);
+            ctx.strokeStyle="silver";
+            ctx.stroke();
+        } else if (f>0){
+            var th = 2*Math.atan((10-(f-1)/100)/100);
+            var R = 100/Math.sin(th);
+            ctx.translate(4,0);
+            ctx.arc(R+1, 0, R, Math.PI-th, Math.PI+th);
+            ctx.stroke();
+            ctx.translate(-4,0);
+            ctx.beginPath();
+            ctx.arc(R+1, 0, R, Math.PI-th, Math.PI+th);
+            ctx.strokeStyle="silver";
+            ctx.stroke();
+        }
+        else{
+            var th = 2*Math.atan((10-(1-f)/100)/100);
+            var R = 100/Math.sin(th);
+            ctx.translate(4,0);
+            ctx.arc(-R+1, 0, R+2, -th, th);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.translate(-4,0);
+            ctx.arc(-R+1, 0, R+2, -th, th);
+            ctx.strokeStyle="silver";
+            ctx.stroke();
+        }
+        ctx.lineWidth = 5;
+        ctx.strokeStyle="grey";
+        ctx.translate(5,0);
+        ctx.stroke();
+        ctx.translate(-2,0);
+        ctx.strokeStyle="white";
+        ctx.lineWidth = 5;
+        ctx.stroke();
+
+        if (true){
+            ctx.fillStyle = "white";//(255, 255, 255);
+            // ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.arc(f, 0, 2, 0,Math.PI*2);
+            ctx.fill();
+            //ctx.fillOval(0, 0, 4, 4);
+        }
+    }
+
+    function outString( x,y, s, x_align, y_align) {
+        var fm=ctx.measureText(s);
+        var h=10;//fm.height not supported in browsers
+        switch (y_align) {
+            case 0:
+                y += h;
+                break;
+            case 1:
+                y += h / 2;
+                break;
+            case 2:
+                break;
+        }
+        switch (x_align) {
+            case 0:
+                ctx.fillText(s, x+3, y);
+                break;
+            case 1:
+                ctx.fillText(s, x - fm.width/2, y);
+                break;
+            case 2:
+                ctx.fillText(s, x - fm.width / 2, y);
+                break;
+        }
+    }
+
+</script>
+</body>
+</html>

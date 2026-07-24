@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="si">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projectile Motion - Physics Engine v2</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #c9d1d9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 20px;
+            background: #0a0a0a;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #222;
+            box-shadow: 0 0 40px rgba(0, 255, 204, 0.1);
+            justify-content: center;
+            max-width: 1250px;
+            align-items: flex-start;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Panel is on the right */
+        .panel {
+            width: 350px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            background: #050505;
+            border: 2px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: inset 0 0 50px rgba(0, 255, 204, 0.05);
+            width: 100%;
+            max-width: 800px;
+            box-sizing: border-box;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 800 / 450;
+        }
+
+        .header-title {
+            margin-bottom: 5px;
+            color: #00ffcc;
+            font-size: 1.8em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sub-title {
+            color: #888;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .slider-group {
+            margin-bottom: 15px;
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            color: #ccc;
+            font-weight: bold;
+            font-size: 0.95em;
+            margin-bottom: 10px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #00ffcc;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: 0.2s;
+            font-size: 1em;
+            text-transform: uppercase;
+        }
+
+        #btnFire {
+            background: #ffcc00;
+            color: #000;
+        }
+
+        #btnFire:hover {
+            background: #e6b800;
+            transform: scale(1.02);
+        }
+
+        #btnReset {
+            background: #333;
+            color: #fff;
+        }
+
+        #btnReset:hover {
+            background: #444;
+        }
+
+        .math-box {
+            padding: 15px;
+            background: rgba(0, 255, 204, 0.05);
+            border: 1px dashed #00ffcc;
+            color: #c9d1d9;
+            font-size: 0.95em;
+            border-radius: 5px;
+            line-height: 1.8;
+            font-family: monospace;
+            position: relative;
+        }
+
+        .math-val {
+            color: #00ffcc;
+            font-weight: bold;
+            font-size: 1.2em;
+            float: right;
+            transition: 0.3s;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.85em;
+            color: #aaa;
+        }
+
+        .legend-color {
+            width: 15px;
+            height: 3px;
+            margin-right: 10px;
+            display: inline-block;
+        }
+
+        /* Highlight for 45 degrees */
+        .max-range-alert {
+            margin-top: 15px;
+            padding: 8px;
+            background: rgba(255, 204, 0, 0.15);
+            border-left: 4px solid #ffcc00;
+            color: #ffcc00;
+            font-weight: bold;
+            font-size: 0.9em;
+            display: none;
+            /* Hidden by default */
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.8;
+            }
+
+            50% {
+                opacity: 1;
+                text-shadow: 0 0 8px rgba(255, 204, 0, 0.5);
+            }
+
+            100% {
+                opacity: 0.8;
+            }
+        }
+
+        @media (max-width: 1199px) {
+            body {
+                padding: 15px 10px;
+            }
+
+            .container {
+                flex-wrap: wrap;
+                flex-direction: column;
+                align-items: center;
+                padding: 15px;
+                gap: 15px;
+            }
+
+            .canvas-wrapper {
+                order: 1;
+            }
+
+            .panel {
+                order: 2;
+                width: 100%;
+                max-width: 800px;
+            }
+
+            .header-title {
+                font-size: 1.4em;
+                text-align: center;
+            }
+
+            .sub-title {
+                font-size: 0.9em;
+                text-align: center;
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2 class="header-title">PROJECTILE MOTION - ප්‍රක්ෂිප්ත චලිතය</h2>
+    <p class="sub-title">ප්‍රක්ෂිප්ත චලිතයේ දෛශික හා සමීකරණ විශ්ලේෂණය</p>
+
+    <div class="container">
+
+        <!-- Visualization Canvas (Now on the LEFT) -->
+        <div class="canvas-wrapper">
+            <canvas id="simCanvas" width="800" height="450"></canvas>
+        </div>
+
+        <!-- Control Panel (Now on the RIGHT) -->
+        <div class="panel">
+
+            <div class="slider-group">
+                <div class="slider-label"><span>ආරම්භක ප්‍රවේගය (u)</span> <span id="lblU" style="color:#00ffcc;">40
+                        m/s</span></div>
+                <input type="range" id="uSlider" min="10" max="50" step="1" value="40">
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-label"><span>ප්‍රක්ෂේපණ කෝණය (θ)</span> <span id="lblTheta"
+                        style="color:#00ffcc;">45°</span></div>
+                <input type="range" id="thetaSlider" min="5" max="85" step="1" value="45">
+            </div>
+
+            <div class="btn-group">
+                <button id="btnFire">🚀 විදින්න (Fire)</button>
+                <button id="btnReset">නැවත සකසන්න</button>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <div class="legend-item"><span class="legend-color" style="background:#ffcc00;"></span> තිරස් ප්‍රවේගය
+                    (v_x) - <span style="color:#ffcc00; margin-left:5px;">නියතයි</span></div>
+                <div class="legend-item"><span class="legend-color" style="background:#ff3366;"></span> සිරස් ප්‍රවේගය
+                    (v_y) - <span style="color:#ff3366; margin-left:5px;">වෙනස් වේ</span></div>
+            </div>
+
+            <div class="math-box">
+                <div>පියාසර කාලය (T): <span class="math-val" id="valT">0.00 s</span></div>
+                <div style="font-size:0.8em; color:#666; margin-bottom:8px;">T = 2u sin(θ) / g</div>
+
+                <div>උපරිම උස (H): <span class="math-val" id="valH">0.00 m</span></div>
+                <div style="font-size:0.8em; color:#666; margin-bottom:8px;">H = u² sin²(θ) / 2g</div>
+
+                <div>තිරස් පරාසය (R): <span class="math-val" id="valR">0.00 m</span></div>
+                <div style="font-size:0.8em; color:#666;">R = u² sin(2θ) / g</div>
+
+                <!-- 45 Degree Alert Box -->
+                <div id="maxRangeAlert" class="max-range-alert">
+                    ★ 45&deg; දී තිරස් පරාසය උපරිම වේ!
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const uSlider = document.getElementById('uSlider');
+        const thetaSlider = document.getElementById('thetaSlider');
+        const lblU = document.getElementById('lblU');
+        const lblTheta = document.getElementById('lblTheta');
+
+        const valT = document.getElementById('valT');
+        const valH = document.getElementById('valH');
+        const valR = document.getElementById('valR');
+        const maxRangeAlert = document.getElementById('maxRangeAlert');
+
+        const btnFire = document.getElementById('btnFire');
+        const btnReset = document.getElementById('btnReset');
+
+        // Physics Constants & Scale
+        const g = 9.81;
+        const scale = 3; // 1 meter = 3 pixels
+        const originX = 30;
+        const originY = canvas.height - 30;
+
+        // State Variables
+        let u = 40;
+        let theta = 45;
+        let isFiring = false;
+        let time = 0;
+        let path = [];
+        let animationId;
+
+        // Real-time calculations
+        let T_total, H_max, R_max;
+
+        function updateMath() {
+            u = parseInt(uSlider.value);
+            theta = parseInt(thetaSlider.value);
+            lblU.innerText = u + " m/s";
+            lblTheta.innerText = theta + "°";
+
+            let rad = theta * Math.PI / 180;
+
+            T_total = (2 * u * Math.sin(rad)) / g;
+            H_max = (u * u * Math.pow(Math.sin(rad), 2)) / (2 * g);
+            R_max = (u * u * Math.sin(2 * rad)) / g;
+
+            valT.innerText = T_total.toFixed(2) + " s";
+            valH.innerText = H_max.toFixed(2) + " m";
+            valR.innerText = R_max.toFixed(2) + " m";
+
+            // 45 Degree Logic check
+            if (theta === 45) {
+                maxRangeAlert.style.display = "block";
+                valR.style.color = "#ffcc00";
+                valR.style.textShadow = "0 0 10px rgba(255,204,0,0.5)";
+            } else {
+                maxRangeAlert.style.display = "none";
+                valR.style.color = "#00ffcc";
+                valR.style.textShadow = "none";
+            }
+        }
+
+        function drawVector(x, y, vx, vy, colorX, colorY) {
+            let scaleV = 1.5;
+
+            // Vx Vector
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + vx * scaleV, y);
+            ctx.strokeStyle = colorX;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            // Arrow head X
+            ctx.beginPath();
+            ctx.moveTo(x + vx * scaleV, y);
+            ctx.lineTo(x + vx * scaleV - 6, y - 4);
+            ctx.lineTo(x + vx * scaleV - 6, y + 4);
+            ctx.fillStyle = colorX;
+            ctx.fill();
+
+            // Vy Vector (Invert Y for canvas coordinates)
+            if (Math.abs(vy) > 0.5) {
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x, y - vy * scaleV);
+                ctx.strokeStyle = colorY;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                // Arrow head Y
+                let dirY = vy > 0 ? 1 : -1;
+                ctx.beginPath();
+                ctx.moveTo(x, y - vy * scaleV);
+                ctx.lineTo(x - 4, y - vy * scaleV + dirY * 6);
+                ctx.lineTo(x + 4, y - vy * scaleV + dirY * 6);
+                ctx.fillStyle = colorY;
+                ctx.fill();
+            }
+        }
+
+        function drawScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Background Grid
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+            ctx.lineWidth = 1;
+            for (let i = originX; i < canvas.width; i += 50) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+            }
+            for (let i = originY; i > 0; i -= 50) {
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+            }
+
+            // Axes
+            ctx.strokeStyle = "#555";
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(originX, 0); ctx.lineTo(originX, canvas.height); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, originY); ctx.lineTo(canvas.width, originY); ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = "#888";
+            ctx.font = "12px Arial";
+            ctx.fillText("Distance (x)", canvas.width - 80, originY + 20);
+            ctx.fillText("Height (y)", originX - 25, 20);
+
+            // Watermark
+            ctx.save();
+            ctx.globalAlpha = 0.05; ctx.fillStyle = "#fff"; ctx.font = "bold 50px Arial";
+            ctx.textAlign = "center"; ctx.fillText("PHYSICS ENGINE", canvas.width / 2, canvas.height / 2);
+            ctx.restore();
+
+            // Draw Trajectory Path History
+            if (path.length > 0) {
+                ctx.beginPath();
+                ctx.moveTo(path[0].x, path[0].y);
+                for (let i = 1; i < path.length; i++) {
+                    ctx.lineTo(path[i].x, path[i].y);
+                }
+                ctx.strokeStyle = "rgba(0, 255, 204, 0.5)";
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Calculate Current Position & Velocity
+            let rad = theta * Math.PI / 180;
+            let currentX = originX;
+            let currentY = originY;
+            let vx = u * Math.cos(rad);
+            let vy = u * Math.sin(rad);
+
+            if (isFiring) {
+                let x_m = vx * time;
+                let y_m = (vy * time) - (0.5 * g * time * time);
+
+                vy = vy - (g * time);
+
+                currentX = originX + (x_m * scale);
+                currentY = originY - (y_m * scale);
+
+                if (time % 0.1 < 0.02) {
+                    path.push({ x: currentX, y: currentY });
+                }
+
+                // Stop condition
+                if (y_m < 0 && time > 0) {
+                    isFiring = false;
+                    currentX = originX + (R_max * scale);
+                    currentY = originY;
+                    vy = u * Math.sin(rad) - (g * T_total);
+                }
+            }
+
+            // Draw Expected Parabola (Ghost line)
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            for (let t = 0; t <= T_total; t += 0.1) {
+                let px = originX + (vx * t * scale);
+                let py = originY - ((u * Math.sin(rad) * t - 0.5 * g * t * t) * scale);
+                ctx.lineTo(px, py);
+            }
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Draw Cannon/Launcher
+            ctx.save();
+            ctx.translate(originX, originY);
+            ctx.rotate(-rad);
+            ctx.fillStyle = "#888";
+            ctx.fillRect(0, -5, 25, 10);
+            ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fillStyle = "#555"; ctx.fill();
+            ctx.restore();
+
+            // Draw Projectile
+            if (isFiring || path.length > 0) {
+                ctx.beginPath();
+                ctx.arc(currentX, currentY, 6, 0, Math.PI * 2);
+
+                // Change ball color if 45 degrees
+                ctx.fillStyle = (theta === 45) ? "#ffcc00" : "#00ffcc";
+                ctx.fill();
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = (theta === 45) ? "#ffcc00" : "#00ffcc";
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Draw Vectors
+                drawVector(currentX, currentY, vx, vy, "#ffcc00", "#ff3366");
+            }
+
+            // Draw Target/Max Range Marker
+            let endX = originX + (R_max * scale);
+            ctx.beginPath(); ctx.moveTo(endX, originY - 5); ctx.lineTo(endX, originY + 5);
+            ctx.strokeStyle = (theta === 45) ? "#ffcc00" : "#00ffcc";
+            ctx.lineWidth = 2; ctx.stroke();
+
+            ctx.fillStyle = (theta === 45) ? "#ffcc00" : "#00ffcc";
+            ctx.font = "10px Arial";
+            ctx.fillText(R_max.toFixed(1) + "m", endX - 10, originY + 15);
+        }
+
+        function animate() {
+            if (isFiring) {
+                time += 0.03;
+            }
+            drawScene();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        uSlider.addEventListener('input', () => { updateMath(); if (!isFiring) drawScene(); });
+        thetaSlider.addEventListener('input', () => { updateMath(); if (!isFiring) drawScene(); });
+
+        btnFire.onclick = () => {
+            if (!isFiring) {
+                time = 0;
+                path = [];
+                isFiring = true;
+            }
+        };
+
+        btnReset.onclick = () => {
+            isFiring = false;
+            time = 0;
+            path = [];
+            drawScene();
+        };
+
+        // Initialize
+        updateMath();
+        drawScene();
+        animate();
+    </script>
+</body>
+
+</html>

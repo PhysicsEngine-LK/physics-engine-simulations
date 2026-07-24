@@ -1,0 +1,237 @@
+<!doctype html>
+<html>
+<head>
+    <title>Huygen's Principle</title>
+    <style>
+        body {
+            background: white;
+            color: #323232;
+            font-weight: 300;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-family: Helvetica neue, roboto;
+        }
+
+        img {
+            width: 56px;
+            height: 48px;
+        }
+
+        h1 {
+            font-weight: 200;
+            font-style: 26px;
+            margin: 10px;
+        }
+    </style>
+</head>
+
+<body>
+<div id="canvasdiv" class="container" align="center">
+    <canvas id="myCanvas" style="border: 1px solid #c3c3c3;" width="900px" height="480px">
+        Your browser does not support the HTML5 canvas tag.
+    </canvas>
+    <div style="padding-left:20px">
+        <b>Source: </b>
+        <label class="white"><input id="chkSrc1" onchange="chkSrc1_onChange(null,this.checked)" type="checkbox" checked>1</label>
+        &nbsp;
+        <label class="white"><input id="chkSrc2" onchange="chkSrc2_onChange(null,this.checked)" type="checkbox" checked>2</label>
+
+        <br>
+
+        <span class="white">Check to make sources are out of phase: </span>
+        <label class="white"><input id="chkPhase" onchange="chkPhase_onChange(null,this.checked)" type="checkbox" checked>1</label>
+        <br>
+
+        <span class="white">Check to bring sources at center: </span>
+        <label class="white"><input id="chkSrcLoc" onchange="chkSrcLoc_onChange(null,this.checked)" type="checkbox" checked>1</label>
+        <br>
+    </div>
+
+    <div id="slider1"><b>WaveLength </b>30 <input id="a" max="400" min="30" step="5" type="range"
+                                                  oninput="a_onChange(this,this.value);"
+                                                  onchange="a_onChange(this,this.value);" value="80"> 400
+    </div>
+    <div id="slider2"><b>Frequency </b>1 <input id="b" max="8" min="1" step="0.5" type="range"
+                                                oninput="b_onChange(this,this.value);"
+                                                onchange="b_onChange(this,this.value);" value="3"> 8
+    </div>
+
+    <div id="slider3"><b>Amplitude </b>1 <input id="c" max="40" min="1" step="0.5" type="range"
+                                                oninput="c_onChange(this,this.value);"
+                                                onchange="c_onChange(this,this.value);" value="10"> 10
+    </div>
+
+    <div id="slider4"><b>Separation </b>10 <input id="d" max="500" min="20" step="5" type="range"
+                                                  oninput="d_onChange(this,this.value);"
+                                                  onchange="d_onChange(this,this.value);" value="120"> 500
+    </div>
+
+</div>
+
+<script type='text/javascript'>
+    // XYZPoint
+
+
+
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+    var isDragging = false;
+
+
+    canvas.addEventListener('mousewheel', mouseWheelMoved);
+    canvas.addEventListener('mousemove', mouseDragged);
+    canvas.addEventListener('mousedown', mousePressed);
+    canvas.addEventListener('mouseup', mouseReleased)
+    canvas.addEventListener('touchstart', myTouchStart, false); // touch handler for iPhones, iPads, and Androids
+    canvas.addEventListener('touchmove', myTouchMove, false); // touch handler for iPhones, iPads, and Androids
+    canvas.addEventListener('touchend', myTouchEnd, false); // touch handler for iPhones, iPads, and Androids
+    window.addEventListener('keydown', onKeyEvent, false);
+
+
+
+    function myTouchMove(event) {
+        let touch = event.touches[0];
+        let mouseEvent = new MouseEvent('mousemove', {
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+        });
+        canvas.dispatchEvent(mouseEvent);
+    }
+
+    function myTouchStart(event) {
+        event.preventDefault();
+        let touch = event.touches[0]
+        let mouseEvent = new MouseEvent('mousedown', {
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+        });
+        canvas.dispatchEvent(mouseEvent);
+    }
+
+    function myTouchEnd(event) {
+        event.preventDefault();
+        let mouseEvent = new MouseEvent('mouseup', {
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+        });
+        canvas.dispatchEvent(mouseEvent);
+    }
+
+    function getTouchPos(event) {
+        event.preventDefault();
+        let rect = canvas.getBoundingClientRect();
+        return {
+            x: event.touches[0].clientX - rect.left,
+            y: event.touches[0].clientY - rect.top,
+        };
+    }
+
+    function getMousePos(event) {
+        let rect = canvas.getBoundingClientRect();
+        return {
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top,
+        };
+        //return {
+        //x: event.pageX - canvasdiv.offsetLeft ,
+        //y: event.pageY - canvasdiv.offsetTop
+        //};
+    }
+
+    function mousePressed(me) {
+        let m = getMousePos(me);
+        mx = m.x;
+        my = m.y;
+        isDragging= true;//ctx.isPointInPath(vernier.path, mx, my) //((mx-ox*scale)/scale, (my-oy*scale)/scale);
+        updateView()
+    }
+
+    function mouseReleased(me) {
+        isDragging = false;
+        updateView()
+    }
+
+    function mouseWheelMoved(me) {
+        me.preventDefault();
+        let scroll=me.wheelDelta>0?2:-2;
+        rho+=scroll;
+        updateView()
+    }
+
+    function mouseDragged(me) {
+        me.preventDefault();
+        if (!isDragging) return;
+        let dx, dy;
+        let m = getMousePos(me);
+        dx = (m.x - mx) ;
+        dy = (m.y - my) ;
+        mx = m.x;
+        my = m.y;
+        theta+=dx/50;
+        phi-=dy/50;
+        updateView();
+    }
+
+
+    function onKeyEvent(e) {
+        e.preventDefault;
+        if (e.keyCode == 37) {
+            vernier.translate(-1);
+
+            return true;
+        } else if (e.keyCode == 39) {
+            vernier.translate(1);
+
+            return true;
+        }
+        updateView()
+    }
+
+
+
+
+
+    function b_onChange(widget,value){
+        //setFrequency(value);
+        //setFrequency(value);
+    }
+    function c_onChange(widget,value){
+
+
+        function d_onChange(widget,value){
+
+        }
+
+        function chkSrc1_onChange(widget,value)
+        {
+            //amplitudeS1 = value ? Number(document.getElementById("c").value): 0;
+        }
+
+
+        function chkSrc2_onChange(widget,value)
+        {
+            // amplitudeS2 = value ? Number(document.getElementById("c").value): 0;
+        }
+
+
+        function chkPhase_onChange(widget,value)
+        {
+            //phaseDifference = value?lambda / 2:0;
+        }
+
+
+
+        function chkSrcLoc_onChange(widget,value)
+        {
+
+        }
+
+
+
+</script>
+</body>
+</html>
