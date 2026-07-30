@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Displacement-Time Graphs - Gamified UI</title>
+    <style>
+        /* Gamified Neon Palette */
+        :root {
+            --bg-base: #0B0F19;
+            --bg-panel: #1A2235;
+            --text-main: #FFFFFF;
+            --text-muted: #8B9BB4;
+            --neon-plus: #00FFC4;  /* Mint/Cyan for Kandy (+) */
+            --neon-minus: #FF2A6D; /* Hot Pink for Colombo (-) */
+            --neon-yellow: #FFD700;
+            --border-color: #2A3655;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row; /* Enforces side-by-side */
+            flex-wrap: wrap;
+            gap: 25px;
+            background: var(--bg-base);
+            padding: 25px;
+            border-radius: 16px;
+            justify-content: center;
+            max-width: 1200px;
+            width: 100%;
+        }
+        
+        /* Canvas Section is now on the LEFT (DOM order 1) */
+        .canvas-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex: 1;
+            min-width: 650px;
+        }
+
+        /* Panel is now on the RIGHT (DOM order 2) */
+        .panel { 
+            width: 360px; 
+            text-align: left; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px;
+            background: var(--bg-panel);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .canvas-wrapper {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        .header-title { 
+            margin-bottom: 5px; 
+            color: var(--text-main); 
+            font-size: 2.2em; 
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+            font-weight: 900;
+            text-shadow: 0 0 15px rgba(0, 255, 196, 0.3);
+        }
+        .sub-title { color: var(--text-muted); margin-top: 0; margin-bottom: 30px; font-size: 1.1em;}
+
+        .btn-mode {
+            background: var(--bg-base);
+            border: 2px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: left;
+            font-weight: 700;
+            transition: all 0.2s ease;
+            font-size: 1em;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-mode:hover { background: #232D45; color: var(--text-main); }
+        
+        .btn-mode.active-plus { 
+            background: rgba(0, 255, 196, 0.1); 
+            border-color: var(--neon-plus); 
+            color: var(--neon-plus); 
+            box-shadow: 0 0 20px rgba(0, 255, 196, 0.15);
+        }
+        .btn-mode.active-minus { 
+            background: rgba(255, 42, 109, 0.1); 
+            border-color: var(--neon-minus); 
+            color: var(--neon-minus); 
+            box-shadow: 0 0 20px rgba(255, 42, 109, 0.15);
+        }
+
+        .action-btns { display: flex; gap: 12px; margin-top: auto; }
+        .btn-action {
+            flex: 1; padding: 15px; border: none; font-weight: 800; cursor: pointer; border-radius: 8px; font-size: 1.2em; transition: 0.2s; text-transform: uppercase;
+        }
+        #btnPlay { background: var(--neon-yellow); color: #000; box-shadow: 0 0 15px rgba(255, 215, 0, 0.3); }
+        #btnPlay:hover { transform: scale(1.03); box-shadow: 0 0 25px rgba(255, 215, 0, 0.5); }
+        
+        #btnReset { background: #334155; color: var(--text-main); }
+        #btnReset:hover { background: #475569; transform: scale(1.03); }
+
+        .math-box {
+            padding: 20px;
+            background: var(--bg-base);
+            border: 1px dashed var(--text-muted);
+            color: var(--text-main);
+            font-size: 1em;
+            border-radius: 10px;
+            line-height: 1.7;
+            margin-top: 10px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title">SYSTEM 22: S-T GRAPH ANALYSIS</h2>
+    <p class="sub-title">විස්ථාපනය - කාලය ප්‍රස්තාර හැඩතල (Kandy vs Colombo)</p>
+
+    <div class="container">
+        
+        <!-- Canvases (LEFT SIDE) -->
+        <div class="canvas-section">
+            <!-- Road Canvas -->
+            <div class="canvas-wrapper" style="height: 150px;">
+                <canvas id="roadCanvas" width="750" height="150"></canvas>
+            </div>
+            
+            <!-- Graph Canvas -->
+            <div class="canvas-wrapper" style="height: 380px;">
+                <canvas id="graphCanvas" width="750" height="380"></canvas>
+            </div>
+        </div>
+
+        <!-- Controls Panel (RIGHT SIDE) -->
+        <div class="panel">
+            <h3 style="margin: 0; color: var(--text-muted); font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px;">චලිත අවස්ථාව තෝරන්න:</h3>
+            
+            <button class="btn-mode active-plus" onclick="setMode(1)" id="btnM1">
+                1. නුවරට (+) නියත ප්‍රවේගයෙන්
+            </button>
+            <button class="btn-mode" onclick="setMode(2)" id="btnM2">
+                2. නුවරට (+) ත්වරණයෙන් 
+            </button>
+            <button class="btn-mode" onclick="setMode(3)" id="btnM3">
+                3. කොළඹට (-) නියත ප්‍රවේගයෙන්
+            </button>
+            <button class="btn-mode" onclick="setMode(4)" id="btnM4">
+                4. කොළඹට (-) ත්වරණයෙන්
+            </button>
+
+            <div class="math-box" id="explanationBox">
+                <!-- Dynamic text -->
+            </div>
+
+            <div class="action-btns">
+                <button id="btnPlay" class="btn-action">▶ Play</button>
+                <button id="btnReset" class="btn-action">Reset</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const roadCtx = document.getElementById('roadCanvas').getContext('2d');
+        const graphCtx = document.getElementById('graphCanvas').getContext('2d');
+        
+        const w = 750;
+        const hRoad = 150;
+        const hGraph = 380;
+
+        let mode = 1;
+        let isPlaying = false;
+        let t = 0;
+        let pathData = [];
+        let reqId;
+
+        let u = 0, a = 0, s = 0;
+        const timeScale = 0.05;
+
+        // Theme colors matching CSS
+        const c_main = "#00FFC4";
+        const c_sec = "#FF2A6D";
+        const c_text = "#FFFFFF";
+
+        const explanations = {
+            1: {
+                badge: "<span class='status-badge' style='background:rgba(0,255,196,0.2); color:#00FFC4;'>+ CONSTANT VELOCITY</span><br>",
+                text: "ධන (+) දිශාවට ගමන් කරයි. අනුක්‍රමණය (ප්‍රවේගය) නියත ධන අගයකි. එබැවින් ප්‍රස්තාරය <strong style='color:var(--neon-plus);'>ඉහළට යන සරල රේඛාවකි</strong>.",
+                color: c_main, class: "active-plus"
+            },
+            2: {
+                badge: "<span class='status-badge' style='background:rgba(0,255,196,0.2); color:#00FFC4;'>+ ACCELERATION</span><br>",
+                text: "ධන (+) දිශාවට ගමන් කරයි. අනුක්‍රමණය (ප්‍රවේගය) කාලයත් සමඟ ක්‍රමයෙන් වැඩි වේ. එබැවින් ප්‍රස්තාරය <strong style='color:var(--neon-plus);'>ඉහළට හැරෙන වක්‍රයකි</strong>.",
+                color: c_main, class: "active-plus"
+            },
+            3: {
+                badge: "<span class='status-badge' style='background:rgba(255,42,109,0.2); color:#FF2A6D;'>- CONSTANT VELOCITY</span><br>",
+                text: "සෘණ (-) දිශාවට ගමන් කරයි. අනුක්‍රමණය (ප්‍රවේගය) නියත සෘණ අගයකි. එබැවින් ප්‍රස්තාරය <strong style='color:var(--neon-minus);'>පහළට යන සරල රේඛාවකි</strong>.",
+                color: c_sec, class: "active-minus"
+            },
+            4: {
+                badge: "<span class='status-badge' style='background:rgba(255,42,109,0.2); color:#FF2A6D;'>- ACCELERATION</span><br>",
+                text: "සෘණ (-) දිශාවට ගමන් කරයි. සෘණ අනුක්‍රමණය කාලයත් සමඟ විශාල වේ (ප්‍රවේගය වැඩිවේ). එබැවින් ප්‍රස්තාරය <strong style='color:var(--neon-minus);'>පහළට හැරෙන වක්‍රයකි</strong>.",
+                color: c_sec, class: "active-minus"
+            }
+        };
+
+        function setMode(m) {
+            mode = m;
+            document.querySelectorAll('.btn-mode').forEach(btn => btn.className = 'btn-mode');
+            const activeBtn = document.getElementById('btnM' + m);
+            activeBtn.className = 'btn-mode ' + explanations[m].class;
+            
+            const expBox = document.getElementById('explanationBox');
+            expBox.innerHTML = explanations[m].badge + explanations[m].text;
+            expBox.style.borderLeft = `4px solid ${explanations[m].color}`;
+            
+            resetSim();
+        }
+
+        function resetSim() {
+            isPlaying = false;
+            t = 0;
+            s = 0;
+            pathData = [];
+            document.getElementById('btnPlay').innerText = "▶ Play";
+            
+            if(mode === 1) { u = 40; a = 0; }
+            if(mode === 2) { u = 0; a = 12; }
+            if(mode === 3) { u = -40; a = 0; }
+            if(mode === 4) { u = 0; a = -12; }
+
+            drawRoad();
+            drawGraph();
+        }
+
+        function drawRoad() {
+            roadCtx.clearRect(0, 0, w, hRoad);
+            
+            let cx = w/2; 
+            let roadY = hRoad/2 + 25;
+
+            // Neon Road Line
+            roadCtx.beginPath(); roadCtx.moveTo(0, roadY); roadCtx.lineTo(w, roadY);
+            roadCtx.strokeStyle = "#2A3655"; roadCtx.lineWidth = 4; roadCtx.stroke();
+            
+            // Center Line (Dashed)
+            roadCtx.beginPath(); roadCtx.moveTo(0, roadY); roadCtx.lineTo(w, roadY);
+            roadCtx.strokeStyle = "#8B9BB4"; roadCtx.lineWidth = 1; roadCtx.setLineDash([15, 15]); roadCtx.stroke(); roadCtx.setLineDash([]);
+            
+            // Origin Marker
+            roadCtx.beginPath(); roadCtx.moveTo(cx, roadY-15); roadCtx.lineTo(cx, roadY+15);
+            roadCtx.strokeStyle = c_text; roadCtx.lineWidth = 3; roadCtx.stroke();
+            roadCtx.fillStyle = c_text; roadCtx.font = "14px system-ui"; roadCtx.textAlign="center";
+            roadCtx.fillText("Origin (s=0)", cx, roadY + 35);
+
+            // Directions
+            roadCtx.font = "bold 15px system-ui";
+            roadCtx.fillStyle = c_main; roadCtx.fillText("නුවර (+s) ➔", w - 70, roadY - 40);
+            roadCtx.fillStyle = c_sec; roadCtx.fillText(" 🡄 කොළඹ (-s)", 70, roadY - 40);
+
+            // Position & Velocity
+            let carX = cx + s;
+            let v = u + a*t;
+
+            // Determine drawing direction
+            let drawDir = v >= 0 ? 1 : -1;
+            if (v === 0) drawDir = (mode <= 2) ? 1 : -1; 
+
+            roadCtx.save();
+            roadCtx.translate(carX, roadY - 12);
+            roadCtx.scale(drawDir, 1); // Flips the car based on direction
+
+            // Draw Modern Car
+            roadCtx.fillStyle = explanations[mode].color;
+            roadCtx.shadowBlur = 15;
+            roadCtx.shadowColor = explanations[mode].color;
+            
+            if(roadCtx.roundRect) {
+                // Main Body
+                roadCtx.beginPath();
+                roadCtx.roundRect(-25, -12, 50, 12, 4);
+                roadCtx.fill();
+                // Roof/Cabin
+                roadCtx.beginPath();
+                roadCtx.roundRect(-12, -24, 28, 12, {topLeft: 8, topRight: 8, bottomLeft: 0, bottomRight: 0});
+                roadCtx.fill();
+            } else {
+                roadCtx.fillRect(-25, -12, 50, 12);
+                roadCtx.fillRect(-12, -24, 28, 12);
+            }
+            roadCtx.shadowBlur = 0;
+
+            // Windows
+            roadCtx.fillStyle = "#0B0F19";
+            if(roadCtx.roundRect) {
+                roadCtx.beginPath(); roadCtx.roundRect(-8, -20, 10, 8, 2); roadCtx.fill();
+                roadCtx.beginPath(); roadCtx.roundRect(4, -20, 8, 8, 2); roadCtx.fill();
+            }
+
+            // Wheels
+            roadCtx.fillStyle = c_text;
+            roadCtx.beginPath(); roadCtx.arc(-15, 0, 7, 0, Math.PI*2); roadCtx.fill();
+            roadCtx.beginPath(); roadCtx.arc(15, 0, 7, 0, Math.PI*2); roadCtx.fill();
+            // Wheel rims
+            roadCtx.fillStyle = "#1A2235";
+            roadCtx.beginPath(); roadCtx.arc(-15, 0, 3, 0, Math.PI*2); roadCtx.fill();
+            roadCtx.beginPath(); roadCtx.arc(15, 0, 3, 0, Math.PI*2); roadCtx.fill();
+
+            roadCtx.restore();
+
+            // Velocity Vector (Arrow)
+            if(Math.abs(v) > 0.1) {
+                let arrowLen = Math.min(Math.abs(v), 60) * drawDir;
+                let arrowY = roadY - 55;
+                roadCtx.beginPath(); roadCtx.moveTo(carX, arrowY); roadCtx.lineTo(carX + arrowLen, arrowY);
+                roadCtx.strokeStyle = "#FFD700"; roadCtx.lineWidth = 3; roadCtx.stroke();
+                
+                // Arrow head
+                roadCtx.beginPath(); roadCtx.moveTo(carX + arrowLen, arrowY);
+                roadCtx.lineTo(carX + arrowLen - drawDir*8, arrowY - 6);
+                roadCtx.lineTo(carX + arrowLen - drawDir*8, arrowY + 6);
+                roadCtx.fillStyle = "#FFD700"; roadCtx.fill();
+            }
+        }
+
+        function drawGraph() {
+            graphCtx.clearRect(0, 0, w, hGraph);
+            
+            let originX = 60;
+            let originY = hGraph / 2;
+            let timeScaleX = 50;
+
+            // Grid
+            graphCtx.strokeStyle = "rgba(255, 255, 255, 0.03)"; graphCtx.lineWidth = 1;
+            for(let i = originY; i < hGraph; i += 30) { graphCtx.beginPath(); graphCtx.moveTo(0, i); graphCtx.lineTo(w, i); graphCtx.stroke(); }
+            for(let i = originY; i > 0; i -= 30) { graphCtx.beginPath(); graphCtx.moveTo(0, i); graphCtx.lineTo(w, i); graphCtx.stroke(); }
+            for(let i = originX; i < w; i += 50) { graphCtx.beginPath(); graphCtx.moveTo(i, 0); graphCtx.lineTo(i, hGraph); graphCtx.stroke(); }
+
+            // Axes
+            graphCtx.strokeStyle = "#2A3655"; graphCtx.lineWidth = 2;
+            graphCtx.beginPath(); graphCtx.moveTo(originX, 0); graphCtx.lineTo(originX, hGraph); graphCtx.stroke(); 
+            graphCtx.beginPath(); graphCtx.moveTo(0, originY); graphCtx.lineTo(w, originY); graphCtx.stroke(); 
+
+            // Axis Labels
+            graphCtx.fillStyle = "#8B9BB4"; graphCtx.font = "13px system-ui";
+            graphCtx.fillText("Time (t)", w - 60, originY + 20);
+            graphCtx.fillText("+s (Kandy)", originX + 10, 25);
+            graphCtx.fillText("-s (Colombo)", originX + 10, hGraph - 15);
+
+            // Draw Graph Line
+            if(pathData.length > 0) {
+                graphCtx.beginPath();
+                graphCtx.moveTo(originX + pathData[0].t * timeScaleX, originY - pathData[0].s);
+                for(let i=1; i<pathData.length; i++) {
+                    graphCtx.lineTo(originX + pathData[i].t * timeScaleX, originY - pathData[i].s);
+                }
+                graphCtx.strokeStyle = explanations[mode].color;
+                graphCtx.lineWidth = 4;
+                graphCtx.stroke();
+                
+                // Draw glowing tip
+                let lastP = pathData[pathData.length-1];
+                graphCtx.beginPath(); graphCtx.arc(originX + lastP.t * timeScaleX, originY - lastP.s, 6, 0, Math.PI*2);
+                graphCtx.fillStyle = c_text; 
+                graphCtx.shadowBlur = 15; graphCtx.shadowColor = explanations[mode].color;
+                graphCtx.fill();
+                graphCtx.shadowBlur = 0;
+            }
+        }
+
+        function updatePhysics() {
+            if(!isPlaying) return;
+            
+            t += timeScale;
+            s = u*t + 0.5*a*t*t;
+            
+            pathData.push({t: t, s: s});
+
+            if (Math.abs(s) > 320 || t * 50 > w - 100) {
+                isPlaying = false;
+                document.getElementById('btnPlay').innerText = "▶ Play";
+            }
+        }
+
+        function loop() {
+            updatePhysics();
+            drawRoad();
+            drawGraph();
+            if(isPlaying) reqId = requestAnimationFrame(loop);
+        }
+
+        document.getElementById('btnPlay').onclick = () => {
+            if(!isPlaying) {
+                if(pathData.length > 0 && (Math.abs(s) > 320 || t * 50 > w - 100)) {
+                    resetSim();
+                }
+                isPlaying = true;
+                document.getElementById('btnPlay').innerText = "⏸ Pause";
+                loop();
+            } else {
+                isPlaying = false;
+                document.getElementById('btnPlay').innerText = "▶ Play";
+            }
+        };
+
+        document.getElementById('btnReset').onclick = resetSim;
+
+        // Initialize
+        setMode(1);
+    </script>
+</body>
+</html>
