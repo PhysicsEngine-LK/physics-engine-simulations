@@ -168,6 +168,32 @@
       font-size: 13px;
     }
 
+    .hub-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .hub-links a {
+      padding: 11px 18px;
+      border-radius: 999px;
+      border: 1px solid var(--line-strong);
+      color: var(--text);
+      background: rgba(9, 16, 30, 0.85);
+      font-family: "Orbitron", sans-serif;
+      font-size: 13px;
+      letter-spacing: 1px;
+      text-decoration: none;
+      transition: transform 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .hub-links a:hover {
+      transform: translateY(-2px);
+      color: var(--accent-2);
+      box-shadow: 0 0 18px rgba(77, 255, 205, 0.25);
+    }
+
     .hero-logo {
       width: min(260px, 100%);
       aspect-ratio: 1;
@@ -307,6 +333,10 @@
             <span>Instructor: Lisitha Abeysekera</span>
             <span>Interactive demos</span>
           </div>
+          <nav class="hub-links" aria-label="Learning hubs">
+            <a href="simulations/">Simulations</a>
+            <a href="quizes/">Quizes</a>
+          </nav>
         </div>
         <img class="hero-logo" src="assets/logo.png" alt="Physics Engine logo" />
       </div>
