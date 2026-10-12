@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Overtaking Kinematics</title>
+    <style>
+        /* Cosmic Dark / Gamified Neon Palette */
+        :root {
+            --bg-deep: #050B14;
+            --text-stark: #F8FAFC;
+            --accent-cyan: #00FFC4;  /* Motor Car */
+            --accent-pink: #FF2A6D;  /* Bus */
+            --accent-yellow: #FCEE09; /* Highlights */
+            --panel-bg: rgba(26, 34, 53, 0.8);
+            --border-subtle: #2A3655;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-stark);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row; 
+            flex-wrap: wrap;
+            gap: 25px;
+            background: #0B0F19;
+            padding: 25px;
+            border-radius: 16px;
+            justify-content: center;
+            max-width: 1250px;
+            width: 100%;
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 0 40px rgba(0, 255, 196, 0.05);
+        }
+        
+        /* Canvas Section (LEFT) */
+        .canvas-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex: 1;
+            min-width: 700px;
+        }
+
+        .canvas-wrapper {
+            background: #03060A;
+            border: 2px solid var(--border-subtle);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas { display: block; width: 100%; }
+
+        /* Panel Section (RIGHT) */
+        .panel { 
+            width: 380px; 
+            text-align: left; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px;
+            background: var(--panel-bg);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+        }
+        
+        .header-title { 
+            margin-bottom: 5px; 
+            color: var(--text-stark); 
+            font-size: 2.1em; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+            font-weight: 900;
+        }
+        .sub-title { color: #8B9BB4; margin-top: 0; margin-bottom: 20px; font-size: 1em;}
+
+        .slider-group { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border-subtle);}
+        .slider-label { display: flex; justify-content: space-between; color: var(--text-stark); font-weight: bold; font-size: 0.95em; margin-bottom: 10px;}
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--accent-yellow); }
+
+        .action-btns { display: flex; gap: 12px; margin-top: 10px; }
+        .btn-action {
+            flex: 1; padding: 15px; border: none; font-weight: 900; cursor: pointer; border-radius: 8px; font-size: 1.1em; transition: 0.2s; text-transform: uppercase; letter-spacing: 1px;
+        }
+        #btnPlay { background: var(--accent-yellow); color: #000; box-shadow: 0 0 15px rgba(252, 238, 9, 0.4); }
+        #btnPlay:hover { transform: translateY(-2px); box-shadow: 0 0 25px rgba(252, 238, 9, 0.6); }
+        #btnReset { background: #2A3655; color: var(--text-stark); }
+        #btnReset:hover { background: #3B4B75; }
+
+        .math-box {
+            padding: 15px;
+            background: rgba(0,0,0,0.4);
+            border: 1px dashed #475569;
+            color: var(--text-stark);
+            font-size: 0.95em;
+            border-radius: 8px;
+            line-height: 1.7;
+        }
+        
+        .eq-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-family: monospace; font-size: 1.1em;}
+        .val-cyan { color: var(--accent-cyan); font-weight: bold; text-shadow: 0 0 10px rgba(0,255,196,0.3);}
+        .val-pink { color: var(--accent-pink); font-weight: bold; text-shadow: 0 0 10px rgba(255,42,109,0.3);}
+        .val-yellow { color: var(--accent-yellow); font-weight: bold;}
+
+        .legend { display: flex; flex-direction: column; gap: 5px; font-size: 0.85em; color: #8B9BB4; margin-bottom: 10px;}
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .dot { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+
+        .traffic-light-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            background: #000;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #222;
+        }
+        .light { width: 30px; height: 30px; border-radius: 50%; opacity: 0.2; transition: 0.3s; box-shadow: inset 0 0 10px #000;}
+        .light.red.active { background: #FF003C; opacity: 1; box-shadow: 0 0 20px #FF003C; }
+        .light.green.active { background: #00FFC4; opacity: 1; box-shadow: 0 0 20px #00FFC4; }
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title">1991 A/L Q17 - සාපේක්ෂ චලිතය සහ පසුකර යාම</h2>
+    <p class="sub-title"></p>
+
+    <div class="container">
+        
+        <!-- Canvas Section (LEFT) -->
+        <div class="canvas-section">
+            <div class="canvas-wrapper">
+                <canvas id="simCanvas" width="750" height="400"></canvas>
+            </div>
+        </div>
+
+        <!-- Controls Panel (RIGHT) -->
+        <div class="panel">
+            
+            <div class="traffic-light-container">
+                <div class="light red active" id="tlRed"></div>
+                <div class="light green" id="tlGreen"></div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item"><span class="dot" style="background:var(--accent-cyan);"></span> මෝටර් රථය (u = 0, a = 6 ms⁻²)</div>
+                <div class="legend-item"><span class="dot" style="background:var(--accent-pink);"></span> බස් රථය (u = 0, a = 4 ms⁻²)</div>
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-label"><span>මෝටර් රථයේ ත්වරණය</span> <span id="lblAc" class="val-cyan">6 m/s²</span></div>
+                <input type="range" id="sliderAc" min="2" max="10" step="1" value="6">
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-label"><span>බස් රථයේ ත්වරණය</span> <span id="lblAb" class="val-pink">4 m/s²</span></div>
+                <input type="range" id="sliderAb" min="1" max="8" step="1" value="4">
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-label"><span>ආරම්භක පරතරය</span> <span id="lblGap" class="val-yellow">100 m</span></div>
+                <input type="range" id="sliderGap" min="50" max="200" step="10" value="100">
+            </div>
+
+            <div class="math-box">
+                <div style="font-size: 0.85em; color: #8B9BB4; margin-bottom: 8px;">සජීවී දත්ත:</div>
+                <div class="eq-row"><span>කාලය (t):</span> <span id="valT" class="val-yellow">0.0 s</span></div>
+                <div class="eq-row"><span>රථයේ දුර (S_c):</span> <span id="valSc" class="val-cyan">0.0 m</span></div>
+                <div class="eq-row"><span>බසයේ දුර (S_b):</span> <span id="valSb" class="val-pink">100.0 m</span></div>
+                
+                <div id="mathConclusion" style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #475569; text-align: center; color: #8B9BB4;">
+                    පසුකර යාමට ගතවන කාලය: <br>
+                    <span style="font-size: 1.3em; color: var(--accent-yellow); font-weight: bold;" id="valFinalT">10.0 s</span>
+                </div>
+            </div>
+
+            <div class="action-btns">
+                <button id="btnPlay" class="btn-action">▶ Green Light</button>
+                <button id="btnReset" class="btn-action">Reset</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const sliderAc = document.getElementById('sliderAc');
+        const sliderAb = document.getElementById('sliderAb');
+        const sliderGap = document.getElementById('sliderGap');
+        
+        const lblAc = document.getElementById('lblAc');
+        const lblAb = document.getElementById('lblAb');
+        const lblGap = document.getElementById('lblGap');
+        
+        const valT = document.getElementById('valT');
+        const valSc = document.getElementById('valSc');
+        const valSb = document.getElementById('valSb');
+        const valFinalT = document.getElementById('valFinalT');
+        const mathConclusion = document.getElementById('mathConclusion');
+        
+        const tlRed = document.getElementById('tlRed');
+        const tlGreen = document.getElementById('tlGreen');
+        const btnPlay = document.getElementById('btnPlay');
+
+        // Physics State
+        let a_c = 6;
+        let a_b = 4;
+        let gap = 100;
+        let t = 0;
+        let s_c = 0;
+        let s_b = gap;
+        
+        let isPlaying = false;
+        let reqId;
+        let timeScale = 0.05; // Simulation speed
+
+        // Visual Scale: Max distance is around 350m, Canvas is 750px wide.
+        // We'll use a dynamic camera that scales the view or a scrolling road.
+        // For simplicity and to show relative closing, we will scale 1 meter = 1.8 pixels.
+        const px_per_m = 2.0; 
+        const road_y_b = 180; // Bus lane
+        const road_y_c = 260; // Car lane
+
+        function updateMath() {
+            a_c = parseFloat(sliderAc.value);
+            a_b = parseFloat(sliderAb.value);
+            gap = parseFloat(sliderGap.value);
+            
+            lblAc.innerText = a_c + " m/s²";
+            lblAb.innerText = a_b + " m/s²";
+            lblGap.innerText = gap + " m";
+            
+            // Calculate final catch up time
+            // 1/2 * a_c * t^2 = gap + 1/2 * a_b * t^2
+            // 1/2 * (a_c - a_b) * t^2 = gap
+            if (a_c > a_b) {
+                let final_t = Math.sqrt((2 * gap) / (a_c - a_b));
+                valFinalT.innerText = final_t.toFixed(1) + " s";
+                mathConclusion.style.opacity = 1;
+            } else {
+                valFinalT.innerText = "Never";
+                mathConclusion.style.opacity = 0.5;
+            }
+            
+            if(!isPlaying && t === 0) {
+                s_c = 0;
+                s_b = gap;
+                updateUI();
+                drawScene();
+            }
+        }
+
+        function updateUI() {
+            valT.innerText = t.toFixed(1) + " s";
+            valSc.innerText = s_c.toFixed(1) + " m";
+            valSb.innerText = s_b.toFixed(1) + " m";
+        }
+
+        function drawCar(x, y, color) {
+            ctx.save();
+            ctx.translate(x, y);
+            
+            ctx.fillStyle = color;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = color;
+            
+            // Body
+            ctx.beginPath();
+            ctx.roundRect(-20, -10, 40, 10, 3);
+            ctx.fill();
+            // Roof
+            ctx.beginPath();
+            ctx.roundRect(-10, -20, 20, 10, 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            
+            // Wheels
+            ctx.fillStyle = "#fff";
+            ctx.beginPath(); ctx.arc(-10, 0, 4, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(10, 0, 4, 0, Math.PI*2); ctx.fill();
+            
+            ctx.restore();
+        }
+
+        function drawBus(x, y, color) {
+            ctx.save();
+            ctx.translate(x, y);
+            
+            ctx.fillStyle = color;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = color;
+            
+            // Body
+            ctx.beginPath();
+            ctx.roundRect(-30, -20, 60, 20, 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            
+            // Windows
+            ctx.fillStyle = "#050B14";
+            for(let i=-20; i<20; i+=12) {
+                ctx.fillRect(i, -16, 8, 8);
+            }
+            
+            // Wheels
+            ctx.fillStyle = "#fff";
+            ctx.beginPath(); ctx.arc(-15, 0, 5, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(15, 0, 5, 0, Math.PI*2); ctx.fill();
+            
+            ctx.restore();
+        }
+
+        function drawScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Road Lanes
+            ctx.strokeStyle = "#2A3655"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, road_y_b); ctx.lineTo(canvas.width, road_y_b); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, road_y_c); ctx.lineTo(canvas.width, road_y_c); ctx.stroke();
+            
+            // Draw Dashed line between lanes
+            ctx.strokeStyle = "#475569"; ctx.lineWidth = 1; ctx.setLineDash([15, 15]);
+            ctx.beginPath(); ctx.moveTo(0, (road_y_b + road_y_c)/2); ctx.lineTo(canvas.width, (road_y_b + road_y_c)/2); ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw Start Line (x=0)
+            let start_x_px = 50; // Margin
+            ctx.strokeStyle = "#fff"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(start_x_px, 120); ctx.lineTo(start_x_px, 300); ctx.stroke();
+            ctx.fillStyle = "#fff"; ctx.font = "12px sans-serif";
+            ctx.fillText("0 m", start_x_px - 10, 110);
+
+            // Camera panning logic: If car goes beyond mid-screen, pan the camera
+            let camera_offset = 0;
+            let current_car_px = start_x_px + s_c * px_per_m;
+            let mid_screen = canvas.width * 0.4;
+            
+            if (current_car_px > mid_screen) {
+                camera_offset = current_car_px - mid_screen;
+            }
+
+            // Draw Distance Markers based on camera
+            ctx.fillStyle = "#475569"; ctx.font = "10px monospace";
+            for(let i=0; i<=500; i+=50) {
+                let mx = start_x_px + (i * px_per_m) - camera_offset;
+                if(mx > 0 && mx < canvas.width) {
+                    ctx.beginPath(); ctx.moveTo(mx, road_y_b-30); ctx.lineTo(mx, road_y_c+30);
+                    ctx.strokeStyle = "rgba(255,255,255,0.05)"; ctx.stroke();
+                    ctx.fillText(i + "m", mx + 2, 130);
+                }
+            }
+
+            // Calculate screen coordinates
+            let car_screen_x = start_x_px + (s_c * px_per_m) - camera_offset;
+            let bus_screen_x = start_x_px + (s_b * px_per_m) - camera_offset;
+
+            // Draw Vehicles
+            drawCar(car_screen_x, road_y_c, "var(--accent-cyan)");
+            drawBus(bus_screen_x, road_y_b, "var(--accent-pink)");
+            
+            // Draw Overtake Line if caught up
+            if(s_c >= s_b && a_c > a_b) {
+                ctx.strokeStyle = "var(--accent-yellow)"; ctx.lineWidth = 2; ctx.setLineDash([5,5]);
+                ctx.beginPath(); ctx.moveTo(car_screen_x, 120); ctx.lineTo(car_screen_x, 300); ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = "var(--accent-yellow)"; ctx.font = "bold 14px sans-serif";
+                ctx.fillText("Overtake!", car_screen_x - 30, 100);
+            }
+        }
+
+        function loop() {
+            if (isPlaying) {
+                t += timeScale;
+                s_c = 0.5 * a_c * Math.pow(t, 2);
+                s_b = gap + 0.5 * a_b * Math.pow(t, 2);
+                updateUI();
+                
+                // Stop when overtook + 2 seconds for visual confirmation
+                let final_t = Math.sqrt((2 * gap) / (a_c - a_b));
+                if (a_c > a_b && t >= final_t + 1.5) {
+                    isPlaying = false;
+                    btnPlay.innerText = "▶ Restart";
+                    btnPlay.style.background = "#475569";
+                }
+            }
+            drawScene();
+            if (isPlaying) {
+                reqId = requestAnimationFrame(loop);
+            }
+        }
+
+        btnPlay.onclick = () => {
+            if (!isPlaying) {
+                // If it already finished, reset first
+                if (t > 0 && s_c >= s_b) {
+                    t = 0; s_c = 0; s_b = gap;
+                }
+                isPlaying = true;
+                tlRed.classList.remove('active');
+                tlGreen.classList.add('active');
+                btnPlay.innerText = "⏸ Pause";
+                btnPlay.style.background = "var(--accent-yellow)";
+                loop();
+            } else {
+                isPlaying = false;
+                tlRed.classList.add('active');
+                tlGreen.classList.remove('active');
+                btnPlay.innerText = "▶ Resume";
+            }
+        };
+
+        document.getElementById('btnReset').onclick = () => {
+            isPlaying = false;
+            t = 0;
+            s_c = 0;
+            s_b = gap;
+            
+            tlRed.classList.add('active');
+            tlGreen.classList.remove('active');
+            btnPlay.innerText = "▶ Green Light";
+            btnPlay.style.background = "var(--accent-yellow)";
+            
+            updateMath(); 
+        };
+
+        sliderAc.addEventListener('input', () => { if(!isPlaying){ t=0; updateMath(); } });
+        sliderAb.addEventListener('input', () => { if(!isPlaying){ t=0; updateMath(); } });
+        sliderGap.addEventListener('input', () => { if(!isPlaying){ t=0; updateMath(); } });
+
+        // Initialize
+        updateMath();
+    </script>
+</body>
+</html>

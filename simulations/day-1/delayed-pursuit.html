@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - Delayed Pursuit</title>
+    <style>
+        /* Gamified Neon Palette */
+        :root {
+            --bg-base: #0B0F19;
+            --bg-panel: #1A2235;
+            --text-main: #FFFFFF;
+            --text-muted: #8B9BB4;
+            --neon-cyan: #00FFC4;  /* Particle P */
+            --neon-purple: #A855F7; /* Particle Q */
+            --neon-yellow: #FFD700;
+            --border-color: #2A3655;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row; 
+            flex-wrap: wrap;
+            gap: 25px;
+            background: var(--bg-base);
+            padding: 25px;
+            border-radius: 16px;
+            justify-content: center;
+            max-width: 1200px;
+            width: 100%;
+        }
+        
+        /* Canvas Section (LEFT) */
+        .canvas-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex: 1;
+            min-width: 650px;
+        }
+
+        .canvas-wrapper {
+            background: #03060A;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 400px;
+        }
+
+        canvas { display: block; width: 100%; }
+
+        /* Controls Panel (RIGHT) */
+        .panel { 
+            width: 380px; 
+            text-align: left; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px;
+            background: var(--bg-panel);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .header-title { 
+            margin-bottom: 5px; 
+            color: var(--text-main); 
+            font-size: 2.2em; 
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+            font-weight: 900;
+            text-shadow: 0 0 15px rgba(0, 255, 196, 0.3);
+        }
+        .sub-title { color: var(--text-muted); margin-top: 0; margin-bottom: 15px; font-size: 1.1em;}
+
+        .slider-group { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; border: 1px solid var(--border-color);}
+        .slider-label { display: flex; justify-content: space-between; color: var(--text-main); font-weight: bold; font-size: 0.95em; margin-bottom: 10px;}
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--neon-yellow); }
+
+        .btn-preset {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid var(--neon-yellow);
+            color: var(--neon-yellow);
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .btn-preset:hover { background: rgba(255, 215, 0, 0.2); transform: translateY(-2px); }
+
+        .action-btns { display: flex; gap: 12px; margin-top: auto; }
+        .btn-action {
+            flex: 1; padding: 15px; border: none; font-weight: 800; cursor: pointer; border-radius: 8px; font-size: 1.1em; transition: 0.2s; text-transform: uppercase;
+        }
+        #btnPlay { background: var(--neon-cyan); color: #000; box-shadow: 0 0 15px rgba(0, 255, 196, 0.4); }
+        #btnPlay:hover { transform: scale(1.03); box-shadow: 0 0 25px rgba(0, 255, 196, 0.6); }
+        #btnReset { background: #334155; color: var(--text-main); }
+        #btnReset:hover { background: #475569; transform: scale(1.03); }
+
+        .math-box {
+            padding: 15px;
+            background: var(--bg-base);
+            border: 1px dashed var(--text-muted);
+            color: var(--text-main);
+            font-size: 0.95em;
+            border-radius: 10px;
+            line-height: 1.7;
+        }
+        
+        .eq-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-family: monospace; font-size: 1.1em;}
+        .val-cyan { color: var(--neon-cyan); font-weight: bold; text-shadow: 0 0 8px rgba(0,255,196,0.3);}
+        .val-purple { color: var(--neon-purple); font-weight: bold; text-shadow: 0 0 8px rgba(168,85,247,0.3);}
+        .val-yellow { color: var(--neon-yellow); font-weight: bold; text-shadow: 0 0 8px rgba(255,215,0,0.3);}
+
+        .legend { display: flex; flex-direction: column; gap: 5px; font-size: 0.85em; color: var(--text-muted); margin-bottom: 10px;}
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title">2004 A/L - කාල ප්‍රමාදයන් සහිත ඒකාකාර ප්‍රවේග</h2>
+    <p class="sub-title"></p>
+
+    <div class="container">
+        
+        <!-- Canvas Section (LEFT) -->
+        <div class="canvas-section">
+            <div class="canvas-wrapper">
+                <canvas id="simCanvas" width="700" height="400"></canvas>
+            </div>
+        </div>
+
+        <!-- Controls Panel (RIGHT) -->
+        <div class="panel">
+            
+            <button class="btn-preset" onclick="loadExamQuestion()">📝 පරීක්ෂණ දත්ත ඇතුළත් කරන්න (Load Q35)</button>
+
+            <div class="legend">
+                <div class="legend-item"><span class="dot" style="background:var(--neon-cyan);"></span> P අංශුව (ආරම්භය t = 0)</div>
+                <div class="legend-item"><span class="dot" style="background:var(--neon-purple);"></span> Q අංශුව (ප්‍රමාද වී අරඹයි)</div>
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-label"><span>P හි ප්‍රවේගය (V_p)</span> <span id="lblVp" class="val-cyan">4 m/s</span></div>
+                <input type="range" id="sliderVp" min="1" max="10" step="1" value="4">
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-label"><span>Q හි ප්‍රවේගය (V_q)</span> <span id="lblVq" class="val-purple">5 m/s</span></div>
+                <input type="range" id="sliderVq" min="1" max="15" step="1" value="5">
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-label"><span>Q හි කාල ප්‍රමාදය (t₀)</span> <span id="lblDelay" class="val-yellow">1 s</span></div>
+                <input type="range" id="sliderDelay" min="0" max="5" step="0.5" value="1">
+            </div>
+
+            <div class="math-box">
+                <div style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 8px;">සජීවී කාලය හා දුර:</div>
+                <div class="eq-row"><span>කාලය (t):</span> <span id="valT" class="val-yellow">0.0 s</span></div>
+                <div class="eq-row"><span>P හි දුර (S_p):</span> <span id="valSp" class="val-cyan">0.0 m</span></div>
+                <div class="eq-row"><span>Q හි දුර (S_q):</span> <span id="valSq" class="val-purple">0.0 m</span></div>
+                
+                <div id="mathConclusion" style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed var(--border-color); text-align: center; color: var(--text-muted);">
+                    හමුවන දුර: <br>
+                    <span style="font-size: 1.4em; color: var(--neon-yellow); font-weight: bold;" id="valFinalS">20.0 m</span>
+                </div>
+            </div>
+
+            <div class="action-btns">
+                <button id="btnPlay" class="btn-action">▶ Play</button>
+                <button id="btnReset" class="btn-action">Reset</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const sliderVp = document.getElementById('sliderVp');
+        const sliderVq = document.getElementById('sliderVq');
+        const sliderDelay = document.getElementById('sliderDelay');
+        
+        const lblVp = document.getElementById('lblVp');
+        const lblVq = document.getElementById('lblVq');
+        const lblDelay = document.getElementById('lblDelay');
+        
+        const valT = document.getElementById('valT');
+        const valSp = document.getElementById('valSp');
+        const valSq = document.getElementById('valSq');
+        const valFinalS = document.getElementById('valFinalS');
+        const mathConclusion = document.getElementById('mathConclusion');
+        
+        const btnPlay = document.getElementById('btnPlay');
+
+        // JS Color Constants for Canvas (Fixes the black rendering issue)
+        const colorCyan = "#00FFC4";
+        const colorPurple = "#A855F7";
+        const colorYellow = "#FFD700";
+        const colorLane = "#2A3655";
+        const colorTextDark = "#0B0F19";
+
+        // Physics State
+        let v_p = 4;
+        let v_q = 5;
+        let delay = 1;
+        let t = 0;
+        let s_p = 0;
+        let s_q = 0;
+        
+        let isPlaying = false;
+        let reqId;
+        let timeScale = 0.03; 
+
+        // Visual Scale
+        const px_per_m = 18; 
+        const origin_x = 50;
+        const lane_p = 160;
+        const lane_q = 240;
+
+        function loadExamQuestion() {
+            sliderVp.value = 4;
+            sliderVq.value = 5;
+            sliderDelay.value = 1;
+            updateMath();
+            if(isPlaying) resetSim();
+        }
+
+        function updateMath() {
+            v_p = parseFloat(sliderVp.value);
+            v_q = parseFloat(sliderVq.value);
+            delay = parseFloat(sliderDelay.value);
+            
+            lblVp.innerText = v_p + " m/s";
+            lblVq.innerText = v_q + " m/s";
+            lblDelay.innerText = delay + " s";
+            
+            if (v_q > v_p) {
+                let meet_t = (v_q * delay) / (v_q - v_p);
+                let meet_s = v_p * meet_t;
+                valFinalS.innerText = meet_s.toFixed(1) + " m";
+                mathConclusion.style.opacity = 1;
+            } else {
+                valFinalS.innerText = "Never (V_p ≥ V_q)";
+                mathConclusion.style.opacity = 0.5;
+            }
+            
+            if(!isPlaying && t === 0) {
+                s_p = 0;
+                s_q = 0;
+                updateUI();
+                drawScene();
+            }
+        }
+
+        function updateUI() {
+            valT.innerText = t.toFixed(1) + " s";
+            valSp.innerText = s_p.toFixed(1) + " m";
+            valSq.innerText = s_q.toFixed(1) + " m";
+        }
+
+        function drawParticle(x, y, color, label) {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = color;
+            ctx.fillStyle = color;
+            
+            // Hexagon/Sci-Fi shape
+            ctx.beginPath();
+            ctx.moveTo(x - 10, y - 10);
+            ctx.lineTo(x + 10, y - 10);
+            ctx.lineTo(x + 15, y);
+            ctx.lineTo(x + 10, y + 10);
+            ctx.lineTo(x - 10, y + 10);
+            ctx.lineTo(x - 15, y);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            
+            // Text color inside particle (using dark text for contrast)
+            ctx.fillStyle = colorTextDark;
+            ctx.font = "bold 12px Orbitron, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(label, x, y + 4);
+        }
+
+        function drawScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Background Grid
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+            ctx.lineWidth = 1;
+            for(let i=0; i<canvas.width; i+=40) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+            }
+
+            // Draw Lanes
+            ctx.strokeStyle = colorLane; 
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, lane_p); ctx.lineTo(canvas.width, lane_p); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, lane_q); ctx.lineTo(canvas.width, lane_q); ctx.stroke();
+
+            // Draw Origin (O)
+            ctx.strokeStyle = "#fff"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(origin_x, 100); ctx.lineTo(origin_x, 300); ctx.stroke();
+            ctx.fillStyle = "#fff"; ctx.font = "bold 14px sans-serif"; ctx.textAlign = "right";
+            ctx.fillText("O (0m)", origin_x - 10, 90);
+
+            // Camera panning logic
+            let camera_offset = 0;
+            let current_p_px = origin_x + s_p * px_per_m;
+            let mid_screen = canvas.width * 0.6;
+            
+            if (current_p_px > mid_screen) {
+                camera_offset = current_p_px - mid_screen;
+            }
+
+            // Draw Distance Markers
+            ctx.fillStyle = "#8B9BB4"; ctx.font = "12px monospace"; ctx.textAlign = "center";
+            for(let i=5; i<=100; i+=5) {
+                let mx = origin_x + (i * px_per_m) - camera_offset;
+                if(mx > 0 && mx < canvas.width) {
+                    ctx.beginPath(); ctx.moveTo(mx, 120); ctx.lineTo(mx, 280);
+                    ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.stroke();
+                    ctx.fillText(i + "m", mx, 115);
+                }
+            }
+
+            // Draw Meeting Point (Ghost Line)
+            if (v_q > v_p) {
+                let meet_s = (v_q * delay * v_p) / (v_q - v_p);
+                let meet_x = origin_x + (meet_s * px_per_m) - camera_offset;
+                if(meet_x > 0 && meet_x < canvas.width) {
+                    ctx.beginPath(); ctx.moveTo(meet_x, 100); ctx.lineTo(meet_x, 300);
+                    ctx.strokeStyle = "rgba(255, 215, 0, 0.4)"; ctx.lineWidth = 2; ctx.setLineDash([5,5]); ctx.stroke(); ctx.setLineDash([]);
+                    ctx.fillStyle = "rgba(255, 215, 0, 0.8)";
+                    ctx.fillText("Meet Point", meet_x, 90);
+                }
+            }
+
+            // Calculate screen coordinates
+            let p_screen_x = origin_x + (s_p * px_per_m) - camera_offset;
+            let q_screen_x = origin_x + (s_q * px_per_m) - camera_offset;
+
+            // Draw Trace lines
+            ctx.beginPath(); ctx.moveTo(origin_x - camera_offset, lane_p); ctx.lineTo(p_screen_x, lane_p);
+            ctx.strokeStyle = colorCyan; ctx.lineWidth = 4; ctx.stroke();
+            
+            if (t > delay) {
+                ctx.beginPath(); ctx.moveTo(origin_x - camera_offset, lane_q); ctx.lineTo(q_screen_x, lane_q);
+                ctx.strokeStyle = colorPurple; ctx.lineWidth = 4; ctx.stroke();
+            }
+
+            // Draw Particles using actual Hex variables
+            drawParticle(p_screen_x, lane_p, colorCyan, "P");
+            
+            if (t >= delay) {
+                drawParticle(q_screen_x, lane_q, colorPurple, "Q");
+            } else {
+                // Q waiting at origin
+                ctx.globalAlpha = 0.5;
+                drawParticle(origin_x - camera_offset, lane_q, colorPurple, "Q");
+                ctx.globalAlpha = 1.0;
+                
+                // Show countdown
+                ctx.fillStyle = colorYellow; ctx.font = "12px sans-serif";
+                ctx.fillText(`Starts in ${(delay - t).toFixed(1)}s`, origin_x - camera_offset + 40, lane_q + 20);
+            }
+
+            // Overtake effect
+            if (t > delay && s_q >= s_p && v_q > v_p) {
+                ctx.beginPath(); ctx.arc(q_screen_x, lane_q, 30, 0, Math.PI*2);
+                ctx.strokeStyle = colorYellow; ctx.lineWidth = 2; ctx.stroke();
+            }
+        }
+
+        function loop() {
+            if (isPlaying) {
+                t += timeScale;
+                s_p = v_p * t;
+                
+                if (t >= delay) {
+                    s_q = v_q * (t - delay);
+                } else {
+                    s_q = 0;
+                }
+                
+                updateUI();
+                
+                // Stop when overtook + 1.5 seconds for visual confirmation
+                if (v_q > v_p) {
+                    let meet_t = (v_q * delay) / (v_q - v_p);
+                    if (t >= meet_t + 1.5) {
+                        isPlaying = false;
+                        btnPlay.innerText = "▶ Restart";
+                        btnPlay.style.background = "#475569";
+                        btnPlay.style.color = "var(--text-main)";
+                    }
+                } else if (t > 20) { 
+                    isPlaying = false;
+                    btnPlay.innerText = "▶ Restart";
+                }
+            }
+            drawScene();
+            if (isPlaying) {
+                reqId = requestAnimationFrame(loop);
+            }
+        }
+
+        btnPlay.onclick = () => {
+            if (!isPlaying) {
+                if (s_q >= s_p && t > delay) {
+                    t = 0; s_p = 0; s_q = 0; 
+                }
+                isPlaying = true;
+                btnPlay.innerText = "⏸ Pause";
+                btnPlay.style.background = "var(--neon-yellow)";
+                btnPlay.style.color = "#000";
+                loop();
+            } else {
+                isPlaying = false;
+                btnPlay.innerText = "▶ Resume";
+            }
+        };
+
+        document.getElementById('btnReset').onclick = () => {
+            isPlaying = false;
+            t = 0;
+            s_p = 0;
+            s_q = 0;
+            
+            btnPlay.innerText = "▶ Play";
+            btnPlay.style.background = "var(--neon-cyan)";
+            btnPlay.style.color = "#000";
+            
+            updateMath(); 
+        };
+
+        sliderVp.addEventListener('input', () => { if(!isPlaying){ t=0; updateMath(); } });
+        sliderVq.addEventListener('input', () => { if(!isPlaying){ t=0; updateMath(); } });
+        sliderDelay.addEventListener('input', () => { if(!isPlaying){ t=0; updateMath(); } });
+
+        // Initialize
+        updateMath();
+    </script>
+</body>
+</html>

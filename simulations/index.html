@@ -18,11 +18,15 @@
     h1 { margin:12px 0; font-family:"Orbitron",sans-serif; font-size:clamp(34px,7vw,64px); letter-spacing:2px; }
     .subheading { margin:0 0 14px; color:var(--accent); font-family:"Orbitron",sans-serif; font-size:clamp(20px,3vw,30px); letter-spacing:1px; }
     header p { max-width:650px; color:var(--muted); font-size:17px; line-height:1.65; }
+    .day { margin-top:32px; }
+    .day-title { margin-bottom:16px; font-family:"Orbitron",sans-serif; font-size:clamp(24px,4vw,34px); letter-spacing:1px; }
     .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; margin-top:24px; }
     .card { min-height:190px; padding:25px; border:1px solid var(--line); border-radius:18px; background:rgba(9,16,32,.8); }
-    .card h2 { margin-bottom:10px; font-family:"Orbitron",sans-serif; font-size:20px; }
+    .card h3 { margin:14px 0 10px; font-family:"Orbitron",sans-serif; font-size:20px; line-height:1.4; }
     .card p { color:var(--muted); line-height:1.6; }
-    .tag { display:inline-block; margin-top:22px; padding:7px 11px; border:1px solid var(--line); border-radius:999px; color:var(--accent); font-size:12px; }
+    .tag { display:inline-block; padding:7px 11px; border:1px solid var(--line); border-radius:999px; color:var(--accent); font-size:12px; }
+    .simulation-link { display:inline-block; margin-top:22px; padding:10px 16px; border:1px solid var(--accent); border-radius:999px; color:var(--text); background:rgba(72,196,255,.12); font-family:"Orbitron",sans-serif; font-size:13px; letter-spacing:.5px; text-decoration:none; transition:background .2s ease,box-shadow .2s ease,transform .2s ease; }
+    .simulation-link:hover { transform:translateY(-2px); background:rgba(72,196,255,.22); box-shadow:0 0 20px rgba(72,196,255,.25); }
   </style>
 </head>
 <body>
@@ -33,9 +37,22 @@
       <h2 class="subheading">Simulations</h2>
       <p>Explore interactive physics simulations organized by day or unit. New activities can be added here as the course progresses.</p>
     </header>
-    <section class="grid" aria-label="Simulation collections">
-      <article class="card"><h2>By Day</h2><p>Add daily simulation collections here as new lessons are completed.</p><span class="tag">Ready for content</span></article>
-      <article class="card"><h2>By Unit</h2><p>Group simulations by mechanics, waves, electricity, or any other unit.</p><span class="tag">Ready for content</span></article>
+    <section class="day" aria-labelledby="day-1-title">
+      <h2 class="day-title" id="day-1-title">Day 1</h2>
+      <div class="grid">
+        <article class="card">
+          <span class="tag">1991 A/L Q17</span>
+          <h3>සාපේක්ෂ චලිතය සහ පසුකර යාම</h3>
+          <p>Explore relative motion and overtaking through an interactive kinematics simulation.</p>
+          <a class="simulation-link" href="day-1/overtaking-kinematics.html" target="_blank" rel="noopener">Open Simulation</a>
+        </article>
+        <article class="card">
+          <span class="tag">2004 A/L</span>
+          <h3>කාල ප්‍රමාදයන් සහිත ඒකාකාර ප්‍රවේග</h3>
+          <p>Investigate uniform velocity and delayed pursuit using an interactive simulation.</p>
+          <a class="simulation-link" href="day-1/delayed-pursuit.html" target="_blank" rel="noopener">Open Simulation</a>
+        </article>
+      </div>
     </section>
   </main>
 </body>
