@@ -18,11 +18,15 @@
     h1 { margin:12px 0; font-family:"Orbitron",sans-serif; font-size:clamp(34px,7vw,64px); letter-spacing:2px; }
     .subheading { margin:0 0 14px; color:var(--accent); font-family:"Orbitron",sans-serif; font-size:clamp(20px,3vw,30px); letter-spacing:1px; }
     header p { max-width:650px; color:var(--muted); font-size:17px; line-height:1.65; }
+    .week { margin-top:32px; }
+    .week-title { margin-bottom:16px; font-family:"Orbitron",sans-serif; font-size:clamp(24px,4vw,34px); letter-spacing:1px; }
     .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; margin-top:24px; }
     .card { min-height:190px; padding:25px; border:1px solid var(--line); border-radius:18px; background:rgba(20,11,36,.82); }
-    .card h2 { margin-bottom:10px; font-family:"Orbitron",sans-serif; font-size:20px; }
+    .card h3 { margin:14px 0 10px; font-family:"Orbitron",sans-serif; font-size:20px; }
     .card p { color:var(--muted); line-height:1.6; }
-    .tag { display:inline-block; margin-top:22px; padding:7px 11px; border:1px solid var(--line); border-radius:999px; color:var(--accent); font-size:12px; }
+    .tag { display:inline-block; padding:7px 11px; border:1px solid var(--line); border-radius:999px; color:var(--accent); font-size:12px; }
+    .quiz-link { display:inline-block; margin-top:22px; padding:10px 16px; border:1px solid var(--accent); border-radius:999px; color:var(--text); background:rgba(167,139,250,.14); font-family:"Orbitron",sans-serif; font-size:13px; letter-spacing:.5px; text-decoration:none; transition:background .2s ease,box-shadow .2s ease,transform .2s ease; }
+    .quiz-link:hover { transform:translateY(-2px); background:rgba(167,139,250,.24); box-shadow:0 0 20px rgba(167,139,250,.25); }
   </style>
 </head>
 <body>
@@ -33,9 +37,16 @@
       <h2 class="subheading">Quizes</h2>
       <p>Practice physics with quizzes organized by day or unit. New question sets can be added here as the course progresses.</p>
     </header>
-    <section class="grid" aria-label="Quiz collections">
-      <article class="card"><h2>By Day</h2><p>Add short daily quizzes to review each lesson and simulation.</p><span class="tag">Ready for content</span></article>
-      <article class="card"><h2>By Unit</h2><p>Build unit quizzes for focused revision and exam preparation.</p><span class="tag">Ready for content</span></article>
+    <section class="week" aria-labelledby="week-1-title">
+      <h2 class="week-title" id="week-1-title">Week 1</h2>
+      <div class="grid">
+        <article class="card">
+          <span class="tag">Daily Quiz</span>
+          <h3>Daily Quiz 1</h3>
+          <p>Complete the first daily physics revision quiz for Week 1.</p>
+          <a class="quiz-link" href="week-1/daily-quiz-1.pdf" target="_blank" rel="noopener">Open Daily Quiz 1</a>
+        </article>
+      </div>
     </section>
   </main>
 </body>
