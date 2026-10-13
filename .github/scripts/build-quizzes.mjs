@@ -97,7 +97,7 @@ function variant(doc, withAnswers) {
   let from = null, to = null;
   const blocks = [];
   for (const b of doc.blocks) {
-    if (b.type === 'pagebreak') continue;
+    if (b.type === 'pagebreak') { blocks.push({ type: 'pagebreak' }); continue; } // used when printing
     if (b.vis === (withAnswers ? 'student' : 'teacher')) continue;
     if (b.type === 'answer' && (!withAnswers || !plain(b.html))) continue;
     const o = { type: b.type };
@@ -118,7 +118,7 @@ function variant(doc, withAnswers) {
     blocks.push(o);
   }
   const settings = {};
-  for (const k of ['title', 'headerLeft', 'headerRight', 'footerLeft', 'font', 'accent', 'qBold']) if (st[k] != null) settings[k] = st[k];
+  for (const k of ['title', 'headerLeft', 'headerRight', 'footerLeft', 'font', 'fontSize', 'accent', 'qBold', 'startPage']) if (st[k] != null) settings[k] = st[k];
   return { data: { settings, answers: withAnswers, blocks }, from, to };
 }
 
