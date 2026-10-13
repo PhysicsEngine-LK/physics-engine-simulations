@@ -121,8 +121,10 @@
     .loading { color:#666; padding:30px 0; text-align:center; font-family:"Space Grotesk",sans-serif; }
 
     @media print {
-      @page { size:A4; margin:12mm; }
-      body { padding:0; background:#fff; }
+      @page { size:A4; margin:12mm 14mm; }
+      :root { color-scheme:light; }
+      html, body { padding:0; background:#fff !important; }
+      main { max-width:none; }
       body::before, header, #home, .rbar, .rnote { display:none !important; }
       .paper { max-width:none; padding:0; box-shadow:none; border-radius:0; }
       .doc { zoom:1; }
