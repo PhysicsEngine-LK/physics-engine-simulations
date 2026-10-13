@@ -6,66 +6,337 @@
   <title>Quizes | Physics Engine</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Space+Grotesk:wght@400;500;600&family=Noto+Sans+Sinhala:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" />
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
   <style>
-    :root { color-scheme:dark; --accent:#a78bfa; --accent2:#f472b6; --text:#f5f0ff; --muted:rgba(245,240,255,.65); --line:rgba(167,139,250,.3); }
+    :root { color-scheme:dark; --accent:#a78bfa; --accent2:#f472b6; --ok:#4ade80; --text:#f5f0ff; --muted:rgba(245,240,255,.65); --line:rgba(167,139,250,.3); }
     * { box-sizing:border-box; margin:0; padding:0; }
-    body { min-height:100vh; padding:32px 20px 72px; color:var(--text); font-family:"Space Grotesk",sans-serif; background:radial-gradient(circle at 10% 10%,rgba(167,139,250,.2),transparent 35%),radial-gradient(circle at 90% 80%,rgba(244,114,182,.12),transparent 38%),#07040e; }
+    body { min-height:100vh; padding:32px 16px 72px; color:var(--text); font-family:"Space Grotesk",sans-serif; background:radial-gradient(circle at 10% 10%,rgba(167,139,250,.2),transparent 35%),radial-gradient(circle at 90% 80%,rgba(244,114,182,.12),transparent 38%),#07040e; }
     body::before { content:""; position:fixed; inset:0; pointer-events:none; background-image:linear-gradient(rgba(167,139,250,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(167,139,250,.05) 1px,transparent 1px); background-size:46px 46px; }
     main { position:relative; max-width:1100px; margin:auto; }
+    [hidden] { display:none !important; }
     header { padding:clamp(28px,6vw,58px); border:1px solid var(--line); border-radius:26px; background:linear-gradient(135deg,rgba(18,10,34,.96),rgba(28,12,38,.84)); box-shadow:0 25px 60px rgba(0,0,0,.45); }
     .eyebrow { color:var(--accent2); font-family:"Orbitron",sans-serif; font-size:12px; letter-spacing:2px; text-transform:uppercase; }
-    h1 { margin:12px 0; font-family:"Orbitron",sans-serif; font-size:clamp(34px,7vw,64px); letter-spacing:2px; }
+    h1 { margin:12px 0; font-family:"Orbitron",sans-serif; font-size:clamp(30px,7vw,64px); letter-spacing:2px; }
     .subheading { margin:0 0 14px; color:var(--accent); font-family:"Orbitron",sans-serif; font-size:clamp(20px,3vw,30px); letter-spacing:1px; }
     header p { max-width:650px; color:var(--muted); font-size:17px; line-height:1.65; }
-    .week { margin-top:32px; }
-    .week-title { margin-bottom:16px; font-family:"Orbitron",sans-serif; font-size:clamp(24px,4vw,34px); letter-spacing:1px; }
-    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; margin-top:24px; }
-    .card { min-height:190px; padding:25px; border:1px solid var(--line); border-radius:18px; background:rgba(20,11,36,.82); }
-    .card h3 { margin:14px 0 10px; font-family:"Orbitron",sans-serif; font-size:20px; }
-    .card p { color:var(--muted); line-height:1.6; }
-    .tag { display:inline-block; padding:7px 11px; border:1px solid var(--line); border-radius:999px; color:var(--accent); font-size:12px; }
-    .quiz-link { display:inline-block; margin-top:22px; padding:10px 16px; border:1px solid var(--accent); border-radius:999px; color:var(--text); background:rgba(167,139,250,.14); font-family:"Orbitron",sans-serif; font-size:13px; letter-spacing:.5px; text-decoration:none; transition:background .2s ease,box-shadow .2s ease,transform .2s ease; }
-    .quiz-link:hover { transform:translateY(-2px); background:rgba(167,139,250,.24); box-shadow:0 0 20px rgba(167,139,250,.25); }
+    .section-title { margin:36px 0 16px; font-family:"Orbitron",sans-serif; font-size:clamp(22px,4vw,30px); letter-spacing:1px; }
+    .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border:1px solid var(--accent); border-radius:999px; color:var(--text); background:rgba(167,139,250,.14); font:600 13px "Orbitron",sans-serif; letter-spacing:.5px; text-decoration:none; cursor:pointer; transition:background .2s,box-shadow .2s,transform .2s; }
+    .btn:hover { transform:translateY(-2px); background:rgba(167,139,250,.24); box-shadow:0 0 20px rgba(167,139,250,.25); }
+    .btn.ok { border-color:var(--ok); background:rgba(74,222,128,.12); }
+    .btn:disabled { opacity:.45; cursor:default; transform:none; box-shadow:none; }
+
+    /* today / next */
+    .spot { margin-top:24px; padding:clamp(22px,4vw,34px); border:1px solid var(--accent); border-radius:22px; background:linear-gradient(135deg,rgba(98,37,230,.28),rgba(20,11,36,.9)); box-shadow:0 0 40px rgba(167,139,250,.15); }
+    .spot .kicker { color:var(--accent2); font:700 12px "Orbitron",sans-serif; letter-spacing:2px; text-transform:uppercase; }
+    .spot h2 { margin:10px 0 6px; font-family:"Orbitron",sans-serif; font-size:clamp(24px,5vw,40px); }
+    .spot .meta { color:var(--muted); font-size:16px; line-height:1.6; }
+    .spot .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; align-items:center; }
+    .count { font:700 15px "Orbitron",sans-serif; letter-spacing:1px; color:var(--text); }
+    .status { color:var(--muted); font-size:15px; }
+
+    /* day list */
+    .days { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; }
+    .day { display:flex; flex-direction:column; gap:8px; padding:20px; border:1px solid var(--line); border-radius:18px; background:rgba(20,11,36,.82); color:var(--text); text-decoration:none; transition:border-color .2s,transform .2s; }
+    a.day:hover { border-color:var(--accent); transform:translateY(-2px); }
+    .day .dnum { font:700 20px "Orbitron",sans-serif; letter-spacing:1px; }
+    .day .dmeta { color:var(--muted); font-size:14px; }
+    .day .dtitle { font-family:"Iskoola Pota","Noto Sans Sinhala",sans-serif; font-size:16px; }
+    .day .links { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+    .day .links a { color:var(--accent); font-size:14px; }
+    .chip { align-self:flex-start; margin-top:auto; padding:5px 10px; border:1px solid var(--line); border-radius:999px; font-size:12px; color:var(--accent); }
+    .chip.ok { border-color:rgba(74,222,128,.5); color:var(--ok); }
+    .empty { color:var(--muted); padding:20px 0; }
+
+    /* reader */
+    .rbar { position:sticky; top:0; z-index:5; display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:12px 0; background:linear-gradient(#07040e 70%,transparent); }
+    .rbar .grow { flex:1; }
+    @media (max-width:560px) {
+      .rbar .btn { padding:8px 12px; font-size:12px; }
+      .rbar .seg { order:3; width:100%; }
+      .rbar .seg button { flex:1; }
+    }
+    .seg { display:inline-flex; padding:3px; border:1px solid var(--line); border-radius:999px; background:rgba(20,11,36,.9); }
+    .seg button { border:0; background:none; color:var(--muted); padding:8px 14px; border-radius:999px; font:600 13px "Space Grotesk",sans-serif; cursor:pointer; }
+    .seg button.on { background:var(--accent); color:#120a22; }
+    .seg button:disabled { opacity:.45; cursor:default; }
+    .rnote { margin:4px 0 12px; color:var(--muted); font-size:15px; }
+    .rnote b { color:var(--text); }
+
+    /* the paper: same look as the Doc Studio PDF, but fits any screen */
+    .paper { max-width:860px; margin:0 auto; padding:clamp(16px,4vw,44px); border-radius:14px; background:#fff; color:#000; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+    .doc { --accent:#6225e6; --font:'Iskoola Pota','Noto Sans Sinhala',Arial,sans-serif; --qw:700; --ans:#d9534f; zoom:1.3; font-family:var(--font); font-size:12px; line-height:1.5; overflow-wrap:break-word; }
+    @media (min-width:700px) { .doc { zoom:1.45; } }
+    .pg-head,.pg-foot { display:flex; justify-content:space-between; gap:12px; font-weight:700; font-size:10px; line-height:1.3; }
+    .pg-head { border-bottom:3px solid #000; padding-bottom:5px; margin-bottom:8px; }
+    .pg-foot { border-top:3px solid #000; padding-top:5px; margin-top:10px; }
+    .pg-head span:last-child,.pg-foot span:last-child { text-align:right; }
+    .dayline { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; font:700 10px Arial,sans-serif; }
+    .dayline span { padding:2px 8px; border-radius:5px; background:var(--accent); color:#fff; }
+    .dayline span.lite { background:#efe9ff; color:#3b2a63; }
+    .blk { display:flow-root; padding-bottom:9px; }
+    .blk p { margin:0 0 .4em; }
+    .blk ul,.blk ol { margin:.2em 0 .3em; padding-left:1.6em; }
+    .blk table { border-collapse:collapse; margin:4px 0; }
+    .blk td,.blk th { border:1px solid #888; padding:2px 7px; }
+    .blk img { max-width:100%; height:auto; display:block; margin:6px auto; }
+    .blk img.al-left { float:left; margin:3px 12px 6px 0; }
+    .blk img.al-right { float:right; margin:3px 0 6px 12px; }
+    .q-row { display:flex; gap:8px; align-items:flex-start; }
+    .qnum { flex:none; min-width:28px; height:21px; padding:0 6px; border-radius:6px; background:var(--accent); color:#fff; font:700 12px/21px Arial,sans-serif; text-align:center; }
+    .blk.cont .qnum { visibility:hidden; }
+    .q-text { flex:1; min-width:0; font-weight:var(--qw); }
+    .blk.ans { padding-bottom:14px; }
+    .ans-body { background:#f8f8fa; border-left:3px solid var(--ans); padding:8px 12px; border-radius:0 5px 5px 0; }
+    .blk[data-style=box] > div { border:1px solid #cdd2db; background:#f8fafc; border-radius:6px; padding:7px 10px; }
+    .blk[data-style=tip] > div { border-left:4px solid var(--accent); background:#f4effe; border-radius:0 6px 6px 0; padding:7px 10px; }
+    .blk[data-style=warn] > div { border-left:4px solid #dc2626; background:#fef2f2; border-radius:0 6px 6px 0; padding:7px 10px; }
+    .h { font-weight:700; font-size:16px; border-bottom:2px solid var(--accent); padding-bottom:2px; width:fit-content; max-width:100%; }
+    .math.display { display:block; text-align:center; margin:4px 0; }
+    .math.display .katex-display { margin:0; }
+    .mcqb { padding-left:36px; }
+    .mcq { display:flex; flex-wrap:wrap; gap:3px 20px; }
+    .mcqb[data-cols="1"] .mcq { display:grid; grid-template-columns:1fr; }
+    .mcqb[data-cols="2"] .mcq { display:grid; grid-template-columns:1fr 1fr; }
+    .mcqb[data-cols="3"] .mcq { display:grid; grid-template-columns:repeat(3,1fr); }
+    .mcqb[data-cols="5"] .mcq { display:grid; grid-template-columns:repeat(5,1fr); }
+    .opt { display:flex; gap:4px; align-items:baseline; min-width:100px; }
+    .mcqb[data-cols] .mcq .opt { min-width:0; }
+    @media (max-width:560px) {
+      .mcqb { padding-left:18px; }
+      .mcqb[data-cols="3"] .mcq,.mcqb[data-cols="5"] .mcq { grid-template-columns:1fr 1fr; }
+    }
+    .oi { flex:none; min-width:1.7em; text-align:center; border-radius:999px; padding:0 2px; }
+    .opt.correct .oi { background:#16a34a; color:#fff; font-weight:700; }
+    .opt.correct .ot { font-weight:700; }
+    .src { text-align:right; font-size:10px; color:#666; }
+    .sim-card { display:flex; flex-direction:column; gap:2px; border:1.5px solid var(--accent); border-radius:10px; padding:8px 12px; background:linear-gradient(90deg,#f5f0ff,#fff 65%); color:#000; text-decoration:none; }
+    .sim-kicker { font:700 9px Arial,sans-serif; letter-spacing:1px; color:var(--accent); }
+    .sim-title { font-weight:700; font-size:14px; }
+    .sim-desc { font-size:11px; color:#333; }
+    .sim-url { align-self:flex-start; margin-top:3px; font:600 9.5px Arial,sans-serif; color:#fff; background:var(--accent); padding:2px 10px; border-radius:999px; }
+    .nb { display:inline-block; min-width:1.6em; padding:0 .42em; border-radius:.38em; background:var(--accent); color:#fff; font:700 .86em/1.6 Arial,sans-serif; text-align:center; margin:0 .12em; vertical-align:.04em; }
+    .sim-btn { display:inline-block; padding:0 .75em 0 .6em; border-radius:999px; background:var(--accent); color:#fff !important; text-decoration:none; font:600 .88em/1.65 Arial,sans-serif; white-space:nowrap; vertical-align:.04em; }
+    .loading { color:#666; padding:30px 0; text-align:center; font-family:"Space Grotesk",sans-serif; }
+
+    @media print {
+      @page { size:A4; margin:12mm; }
+      body { padding:0; background:#fff; }
+      body::before, header, #home, .rbar, .rnote { display:none !important; }
+      .paper { max-width:none; padding:0; box-shadow:none; border-radius:0; }
+      .doc { zoom:1; }
+      .blk { break-inside:avoid; }
+      * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    }
   </style>
 </head>
 <body>
   <main>
-    <header>
+    <header id="hero">
       <span class="eyebrow">Physics Engine</span>
       <h1>ප්‍රශ්න 10 000🔥 ක REVISION එක</h1>
       <h2 class="subheading">Quizes</h2>
-      <p>Practice physics with quizzes organized by day or unit. New question sets can be added here as the course progresses.</p>
+      <p>A new set of 15 questions every weekday at 7:00 AM. Answers open at 8:00 AM (Sri Lanka time).</p>
     </header>
-    <section class="week" aria-labelledby="week-1-title">
-      <h2 class="week-title" id="week-1-title">Week 1</h2>
-      <div class="grid">
-        <article class="card">
-          <span class="tag">Daily Quiz</span>
-          <h3>Daily Quiz 1</h3>
-          <p>Complete the first daily physics revision quiz for Week 1.</p>
-          <a class="quiz-link" href="week-1/daily-quiz-1.pdf" target="_blank" rel="noopener">Open Daily Quiz 1</a>
-        </article>
-        <article class="card">
-          <span class="tag">Answers</span>
-          <h3>Daily Quiz 1 Answers</h3>
-          <p>Check the answers after completing Daily Quiz 1.</p>
-          <a class="quiz-link" href="week-1/daily-quiz-1-answers.html" target="_blank" rel="noopener">Open Answers</a>
-        </article>
-        <article class="card">
-          <span class="tag">Daily Quiz</span>
-          <h3>Daily Quiz 2</h3>
-          <p>Continue the Week 1 physics revision with questions 16–30.</p>
-          <a class="quiz-link" href="week-1/daily-quiz-2.pdf" target="_blank" rel="noopener">Open Daily Quiz 2</a>
-        </article>
-        <article class="card">
-          <span class="tag">Answers</span>
-          <h3>Daily Quiz 2 Answers</h3>
-          <p>Check the worked answers after completing Daily Quiz 2.</p>
-          <a class="quiz-link" href="week-1/daily-quiz-2-answers.html" target="_blank" rel="noopener">Open Answers</a>
-        </article>
+
+    <section id="home">
+      <div id="spot"></div>
+      <h2 class="section-title">All days</h2>
+      <div class="days" id="days"><div class="empty">Loading…</div></div>
+    </section>
+
+    <section id="reader" hidden>
+      <div class="rbar">
+        <a class="btn" href="#">← All days</a>
+        <span class="grow"></span>
+        <button class="btn" id="printBtn" type="button">🖨 Print / PDF</button>
+        <div class="seg" id="viewSeg"><button data-v="quiz">Questions</button><button data-v="answers">With answers</button></div>
       </div>
+      <div class="rnote" id="rnote"></div>
+      <article class="paper"><div class="doc" id="doc"></div></article>
     </section>
   </main>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+
+// Days published before the automatic schedule (kept as their original files)
+const LEGACY = [
+  { day:1, date:'2026-10-12', from:1, to:15, quizUrl:'week-1/daily-quiz-1.pdf', answersUrl:'week-1/daily-quiz-1-answers.html' },
+  { day:2, date:'2026-10-13', from:16, to:30, quizUrl:'week-1/daily-quiz-2.pdf', answersUrl:'week-1/daily-quiz-2-answers.html' },
+];
+
+/* ---------- time (always shown in Sri Lanka time) ---------- */
+const TZ = 'Asia/Colombo';
+const asDate = d => new Date(d.length === 10 ? d + 'T12:00:00+05:30' : d);
+const fmtDate = d => asDate(d).toLocaleDateString('en-GB', { timeZone:TZ, weekday:'short', day:'numeric', month:'short' });
+const fmtTime = d => asDate(d).toLocaleTimeString('en-US', { timeZone:TZ, hour:'numeric', minute:'2-digit' });
+const slToday = () => new Date().toLocaleDateString('en-CA', { timeZone:TZ });
+function fmtLeft(ms) {
+  const s = Math.max(0, Math.round(ms / 1000)), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+  if (d) return `${d}d ${h}h ${pad(m)}m`;
+  return h ? `${h}h ${pad(m)}m ${pad(s % 60)}s` : `${m}m ${pad(s % 60)}s`;
+}
+const countdown = iso => `<span class="count" data-until="${esc(iso)}">${fmtLeft(new Date(iso) - Date.now())}</span>`;
+
+/* ---------- data ---------- */
+let M = null, all = [];
+async function loadManifest() {
+  try {
+    const r = await fetch('manifest.json?t=' + Date.now(), { cache:'no-store' });
+    if (r.ok) M = await r.json();
+  } catch (e) { console.warn('manifest', e); }
+  const fresh = (M && M.days) || [];
+  all = [...fresh, ...LEGACY.filter(l => !fresh.some(d => d.day === l.day)).map(l => ({ ...l, legacy:true }))]
+    .sort((a, b) => b.day - a.day);
+}
+const label = d => `Day ${pad(d.day)}`;
+const range = d => d.from != null ? `Q ${d.from}–${d.to}` : '';
+const nextRange = n => { const per = (M && M.questionsPerDay) || 15; return `Q ${(n.day - 1) * per + 1}–${n.day * per}`; };
+
+/* ---------- home ---------- */
+function renderHome() {
+  const today = slToday(), latest = all[0];
+  let h = '';
+  if (latest && latest.date === today) {
+    h = `<div class="spot"><div class="kicker">Today's quiz</div><h2>${label(latest)} · ${range(latest)}</h2>
+      <div class="meta">${fmtDate(latest.date)}${latest.title ? ' · ' + esc(latest.title) : ''}</div><div class="actions">`;
+    if (latest.legacy) h += `<a class="btn" href="${esc(latest.quizUrl)}" target="_blank" rel="noopener">Open quiz</a><a class="btn ok" href="${esc(latest.answersUrl)}" target="_blank" rel="noopener">Answers</a>`;
+    else {
+      h += `<a class="btn" href="#day-${latest.day}">▶ Start quiz</a>`;
+      h += latest.answers ? `<a class="btn ok" href="#day-${latest.day}/answers">✅ Answers are out</a>`
+        : `<span class="status">Answers at ${fmtTime(latest.answersAt)} · in ${countdown(latest.answersAt)}</span>`;
+    }
+    h += '</div></div>';
+  } else if (M && M.next) {
+    const n = M.next;
+    h = `<div class="spot"><div class="kicker">Next quiz</div><h2>${label(n)} · ${nextRange(n)}</h2>
+      <div class="meta">${fmtDate(n.date)} at ${fmtTime(n.quizAt)}</div>
+      <div class="actions"><span class="status">Opens in ${countdown(n.quizAt)}</span></div></div>`;
+  }
+  $('#spot').innerHTML = h;
+
+  $('#days').innerHTML = all.length ? all.map(d => d.legacy
+    ? `<div class="day"><span class="dnum">${label(d)}</span><span class="dmeta">${range(d)} · ${fmtDate(d.date)}</span>
+        <div class="links"><a href="${esc(d.quizUrl)}" target="_blank" rel="noopener">Quiz (PDF)</a><a href="${esc(d.answersUrl)}" target="_blank" rel="noopener">Answers</a></div>
+        <span class="chip ok">Answers ✓</span></div>`
+    : `<a class="day" href="#day-${d.day}"><span class="dnum">${label(d)}</span><span class="dmeta">${range(d)} · ${fmtDate(d.date)}</span>
+        ${d.title ? `<span class="dtitle">${esc(d.title)}</span>` : ''}
+        ${d.answers ? '<span class="chip ok">Answers ✓</span>' : `<span class="chip">Answers ${fmtTime(d.answersAt)}</span>`}</a>`
+  ).join('') : '<div class="empty">No quizzes yet.</div>';
+}
+
+/* ---------- reader ---------- */
+const FONTS = { iskoola:"'Iskoola Pota','Noto Sans Sinhala',Arial,sans-serif", noto:"'Noto Sans Sinhala',Arial,sans-serif", malithi:"'Malithi Web','Iskoola Pota','Noto Sans Sinhala',sans-serif", arial:"Arial,'Iskoola Pota','Noto Sans Sinhala',sans-serif" };
+const docCache = new Map();
+async function getDoc(url) {
+  if (!docCache.has(url)) docCache.set(url, fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }));
+  try { return await docCache.get(url); } catch (e) { docCache.delete(url); throw e; }
+}
+function blockHTML(b) {
+  const color = b.color ? esc(b.color) : '';
+  switch (b.type) {
+    case 'question': return `<div class="blk${b.cont ? ' cont' : ''}"><div class="q-row"><span class="qnum"${color ? ` style="background:${color}"` : ''}>${b.n || ''}</span><div class="q-text">${b.html || ''}</div></div></div>`;
+    case 'answer': return `<div class="blk ans"><div class="ans-body">${b.html || ''}</div></div>`;
+    case 'text': return `<div class="blk"${b.style ? ` data-style="${esc(b.style)}"` : ''}><div>${b.html || ''}</div></div>`;
+    case 'heading': return `<div class="blk"><div class="h"${color ? ` style="border-bottom-color:${color}"` : ''}>${b.html || ''}</div></div>`;
+    case 'mcq': return `<div class="blk mcqb" data-cols="${esc(b.cols || 'auto')}"><div class="mcq">${(b.opts || []).map((o, i) =>
+      `<div class="opt${b.correct === i ? ' correct' : ''}"><span class="oi">${i + 1})</span><span class="ot">${o}</span></div>`).join('')}</div>${b.src ? `<div class="src">${b.src}</div>` : ''}</div>`;
+    case 'sim': return `<div class="blk"><a class="sim-card" href="${esc(b.url || '#')}" target="_blank" rel="noopener"><span class="sim-kicker">▶ SIMULATION · අනුහුරුව</span><span class="sim-title">${b.title || ''}</span>${b.desc ? `<span class="sim-desc">${b.desc}</span>` : ''}<span class="sim-url">▶ Open simulation</span></a></div>`;
+    case 'sep': {
+      const st = ['solid', 'dashed', 'dotted', 'double'].includes(b.lstyle) ? b.lstyle : 'solid';
+      const th = st === 'double' ? Math.max(3, +b.thick || 2) : (+b.thick || 2);
+      return `<div class="blk"><div style="border-top:${th}px ${st} ${color || 'var(--accent)'}"></div></div>`;
+    }
+  }
+  return '';
+}
+function renderMath(root) {
+  if (!window.katex) return;
+  root.querySelectorAll('.math[data-tex]').forEach(el => {
+    const disp = el.dataset.display === '1';
+    el.classList.toggle('display', disp);
+    try { katex.render(el.dataset.tex, el, { throwOnError:false, displayMode:disp, strict:'ignore' }); } catch (e) {}
+  });
+}
+let reading = null;
+async function openDay(n, view) {
+  const d = all.find(x => x.day === n && !x.legacy);
+  if (!d) { location.hash = ''; return; }
+  view = view === 'answers' && d.answers ? 'answers' : 'quiz';
+  reading = { day:n, view };
+  $('#hero').hidden = true; $('#home').hidden = true; $('#reader').hidden = false;
+  document.title = `${label(d)} · ${range(d)} | Physics Engine`;
+  const [bq, ba] = document.querySelectorAll('#viewSeg button');
+  bq.classList.toggle('on', view === 'quiz'); ba.classList.toggle('on', view === 'answers');
+  ba.disabled = !d.answers;
+  $('#rnote').innerHTML = d.answers
+    ? (view === 'quiz' ? 'Try the questions first, then switch to <b>With answers</b>.' : '')
+    : `Answers open at <b>${fmtTime(d.answersAt)}</b> · in ${countdown(d.answersAt)}`;
+  const box = $('#doc');
+  box.innerHTML = '<div class="loading">Loading…</div>';
+  try {
+    const doc = await getDoc(view === 'answers' ? d.answers : d.quiz);
+    if (!reading || reading.day !== n || reading.view !== view) return;
+    const st = doc.settings || {};
+    box.style.setProperty('--accent', st.accent || '#6225e6');
+    box.style.setProperty('--font', FONTS[st.font] || FONTS.iskoola);
+    box.style.setProperty('--qw', st.qBold === false ? '400' : '700');
+    box.innerHTML = `<div class="pg-head"><span>${esc(st.headerLeft)}</span><span>${esc(st.headerRight || st.title)}</span></div>
+      <div class="dayline"><span>${label(d)}</span><span class="lite">${range(d)}</span><span class="lite">${fmtDate(d.date)}</span>${view === 'answers' ? '<span style="background:#16a34a">With answers</span>' : ''}</div>
+      ${doc.blocks.map(blockHTML).join('')}
+      <div class="pg-foot"><span>${esc(st.footerLeft)}</span><span>${label(d)}</span></div>`;
+    box.querySelectorAll('a[href]').forEach(a => { a.target = '_blank'; a.rel = 'noopener'; });
+    renderMath(box);
+  } catch (e) {
+    box.innerHTML = '<div class="loading">Could not load this day. Check your connection and try again.</div>';
+  }
+}
+$('#viewSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || b.disabled || !reading) return;
+  location.hash = `day-${reading.day}${b.dataset.v === 'answers' ? '/answers' : ''}`;
+});
+$('#printBtn').onclick = () => window.print();
+
+/* ---------- routing ---------- */
+function route() {
+  const m = location.hash.match(/^#day-(\d+)(\/answers)?$/);
+  if (m) { openDay(+m[1], m[2] ? 'answers' : 'quiz'); scrollTo(0, 0); return; }
+  reading = null;
+  document.title = 'Quizes | Physics Engine';
+  $('#hero').hidden = false; $('#home').hidden = false; $('#reader').hidden = true;
+  renderHome();
+}
+addEventListener('hashchange', route);
+
+/* ---------- live countdowns; reload the list when a release time passes ---------- */
+let polling = null;
+function waitForRelease() {
+  if (polling) return;
+  const before = M && M.fingerprint;
+  let tries = 0;
+  document.querySelectorAll('[data-until]').forEach(el => { if (new Date(el.dataset.until) <= Date.now()) el.textContent = 'publishing… this page updates by itself'; });
+  polling = setInterval(async () => {
+    await loadManifest();
+    if ((M && M.fingerprint) !== before || ++tries > 45) { clearInterval(polling); polling = null; route(); }
+  }, 60000);
+}
+setInterval(() => {
+  document.querySelectorAll('[data-until]').forEach(el => {
+    const left = new Date(el.dataset.until) - Date.now();
+    if (left > 0) el.textContent = fmtLeft(left); else waitForRelease();
+  });
+}, 1000);
+
+loadManifest().then(() => {
+  route();
+  // KaTeX loads after the page; draw the equations once it is ready
+  addEventListener('load', () => { if (reading) renderMath($('#doc')); });
+});
+</script>
 </body>
 </html>

@@ -8,7 +8,12 @@ on:
       - simulations/**
       - quizes/**
       - .github/pages-404.html
+      - .github/scripts/**
       - .github/workflows/deploy-public-hubs.yml
+  schedule:
+    # every 10 min, 06:30–09:20 Sri Lanka time (UTC+05:30), Monday–Friday:
+    # releases the 07:00 quiz and the 08:00 answers from the private quiz-content repo
+    - cron: '*/10 1-3 * * 1-5'
   workflow_dispatch:
 
 permissions:
@@ -18,17 +23,27 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.check.outputs.deploy }}
+    env:
+      QUIZ_CONTENT_TOKEN: ${{ secrets.QUIZ_CONTENT_TOKEN }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Check out quiz content (private repo)
+        if: env.QUIZ_CONTENT_TOKEN != ''
+        uses: actions/checkout@v4
+        with:
+          repository: PhysicsEngine-LK/quiz-content
+          token: ${{ secrets.QUIZ_CONTENT_TOKEN }}
+          path: _content
+          persist-credentials: false
 
       - name: Build restricted site artifact
         shell: bash
@@ -37,17 +52,41 @@ jobs:
           cp -R simulations _site/simulations
           cp -R quizes _site/quizes
           cp .github/pages-404.html _site/404.html
+          node .github/scripts/build-quizzes.mjs _content _site/quizes
           find _site -name .gitkeep -delete
           touch _site/.nojekyll
 
       - name: Configure GitHub Pages
+        id: pages
         uses: actions/configure-pages@v5
 
+      - name: Skip scheduled runs that release nothing new
+        id: check
+        shell: bash
+        run: |
+          deploy=true
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            live=$(curl -fsSL "${{ steps.pages.outputs.base_url }}/quizes/manifest.json?t=$(date +%s)" | jq -r '.fingerprint // empty' || true)
+            new=$(jq -r '.fingerprint' _site/quizes/manifest.json)
+            echo "live fingerprint: ${live:-none}, new fingerprint: $new"
+            if [ -n "$live" ] && [ "$live" = "$new" ]; then deploy=false; fi
+          fi
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
+
       - name: Upload restricted site
+        if: steps.check.outputs.deploy == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
 
+  deploy:
+    needs: build
+    if: needs.build.outputs.deploy == 'true'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
