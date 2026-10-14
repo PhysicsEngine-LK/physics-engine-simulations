@@ -1,0 +1,54 @@
+name: Release timer
+
+# GitHub's cron often starts late or not at all, so instead one run waits in the
+# background until the next 07:00 / 08:00 (Sri Lanka time, weekdays) release and then
+# starts the deploy. Every deploy starts a fresh timer; a run lasts at most 6 hours,
+# so long gaps (weekends) are bridged by the timer restarting itself.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */4 * * *' # backup only: restarts the timer if the chain ever stops
+
+permissions:
+  contents: read
+  actions: write
+
+# a new timer waits behind the running one (never cancels it), then picks the next release
+concurrency:
+  group: release-timer
+  cancel-in-progress: false
+
+jobs:
+  wait:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      QUIZ_CONTENT_TOKEN: ${{ secrets.QUIZ_CONTENT_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check out quiz content (private repo, for schedule.json)
+        if: env.QUIZ_CONTENT_TOKEN != ''
+        uses: actions/checkout@v4
+        with:
+          repository: PhysicsEngine-LK/quiz-content
+          token: ${{ secrets.QUIZ_CONTENT_TOKEN }}
+          path: _content
+          persist-credentials: false
+
+      - name: Wait for the next release, then publish it
+        shell: bash
+        run: |
+          secs=$(node .github/scripts/build-quizzes.mjs _content --next-release)
+          limit=19800 # 5.5 h, under the 6 h job limit
+          if [ "$secs" -le "$limit" ]; then
+            echo "Next release in $secs s ($(date -u -d "+$((secs + 20)) sec")) — waiting."
+            sleep $((secs + 20))
+            gh workflow run deploy-public-hubs.yml -R "$GITHUB_REPOSITORY" -f timer=true
+          else
+            echo "Next release in $secs s — more than 5.5 h away, restarting the timer later."
+            sleep "$limit"
+            gh workflow run release-timer.yml -R "$GITHUB_REPOSITORY"
+          fi

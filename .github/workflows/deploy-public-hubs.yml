@@ -15,11 +15,17 @@ on:
     # releases the 07:00 quiz and the 08:00 answers from the private quiz-content repo
     - cron: '*/10 1-3 * * 1-5'
   workflow_dispatch:
+    inputs:
+      timer:
+        description: Started by the release timer (skip the deploy if nothing new is due)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
   pages: write
   id-token: write
+  actions: write
 
 concurrency:
   group: pages
@@ -65,7 +71,7 @@ jobs:
         shell: bash
         run: |
           deploy=true
-          if [ "${{ github.event_name }}" = "schedule" ]; then
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.timer }}" = "true" ]; then
             live=$(curl -fsSL "${{ steps.pages.outputs.base_url }}/quizes/manifest.json?t=$(date +%s)" | jq -r '.fingerprint // empty' || true)
             new=$(jq -r '.fingerprint' _site/quizes/manifest.json)
             echo "live fingerprint: ${live:-none}, new fingerprint: $new"
@@ -78,6 +84,12 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+
+      - name: Start the timer for the next release
+        if: github.event_name != 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run release-timer.yml -R "$GITHUB_REPOSITORY"
 
   deploy:
     needs: build

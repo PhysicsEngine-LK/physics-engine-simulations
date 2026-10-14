@@ -42,6 +42,18 @@ const at = (date, time) => new Date(`${date}T${time}:00${S.utcOffset}`);
 const quizAt = n => at(dayDate(n), S.quizTime);
 const answersAt = n => at(dayDate(n), S.answersTime);
 
+// --next-release: print the seconds until the next weekday quiz or answers time, then stop
+if (process.argv.includes('--next-release')) {
+  let next = null;
+  for (let i = -1; i <= 8; i++) {
+    const d = new Date(now.getTime() + i * 864e5).toISOString().slice(0, 10);
+    if (!isWeekday(new Date(d + 'T00:00:00Z'))) continue;
+    for (const t of [at(d, S.quizTime), at(d, S.answersTime)]) if (t > now && (!next || t < next)) next = t;
+  }
+  console.log(Math.ceil((next - now) / 1000));
+  process.exit(0);
+}
+
 /* ---------- read documents ---------- */
 const daysDir = path.join(contentDir, 'days');
 const files = fs.existsSync(daysDir)
