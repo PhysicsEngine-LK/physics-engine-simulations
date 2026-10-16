@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>තිරස් හා ආනත ප්‍රක්ෂිප්ත - Physics Engine</title>
+<style>
+  :root {
+    --bg: #07090e;
+    --panel: #0f1420;
+    --panel-border: #1e293b;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --cyan: #00f0ff;
+    --purple: #a855f7;
+    --red: #ff3366;
+    --green: #00ff88;
+    --yellow: #facc15;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { background: var(--bg); color: var(--text); padding: 14px; display: flex; flex-direction: column; gap: 14px; min-height: 100vh; }
+
+  header {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+    background: linear-gradient(90deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+    padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(0, 240, 255, 0.25);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.08);
+  }
+  header h1 { font-size: 1.3rem; color: var(--cyan); text-shadow: 0 0 10px rgba(0,240,255,0.4); }
+  header p { font-size: 0.85rem; color: var(--muted); }
+
+  .tabs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .tab-btn {
+    padding: 14px; border-radius: 10px; border: 1px solid #334155; cursor: pointer;
+    font-weight: 600; font-size: 0.95rem; transition: 0.2s; background: var(--panel); color: var(--text);
+    text-align: center; line-height: 1.4;
+  }
+  .tab-btn.mode-1.active { background: rgba(0, 240, 255, 0.15); border-color: var(--cyan); box-shadow: 0 0 15px rgba(0, 240, 255, 0.25); color: #fff; }
+  .tab-btn.mode-2.active { background: rgba(0, 255, 136, 0.15); border-color: var(--green); box-shadow: 0 0 15px rgba(0, 255, 136, 0.25); color: #fff; }
+
+  .main-grid { display: grid; grid-template-columns: 330px 1fr 370px; gap: 14px; flex: 1; }
+  @media (max-width: 1150px) { .main-grid { grid-template-columns: 1fr; } }
+
+  .card { background: var(--panel); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--panel-border); }
+  .card h2 { font-size: 1rem; border-bottom: 1px solid #1e293b; padding-bottom: 8px; color: var(--cyan); letter-spacing: 0.5px; }
+
+  .control-group { display: flex; flex-direction: column; gap: 5px; }
+  .control-group label { font-size: 0.83rem; color: var(--muted); display: flex; justify-content: space-between; }
+  .control-group label span { color: var(--cyan); font-weight: bold; font-family: monospace; }
+  input[type="range"] { width: 100%; accent-color: var(--cyan); cursor: pointer; }
+
+  .btn-row { display: flex; gap: 8px; margin-top: 4px; }
+  .btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.88rem; transition: 0.15s; }
+  .btn-play { background: var(--cyan); color: #000; box-shadow: 0 0 12px rgba(0,240,255,0.3); }
+  .btn-pause { background: var(--yellow); color: #000; }
+  .btn-reset { background: #1e293b; color: var(--text); border: 1px solid #475569; }
+  .btn:hover { filter: brightness(1.15); }
+
+  .telemetry { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #07090e; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; }
+  .stat { display: flex; flex-direction: column; padding: 4px; background: rgba(255,255,255,0.02); border-radius: 4px; }
+  .stat-label { font-size: 0.72rem; color: var(--muted); }
+  .stat-val { font-size: 1rem; font-weight: bold; font-family: monospace; color: var(--cyan); }
+
+  .canvas-container { display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; }
+  canvas#simCanvas { width: 100%; height: 500px; background: #05070b; border-radius: 10px; border: 1px solid #1e293b; }
+
+  .graphs-container { display: flex; flex-direction: column; gap: 10px; }
+  canvas.graphCanvas { width: 100%; height: 230px; background: #05070b; border-radius: 8px; border: 1px solid #1e293b; }
+
+  .theory-box { background: #07090e; padding: 12px; border-radius: 8px; border-left: 3px solid var(--purple); font-size: 0.82rem; line-height: 1.55; color: #cbd5e1; }
+  .theory-box strong { color: var(--cyan); }
+  .theory-box code { color: var(--yellow); font-family: monospace; background: rgba(250,204,21,0.1); padding: 1px 4px; border-radius: 3px; }
+  
+  .legend { display: flex; flex-wrap: gap; gap: 10px; font-size: 0.78rem; justify-content: center; }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🎯 ප්‍රක්ෂිප්ත චලිතය: තිරස් හා ආනත ප්‍රක්ෂිප්ත</h1>
+    <p>Horizontal & Oblique Projectiles Simulation &bull; g = 10 m s⁻² ↓</p>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn mode-1 active" onclick="setMode(1)">
+    1. තිරස් ප්‍රක්ෂිප්ත (Horizontal Projectiles)<br><small>(Projected horizontally from height h)</small>
+  </button>
+  <button class="tab-btn mode-2" onclick="setMode(2)">
+    2. ආනත ප්‍රක්ෂිප්ත (Oblique Projectiles)<br><small>(Projected at angle θ from ground)</small>
+  </button>
+</div>
+
+<div class="main-grid">
+  <!-- Controls & Telemetry -->
+  <div class="card">
+    <h2>පාලන පුවරුව (PARAMETERS)</h2>
+
+    <!-- Mode 1 Controls (Height & Initial Velocity) -->
+    <div id="mode1Controls">
+      <div class="control-group">
+        <label>ආරම්භක උස (Height, h₀): <span id="h0Val">60 m</span></label>
+        <input type="range" id="h0Slider" min="20" max="100" step="5" value="60" oninput="updateParams()">
+      </div>
+      <div class="control-group">
+        <label>තිරස් ප්‍රවේගය (Horizontal Velocity, u): <span id="uHVal">20 m/s</span></label>
+        <input type="range" id="uHSlider" min="10" max="40" step="5" value="20" oninput="updateParams()">
+      </div>
+    </div>
+
+    <!-- Mode 2 Controls (Velocity & Angle) -->
+    <div id="mode2Controls" style="display:none;">
+      <div class="control-group">
+        <label>ප්‍රක්ෂේපණ වේගය (Velocity, u): <span id="uAngleVal">30 m/s</span></label>
+        <input type="range" id="uAngleSlider" min="15" max="50" step="5" value="30" oninput="updateParams()">
+      </div>
+      <div class="control-group">
+        <label>ප්‍රක්ෂේපණ කෝණය (Angle, θ): <span id="thetaVal">45°</span></label>
+        <input type="range" id="thetaSlider" min="15" max="75" step="5" value="45" oninput="updateParams()">
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>කාල වේගය (Sim Speed): <span id="speedVal">1.0x</span></label>
+      <input type="range" id="speedSlider" min="0.2" max="1.6" step="0.2" value="1.0" oninput="updateSpeed()">
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-play" id="playBtn" onclick="togglePlay()">▶ Start</button>
+      <button class="btn btn-reset" onclick="resetSim()">↺ Reset</button>
+    </div>
+
+    <h2>සජීවී දත්ත (LIVE TELEMETRY)</h2>
+    <div class="telemetry">
+      <div class="stat"><span class="stat-label">ගතවූ කාලය (t)</span><span class="stat-val" id="tStat">0.00 s</span></div>
+      <div class="stat"><span class="stat-label">තිරස් දුර (x)</span><span class="stat-val" id="xStat">0.0 m</span></div>
+      <div class="stat"><span class="stat-label">සිරස් උස (y)</span><span class="stat-val" id="yStat">60.0 m</span></div>
+      <div class="stat"><span class="stat-label">තිරස් ප්‍රවේගය (v<sub>x</sub>)</span><span class="stat-val" id="vxStat">20.0 m/s</span></div>
+      <div class="stat"><span class="stat-label">සිරස් ප්‍රවේගය (v<sub>y</sub>)</span><span class="stat-val" id="vyStat">0.0 m/s</span></div>
+      <div class="stat"><span class="stat-label">මුළු පරාසය / කාලය</span><span class="stat-val" id="totalStat" style="font-size:0.85rem;">R:0m | T:0s</span></div>
+    </div>
+
+    <div class="theory-box" id="theoryText"></div>
+  </div>
+
+  <!-- Visual Simulation Canvas -->
+  <div class="card canvas-container">
+    <h2>දෘශ්‍ය නිරූපණය (VISUAL TRAJECTORY)</h2>
+    <canvas id="simCanvas" width="520" height="500"></canvas>
+    <div class="legend">
+      <div class="legend-item"><span class="dot" style="background:var(--cyan);"></span> වස්තුව (Object)</div>
+      <div class="legend-item"><span class="dot" style="background:var(--green);"></span> තිරස් ප්‍රවේගය (v<sub>x</sub>)</div>
+      <div class="legend-item"><span class="dot" style="background:var(--yellow);"></span> සිරස් ප්‍රවේගය (v<sub>y</sub>)</div>
+      <div class="legend-item"><span class="dot" style="background:var(--red);"></span> ගුරුත්වය (g ↓)</div>
+    </div>
+  </div>
+
+  <!-- Trajectory Graph -->
+  <div class="card graphs-container">
+    <h2>පථ ප්‍රස්තාරය (TRAJECTORY Y-X GRAPH)</h2>
+    <canvas id="yxCanvas" class="graphCanvas" width="350" height="230"></canvas>
+    <div class="theory-box" style="border-left-color: var(--cyan);">
+      <strong>විශේෂ සටහන:</strong><br>
+      &bull; තිරස් සහ ආනත ප්‍රක්ෂිප්ත දෙකෙහිම පථය <b>පැරබොලාවක (Parabola)</b> හැඩය ගනී.<br>
+      &bull; තිරස් ප්‍රවේගය (v<sub>x</sub>) නියතව පවතී (වාතයේ ප්‍රතිරෝධය නොමැති විට).
+    </div>
+  </div>
+</div>
+
+<script>
+  const g = 10; // m/s^2 downwards
+  let mode = 1;
+  
+  // Mode 1 params
+  let h0 = 60;
+  let uH = 20;
+
+  // Mode 2 params
+  let uAngle = 30;
+  let theta = 45; // degrees
+
+  let t = 0;
+  let playing = false;
+  let simSpeed = 1.0;
+  let animId = null;
+  let lastTimestamp = null;
+
+  const simCanvas = document.getElementById('simCanvas');
+  const ctx = simCanvas.getContext('2d');
+  const yxCanvas = document.getElementById('yxCanvas');
+  const yxCtx = yxCanvas.getContext('2d');
+
+  function setMode(m) {
+    mode = m;
+    document.querySelectorAll('.tab-btn').forEach((b, idx) => {
+      b.classList.toggle('active', idx + 1 === m);
+    });
+
+    document.getElementById('mode1Controls').style.display = (m === 1 ? 'flex' : 'none');
+    document.getElementById('mode2Controls').style.display = (m === 2 ? 'flex' : 'none');
+
+    updateParams();
+  }
+
+  function updateParams() {
+    h0 = parseFloat(document.getElementById('h0Slider').value);
+    uH = parseFloat(document.getElementById('uHSlider').value);
+    uAngle = parseFloat(document.getElementById('uAngleSlider').value);
+    theta = parseFloat(document.getElementById('thetaSlider').value);
+
+    document.getElementById('h0Val').textContent = `${h0} m`;
+    document.getElementById('uHVal').textContent = `${uH} m/s`;
+    document.getElementById('uAngleVal').textContent = `${uAngle} m/s`;
+    document.getElementById('thetaVal').textContent = `${theta}°`;
+
+    updateTheoryBox();
+    resetSim();
+  }
+
+  function updateSpeed() {
+    simSpeed = parseFloat(document.getElementById('speedSlider').value);
+    document.getElementById('speedVal').textContent = `${simSpeed.toFixed(1)}x`;
+  }
+
+  function getFlightTime() {
+    if (mode === 1) {
+      // y = h0 - 0.5*g*t^2 = 0 => t = sqrt(2h0/g)
+      return Math.sqrt((2 * h0) / g);
+    } else {
+      // T = (2 * u * sin(theta)) / g
+      const rad = (theta * Math.PI) / 180;
+      return (2 * uAngle * Math.sin(rad)) / g;
+    }
+  }
+
+  function getMaxRange() {
+    if (mode === 1) {
+      const T = getFlightTime();
+      return uH * T;
+    } else {
+      const rad = (2 * theta * Math.PI) / 180;
+      return (uAngle * uAngle * Math.sin(rad)) / g;
+    }
+  }
+
+  function updateTheoryBox() {
+    const box = document.getElementById('theoryText');
+    const T = getFlightTime();
+    const R = getMaxRange();
+
+    if (mode === 1) {
+      box.innerHTML = `
+        <strong>1. තිරස් ප්‍රක්ෂිප්ත (Horizontal Projectile):</strong><br>
+        &bull; ආරම්භක ප්‍රවේග සංරචක: <code>u<sub>x</sub> = ${uH} m/s</code>, <code>u<sub>y</sub> = 0</code>.<br>
+        &bull; ගුවන් කාලය: <code>T = √(2h₀/g) = ${T.toFixed(2)} s</code>.<br>
+        &bull; තිරස් පරාසය: <code>R = u<sub>x</sub> × T = ${R.toFixed(1)} m</code>.<br>
+        &bull; ඕනෑම මොහොතක: <code>v<sub>x</sub> = u</code> සහ <code>v<sub>y</sub> = gt</code>.
+      `;
+    } else {
+      const rad = (theta * Math.PI) / 180;
+      const H = (uAngle * uAngle * Math.sin(rad) * Math.sin(rad)) / (2 * g);
+      box.innerHTML = `
+        <strong>2. ආනත ප්‍රක්ෂිප්ත (Oblique Projectile at θ = ${theta}°):</strong><br>
+        &bull; ප්‍රවේග සංරචක: <code>u<sub>x</sub> = u cosθ</code>, <code>u<sub>y</sub> = u sinθ</code>.<br>
+        &bull; උපරිම උස (H): <code>u²sin²θ / 2g = ${H.toFixed(1)} m</code>.<br>
+        &bull; මුළු ගුවන් කාලය (T): <code>2usinθ / g = ${T.toFixed(2)} s</code>.<br>
+        &bull; තිරස් පරාසය (R): <code>u²sin(2θ) / g = ${R.toFixed(1)} m</code>.
+      `;
+    }
+  }
+
+  function togglePlay() {
+    const totalT = getFlightTime();
+    if (t >= totalT && totalT > 0) t = 0;
+    playing = !playing;
+    const btn = document.getElementById('playBtn');
+    if (playing) {
+      btn.textContent = '⏸ Pause';
+      btn.className = 'btn btn-pause';
+      lastTimestamp = performance.now();
+      animId = requestAnimationFrame(loop);
+    } else {
+      btn.textContent = '▶ Start';
+      btn.className = 'btn btn-play';
+      cancelAnimationFrame(animId);
+    }
+  }
+
+  function resetSim() {
+    playing = false;
+    cancelAnimationFrame(animId);
+    t = 0;
+    const btn = document.getElementById('playBtn');
+    btn.textContent = '▶ Start';
+    btn.className = 'btn btn-play';
+    render();
+  }
+
+  function loop(timestamp) {
+    if (!playing) return;
+    const dt = ((timestamp - lastTimestamp) / 1000) * simSpeed;
+    lastTimestamp = timestamp;
+
+    const totalT = getFlightTime();
+    t += dt;
+    if (t >= totalT) {
+      t = totalT;
+      playing = false;
+      const btn = document.getElementById('playBtn');
+      btn.textContent = '▶ Replay';
+      btn.className = 'btn btn-play';
+    }
+    render();
+    if (playing) animId = requestAnimationFrame(loop);
+  }
+
+  function render() {
+    const totalT = getFlightTime();
+    const R = getMaxRange();
+
+    let x = 0, y = 0, vx = 0, vy = 0;
+
+    if (mode === 1) {
+      vx = uH;
+      vy = g * t;
+      x = uH * t;
+      y = Math.max(0, h0 - 0.5 * g * t * t);
+    } else {
+      const rad = (theta * Math.PI) / 180;
+      const ux = uAngle * Math.cos(rad);
+      const uy = uAngle * Math.sin(rad);
+      vx = ux;
+      vy = uy - g * t;
+      x = ux * t;
+      y = Math.max(0, uy * t - 0.5 * g * t * t);
+    }
+
+    document.getElementById('tStat').textContent = `${t.toFixed(2)} s`;
+    document.getElementById('xStat').textContent = `${x.toFixed(1)} m`;
+    document.getElementById('yStat').textContent = `${y.toFixed(1)} m`;
+    document.getElementById('vxStat').textContent = `${vx.toFixed(1)} m/s`;
+    document.getElementById('vyStat').textContent = `${vy.toFixed(1)} m/s`;
+    document.getElementById('totalStat').textContent = `R:${R.toFixed(0)}m | T:${totalT.toFixed(1)}s`;
+
+    drawSimulation(x, y, vx, vy, R);
+    drawGraph(R);
+  }
+
+  function drawArrow(context, x1, y1, x2, y2, color, label) {
+    const headLen = 7;
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    context.strokeStyle = color;
+    context.fillStyle = color;
+    context.lineWidth = 2;
+
+    context.beginPath();
+    context.moveTo(x1, y1);
+    context.lineTo(x2, y2);
+    context.stroke();
+
+    context.beginPath();
+    context.moveTo(x2, y2);
+    context.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6));
+    context.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
+    context.closePath();
+    context.fill();
+
+    if (label) {
+      context.font = 'bold 10px monospace';
+      context.fillText(label, x2 + 6, (y1 + y2) / 2 + 3);
+    }
+  }
+
+  function drawSimulation(currX, currY, vx, vy, maxR) {
+    ctx.clearRect(0, 0, simCanvas.width, simCanvas.height);
+
+    const groundY = simCanvas.height - 45;
+    const leftMargin = 45;
+    const rightMargin = 20;
+    const topMargin = 30;
+
+    const drawWidth = simCanvas.width - leftMargin - rightMargin;
+    const drawHeight = groundY - topMargin;
+
+    const maxDist = Math.max(50, maxR * 1.15);
+    const maxHeight = mode === 1 ? Math.max(50, h0 * 1.15) : Math.max(30, (uAngle*uAngle)/(2*g) * 1.25);
+
+    const pxPerMeterX = drawWidth / maxDist;
+    const pxPerMeterY = drawHeight / maxHeight;
+
+    const toScreenX = (mX) => leftMargin + mX * pxPerMeterX;
+    const toScreenY = (mY) => groundY - mY * pxPerMeterY;
+
+    // Grid lines
+    ctx.strokeStyle = '#111827';
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px monospace';
+    ctx.lineWidth = 1;
+
+    for (let m = 0; m <= maxDist; m += (maxDist > 150 ? 50 : 25)) {
+      const sx = toScreenX(m);
+      ctx.beginPath(); ctx.moveTo(sx, topMargin); ctx.lineTo(sx, groundY); ctx.stroke();
+      ctx.fillText(`${m}m`, sx - 8, groundY + 16);
+    }
+
+    // Ground & Tower
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(leftMargin, groundY, drawWidth, 6);
+
+    if (mode === 1) {
+      const towerTopY = toScreenY(h0);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(leftMargin, towerTopY, 40, groundY - towerTopY);
+      ctx.strokeStyle = '#334155';
+      ctx.strokeRect(leftMargin, towerTopY, 40, groundY - towerTopY);
+    }
+
+    // Trajectory Ghost Curve
+    const totalT = getFlightTime();
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i <= 100; i++) {
+      const ct = (i / 100) * totalT;
+      let cx, cy;
+      if (mode === 1) {
+        cx = uH * ct;
+        cy = h0 - 0.5 * g * ct * ct;
+      } else {
+        const rad = (theta * Math.PI) / 180;
+        cx = uAngle * Math.cos(rad) * ct;
+        cy = uAngle * Math.sin(rad) * ct - 0.5 * g * ct * ct;
+      }
+      const sx = toScreenX(cx), sy = toScreenY(cy);
+      if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+    }
+    ctx.stroke();
+
+    // Active Trajectory up to current t
+    ctx.strokeStyle = '#00f0ff';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i <= 100; i++) {
+      const ct = (i / 100) * t;
+      let cx, cy;
+      if (mode === 1) {
+        cx = uH * ct;
+        cy = h0 - 0.5 * g * ct * ct;
+      } else {
+        const rad = (theta * Math.PI) / 180;
+        cx = uAngle * Math.cos(rad) * ct;
+        cy = uAngle * Math.sin(rad) * ct - 0.5 * g * ct * ct;
+      }
+      const sx = toScreenX(cx), sy = toScreenY(cy);
+      if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+    }
+    ctx.stroke();
+
+    // Ball Position
+    const ballSX = toScreenX(currX);
+    const ballSY = toScreenY(currY);
+    ctx.fillStyle = '#00f0ff';
+    ctx.shadowColor = '#00f0ff';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(ballSX, ballSY, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Velocity Components Vectors
+    drawArrow(ctx, ballSX, ballSY, ballSX + Math.min(60, vx * 1.2), ballSY, '#00ff88', `vₓ:${vx.toFixed(0)}`);
+    const verticalVectorOnScreen = mode === 1 ? vy : -vy;
+    drawArrow(ctx, ballSX, ballSY, ballSX, ballSY + Math.max(-60, Math.min(60, verticalVectorOnScreen * 1.2)), '#facc15', `vᵧ:${vy.toFixed(0)}`);
+  }
+
+  function drawGraph(maxR) {
+    yxCtx.clearRect(0, 0, yxCanvas.width, yxCanvas.height);
+    const padL = 40, padR = 15, padT = 20, padB = 25;
+    const gw = yxCanvas.width - padL - padR;
+    const gh = yxCanvas.height - padT - padB;
+
+    const maxDist = Math.max(50, maxR * 1.1);
+    const maxHeight = mode === 1 ? Math.max(50, h0 * 1.1) : Math.max(30, (uAngle*uAngle)/(2*g) * 1.2);
+
+    const xToX = (x) => padL + (x / maxDist) * gw;
+    const yToY = (y) => padT + (1 - y / maxHeight) * gh;
+
+    // Axes
+    yxCtx.strokeStyle = '#334155';
+    yxCtx.lineWidth = 1;
+    yxCtx.beginPath();
+    yxCtx.moveTo(padL, yToY(0)); yxCtx.lineTo(yxCanvas.width - padR, yToY(0));
+    yxCtx.moveTo(padL, padT); yxCtx.lineTo(padL, yxCanvas.height - padB);
+    yxCtx.stroke();
+
+    yxCtx.fillStyle = '#00f0ff';
+    yxCtx.font = 'bold 10px sans-serif';
+    yxCtx.fillText('y (Height - m)', padL, 12);
+    yxCtx.fillText('x (Range - m)', yxCanvas.width - 70, yxCanvas.height - 8);
+
+    // Plot full path curve
+    const totalT = getFlightTime();
+    yxCtx.strokeStyle = '#00f0ff';
+    yxCtx.lineWidth = 2;
+    yxCtx.beginPath();
+    for (let i = 0; i <= 80; i++) {
+      const ct = (i / 80) * totalT;
+      let cx, cy;
+      if (mode === 1) {
+        cx = uH * ct;
+        cy = h0 - 0.5 * g * ct * ct;
+      } else {
+        const rad = (theta * Math.PI) / 180;
+        cx = uAngle * Math.cos(rad) * ct;
+        cy = uAngle * Math.sin(rad) * ct - 0.5 * g * ct * ct;
+      }
+      const sx = xToX(cx), sy = yToY(cy);
+      if (i === 0) yxCtx.moveTo(sx, sy); else yxCtx.lineTo(sx, sy);
+    }
+    yxCtx.stroke();
+  }
+
+  // Initialize
+  setMode(1);
+</script>
+</body>
+</html>

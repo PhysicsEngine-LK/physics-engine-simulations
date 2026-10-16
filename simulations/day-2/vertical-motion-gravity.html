@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ගුරුත්වය යටතේ සිරස් චලිතය - Interactive Physics Engine</title>
+<style>
+  :root {
+    --bg: #07090e;
+    --panel: #0f1420;
+    --panel-border: #1e293b;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --cyan: #00f0ff;
+    --purple: #a855f7;
+    --red: #ff3366;
+    --green: #00ff88;
+    --yellow: #facc15;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { background: var(--bg); color: var(--text); padding: 14px; display: flex; flex-direction: column; gap: 14px; min-height: 100vh; }
+
+  header {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+    background: linear-gradient(90deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+    padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(0, 240, 255, 0.25);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.08);
+  }
+  header h1 { font-size: 1.3rem; color: var(--cyan); text-shadow: 0 0 10px rgba(0,240,255,0.4); }
+  header p { font-size: 0.85rem; color: var(--muted); }
+
+  .sign-toggle {
+    display: flex; align-items: center; gap: 8px; background: #07090e; padding: 6px 12px;
+    border-radius: 8px; border: 1px solid #334155; font-size: 0.82rem;
+  }
+  .sign-toggle select {
+    background: #1e293b; color: var(--cyan); border: 1px solid var(--cyan);
+    padding: 4px 8px; border-radius: 6px; font-weight: bold; cursor: pointer;
+  }
+
+  .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .tab-btn {
+    padding: 12px; border-radius: 10px; border: 1px solid #334155; cursor: pointer;
+    font-weight: 600; font-size: 0.9rem; transition: 0.2s; background: var(--panel); color: var(--text);
+    text-align: center; line-height: 1.4;
+  }
+  .tab-btn.mode-1.active { background: rgba(255, 51, 102, 0.15); border-color: var(--red); box-shadow: 0 0 15px rgba(255, 51, 102, 0.25); color: #fff; }
+  .tab-btn.mode-2.active { background: rgba(0, 255, 136, 0.15); border-color: var(--green); box-shadow: 0 0 15px rgba(0, 255, 136, 0.25); color: #fff; }
+  .tab-btn.mode-3.active { background: rgba(250, 204, 21, 0.15); border-color: var(--yellow); box-shadow: 0 0 15px rgba(250, 204, 21, 0.25); color: #fff; }
+
+  .main-grid { display: grid; grid-template-columns: 330px 1fr 380px; gap: 14px; flex: 1; }
+  @media (max-width: 1150px) { .main-grid { grid-template-columns: 1fr; } }
+
+  .card { background: var(--panel); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--panel-border); }
+  .card h2 { font-size: 1rem; border-bottom: 1px solid #1e293b; padding-bottom: 8px; color: var(--cyan); letter-spacing: 0.5px; }
+
+  .locked-badge {
+    background: rgba(255, 51, 102, 0.12); border: 1px solid var(--red); border-radius: 8px;
+    padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .locked-badge .lbl { font-size: 0.82rem; color: #fda4af; }
+  .locked-badge .val { font-size: 1.05rem; font-weight: bold; font-family: monospace; color: #fff; background: var(--red); padding: 2px 8px; border-radius: 4px; }
+
+  .control-group { display: flex; flex-direction: column; gap: 5px; }
+  .control-group label { font-size: 0.83rem; color: var(--muted); display: flex; justify-content: space-between; }
+  .control-group label span { color: var(--cyan); font-weight: bold; font-family: monospace; }
+  input[type="range"] { width: 100%; accent-color: var(--cyan); cursor: pointer; }
+  select.full-select { background: #07090e; color: var(--text); border: 1px solid #334155; padding: 8px; border-radius: 6px; font-size: 0.85rem; }
+
+  .btn-row { display: flex; gap: 8px; margin-top: 4px; }
+  .btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.88rem; transition: 0.15s; }
+  .btn-play { background: var(--cyan); color: #000; box-shadow: 0 0 12px rgba(0,240,255,0.3); }
+  .btn-pause { background: var(--yellow); color: #000; }
+  .btn-step { background: #1e293b; color: var(--cyan); border: 1px solid var(--cyan); flex: 0.6; }
+  .btn-reset { background: #1e293b; color: var(--text); border: 1px solid #475569; flex: 0.6; }
+  .btn:hover { filter: brightness(1.15); }
+
+  .telemetry { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #07090e; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; }
+  .stat { display: flex; flex-direction: column; padding: 4px; background: rgba(255,255,255,0.02); border-radius: 4px; }
+  .stat-label { font-size: 0.72rem; color: var(--muted); }
+  .stat-val { font-size: 1rem; font-weight: bold; font-family: monospace; color: var(--cyan); }
+
+  .canvas-container { display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; }
+  canvas#simCanvas { width: 100%; height: 500px; background: #05070b; border-radius: 10px; border: 1px solid #1e293b; }
+
+  .graphs-container { display: flex; flex-direction: column; gap: 10px; }
+  canvas.graphCanvas { width: 100%; height: 190px; background: #05070b; border-radius: 8px; border: 1px solid #1e293b; }
+
+  .theory-box { background: #07090e; padding: 12px; border-radius: 8px; border-left: 3px solid var(--purple); font-size: 0.82rem; line-height: 1.55; color: #cbd5e1; }
+  .theory-box strong { color: var(--cyan); }
+  .theory-box code { color: var(--yellow); font-family: monospace; background: rgba(250,204,21,0.1); padding: 1px 4px; border-radius: 3px; }
+  
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.78rem; justify-content: center; }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>⚡ ගුරුත්වය යටතේ සිරස් චලිතය (Vertical Motion Under Gravity)</h1>
+    <p>Interactive Concept & Vector Simulation &bull; g = 10 m s⁻² ↓</p>
+  </div>
+  <div class="sign-toggle">
+    <span>ලකුණු සම්මුතිය (Sign Convention):</span>
+    <select id="signConvSelect" onchange="render()">
+      <option value="up_pos">ඉහළට (+) | පහළට (-)</option>
+      <option value="down_pos">පහළට (+) | ඉහළට (-)</option>
+    </select>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn mode-1 active" onclick="setMode(1)">
+    1. නිශ්චලතාවයෙන් නිදහසේ පහළට අතහරින වස්තු<br><small>(Free Fall from Rest: u = 0)</small>
+  </button>
+  <button class="tab-btn mode-2" onclick="setMode(2)">
+    2. යම් උසක / චලනය වන පද්ධතියක සිට ↑ හෝ ↓ ප්‍රක්ෂේපණය<br><small>(From Height or Moving System)</small>
+  </button>
+  <button class="tab-btn mode-3" onclick="setMode(3)">
+    3. පොළොවේ සිට සිරස්ව ඉහළට ප්‍රක්ෂේපණය කරන වස්තු<br><small>(Projected Vertically Upwards)</small>
+  </button>
+</div>
+
+<div class="main-grid">
+  <!-- Controls & Telemetry -->
+  <div class="card">
+    <h2>පාලන පුවරුව (PARAMETERS)</h2>
+
+    <!-- Mode 1 Strict u = 0 Lock Badge -->
+    <div id="uZeroLockBadge" class="locked-badge">
+      <div class="lbl">🔒 නිශ්චලතාවයෙන් අතහරින බැවින්<br>ආරම්භක ප්‍රවේගය (Initial Velocity):</div>
+      <div class="val">u = 0 m s⁻¹</div>
+    </div>
+
+    <!-- Mode 2 Sub-Scenario Selector -->
+    <div class="control-group" id="subModeGroup" style="display:none;">
+      <label>අවස්ථාව තෝරන්න (Scenario):</label>
+      <select class="full-select" id="subModeSelect" onchange="applySubMode()">
+        <option value="up_cliff">A. උසක සිට සිරස්ව ඉහළට ප්‍රක්ෂේපණය (↑ u > 0)</option>
+        <option value="down_cliff">B. උසක සිට සිරස්ව පහළට ප්‍රක්ෂේපණය (↓ u < 0)</option>
+        <option value="balloon_up">C. ඉහළ යන බැලූනයකින් නිදහසේ අතහැරීම (↑ Vₛᵧₛ)</option>
+        <option value="balloon_down">D. පහළ යන බැලූනයකින් නිදහසේ අතහැරීම (↓ Vₛᵧₛ)</option>
+      </select>
+    </div>
+
+    <!-- Height Slider -->
+    <div class="control-group" id="h0Group">
+      <label>ආරම්භක උස (Release Height, h₀): <span id="h0Val">80 m</span></label>
+      <input type="range" id="h0Slider" min="20" max="125" step="5" value="80" oninput="updateParams()">
+    </div>
+
+    <!-- Velocity Slider (Hidden in Mode 1!) -->
+    <div class="control-group" id="uGroup" style="display:none;">
+      <label><span id="uLabelText">ආරම්භක ප්‍රවේගය (Initial Velocity, u):</span> <span id="uVal">20 m/s</span></label>
+      <input type="range" id="uSlider" min="5" max="45" step="5" value="20" oninput="updateParams()">
+    </div>
+
+    <!-- Moving System Inheritance Notice -->
+    <div id="balloonNotice" class="locked-badge" style="display:none; border-color: var(--purple); background: rgba(168,85,247,0.12);">
+      <div class="lbl" style="color:#e9d5ff;">🎈 පද්ධතියට සාපේක්ෂව නිශ්චලව අතහරී (u<sub>rel</sub> = 0).<br>අවස්ථිතිය නිසා වස්තුවට ලැබෙන ප්‍රවේගය:</div>
+      <div class="val" id="balloonUVal" style="background: var(--purple);">u = +20 m s⁻¹</div>
+    </div>
+
+    <div class="control-group">
+      <label>කාල වේගය (Sim Speed): <span id="speedVal">1.0x</span></label>
+      <input type="range" id="speedSlider" min="0.2" max="1.6" step="0.2" value="1.0" oninput="updateSpeed()">
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-play" id="playBtn" onclick="togglePlay()">▶ Start</button>
+      <button class="btn btn-step" onclick="stepSecond()" title="Step +1 Second">+1s Step</button>
+      <button class="btn btn-reset" onclick="resetSim()">↺ Reset</button>
+    </div>
+
+    <h2>සජීවී දත්ත (LIVE TELEMETRY)</h2>
+    <div class="telemetry">
+      <div class="stat"><span class="stat-label">ගතවූ කාලය (t)</span><span class="stat-val" id="tStat">0.00 s</span></div>
+      <div class="stat"><span class="stat-label">ආරම්භක ප්‍රවේගය (u)</span><span class="stat-val" id="uStat" style="color:var(--yellow);">0.0 m/s</span></div>
+      <div class="stat"><span class="stat-label">වත්මන් ප්‍රවේගය (v)</span><span class="stat-val" id="vStat" style="color:var(--green);">0.0 m/s</span></div>
+      <div class="stat"><span class="stat-label">විස්ථාපනය (s)</span><span class="stat-val" id="sStat">0.0 m</span></div>
+      <div class="stat"><span class="stat-label">පොළොවේ සිට උස (y)</span><span class="stat-val" id="yStat">80.0 m</span></div>
+      <div class="stat"><span class="stat-label">මුළු ගුවන් කාලය (T)</span><span class="stat-val" id="tTotalStat">4.00 s</span></div>
+    </div>
+
+    <div class="theory-box" id="theoryText"></div>
+  </div>
+
+  <!-- Visual Simulation Canvas -->
+  <div class="card canvas-container">
+    <h2>දෘශ්‍ය නිරූපණය (VISUAL ENGINE)</h2>
+    <canvas id="simCanvas" width="520" height="500"></canvas>
+    <div class="legend">
+      <div class="legend-item"><span class="dot" style="background:var(--cyan);"></span> වස්තුව (Object)</div>
+      <div class="legend-item"><span class="dot" style="background:var(--green);"></span> ප්‍රවේග දෛශිකය (v)</div>
+      <div class="legend-item"><span class="dot" style="background:var(--red);"></span> ගුරුත්වජ ත්වරණය (g = 10 m/s² ↓)</div>
+      <div class="legend-item"><span class="dot" style="background:var(--yellow);"></span> තත්පර 1 කට වරක් පිහිටීම (1s Strobe)</div>
+    </div>
+  </div>
+
+  <!-- Real-Time Graphs -->
+  <div class="card graphs-container">
+    <h2>චලිත ප්‍රස්තාර (REAL-TIME GRAPHS)</h2>
+    <canvas id="stCanvas" class="graphCanvas" width="350" height="190"></canvas>
+    <canvas id="vtCanvas" class="graphCanvas" width="350" height="190"></canvas>
+    <div class="theory-box" id="graphNote" style="border-left-color: var(--cyan);"></div>
+  </div>
+</div>
+
+<script>
+  const g = 10; // m/s^2 downwards
+  let mode = 1;
+  let h0 = 80;
+  let u = 0; // Upwards is positive in internal physics engine
+  let t = 0;
+  let playing = false;
+  let simSpeed = 1.0;
+  let isMovingSystem = false;
+  let animId = null;
+  let lastTimestamp = null;
+
+  const simCanvas = document.getElementById('simCanvas');
+  const ctx = simCanvas.getContext('2d');
+  const stCanvas = document.getElementById('stCanvas');
+  const stCtx = stCanvas.getContext('2d');
+  const vtCanvas = document.getElementById('vtCanvas');
+  const vtCtx = vtCanvas.getContext('2d');
+
+  function getFlightTime(h_init, u_init) {
+    const disc = u_init * u_init + 2 * g * h_init;
+    if (disc < 0) return 0;
+    return (u_init + Math.sqrt(disc)) / g;
+  }
+
+  function getMaxHeight(h_init, u_init) {
+    return u_init > 0 ? h_init + (u_init * u_init) / (2 * g) : h_init;
+  }
+
+  function setMode(m) {
+    mode = m;
+    document.querySelectorAll('.tab-btn').forEach((b, idx) => {
+      b.classList.toggle('active', idx + 1 === m);
+    });
+
+    const uZeroLockBadge = document.getElementById('uZeroLockBadge');
+    const subModeGroup = document.getElementById('subModeGroup');
+    const h0Group = document.getElementById('h0Group');
+    const uGroup = document.getElementById('uGroup');
+    const balloonNotice = document.getElementById('balloonNotice');
+    const h0Slider = document.getElementById('h0Slider');
+    const uSlider = document.getElementById('uSlider');
+
+    isMovingSystem = false;
+    balloonNotice.style.display = 'none';
+
+    if (mode === 1) {
+      // Strictly Free Fall from rest: u = 0 locked!
+      uZeroLockBadge.style.display = 'flex';
+      subModeGroup.style.display = 'none';
+      h0Group.style.display = 'flex';
+      uGroup.style.display = 'none';
+      h0Slider.min = 20; h0Slider.max = 125; h0Slider.value = 80;
+      u = 0;
+      // Default sign convention for Mode 1 is often Downwards (+), let user see standard or switch
+      document.getElementById('signConvSelect').value = 'down_pos';
+    } else if (mode === 2) {
+      uZeroLockBadge.style.display = 'none';
+      subModeGroup.style.display = 'flex';
+      h0Group.style.display = 'flex';
+      uGroup.style.display = 'flex';
+      document.getElementById('signConvSelect').value = 'up_pos';
+      document.getElementById('subModeSelect').value = 'up_cliff';
+      applySubMode();
+      return;
+    } else if (mode === 3) {
+      uZeroLockBadge.style.display = 'none';
+      subModeGroup.style.display = 'none';
+      h0Group.style.display = 'none';
+      uGroup.style.display = 'flex';
+      document.getElementById('uLabelText').textContent = 'ප්‍රක්ෂේපණ ප්‍රවේගය (Projection Velocity, u ↑):';
+      h0Slider.value = 0;
+      uSlider.min = 10; uSlider.max = 50; uSlider.value = 40;
+      document.getElementById('signConvSelect').value = 'up_pos';
+    }
+    updateParams();
+  }
+
+  function applySubMode() {
+    const sub = document.getElementById('subModeSelect').value;
+    const h0Slider = document.getElementById('h0Slider');
+    const uSlider = document.getElementById('uSlider');
+    const uLabelText = document.getElementById('uLabelText');
+    const balloonNotice = document.getElementById('balloonNotice');
+
+    h0Slider.min = 25; h0Slider.max = 100; h0Slider.value = 60;
+    uSlider.min = 5; uSlider.max = 40;
+
+    if (sub === 'up_cliff') {
+      isMovingSystem = false;
+      balloonNotice.style.display = 'none';
+      uLabelText.textContent = 'ඉහළට ප්‍රක්ෂේපණ වේගය (Launch Speed ↑):';
+      uSlider.value = 20;
+    } else if (sub === 'down_cliff') {
+      isMovingSystem = false;
+      balloonNotice.style.display = 'none';
+      uLabelText.textContent = 'පහළට ප්‍රක්ෂේපණ වේගය (Launch Speed ↓):';
+      uSlider.value = 15;
+    } else if (sub === 'balloon_up') {
+      isMovingSystem = true;
+      balloonNotice.style.display = 'flex';
+      uLabelText.textContent = 'බැලූනයේ ඉහළ යන ප්‍රවේගය (Vₛᵧₛ ↑):';
+      uSlider.value = 20;
+    } else if (sub === 'balloon_down') {
+      isMovingSystem = true;
+      balloonNotice.style.display = 'flex';
+      uLabelText.textContent = 'බැලූනයේ පහළ යන ප්‍රවේගය (Vₛᵧₛ ↓):';
+      uSlider.value = 15;
+    }
+    updateParams();
+  }
+
+  function updateParams() {
+    if (mode === 1) {
+      h0 = parseFloat(document.getElementById('h0Slider').value);
+      u = 0; // Strictly locked to 0!
+    } else if (mode === 2) {
+      h0 = parseFloat(document.getElementById('h0Slider').value);
+      const speedMag = parseFloat(document.getElementById('uSlider').value);
+      const sub = document.getElementById('subModeSelect').value;
+      if (sub === 'up_cliff' || sub === 'balloon_up') {
+        u = speedMag;
+      } else {
+        u = -speedMag;
+      }
+      if (isMovingSystem) {
+        document.getElementById('balloonUVal').textContent = `u = ${u > 0 ? '+' : ''}${u} m s⁻¹ (${u > 0 ? '↑' : '↓'})`;
+      }
+    } else if (mode === 3) {
+      h0 = 0;
+      u = parseFloat(document.getElementById('uSlider').value);
+    }
+
+    document.getElementById('h0Val').textContent = `${h0} m`;
+    const arrow = u > 0 ? '↑' : (u < 0 ? '↓' : '');
+    document.getElementById('uVal').textContent = `${Math.abs(u)} m/s ${arrow}`;
+
+    updateTheoryBox();
+    resetSim();
+  }
+
+  function updateSpeed() {
+    simSpeed = parseFloat(document.getElementById('speedSlider').value);
+    document.getElementById('speedVal').textContent = `${simSpeed.toFixed(1)}x`;
+  }
+
+  function stepSecond() {
+    playing = false;
+    cancelAnimationFrame(animId);
+    const totalT = getFlightTime(h0, u);
+    t = Math.min(totalT, Math.floor(t + 1.0001));
+    const btn = document.getElementById('playBtn');
+    btn.textContent = '▶ Resume';
+    btn.className = 'btn btn-play';
+    render();
+  }
+
+  function updateTheoryBox() {
+    const box = document.getElementById('theoryText');
+    if (mode === 1) {
+      box.innerHTML = `
+        <strong>1. නිශ්චලතාවයෙන් නිදහසේ පහළට අතහැරීම (u = 0):</strong><br>
+        &bull; වස්තුව අතහරින මොහොතේ නිශ්චල බැවින් <code>u = 0 m s⁻¹</code> වේ.<br>
+        &bull; පහළට (+) ලෙස ගත් විට: <code>v = gt = 10t</code> සහ <code>s = ½gt² = 5t²</code>.<br>
+        &bull; <b>තත්පර 1කට වරක් පිහිටීම:</b> t = 1s දී 5m, t = 2s දී 20m, t = 3s දී 45m, t = 4s දී 80m.<br>
+        &bull; <b>ගැලීලියෝගේ අනුපාතය:</b> එක් එක් තත්පරය තුළ වැටෙන දුර <code>5m : 15m : 25m : 35m</code> (<b>1 : 3 : 5 : 7</b>) වේ.
+      `;
+    } else if (mode === 2) {
+      if (isMovingSystem) {
+        box.innerHTML = `
+          <strong>2. චලනය වන පද්ධතියකින් නිදහසේ අතහැරීම:</strong><br>
+          &bull; බැලූනයේ සිටින අයෙකුට සාපේක්ෂව වස්තුව නිශ්චලව අතහරිනු ලැබේ (<code>u<sub>rel</sub> = 0</code>).<br>
+          &bull; නමුත් පොළොවට සාපේක්ෂව අවස්ථිතිය නිසා <b>බැලූනයේ ප්‍රවේගයම වස්තුවට ආරම්භක ප්‍රවේගය ලෙස ලැබේ</b> (<code>u = V<sub>sys</sub> = ${u} m/s</code>).<br>
+          &bull; ඉහළට (+) ලෙස ගත් විට පොළොවට වැටෙන විට මුළු විස්ථාපනය <code>s = -h₀ = -${h0} m</code> වේ.
+        `;
+      } else {
+        box.innerHTML = `
+          <strong>2. උසක (h₀ = ${h0}m) සිට ${u > 0 ? 'ඉහළට (↑)' : 'පහළට (↓)'} ප්‍රක්ෂේපණය:</strong><br>
+          &bull; ආරම්භක ප්‍රවේගය <code>u = ${u > 0 ? '+' : ''}${u} m s⁻¹</code>.<br>
+          &bull; ඉහළට (+) ලෙස ගත් විට: <code>s = ut - ½gt²</code>.<br>
+          &bull; පොළොවට පතිත වන විට ආරම්භක මට්ටමට වඩා <b>${h0}m පහළින්</b> පිහිටන නිසා <code>s = -${h0} m</code> ආදේශ කරන්න.
+        `;
+      }
+    } else {
+      box.innerHTML = `
+        <strong>3. පොළොවේ සිට සිරස්ව ඉහළට ප්‍රක්ෂේපණය (u = +${u} m/s):</strong><br>
+        &bull; උපරිම උසේදී ක්ෂණිකව <code>v = 0</code> වේ (නමුත් ත්වරණය තවමත් <code>g = 10 m s⁻² ↓</code> වේ).<br>
+        &bull; උපරිම උසට කාලය: <code>t<sub>up</sub> = u/g = ${(u/g).toFixed(1)} s</code> | උපරිම උස: <code>H = u²/2g = ${(u*u/(2*g)).toFixed(1)} m</code>.<br>
+        &bull; ආපසු පොළොවට වදින විට <code>s = 0</code> සහ <code>v = -${u} m s⁻¹</code> (සමමිතික චලිතයකි).
+      `;
+    }
+  }
+
+  function togglePlay() {
+    const totalT = getFlightTime(h0, u);
+    if (t >= totalT && totalT > 0) t = 0;
+    playing = !playing;
+    const btn = document.getElementById('playBtn');
+    if (playing) {
+      btn.textContent = '⏸ Pause';
+      btn.className = 'btn btn-pause';
+      lastTimestamp = performance.now();
+      animId = requestAnimationFrame(loop);
+    } else {
+      btn.textContent = '▶ Start';
+      btn.className = 'btn btn-play';
+      cancelAnimationFrame(animId);
+    }
+  }
+
+  function resetSim() {
+    playing = false;
+    cancelAnimationFrame(animId);
+    t = 0;
+    const btn = document.getElementById('playBtn');
+    btn.textContent = '▶ Start';
+    btn.className = 'btn btn-play';
+    render();
+  }
+
+  function loop(timestamp) {
+    if (!playing) return;
+    const dt = ((timestamp - lastTimestamp) / 1000) * simSpeed;
+    lastTimestamp = timestamp;
+
+    const totalT = getFlightTime(h0, u);
+    t += dt;
+    if (t >= totalT) {
+      t = totalT;
+      playing = false;
+      const btn = document.getElementById('playBtn');
+      btn.textContent = '▶ Replay';
+      btn.className = 'btn btn-play';
+    }
+    render();
+    if (playing) animId = requestAnimationFrame(loop);
+  }
+
+  function render() {
+    const signConv = document.getElementById('signConvSelect').value;
+    const signFactor = signConv === 'up_pos' ? 1 : -1;
+
+    const totalT = getFlightTime(h0, u);
+    const maxH = getMaxHeight(h0, u);
+
+    // Internal physics: Upwards is +
+    const s_up = u * t - 0.5 * g * t * t;
+    const y = Math.max(0, h0 + s_up);
+    const v_up = u - g * t;
+
+    // Display values according to chosen Sign Convention
+    const dispU = u * signFactor;
+    const dispV = v_up * signFactor;
+    const dispS = s_up * signFactor;
+
+    const fmtSign = (val) => (Math.abs(val) < 0.05 ? '0.0' : (val > 0 ? `+${val.toFixed(1)}` : val.toFixed(1)));
+
+    document.getElementById('tStat').textContent = `${t.toFixed(2)} s`;
+    document.getElementById('uStat').textContent = `${fmtSign(dispU)} m/s`;
+    document.getElementById('vStat').textContent = `${fmtSign(dispV)} m/s`;
+    document.getElementById('sStat').textContent = `${fmtSign(dispS)} m`;
+    document.getElementById('yStat').textContent = `${y.toFixed(1)} m`;
+    document.getElementById('tTotalStat').textContent = `${totalT.toFixed(2)} s`;
+
+    const graphNote = document.getElementById('graphNote');
+    if (signConv === 'down_pos') {
+      graphNote.innerHTML = `<strong>ලකුණු සම්මුතිය: පහළට (+)</strong><br>&bull; ගුරුත්වජ ත්වරණය <code>a = +10 m s⁻²</code> බැවින් v-t ප්‍රස්තාරයේ අනුක්‍රමණය <b>ධන (+)</b> වේ.`;
+    } else {
+      graphNote.innerHTML = `<strong>ලකුණු සම්මුතිය: ඉහළට (+)</strong><br>&bull; ගුරුත්වජ ත්වරණය <code>a = -10 m s⁻²</code> බැවින් v-t ප්‍රස්තාරයේ අනුක්‍රමණය <b>ඍණ (-)</b> වේ.`;
+    }
+
+    drawSimulation(y, v_up, maxH, totalT);
+    drawGraphs(totalT, maxH, signFactor);
+  }
+
+  function drawArrow(context, x1, y1, x2, y2, color, label, alignLeft = false) {
+    const headLen = 8;
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    context.strokeStyle = color;
+    context.fillStyle = color;
+    context.lineWidth = 2.5;
+
+    context.beginPath();
+    context.moveTo(x1, y1);
+    context.lineTo(x2, y2);
+    context.stroke();
+
+    context.beginPath();
+    context.moveTo(x2, y2);
+    context.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6));
+    context.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
+    context.closePath();
+    context.fill();
+
+    if (label) {
+      context.font = 'bold 11px monospace';
+      const textX = alignLeft ? x2 - 65 : x2 + 8;
+      context.fillText(label, textX, (y1 + y2) / 2 + 4);
+    }
+  }
+
+  function drawSimulation(y, v_up, maxH, totalT) {
+    ctx.clearRect(0, 0, simCanvas.width, simCanvas.height);
+
+    const groundY = simCanvas.height - 40;
+    const topMargin = 38;
+    const scaleMaxH = Math.max(130, maxH * 1.15);
+    const pxPerMeter = (groundY - topMargin) / scaleMaxH;
+    const toScreenY = (meters) => groundY - meters * pxPerMeter;
+
+    // Grid lines
+    ctx.strokeStyle = '#111827';
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px monospace';
+    ctx.lineWidth = 1;
+    const step = scaleMaxH > 160 ? 25 : 20;
+    for (let m = 0; m <= scaleMaxH; m += step) {
+      const sy = toScreenY(m);
+      ctx.beginPath();
+      ctx.moveTo(48, sy);
+      ctx.lineTo(simCanvas.width - 20, sy);
+      ctx.stroke();
+      ctx.fillText(`${m}m`, 10, sy + 4);
+    }
+
+    // Ground
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(48, groundY, simCanvas.width - 68, 6);
+
+    const objX = 250;
+    const h0ScreenY = toScreenY(h0);
+
+    // Tower / Release Clamp for Mode 1 & Mode 2 (non-balloon)
+    if (h0 > 0 && !isMovingSystem) {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(120, h0ScreenY, 85, groundY - h0ScreenY);
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(120, h0ScreenY, 85, groundY - h0ScreenY);
+      
+      // Horizontal arm holding the ball in Mode 1
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(205, h0ScreenY);
+      ctx.lineTo(objX - 14, h0ScreenY);
+      ctx.stroke();
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px monospace';
+      ctx.fillText(`h₀=${h0}m`, 135, h0ScreenY + 20);
+    }
+
+    // Moving System (Balloon)
+    if (isMovingSystem) {
+      const sysH = h0 + u * t;
+      const sysScreenY = toScreenY(sysH);
+      if (sysScreenY > -40 && sysScreenY < groundY + 20) {
+        ctx.strokeStyle = '#a855f7';
+        ctx.fillStyle = 'rgba(168, 85, 247, 0.15)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(objX - 75, sysScreenY - 22, 55, 44, 8);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#e9d5ff';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillText('බැලූනය', objX - 68, sysScreenY - 4);
+        ctx.font = '10px monospace';
+        ctx.fillText(`V=${u}m/s`, objX - 70, sysScreenY + 12);
+      }
+    }
+
+    // Release Level Line
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = 'rgba(250, 204, 21, 0.5)';
+    ctx.beginPath();
+    ctx.moveTo(60, h0ScreenY);
+    ctx.lineTo(simCanvas.width - 25, h0ScreenY);
+    ctx.stroke();
+
+    // Mode 1 Special: Show u = 0 m/s badge and Galileo's 1:3:5:7 intervals
+    if (mode === 1) {
+      ctx.fillStyle = '#ff3366';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText('ආරම්භක නිශ්චල මට්ටම: u = 0 m/s', objX + 25, h0ScreenY - 6);
+
+      // Draw 1s, 2s, 3s, 4s interval brackets on the right side
+      let prevY = h0;
+      for (let sec = 1; sec <= Math.floor(totalT); sec++) {
+        const curY = h0 - 0.5 * g * sec * sec;
+        if (curY >= 0 && t >= sec) {
+          const sy1 = toScreenY(prevY);
+          const sy2 = toScreenY(curY);
+          const dist = prevY - curY; // 5m, 15m, 25m, 35m
+          ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          ctx.moveTo(395, sy1 + 2);
+          ctx.lineTo(405, sy1 + 2);
+          ctx.lineTo(405, sy2 - 2);
+          ctx.lineTo(395, sy2 - 2);
+          ctx.stroke();
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = '10px monospace';
+          ctx.fillText(`Δs(${sec}s) = ${dist}m`, 412, (sy1 + sy2) / 2 + 4);
+          prevY = curY;
+        }
+      }
+    }
+
+    // Max Height Line if u > 0
+    if (u > 0) {
+      const maxHScreenY = toScreenY(maxH);
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = '#00ff88';
+      ctx.beginPath();
+      ctx.moveTo(60, maxHScreenY);
+      ctx.lineTo(simCanvas.width - 25, maxHScreenY);
+      ctx.stroke();
+      ctx.fillStyle = '#00ff88';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(`Hₘₐₓ = ${maxH.toFixed(1)}m (v = 0)`, objX + 25, maxHScreenY - 6);
+    }
+    ctx.setLineDash([]);
+
+    // 1-Second Strobe Markers along path
+    for (let sec = 0; sec <= Math.floor(t); sec++) {
+      const sy = h0 + u * sec - 0.5 * g * sec * sec;
+      if (sy >= 0) {
+        const screenY = toScreenY(sy);
+        ctx.fillStyle = 'rgba(250, 204, 21, 0.75)';
+        ctx.beginPath();
+        ctx.arc(objX, screenY, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fde047';
+        ctx.font = '10px monospace';
+        ctx.fillText(`t=${sec}s`, objX - 48, screenY + 3);
+      }
+    }
+
+    // Draw Main Object (Ball)
+    const ballScreenY = toScreenY(y);
+    ctx.fillStyle = '#00f0ff';
+    ctx.shadowColor = '#00f0ff';
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.arc(objX, ballScreenY, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Velocity Vector (Green) - zero length at t=0 in Mode 1!
+    if (Math.abs(v_up) > 0.2) {
+      const vLen = Math.max(-85, Math.min(85, v_up * 1.5));
+      drawArrow(ctx, objX + 18, ballScreenY, objX + 18, ballScreenY - vLen, '#00ff88', `v=${Math.abs(v_up).toFixed(1)}m/s`);
+    } else {
+      ctx.fillStyle = '#facc15';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText('v = 0 m/s', objX + 18, ballScreenY + 4);
+    }
+
+    // Gravity Vector (Red - always downwards)
+    drawArrow(ctx, objX - 18, ballScreenY, objX - 18, ballScreenY + 34, '#ff3366', 'g ↓', true);
+  }
+
+  function drawGraphs(totalT, maxH, signFactor) {
+    const maxTime = Math.max(2, totalT * 1.05);
+    const padL = 46, padR = 15, padT = 26, padB = 24;
+    const gw = stCanvas.width - padL - padR;
+    const gh = stCanvas.height - padT - padB;
+    const tToX = (tVal) => padL + (tVal / maxTime) * gw;
+
+    // --- 1. s - t Graph ---
+    stCtx.clearRect(0, 0, stCanvas.width, stCanvas.height);
+    let minS = 0, maxS = 0;
+    for (let i = 0; i <= 50; i++) {
+      const ct = (i / 50) * totalT;
+      const cs = (u * ct - 0.5 * g * ct * ct) * signFactor;
+      if (cs < minS) minS = cs;
+      if (cs > maxS) maxS = cs;
+    }
+    maxS = Math.max(10, maxS + 10);
+    minS = Math.min(-10, minS - 10);
+    const sToY = (sVal) => padT + ((maxS - sVal) / (maxS - minS)) * gh;
+
+    const zeroSY = sToY(0);
+    stCtx.strokeStyle = '#334155';
+    stCtx.beginPath();
+    stCtx.moveTo(padL, zeroSY); stCtx.lineTo(stCanvas.width - padR, zeroSY);
+    stCtx.moveTo(padL, padT); stCtx.lineTo(padL, stCanvas.height - padB);
+    stCtx.stroke();
+
+    stCtx.fillStyle = '#00f0ff';
+    stCtx.font = 'bold 11px sans-serif';
+    stCtx.fillText('විස්ථාපන-කාල ප්‍රස්තාරය (s - t Graph)', padL, 16);
+    stCtx.fillStyle = '#94a3b8';
+    stCtx.font = '10px monospace';
+    stCtx.fillText('0', padL - 12, zeroSY + 3);
+
+    // Faint Full Path
+    stCtx.strokeStyle = 'rgba(0, 240, 255, 0.2)';
+    stCtx.lineWidth = 2;
+    stCtx.beginPath();
+    for (let i = 0; i <= 80; i++) {
+      const ct = (i / 80) * totalT;
+      const cs = (u * ct - 0.5 * g * ct * ct) * signFactor;
+      if (i === 0) stCtx.moveTo(tToX(ct), sToY(cs));
+      else stCtx.lineTo(tToX(ct), sToY(cs));
+    }
+    stCtx.stroke();
+
+    // Active Path
+    stCtx.strokeStyle = '#00f0ff';
+    stCtx.lineWidth = 2.5;
+    stCtx.beginPath();
+    for (let i = 0; i <= 80; i++) {
+      const ct = (i / 80) * t;
+      const cs = (u * ct - 0.5 * g * ct * ct) * signFactor;
+      if (i === 0) stCtx.moveTo(tToX(ct), sToY(cs));
+      else stCtx.lineTo(tToX(ct), sToY(cs));
+    }
+    stCtx.stroke();
+
+    const curS = (u * t - 0.5 * g * t * t) * signFactor;
+    stCtx.fillStyle = '#00f0ff';
+    stCtx.beginPath();
+    stCtx.arc(tToX(t), sToY(curS), 4, 0, Math.PI * 2);
+    stCtx.fill();
+
+    // --- 2. v - t Graph ---
+    vtCtx.clearRect(0, 0, vtCanvas.width, vtCanvas.height);
+    const vStart = u * signFactor;
+    const vEnd = (u - g * totalT) * signFactor;
+    const maxV = Math.max(15, vStart + 10, vEnd + 10);
+    const minV = Math.min(-15, vStart - 10, vEnd - 10);
+    const vToY = (vVal) => padT + ((maxV - vVal) / (maxV - minV)) * gh;
+
+    const zeroVY = vToY(0);
+    vtCtx.strokeStyle = '#334155';
+    vtCtx.beginPath();
+    vtCtx.moveTo(padL, zeroVY); vtCtx.lineTo(vtCanvas.width - padR, zeroVY);
+    vtCtx.moveTo(padL, padT); vtCtx.lineTo(padL, vtCanvas.height - padB);
+    vtCtx.stroke();
+
+    vtCtx.fillStyle = '#00ff88';
+    vtCtx.font = 'bold 11px sans-serif';
+    vtCtx.fillText('ප්‍රවේග-කාල ප්‍රස්තාරය (v - t Graph)', padL, 16);
+    vtCtx.fillStyle = '#94a3b8';
+    vtCtx.font = '10px monospace';
+    vtCtx.fillText('0', padL - 12, zeroVY + 3);
+
+    // Faint Line
+    vtCtx.strokeStyle = 'rgba(0, 255, 136, 0.2)';
+    vtCtx.lineWidth = 2;
+    vtCtx.beginPath();
+    vtCtx.moveTo(tToX(0), vToY(vStart));
+    vtCtx.lineTo(tToX(totalT), vToY(vEnd));
+    vtCtx.stroke();
+
+    // Active Line
+    const curV = (u - g * t) * signFactor;
+    vtCtx.strokeStyle = '#00ff88';
+    vtCtx.lineWidth = 2.5;
+    vtCtx.beginPath();
+    vtCtx.moveTo(tToX(0), vToY(vStart));
+    vtCtx.lineTo(tToX(t), vToY(curV));
+    vtCtx.stroke();
+
+    vtCtx.fillStyle = '#00ff88';
+    vtCtx.beginPath();
+    vtCtx.arc(tToX(t), vToY(curV), 4, 0, Math.PI * 2);
+    vtCtx.fill();
+  }
+
+  // Initialize in Mode 1 (u = 0 strictly locked)
+  setMode(1);
+</script>
+</body>
+</html>
