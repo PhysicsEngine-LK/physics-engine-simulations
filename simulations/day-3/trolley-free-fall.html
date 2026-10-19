@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Relative Motion Simulation - Physics Engine</title>
+    <style>
+        body { font-family: sans-serif; background: #0f0f1b; color: #00ffff; text-align: center; }
+        canvas { background: #1a1a2e; border: 2px solid #b026ff; border-radius: 8px; margin-top: 20px; box-shadow: 0 0 15px rgba(176, 38, 255, 0.4); }
+        .controls { margin-top: 20px; }
+        button { background: #b026ff; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; margin: 0 10px; transition: 0.3s; }
+        button:hover { background: #d05cff; box-shadow: 0 0 10px #00ffff; }
+        .active { background: #00ffff; color: #000; }
+    </style>
+</head>
+<body>
+
+    <h2>සාපේක්ෂ චලිතය: ට්‍රොලිය සහ නිදහස් පතනය</h2>
+    
+    <div class="controls">
+        <button id="btnGround" class="active" onclick="setView('ground')">B ගේ රාමුව (පොළොව මත)</button>
+        <button id="btnTrolley" onclick="setView('trolley')">A ගේ රාමුව (ට්‍රොලිය මත)</button>
+        <button onclick="resetSimulation()" style="background: #ff2a2a;">නැවත අරඹන්න</button>
+    </div>
+
+    <canvas id="simCanvas" width="800" height="400"></canvas>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let view = 'ground'; // 'ground' or 'trolley'
+    let animationId;
+    let trail = [];
+
+    let trolley = { x: 50, y: 250, width: 120, height: 60, vx: 3 };
+    let ball = { x: 0, y: 0, vx: 0, vy: 0, radius: 8, isDropped: false };
+    const gravity = 0.15;
+
+    function init() {
+        trolley.x = 50;
+        ball.x = trolley.x + trolley.width / 2;
+        ball.y = trolley.y - 40;
+        ball.vx = trolley.vx;
+        ball.vy = 0;
+        ball.isDropped = false;
+        trail = [];
+    }
+
+    function setView(newView) {
+        view = newView;
+        document.getElementById('btnGround').className = view === 'ground' ? 'active' : '';
+        document.getElementById('btnTrolley').className = view === 'trolley' ? 'active' : '';
+        init(); 
+    }
+
+    function resetSimulation() {
+        init();
+    }
+
+    function update() {
+        trolley.x += trolley.vx;
+
+        if (!ball.isDropped && trolley.x > 200) {
+            ball.isDropped = true;
+        }
+
+        if (ball.isDropped) {
+            ball.vy += gravity;
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+            
+            // Trail එක සටහන් කිරීම: රාමු දෙක සඳහාම දත්ත ලබා ගැනීම
+            if (ball.y < canvas.height - 30) {
+                trail.push({ 
+                    groundX: ball.x,             // පොළොවට සාපේක්ෂ X
+                    groundY: ball.y,             // පොළොවට සාපේක්ෂ Y
+                    trolleyOffsetX: ball.x - trolley.x // ට්‍රොලියට සාපේක්ෂ X පරතරය
+                });
+            } else {
+                ball.y = canvas.height - 30;
+                ball.vx = 0; 
+            }
+        } else {
+            ball.x = trolley.x + trolley.width / 2;
+        }
+
+        if (trolley.x > canvas.width + 50) init(); 
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+
+        if (view === 'trolley') {
+            let cameraOffsetX = canvas.width / 2 - (trolley.x + trolley.width / 2);
+            ctx.translate(cameraOffsetX, 0);
+        }
+
+        // පොළොව ඇඳීම
+        ctx.fillStyle = '#333';
+        ctx.fillRect(-2000, canvas.height - 30, 4000, 30);
+        for(let i = -2000; i < 4000; i+= 100) {
+            ctx.fillStyle = '#555';
+            ctx.fillRect(i, canvas.height - 50, 10, 20); 
+        }
+
+        // පථය (Trail) ඇඳීම - වෙනස මෙතැනයි!
+        ctx.fillStyle = '#00ffff';
+        trail.forEach(p => {
+            ctx.beginPath();
+            if (view === 'ground') {
+                // B ට පෙනෙන පරිදි පරාවලයික පථය (පොළොවේ ඛණ්ඩාංක)
+                ctx.arc(p.groundX, p.groundY, 2, 0, Math.PI * 2);
+            } else {
+                // A ට පෙනෙන පරිදි සිරස් පථය (ට්‍රොලියට සාපේක්ෂ ඛණ්ඩාංක)
+                // ට්‍රොලියේ වර්තමාන X පිහිටීමට සාපේක්ෂව පථය අඳියි
+                ctx.arc(trolley.x + p.trolleyOffsetX, p.groundY, 2, 0, Math.PI * 2);
+            }
+            ctx.fill();
+        });
+
+        // ට්‍රොලිය ඇඳීම
+        ctx.fillStyle = '#b026ff';
+        ctx.fillRect(trolley.x, trolley.y, trolley.width, trolley.height);
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(trolley.x + 20, trolley.y + 60, 15, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(trolley.x + 100, trolley.y + 60, 15, 0, Math.PI*2); ctx.fill();
+
+        // වස්තුව ඇඳීම
+        ctx.fillStyle = '#00ffff';
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+
+        // UI 
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(10, 10, 260, 40);
+        ctx.fillStyle = '#00ffff';
+        ctx.font = '16px sans-serif';
+        ctx.fillText(`නිරීක්ෂක රාමුව: ${view === 'ground' ? 'B (පොළොව)' : 'A (ට්‍රොලිය)'}`, 20, 35);
+    }
+
+    function loop() {
+        update();
+        draw();
+        animationId = requestAnimationFrame(loop);
+    }
+
+    init();
+    loop();
+</script>
+</body>
+</html>
