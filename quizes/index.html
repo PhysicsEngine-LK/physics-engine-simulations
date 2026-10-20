@@ -28,13 +28,11 @@
     .btn:disabled { opacity:.45; cursor:default; transform:none; box-shadow:none; }
 
     /* today / next */
-    .progress { max-width:650px; margin-top:24px; }
-    .progress .ptop { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:6px 16px; }
-    .progress .done { font:700 clamp(26px,5vw,38px) "Orbitron",sans-serif; letter-spacing:1px; }
-    .progress .done small { color:var(--muted); font-size:.5em; letter-spacing:.5px; }
-    .progress .left { color:var(--muted); font-size:15px; }
-    .progress .bar { height:12px; margin-top:10px; border-radius:999px; background:rgba(167,139,250,.15); border:1px solid var(--line); overflow:hidden; }
-    .progress .fill { height:100%; min-width:12px; border-radius:999px; background:linear-gradient(90deg,var(--accent),var(--accent2)); box-shadow:0 0 14px rgba(244,114,182,.5); }
+    .progress { display:inline-flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; margin-top:22px; padding:12px 20px; border:1px solid var(--line); border-radius:16px; background:rgba(167,139,250,.1); }
+    .progress .done { font:700 clamp(26px,5vw,36px) "Orbitron",sans-serif; letter-spacing:1px; background:linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    .progress .what { font:600 16px "Space Grotesk",sans-serif; }
+    .progress .left { color:var(--muted); font-size:14px; }
+    .progress .left::before { content:"· "; }
     .spot { margin-top:24px; padding:clamp(22px,4vw,34px); border:1px solid var(--accent); border-radius:22px; background:linear-gradient(135deg,rgba(98,37,230,.28),rgba(20,11,36,.9)); box-shadow:0 0 40px rgba(167,139,250,.15); }
     .spot .kicker { color:var(--accent2); font:700 12px "Orbitron",sans-serif; letter-spacing:2px; text-transform:uppercase; }
     .spot h2 { margin:10px 0 6px; font-family:"Orbitron",sans-serif; font-size:clamp(24px,5vw,40px); }
@@ -250,13 +248,11 @@ function renderHome() {
   }
   $('#spot').innerHTML = h;
 
-  // questions released so far in the 10 000 series
-  const GOAL = 10000, done = Math.max(0, ...all.map(d => d.to || 0));
+  // daily quiz questions released so far
+  const done = Math.max(0, ...all.map(d => d.to || 0));
   const p = $('#progress');
   p.hidden = !done;
-  if (done) p.innerHTML = `<div class="ptop"><span class="done">${done.toLocaleString('en-US')} <small>/ 10 000 questions done</small></span>
-      <span class="left">${all.length} days · ${(GOAL - done).toLocaleString('en-US')} to go</span></div>
-    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${GOAL}" aria-valuenow="${done}"><div class="fill" style="width:${(done / GOAL * 100).toFixed(2)}%"></div></div>`;
+  if (done) p.innerHTML = `<span class="done">${done.toLocaleString('en-US')}</span> <span class="what">daily quiz questions done</span><span class="left">${all.length} days</span>`;
 
   $('#days').innerHTML = all.length ? all.map(d => d.legacy
     ? `<div class="day"><span class="dnum">${label(d)}</span><span class="dmeta">${range(d)} · ${fmtDate(d.date)}</span>
