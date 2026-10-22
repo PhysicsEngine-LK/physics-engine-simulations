@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>2011(O) Motion Simulation - Physics Engine</title>
+    <style>
+        body {
+            background-color: #0f0f1b;
+            color: #00ffff;
+            font-family: sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        h2 { color: #b026ff; text-shadow: 0 0 10px rgba(176, 38, 255, 0.5); }
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        canvas {
+            background-color: #1a1a2e;
+            border: 2px solid #b026ff;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+        .controls { margin-top: 20px; }
+        button {
+            background-color: #b026ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+            margin: 0 10px;
+        }
+        button:hover {
+            background-color: #d05cff;
+            box-shadow: 0 0 10px #00ffff;
+        }
+        .description {
+            max-width: 800px;
+            margin: 20px auto;
+            color: #ccc;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>2011(O) ප්‍රස්තාර ගැටලුව</h2>
+    
+    <div class="controls">
+        <button onclick="startSimulation()">සජීවීකරණය අරඹන්න</button>
+        <button onclick="resetSimulation()" style="background-color: #ff2a2a;">නැවත සකසන්න</button>
+    </div>
+
+    <!-- 1D Motion Canvas -->
+    <canvas id="motionCanvas" width="800" height="150"></canvas>
+
+    <div class="canvas-container">
+        <!-- Velocity-Time Graph -->
+        <canvas id="vtCanvas" width="380" height="300"></canvas>
+        <!-- Displacement-Time Graph -->
+        <canvas id="stCanvas" width="380" height="300"></canvas>
+    </div>
+
+    <div class="description">
+        <b>නිරීක්ෂණය කරන්න:</b> වස්තුව ආරම්භයේදී වම් පසට (සෘණ දිශාවට) ගමන් කර, t₀ හිදී මොහොතකට නතර වී, ඉන්පසු දකුණු පසට (ධන දිශාවට) ගමන් කරයි. මේ නිසා s-t ප්‍රස්තාරය අනිවාර්යයෙන්ම "U" හැඩයක් (උඩුකුරු පරාවලයක්) ගත යුතු බව ඔබට පැහැදිලිව පෙනෙනු ඇත.
+    </div>
+
+<script>
+    // Canvases
+    const mCtx = document.getElementById('motionCanvas').getContext('2d');
+    const vtCtx = document.getElementById('vtCanvas').getContext('2d');
+    const stCtx = document.getElementById('stCanvas').getContext('2d');
+
+    // Physics Variables
+    let t = 0;
+    let u = -60; // Initial velocity (negative)
+    let a = 15;  // Constant acceleration (positive)
+    let isRunning = false;
+    let animationId;
+    let history = []; // Stores {t, v, s}
+
+    function init() {
+        t = 0;
+        history = [];
+        drawAll();
+    }
+
+    function startSimulation() {
+        if (!isRunning) {
+            isRunning = true;
+            history = [];
+            t = 0;
+            loop();
+        }
+    }
+
+    function resetSimulation() {
+        isRunning = false;
+        cancelAnimationFrame(animationId);
+        init();
+    }
+
+    function loop() {
+        if (!isRunning) return;
+
+        // Update physics
+        t += 0.05; // Time step
+        let v = u + a * t;
+        let s = (u * t) + (0.5 * a * t * t);
+
+        history.push({ time: t, vel: v, disp: s });
+
+        drawAll();
+
+        // Stop simulation after sufficient time
+        if (t < 10) {
+            animationId = requestAnimationFrame(loop);
+        } else {
+            isRunning = false;
+        }
+    }
+
+    function drawAll() {
+        drawMotion();
+        drawGraph(vtCtx, 'vt', 'v (m/s)', 't (s)', 50, 150);
+        drawGraph(stCtx, 'st', 's (m)', 't (s)', 50, 100);
+    }
+
+    // --- Draw the 1D Motion ---
+    function drawMotion() {
+        mCtx.clearRect(0, 0, 800, 150);
+        
+        let currentS = 0;
+        if (history.length > 0) currentS = history[history.length - 1].disp;
+        
+        const originX = 400; // Center of canvas
+        const pixelScale = 2; // Scale for visual displacement
+        let xPos = originX + currentS * pixelScale;
+
+        // Draw axis
+        mCtx.beginPath();
+        mCtx.moveTo(50, 100);
+        mCtx.lineTo(750, 100);
+        mCtx.strokeStyle = '#555';
+        mCtx.lineWidth = 2;
+        mCtx.stroke();
+
+        // Origin mark
+        mCtx.fillStyle = '#fff';
+        mCtx.fillRect(originX - 2, 90, 4, 20);
+        mCtx.font = '14px sans-serif';
+        mCtx.fillText('x = 0', originX - 15, 130);
+
+        // Particle Trail
+        mCtx.beginPath();
+        mCtx.moveTo(originX, 100);
+        for(let i=0; i<history.length; i++) {
+            mCtx.lineTo(originX + history[i].disp * pixelScale, 100);
+        }
+        mCtx.strokeStyle = 'rgba(0, 255, 255, 0.5)';
+        mCtx.lineWidth = 4;
+        mCtx.stroke();
+
+        // The Particle
+        mCtx.beginPath();
+        mCtx.arc(xPos, 100, 12, 0, Math.PI * 2);
+        mCtx.fillStyle = '#ff2a2a';
+        mCtx.fill();
+        mCtx.strokeStyle = '#fff';
+        mCtx.lineWidth = 2;
+        mCtx.stroke();
+    }
+
+    // --- Draw the Graphs ---
+    function drawGraph(ctx, type, yLabel, xLabel, originX, originY) {
+        ctx.clearRect(0, 0, 380, 300);
+
+        // Axes
+        ctx.beginPath();
+        ctx.moveTo(originX, 20);
+        ctx.lineTo(originX, 280); // Y axis
+        ctx.moveTo(20, originY);
+        ctx.lineTo(360, originY); // X axis
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Labels
+        ctx.fillStyle = '#00ffff';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(yLabel, originX - 40, 20);
+        ctx.fillText(xLabel, 350, originY + 20);
+
+        // Draw Line/Curve
+        if (history.length > 0) {
+            ctx.beginPath();
+            let startY = type === 'vt' ? (originY - history[0].vel) : (originY - history[0].disp);
+            ctx.moveTo(originX, startY);
+
+            for (let i = 0; i < history.length; i++) {
+                let h = history[i];
+                let px = originX + h.time * 25; // x scale
+                let py = type === 'vt' ? originY - h.vel : originY - h.disp;
+                ctx.lineTo(px, py);
+            }
+            ctx.strokeStyle = type === 'vt' ? '#00ffff' : '#b026ff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // Mark t0 (Velocity = 0)
+            if (history.length > 0) {
+                let t0 = -u / a; // Formula for v = 0
+                if (history[history.length - 1].time >= t0) {
+                    let px_t0 = originX + t0 * 25;
+                    ctx.fillStyle = '#ff2a2a';
+                    ctx.beginPath();
+                    ctx.arc(px_t0, originY, 4, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.fillText('t₀', px_t0 - 5, originY - 10);
+                }
+            }
+        }
+    }
+
+    // Initial render
+    init();
+</script>
+</body>
+</html>
