@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Engine - The Impossible Graph</title>
+    <style>
+        body {
+            background-color: #050505;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h2 {
+            color: #00ffff;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 20px;
+            width: 900px;
+        }
+        .panel {
+            background-color: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .panel-title {
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        /* Top Panel */
+        .motion-panel {
+            grid-column: 1 / span 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas {
+            background-color: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 4px;
+        }
+        /* Warning Panel styling */
+        .status-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .status-box {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #00ff00;
+            background-color: rgba(0, 255, 0, 0.05);
+            color: #00ff00;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            padding: 15px;
+            transition: all 0.1s;
+        }
+        .status-error {
+            border-color: #ff003c;
+            background-color: rgba(255, 0, 60, 0.1);
+            color: #ff003c;
+            text-shadow: 0 0 10px #ff003c;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            background-color: #00ffff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background-color: #a200ff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Physics Engine: ඇයි මේ ප්‍රස්තාරය සැබෑ ලෝකයේ වෙන්න බැරි?</h2>
+
+    <div class="dashboard">
+        <!-- WINDOW 1: PHYSICAL MOTION -->
+        <div class="panel motion-panel">
+            <div class="panel-title">Window 1: භෞතික චලිතය (Physical Motion)</div>
+            <canvas id="motionCanvas" width="840" height="130"></canvas>
+        </div>
+
+        <!-- WINDOW 2: S-T GRAPH -->
+        <div class="panel graph-panel">
+            <div class="panel-title">Window 2: විස්ථාපන - කාල (s-t) ප්‍රස්තාරය</div>
+            <canvas id="graphCanvas" width="400" height="300"></canvas>
+        </div>
+
+        <!-- WINDOW 3: SYSTEM STATUS -->
+        <div class="panel status-panel">
+            <div class="panel-title">Window 3: පද්ධතියේ තත්ත්වය (System Status)</div>
+            <div id="statusBox" class="status-box">
+                තත්ත්වය: සාමාන්‍යයි<br><span style="font-size:14px; font-weight:normal; color:#888;">ප්‍රවේගය: නියත ධන අගයකි</span>
+            </div>
+            <button onclick="startSimulation()">Simulation එක අරඹන්න</button>
+        </div>
+    </div>
+
+    <script>
+        const mCanvas = document.getElementById('motionCanvas');
+        const mCtx = mCanvas.getContext('2d');
+        const gCanvas = document.getElementById('graphCanvas');
+        const gCtx = gCanvas.getContext('2d');
+        const statusBox = document.getElementById('statusBox');
+
+        let t = 0;
+        const maxT = 200; 
+        let animationId;
+        const jumpTime = 100;
+
+        // Custom function to draw a neon car
+        function drawCar(ctx, x, y) {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00ffff';
+            
+            // Car Body
+            ctx.fillStyle = '#00ffff';
+            ctx.beginPath();
+            ctx.roundRect(x - 25, y - 10, 50, 15, 3); // Main body
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.roundRect(x - 12, y - 22, 24, 12, 3); // Cabin top
+            ctx.fill();
+
+            // Wheels
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#111';
+            ctx.strokeStyle = '#a200ff'; // Purple rims
+            ctx.lineWidth = 2;
+            
+            // Left Wheel
+            ctx.beginPath();
+            ctx.arc(x - 15, y + 5, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Right Wheel
+            ctx.beginPath();
+            ctx.arc(x + 15, y + 5, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function drawMotion(s) {
+            mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
+            
+            // Draw Track
+            mCtx.strokeStyle = '#333';
+            mCtx.lineWidth = 2;
+            mCtx.beginPath();
+            mCtx.moveTo(40, 90);
+            mCtx.lineTo(800, 90);
+            mCtx.stroke();
+
+            // Origin Mark
+            mCtx.fillStyle = '#888';
+            mCtx.fillRect(420, 80, 2, 20);
+            mCtx.font = "13px Arial";
+            mCtx.fillText("ආරම්භක ලක්ෂ්‍යය (0)", 360, 120);
+            mCtx.fillText("-s (පිටුපසට)", 40, 120);
+            mCtx.fillText("+s (ඉදිරියට)", 720, 120);
+
+            // Draw Object (Car)
+            let pixelX = 420 + (s * 1.5);
+            drawCar(mCtx, pixelX, 82);
+        }
+
+        function drawGraph(currentTime) {
+            gCtx.clearRect(0, 0, gCanvas.width, gCanvas.height);
+            
+            // Draw Axes
+            gCtx.strokeStyle = '#333';
+            gCtx.lineWidth = 1.5;
+            gCtx.beginPath();
+            gCtx.moveTo(40, 20);
+            gCtx.lineTo(40, 280); // s axis
+            gCtx.moveTo(20, 150);
+            gCtx.lineTo(380, 150); // t axis
+            gCtx.stroke();
+
+            gCtx.fillStyle = '#888';
+            gCtx.font = "14px Arial";
+            gCtx.fillText("+s", 15, 30);
+            gCtx.fillText("-s", 15, 270);
+            gCtx.fillText("t (කාලය)", 330, 170);
+
+            // Plot Data
+            gCtx.strokeStyle = '#a200ff';
+            gCtx.lineWidth = 3;
+            gCtx.beginPath();
+            gCtx.moveTo(40, 150);
+
+            for (let i = 0; i <= currentTime; i++) {
+                let currentS = 0;
+                if (i <= jumpTime) {
+                    currentS = i * 1.2; 
+                } else {
+                    currentS = -120 + ((i - jumpTime) * 1.2);
+                }
+                
+                let plotX = 40 + (i * 1.5);
+                let plotY = 150 - currentS;
+
+                if (i === jumpTime) {
+                    gCtx.lineTo(plotX, 150 - (jumpTime * 1.2)); 
+                    gCtx.lineTo(plotX, 150 - (-120)); 
+                } else {
+                    gCtx.lineTo(plotX, plotY);
+                }
+            }
+            gCtx.stroke();
+        }
+
+        function animate() {
+            let s = 0;
+            
+            if (t < jumpTime) {
+                s = t * 1.2;
+                statusBox.className = "status-box";
+                statusBox.innerHTML = `තත්ත්වය: සාමාන්‍යයි<br><span style="font-size:14px; font-weight:normal; color:#888;">ප්‍රවේගය: නියත ධන අගයකි (Time: ${t})</span>`;
+            } else if (t === jumpTime) {
+                // The glitch moment
+                statusBox.className = "status-box status-error";
+                statusBox.innerHTML = `⚠️ දෝෂයකි! ⚠️<br>වස්තුව ක්ෂණිකව පිහිටුම වෙනස් කර ඇත<br><span style="font-size:14px;">(අනන්ත ප්‍රවේගයක් අවශ්‍ය වේ)</span>`;
+                s = -120;
+            } else {
+                s = -120 + ((t - jumpTime) * 1.2);
+            }
+
+            drawMotion(s);
+            drawGraph(t);
+
+            t++;
+            if (t <= maxT) {
+                animationId = requestAnimationFrame(animate);
+            } else {
+                cancelAnimationFrame(animationId);
+            }
+        }
+
+        function startSimulation() {
+            cancelAnimationFrame(animationId);
+            t = 0;
+            statusBox.className = "status-box";
+            statusBox.innerHTML = "STATUS: INITIALIZING...";
+            animate();
+        }
+
+        // Initial render
+        drawMotion(0);
+        drawGraph(0);
+    </script>
+</body>
+</html>
