@@ -1,0 +1,319 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHYSICS ENGINE: Force Resolution</title>
+    <style>
+        body {
+            background-color: #0a0a0a;
+            color: #e0e0e0;
+            font-family: 'Consolas', 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #00e5ff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            font-size: 24px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #fffdfd;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .dashboard {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        canvas {
+            background: #121212;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background-image:
+                linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .controls {
+            background: #1a1a1a;
+            padding: 25px;
+            border-radius: 4px;
+            border-left: 5px solid #00e5ff;
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            color: #aaa;
+        }
+
+        .val-display { color: #fff; font-weight: normal; }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: #fff;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #00e5ff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .readout-panel {
+            background: #000;
+            padding: 15px;
+            border: 1px solid #333;
+            margin-top: 10px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+            align-items: center;
+        }
+
+        .label-x { color: #00e5ff; font-weight: bold; }
+        .label-y { color: #d500f9; font-weight: bold; }
+        .label-f { color: #fff; font-weight: bold; }
+
+        .math-text {
+            font-size: 11px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .highlight {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Physics Engine: System 02</h1>
+    <div class="subtitle">FORCE RESOLUTION</div>
+
+    <div class="dashboard">
+        <canvas id="simCanvas" width="500" height="400"></canvas>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>ENGINE FORCE (F) <span id="dispF" class="val-display">100 N</span></label>
+                <input type="range" id="sliderF" min="0" max="200" value="100">
+            </div>
+
+            <div class="control-group">
+                <label>VECTOR ANGLE (&theta;) <span id="dispTheta" class="val-display">30&deg;</span></label>
+                <input type="range" id="sliderTheta" min="0" max="90" value="30">
+            </div>
+
+            <div class="readout-panel">
+                <div class="stat-row">
+                    <div>
+                        <div class="label-x">TRACTION (Fx)</div>
+                        <div class="math-text">F cos &theta;</div>
+                    </div>
+                    <div class="highlight label-x" id="outFx">86.6 N</div>
+                </div>
+
+                <div class="stat-row">
+                    <div>
+                        <div class="label-y">LIFT / DRIFT (Fy)</div>
+                        <div class="math-text">F sin &theta;</div>
+                    </div>
+                    <div class="highlight label-y" id="outFy">50.0 N</div>
+                </div>
+
+                <div style="border-top: 1px solid #333; margin: 10px 0;"></div>
+
+                <div class="stat-row">
+                    <div>
+                        <div class="label-f">TOTAL INPUT</div>
+                    </div>
+                    <div class="highlight label-f" id="outTotal">100 N</div>
+                </div>
+            </div>
+
+            <div style="font-size: 11px; color: #555; text-align: center; margin-top: 10px;">
+                *Notice: As angle increases, Traction drops to zero.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const originX = 50;
+        const originY = 350;
+        const scale = 2.5;
+
+        const sliderF = document.getElementById('sliderF');
+        const sliderTheta = document.getElementById('sliderTheta');
+        const dispF = document.getElementById('dispF');
+        const dispTheta = document.getElementById('dispTheta');
+        const outFx = document.getElementById('outFx');
+        const outFy = document.getElementById('outFy');
+        const outTotal = document.getElementById('outTotal');
+
+        const degreeSymbol = String.fromCharCode(176);
+        const thetaSymbol = String.fromCharCode(952);
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawAxes();
+
+            const F = parseFloat(sliderF.value);
+            const thetaDeg = parseFloat(sliderTheta.value);
+            const thetaRad = thetaDeg * (Math.PI / 180);
+
+            const Fx = F * Math.cos(thetaRad);
+            const Fy = F * Math.sin(thetaRad);
+
+            dispF.textContent = F + " N";
+            dispTheta.textContent = thetaDeg + degreeSymbol;
+            outFx.textContent = Fx.toFixed(1) + " N";
+            outFy.textContent = Fy.toFixed(1) + " N";
+            outTotal.textContent = F + " N";
+
+            const tipX = originX + (Fx * scale);
+            const tipY = originY - (Fy * scale);
+
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1;
+
+            ctx.beginPath();
+            ctx.strokeStyle = "rgba(0, 229, 255, 0.5)";
+            ctx.moveTo(tipX, tipY);
+            ctx.lineTo(tipX, originY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.strokeStyle = "rgba(213, 0, 249, 0.5)";
+            ctx.moveTo(tipX, tipY);
+            ctx.lineTo(originX, tipY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            drawArrow(originX, originY, tipX, originY, "#00e5ff", 6);
+            drawArrow(originX, originY, originX, tipY, "#d500f9", 6);
+            drawArrow(originX, originY, tipX, tipY, "#ffffff", 4);
+
+            ctx.font = "14px Consolas";
+
+            ctx.fillStyle = "#00e5ff";
+            if (Fx > 10) ctx.fillText("Fx", originX + (Fx * scale) / 2, originY + 20);
+
+            ctx.fillStyle = "#d500f9";
+            if (Fy > 10) ctx.fillText("Fy", originX - 30, originY - (Fy * scale) / 2);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.fillText("F", tipX + 10, tipY - 10);
+
+            if (thetaDeg > 5) {
+                ctx.beginPath();
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 1;
+                ctx.arc(originX, originY, 40, -thetaRad, 0);
+                ctx.stroke();
+                ctx.fillText(thetaSymbol, originX + 50, originY - 10);
+            }
+        }
+
+        function drawAxes() {
+            ctx.strokeStyle = "#444";
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(canvas.width - 20, originY);
+            ctx.stroke();
+            ctx.fillStyle = "#666";
+            ctx.fillText("X-Axis (Floor)", canvas.width - 120, originY + 20);
+
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(originX, 20);
+            ctx.stroke();
+            ctx.fillText("Y-Axis (Wall)", originX - 40, 30);
+        }
+
+        function drawArrow(fromX, fromY, toX, toY, color, width) {
+            const headlen = 10;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            const length = Math.sqrt(dx * dx + dy * dy);
+
+            if (length < 5) return;
+
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = color;
+
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.fillStyle = color;
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+        }
+
+        sliderF.addEventListener('input', draw);
+        sliderTheta.addEventListener('input', draw);
+
+        draw();
+
+    </script>
+</body>
+</html>

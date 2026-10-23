@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Physics Engine - පරාලයේ සමතුලිතතාවය (2013)</title>
+    <style>
+        body { 
+            background-color: #f4f6f9; 
+            color: #2c3e50; 
+            font-family: sans-serif; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            padding: 20px;
+            margin: 0; 
+        }
+        .canvas-container {
+            background-color: #ffffff; 
+            border: 2px solid #6c5ce7;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); 
+            padding: 20px;
+            margin-bottom: 20px;
+            width: 800px;
+            text-align: center;
+        }
+        .title {
+            color: #2c3e50;
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .desc {
+            color: #555555;
+            font-size: 15px;
+            margin-bottom: 20px;
+        }
+        .controls {
+            background-color: #e0e7ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        input[type=range] {
+            width: 350px;
+            cursor: pointer;
+            accent-color: #6c5ce7;
+        }
+    </style>
+</head>
+<body>
+
+<div class="canvas-container">
+    <div class="title">2013 A/L (MCQ 26) - පරාලයේ සමතුලිතතාවය</div>
+    <div class="desc">ස්ලයිඩරය මගින් මිනිසා A සහ B අතර චලනය කර, T<sub>A</sub> හා T<sub>B</sub> ආතතීන් වෙනස් වන ආකාරය නිරීක්ෂණය කරන්න.</div>
+    
+    <div class="controls">
+        <label style="font-weight: bold; color: #2c3e50; font-size: 16px;">මිනිසාගේ පිහිටීම (A සිට B දක්වා):</label>
+        <input type="range" id="manPos" min="0" max="100" value="50">
+    </div>
+
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="100%" height="450">
+        <!-- Bulletproof Marker Definitions for Arrows -->
+        <defs>
+            <marker id="arrowRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 Z" fill="#e74c3c" />
+            </marker>
+            <marker id="arrowPurple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 Z" fill="#8e44ad" />
+            </marker>
+            <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 Z" fill="#0984e3" />
+            </marker>
+        </defs>
+
+        <!-- Ceiling & Hatching -->
+        <line x1="100" y1="50" x2="700" y2="50" stroke="#7f8c8d" stroke-width="6" stroke-linecap="round"/>
+        <path d="M 120 50 L 140 30 M 170 50 L 190 30 M 220 50 L 240 30 M 580 50 L 600 30 M 630 50 L 650 30 M 680 50 L 700 30" stroke="#7f8c8d" stroke-width="2"/>
+
+        <!-- Ropes (Grey, placed behind) -->
+        <line x1="200" y1="50" x2="200" y2="250" stroke="#bdc3c7" stroke-width="4"/>
+        <line x1="600" y1="50" x2="600" y2="250" stroke="#bdc3c7" stroke-width="4"/>
+
+        <!-- Plank -->
+        <rect x="200" y="250" width="400" height="15" fill="#d35400" rx="4"/>
+        <text x="180" y="280" fill="#d35400" font-weight="bold" font-size="22">A</text>
+        <text x="605" y="280" fill="#d35400" font-weight="bold" font-size="22">B</text>
+
+        <!-- Force: Plank Weight (Center) -->
+        <line x1="400" y1="265" x2="400" y2="340" stroke="#0984e3" stroke-width="3" marker-end="url(#arrowBlue)"/>
+        <text x="415" y="325" fill="#0984e3" font-weight="bold" font-size="16">200 N (පරාලය)</text>
+
+        <!-- Dynamic Man Group -->
+        <g id="manGroup" transform="translate(400, 250)">
+            <!-- Stick figure -->
+            <circle cx="0" cy="-60" r="12" fill="#2c3e50"/>
+            <line x1="0" y1="-48" x2="0" y2="-15" stroke="#2c3e50" stroke-width="5" stroke-linecap="round"/>
+            <line x1="0" y1="-15" x2="-12" y2="0" stroke="#2c3e50" stroke-width="5" stroke-linecap="round"/>
+            <line x1="0" y1="-15" x2="12" y2="0" stroke="#2c3e50" stroke-width="5" stroke-linecap="round"/>
+            <line x1="-20" y1="-35" x2="20" y2="-35" stroke="#2c3e50" stroke-width="5" stroke-linecap="round"/>
+            
+            <!-- Force: Man Weight Vector (Moving with man) -->
+            <line x1="0" y1="15" x2="0" y2="120" stroke="#8e44ad" stroke-width="3" marker-end="url(#arrowPurple)"/>
+            <text x="-120" y="110" fill="#8e44ad" font-weight="bold" font-size="16">600 N (මිනිසා)</text>
+        </g>
+
+        <!-- Force: Tension A Vector (Offset slightly to the left so it doesn't overlap rope) -->
+        <line id="taLine" x1="180" y1="250" x2="180" y2="150" stroke="#e74c3c" stroke-width="4" marker-end="url(#arrowRed)"/>
+        <text id="taText" x="40" y="145" fill="#e74c3c" font-weight="bold" font-size="18">T_A = 400 N</text>
+
+        <!-- Force: Tension B Vector (Offset slightly to the right) -->
+        <line id="tbLine" x1="620" y1="250" x2="620" y2="150" stroke="#e74c3c" stroke-width="4" marker-end="url(#arrowRed)"/>
+        <text id="tbText" x="640" y="145" fill="#e74c3c" font-weight="bold" font-size="18">T_B = 400 N</text>
+
+        <!-- Summary Footer -->
+        <rect x="150" y="390" width="500" height="40" fill="#ecf0f1" rx="8"/>
+        <text x="400" y="417" text-anchor="middle" fill="#2c3e50" font-weight="bold" font-size="18">සම්පූර්ණ පහළට බලය = 800 N &nbsp;|&nbsp; T_A + T_B = 800 N</text>
+
+    </svg>
+</div>
+
+<script>
+    const slider = document.getElementById('manPos');
+    const manGroup = document.getElementById('manGroup');
+    const taText = document.getElementById('taText');
+    const tbText = document.getElementById('tbText');
+    const taLine = document.getElementById('taLine');
+    const tbLine = document.getElementById('tbLine');
+
+    function updatePhysics() {
+        let percentage = slider.value / 100; // 0 to 1
+        
+        // 1. Update visual position of the man (X-axis)
+        let startX = 200;
+        let endX = 600;
+        let currentX = startX + (endX - startX) * percentage;
+        manGroup.setAttribute('transform', `translate(${currentX}, 250)`);
+
+        // 2. Calculate Forces (Moments about A)
+        // Clockwise = Anti-clockwise
+        // Tb * L = (600 * L * percentage) + (200 * L/2)
+        // Tb = 600 * percentage + 100
+        let tb = (600 * percentage) + 100;
+        let ta = 800 - tb;
+
+        // 3. Update Text Labels
+        taText.textContent = `T_A = ${ta.toFixed(0)} N`;
+        tbText.textContent = `T_B = ${tb.toFixed(0)} N`;
+
+        // 4. Update Vector Line Lengths
+        // Visual Scale: 1N = 0.25px (Max 700N = 175px tall arrow)
+        let visualScale = 0.25;
+        let taY = 250 - (ta * visualScale);
+        let tbY = 250 - (tb * visualScale);
+        
+        taLine.setAttribute('y2', taY);
+        tbLine.setAttribute('y2', tbY);
+        
+        // Keep text floating nicely above the arrow tip
+        taText.setAttribute('y', taY - 15);
+        tbText.setAttribute('y', tbY - 15);
+    }
+
+    // Attach listener and initialize
+    slider.addEventListener('input', updatePhysics);
+    updatePhysics();
+</script>
+
+</body>
+</html>

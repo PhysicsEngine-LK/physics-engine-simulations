@@ -1,0 +1,263 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHYSICS ENGINE: Parallelogram Law</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Consolas', 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #8400ff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            font-size: 24px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .dashboard {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        canvas {
+            background: #1e1e1e;
+            border: 2px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
+        }
+
+        .controls {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: #00e5ff;
+            cursor: pointer;
+        }
+
+        .readout {
+            margin-top: 10px;
+            padding-top: 15px;
+            border-top: 1px solid #333;
+        }
+
+        .stat-box {
+            background: #252525;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            border-left: 4px solid #555;
+            font-size: 16px;
+        }
+
+        .stat-p { border-left-color: #00e5ff; color: #00e5ff; }
+        .stat-q { border-left-color: #d500f9; color: #d500f9; }
+        .stat-r { border-left-color: #00e676; color: #00e676; font-weight: bold; font-size: 20px;}
+
+        .formula {
+            font-style: italic;
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Physics Engine: System 01</h1>
+    <div class="subtitle">PARALLELOGRAM LAW</div>
+
+    <div class="dashboard">
+        <canvas id="simCanvas" width="500" height="400"></canvas>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Force P (Truck A): <span id="valP">5 N</span></label>
+                <input type="range" id="sliderP" min="0" max="15" value="5" step="0.5">
+            </div>
+
+            <div class="control-group">
+                <label>Force Q (Truck B): <span id="valQ">12 N</span></label>
+                <input type="range" id="sliderQ" min="0" max="15" value="12" step="0.5">
+            </div>
+
+            <div class="control-group">
+                <label>Angle (&theta;): <span id="valTheta">60&deg;</span></label>
+                <input type="range" id="sliderTheta" min="0" max="180" value="60">
+            </div>
+
+            <div class="readout">
+                <div class="stat-box stat-p">P = <span id="outP">5</span> N</div>
+                <div class="stat-box stat-q">Q = <span id="outQ">12</span> N</div>
+                <div class="stat-box stat-r">RESULTANT (R) = <span id="outR">15.10</span> N</div>
+                <div class="formula">R = &radic;(P&sup2; + Q&sup2; + 2PQ cos&theta;)</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const originX = 100;
+        const originY = 300;
+        const scale = 20;
+
+        const sliderP = document.getElementById('sliderP');
+        const sliderQ = document.getElementById('sliderQ');
+        const sliderTheta = document.getElementById('sliderTheta');
+
+        const valP = document.getElementById('valP');
+        const valQ = document.getElementById('valQ');
+        const valTheta = document.getElementById('valTheta');
+        const outP = document.getElementById('outP');
+        const outQ = document.getElementById('outQ');
+        const outR = document.getElementById('outR');
+
+        const degreeSymbol = String.fromCharCode(176);
+        const thetaSymbol = String.fromCharCode(952);
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+
+            const P = parseFloat(sliderP.value);
+            const Q = parseFloat(sliderQ.value);
+            const thetaDeg = parseFloat(sliderTheta.value);
+            const thetaRad = thetaDeg * (Math.PI / 180);
+
+            valP.textContent = P + " N";
+            valQ.textContent = Q + " N";
+            valTheta.textContent = thetaDeg + degreeSymbol;
+            outP.textContent = P;
+            outQ.textContent = Q;
+
+            const Px = originX + (P * scale);
+            const Py = originY;
+            const Qx = originX + (Q * scale * Math.cos(thetaRad));
+            const Qy = originY - (Q * scale * Math.sin(thetaRad));
+            const Rx = originX + (P * scale) + (Q * scale * Math.cos(thetaRad));
+            const Ry = originY - (Q * scale * Math.sin(thetaRad));
+
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = "#444";
+            ctx.lineWidth = 2;
+            ctx.moveTo(Px, Py);
+            ctx.lineTo(Rx, Ry);
+            ctx.moveTo(Qx, Qy);
+            ctx.lineTo(Rx, Ry);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            drawArrow(originX, originY, Px, Py, "#00e5ff", 4);
+            ctx.fillStyle = "#00e5ff";
+            ctx.font = "bold 14px Consolas";
+            ctx.fillText("P", Px + 10, Py + 20);
+
+            drawArrow(originX, originY, Qx, Qy, "#d500f9", 4);
+            ctx.fillStyle = "#d500f9";
+            ctx.fillText("Q", Qx - 10, Qy - 10);
+
+            drawArrow(originX, originY, Rx, Ry, "#00e676", 5);
+            ctx.fillStyle = "#00e676";
+            ctx.fillText("R", Rx + 10, Ry - 10);
+
+            ctx.beginPath();
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 1;
+            ctx.arc(originX, originY, 40, -thetaRad, 0);
+            ctx.stroke();
+            ctx.fillStyle = "#fff";
+            ctx.fillText(thetaSymbol, originX + 50, originY - 15);
+
+            const R_calc = Math.sqrt((P * P) + (Q * Q) + (2 * P * Q * Math.cos(thetaRad)));
+            outR.textContent = R_calc.toFixed(2);
+        }
+
+        function drawArrow(fromX, fromY, toX, toY, color, width) {
+            const headlen = 15;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.fillStyle = color;
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.fill();
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = "#2a2a2a";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let x = 0; x <= canvas.width; x += scale) {
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+            }
+            for (let y = 0; y <= canvas.height; y += scale) {
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+            }
+            ctx.stroke();
+        }
+
+        sliderP.addEventListener('input', draw);
+        sliderQ.addEventListener('input', draw);
+        sliderTheta.addEventListener('input', draw);
+
+        draw();
+
+    </script>
+</body>
+</html>
