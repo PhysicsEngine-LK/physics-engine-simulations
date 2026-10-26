@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Shifting Center of Gravity - Comparative Simulation</title>
+    <style>
+        body { 
+            background-color: #f4f6f9; 
+            color: #2c3e50; 
+            font-family: sans-serif; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            padding: 20px;
+            margin: 0; 
+        }
+        .canvas-container {
+            background-color: #ffffff; 
+            border: 2px solid #6c5ce7;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); 
+            padding: 20px;
+            margin-bottom: 20px;
+            width: 850px;
+            text-align: center;
+        }
+        .title {
+            color: #2c3e50;
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .desc {
+            color: #555555;
+            font-size: 15px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .controls {
+            background-color: #e0e7ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        button {
+            background-color: #0984e3;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button:hover { background-color: #076ebf; }
+        .active-btn { background-color: #27ae60 !important; transform: scale(1.05); }
+        
+        .info-box {
+            background-color: #fdf2e9;
+            border-left: 5px solid #e67e22;
+            padding: 15px;
+            margin: 0 auto 20px auto;
+            width: 85%;
+            text-align: left;
+            font-size: 15px;
+            color: #d35400;
+            font-weight: bold;
+            min-height: 45px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="canvas-container">
+    <div class="title">1987 A/L - ගුරුත්ව කේන්ද්‍රය විස්ථාපනය වීම (සංසන්දනය)</div>
+    <div class="desc">m ස්කන්ධය සහිතව සහ රහිතව තහඩුව C ලක්ෂ්‍යයෙන් එල්ලූ විට, එය සමතුලිත වන කෝණයේ වෙනස සහ ගුරුත්ව කේන්ද්‍රය මාරුවන ආකාරය නිරීක්ෂණය කරන්න.</div>
+    
+    <div class="controls">
+        <button id="btnA" class="active-btn" onclick="hangFromA()">1. A න් එල්ලීම (m නොමැතිව)</button>
+        <button id="btnC_noMass" onclick="hangFromC_noMass()">2. C න් එල්ලීම (m නොමැතිව)</button>
+        <button id="btnC_withMass" onclick="hangFromC_withMass()">3. C න් එල්ලීම (B ට m ඈඳා ඇත)</button>
+    </div>
+    
+    <div id="infoText" class="info-box">
+        AB රේඛාව සිරස් වේ. තහඩුවේ මුල් ගුරුත්ව කේන්ද්‍රය (G₀) අනිවාර්යයෙන්ම සිරස් රේඛාව මත, එනම් A සහ O අතර පිහිටයි.
+    </div>
+
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="100%" height="450">
+        
+        <!-- Stand & Pivot -->
+        <rect x="390" y="380" width="20" height="70" fill="#7f8c8d" />
+        <rect x="300" y="430" width="200" height="20" fill="#2c3e50" rx="5" />
+        <rect x="395" y="30" width="10" height="360" fill="#7f8c8d" />
+        <rect x="395" y="30" width="80" height="15" fill="#7f8c8d" rx="4" />
+        
+        <!-- Plumb Line (Global Vertical) -->
+        <line x1="465" y1="40" x2="465" y2="400" stroke="#8e44ad" stroke-width="3" stroke-dasharray="10,5" />
+        <text x="475" y="390" fill="#8e44ad" font-weight="bold" font-size="16">සිරස් රේඛාව (ලඹය)</text>
+
+        <!-- Lamina Group -->
+        <g id="laminaGroup" style="transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: 0 0;">
+            
+            <!-- Irregular Lamina Base -->
+            <path d="M 0 -130 Q 80 -120 100 -50 T 80 50 Q 50 120 0 130 T -80 70 Q -100 -20 -80 -80 Z" 
+                  fill="#fdebd0" stroke="#e67e22" stroke-width="4" />
+            
+            <!-- Lines AB and CD -->
+            <line x1="0" y1="-100" x2="0" y2="100" stroke="#2c3e50" stroke-width="2" /> <!-- AB -->
+            <line x1="-80" y1="-60" x2="80" y2="60" stroke="#2c3e50" stroke-width="2" /> <!-- CD -->
+            
+            <!-- Points A, B, C, D, O -->
+            <circle cx="0" cy="-100" r="5" fill="#2c3e50" /> <text x="-25" y="-95" fill="#2c3e50" font-weight="bold" font-size="20">A</text>
+            <circle cx="0" cy="100" r="5" fill="#2c3e50" /> <text x="-25" y="105" fill="#2c3e50" font-weight="bold" font-size="20">B</text>
+            <circle cx="-80" cy="-60" r="5" fill="#2c3e50" /> <text x="-105" y="-60" fill="#2c3e50" font-weight="bold" font-size="20">C</text>
+            <circle cx="80" cy="60" r="5" fill="#2c3e50" /> <text x="95" y="65" fill="#2c3e50" font-weight="bold" font-size="20">D</text>
+            <circle cx="0" cy="0" r="5" fill="#2c3e50" /> <text x="-25" y="-5" fill="#2c3e50" font-weight="bold" font-size="20">O</text>
+
+            <!-- Original CG (G0) -->
+            <g id="cgOriginal">
+                <circle cx="0" cy="-40" r="7" fill="#e74c3c" />
+                <circle cx="0" cy="-40" r="14" fill="none" stroke="#e74c3c" stroke-width="2" />
+                <text x="15" y="-35" fill="#e74c3c" font-weight="bold" font-size="18">G₀ (මුල් CG)</text>
+            </g>
+
+            <!-- Added Mass at B -->
+            <g id="massB" style="opacity: 0; transition: opacity 0.5s;">
+                <circle cx="0" cy="100" r="18" fill="#0984e3" />
+                <text x="-9" y="106" fill="white" font-weight="bold" font-size="16">m</text>
+            </g>
+
+            <!-- New CG (G1) at O -->
+            <g id="cgNew" style="opacity: 0; transition: opacity 0.5s;">
+                <circle cx="0" cy="0" r="8" fill="#27ae60" />
+                <circle cx="0" cy="0" r="16" fill="none" stroke="#27ae60" stroke-width="3" />
+                <text x="20" y="5" fill="#27ae60" font-weight="bold" font-size="18">G₁ (නව CG)</text>
+            </g>
+
+        </g>
+        
+        <!-- Pivot Pin (Global Space) -->
+        <circle cx="465" cy="40" r="7" fill="#f1c40f" stroke="#2c3e50" stroke-width="2" />
+
+    </svg>
+</div>
+
+<script>
+    const pivot = { x: 465, y: 40 }; 
+    const lamina = document.getElementById('laminaGroup');
+    const massB = document.getElementById('massB');
+    const cgOriginal = document.getElementById('cgOriginal');
+    const cgNew = document.getElementById('cgNew');
+    
+    const btnA = document.getElementById('btnA');
+    const btnC_noMass = document.getElementById('btnC_noMass');
+    const btnC_withMass = document.getElementById('btnC_withMass');
+    const infoText = document.getElementById('infoText');
+
+    function updateButtons(activeBtn) {
+        btnA.classList.remove('active-btn');
+        btnC_noMass.classList.remove('active-btn');
+        btnC_withMass.classList.remove('active-btn');
+        activeBtn.classList.add('active-btn');
+    }
+
+    function hangFromA() {
+        updateButtons(btnA);
+        
+        massB.style.opacity = 0;
+        cgNew.style.opacity = 0;
+        cgOriginal.style.opacity = 1;
+        
+        infoText.innerHTML = "AB රේඛාව සිරස් වේ. තහඩුවේ මුල් ගුරුත්ව කේන්ද්‍රය (G₀) අනිවාර්යයෙන්ම සිරස් රේඛාව මත, එනම් <b>A සහ O අතර</b> පිහිටයි.";
+        infoText.style.borderColor = "#e67e22";
+        infoText.style.color = "#d35400";
+
+        // Point A (0, -100) to Origin -> straight down
+        lamina.style.transform = `translate(${pivot.x}px, ${pivot.y}px) rotate(0deg) translate(0px, 100px)`;
+    }
+
+    function hangFromC_noMass() {
+        updateButtons(btnC_noMass);
+        
+        massB.style.opacity = 0;
+        cgNew.style.opacity = 0;
+        cgOriginal.style.opacity = 1;
+        
+        infoText.innerHTML = "m ස්කන්ධය නොමැතිව C න් එල්ලූ විට, මුල් ගුරුත්ව කේන්ද්‍රය (G₀) හරහා සිරස් ලඹ රේඛාව ගමන් කරයි. මෙහිදී CD රේඛාව සිරස් <b>නොවන</b> බව පෙනේ.";
+        infoText.style.borderColor = "#8e44ad";
+        infoText.style.color = "#8e44ad";
+
+        // Point C: (-80, -60). G0: (0, -40). Vector C -> G0 = (80, 20).
+        // Angle = atan2(20, 80) = 14.036 degrees.
+        // Required rotation to make it vertical (90 deg) = 90 - 14.036 = 75.96 deg
+        lamina.style.transform = `translate(${pivot.x}px, ${pivot.y}px) rotate(75.96deg) translate(80px, 60px)`;
+    }
+
+    function hangFromC_withMass() {
+        updateButtons(btnC_withMass);
+        
+        massB.style.opacity = 1;
+        cgNew.style.opacity = 1;
+        cgOriginal.style.opacity = 0.4; // Fade out original
+        
+        infoText.innerHTML = "B ට m ස්කන්ධය එක් කළ පසු, G₀ සහ B අතර නව ගුරුත්ව කේන්ද්‍රය (G₁) සෑදෙයි. නව CG සිරස් රේඛාවට පැමිණෙන සේ තහඩුව භ්‍රමණය වන අතර, එවිට <b>CD රේඛාව සිරස් වේ</b> (ප්‍රශ්නයේ දත්තය). එනම් G₁ ලක්ෂ්‍යය හරියටම O හි පිහිටිය යුතුය.";
+        infoText.style.borderColor = "#27ae60";
+        infoText.style.color = "#27ae60";
+
+        // Point C: (-80, -60). New CG: (0, 0). Vector C -> O = (80, 60).
+        // Angle = atan2(60, 80) = 36.87 degrees.
+        // Required rotation = 90 - 36.87 = 53.13 deg
+        lamina.style.transform = `translate(${pivot.x}px, ${pivot.y}px) rotate(53.13deg) translate(80px, 60px)`;
+    }
+
+    // Initialize
+    hangFromA();
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Falling Pencil - Physics Engine</title>
+    <style>
+        body { 
+            background-color: #f4f6f9; 
+            color: #2c3e50; 
+            font-family: sans-serif; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            padding: 20px;
+            margin: 0; 
+        }
+        .canvas-container {
+            background-color: #ffffff; 
+            border: 2px solid #6c5ce7;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); 
+            padding: 20px;
+            margin-bottom: 20px;
+            width: 850px;
+            text-align: center;
+        }
+        .title { color: #2c3e50; font-size: 22px; font-weight: bold; margin-bottom: 10px; }
+        .desc { color: #555555; font-size: 15px; margin-bottom: 20px; }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn-smooth { background-color: #27ae60; }
+        .btn-smooth:hover { background-color: #219653; }
+        .btn-rough { background-color: #e74c3c; }
+        .btn-rough:hover { background-color: #c0392b; }
+        .btn-reset { background-color: #7f8c8d; }
+        
+        .info-box {
+            background-color: #fdf2e9;
+            border-left: 5px solid #e67e22;
+            padding: 15px;
+            margin: 10px auto;
+            width: 80%;
+            text-align: left;
+            font-size: 16px;
+            font-weight: bold;
+            color: #d35400;
+            min-height: 50px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="canvas-container">
+    <div class="title">2015 A/L - ඝර්ෂණය රහිත මේසය මත පෑන්සල වැටීම</div>
+    <div class="desc">බොත්තම් භාවිතයෙන් ඝර්ෂණය රහිත (Smooth) සත්‍ය අවස්ථාව සහ රළු (Rough) අවස්ථාව සංසන්දනය කරන්න. ගුරුත්ව කේන්ද්‍රයේ (CG) පථය නිරීක්ෂණය කරන්න.</div>
+    
+    <div class="controls">
+        <button class="btn-smooth" onclick="playSim('smooth')">1. ඝර්ෂණය රහිත මේසය (විභාග ප්‍රශ්නය)</button>
+        <button class="btn-rough" onclick="playSim('rough')">2. රළු මේසය (තුඩ සිරවී ඇත)</button>
+        <button class="btn-reset" onclick="resetSim()">Reset</button>
+    </div>
+    
+    <div id="infoText" class="info-box">
+        මෙතැනින් අදාළ අවස්ථාව තෝරන්න.
+    </div>
+
+    <svg id="simSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 400" width="100%" height="400">
+        <!-- Axes -->
+        <line x1="200" y1="350" x2="650" y2="350" stroke="#2c3e50" stroke-width="3"/> <!-- X axis / Table -->
+        <line x1="425" y1="350" x2="425" y2="50" stroke="#bdc3c7" stroke-width="2" stroke-dasharray="5,5"/> <!-- Y axis reference -->
+        
+        <text x="640" y="340" fill="#2c3e50" font-weight="bold" font-size="16">+x</text>
+        <text x="435" y="60" fill="#bdc3c7" font-weight="bold" font-size="16">y</text>
+        <text x="415" y="370" fill="#2c3e50" font-weight="bold" font-size="18">P (ආරම්භක තුඩ)</text>
+
+        <!-- Traces -->
+        <path id="traceCG" fill="none" stroke="#e74c3c" stroke-width="3" stroke-dasharray="4,4"/>
+        <path id="traceTip" fill="none" stroke="#3498db" stroke-width="3" stroke-dasharray="4,4" opacity="0.5"/>
+
+        <!-- Pencil Group -->
+        <g id="pencilGroup">
+            <!-- Pencil Drawing (Center of Gravity at local 0,0) -->
+            <rect x="-10" y="-100" width="20" height="200" fill="#f1c40f" stroke="#d35400" stroke-width="2"/>
+            <!-- Tip -->
+            <polygon points="-10,100 10,100 0,140" fill="#e67e22" stroke="#d35400" stroke-width="2"/>
+            <!-- Eraser -->
+            <rect x="-10" y="-120" width="20" height="20" fill="#e74c3c" stroke="#c0392b" stroke-width="2"/>
+            
+            <!-- CG Marker -->
+            <circle cx="0" cy="0" r="6" fill="#c0392b"/>
+            <text x="15" y="5" fill="#c0392b" font-weight="bold" font-size="16">CG</text>
+        </g>
+        
+        <!-- Fixed P Point marker -->
+        <circle cx="425" cy="350" r="4" fill="#2c3e50"/>
+    </svg>
+</div>
+
+<script>
+    const pencil = document.getElementById('pencilGroup');
+    const traceCG = document.getElementById('traceCG');
+    const traceTip = document.getElementById('traceTip');
+    const infoText = document.getElementById('infoText');
+
+    let animId;
+    let theta = 0; // angle in radians
+    let mode = 'none';
+    let cgPathStr = "";
+    let tipPathStr = "";
+    
+    // Constants
+    const X0 = 425; // Initial X
+    const H = 140; // Distance from CG to tip
+    const Y_GROUND = 350;
+
+    function resetSim() {
+        cancelAnimationFrame(animId);
+        theta = 0;
+        mode = 'none';
+        
+        // Reset Paths
+        cgPathStr = "";
+        tipPathStr = "";
+        traceCG.setAttribute('d', "");
+        traceTip.setAttribute('d', "");
+        
+        // Reset Pencil Position (Upright)
+        // CG is at (X0, Y_GROUND - H) = (425, 210)
+        pencil.setAttribute('transform', `translate(${X0}, ${Y_GROUND - H}) rotate(0)`);
+        
+        infoText.innerHTML = "මෙතැනින් අදාළ අවස්ථාව තෝරන්න.";
+        infoText.style.borderColor = "#e67e22";
+        infoText.style.color = "#d35400";
+    }
+
+    function playSim(selectedMode) {
+        resetSim();
+        mode = selectedMode;
+        
+        // Init paths
+        cgPathStr = `M ${X0} ${Y_GROUND - H} `;
+        tipPathStr = `M ${X0} ${Y_GROUND} `;
+        
+        if (mode === 'smooth') {
+            infoText.innerHTML = "<b>ඝර්ෂණය රහිත (නිවැරදි):</b> තිරස් බල නැත. එබැවින් CG තිරස්ව ගමන් නොකරයි. CG කෙළින්ම පහළට වැටෙන අතර, තුඩ පෑන්සලට යටින් වම් පසට (-x) ලිස්සා යයි.";
+            infoText.style.borderColor = "#27ae60";
+            infoText.style.color = "#27ae60";
+        } else {
+            infoText.innerHTML = "<b>රළු මේසය (වැරදි උපකල්පනය):</b> තුඩ (P) එකම තැන සිරවී ඇත (Hinged). එබැවින් මුළු පෑන්සලම P වටා භ්‍රමණය වන අතර CG වෘත්තාකාර චාපයක් (Circular arc) ඔස්සේ ගමන් කරයි.";
+            infoText.style.borderColor = "#e74c3c";
+            infoText.style.color = "#c0392b";
+        }
+        
+        animate();
+    }
+
+    function animate() {
+        // Increase angle (accelerating fall loosely simulated)
+        theta += 0.02 + (theta * 0.05); 
+        
+        if (theta > Math.PI / 2) {
+            theta = Math.PI / 2; // stop at flat 90 degrees
+        }
+        
+        let cgX, cgY, rotDeg;
+        
+        if (mode === 'smooth') {
+            // Smooth: CG X is constant. Y drops.
+            // When angle is theta, height of CG = H * cos(theta)
+            cgX = X0;
+            cgY = Y_GROUND - (H * Math.cos(theta));
+            rotDeg = theta * (180 / Math.PI);
+            
+            let tipX = cgX - (H * Math.sin(theta));
+            tipPathStr += `L ${tipX} ${Y_GROUND} `;
+            
+        } else if (mode === 'rough') {
+            // Rough/Hinged: Tip X is constant. CG moves in a circle.
+            cgX = X0 + (H * Math.sin(theta));
+            cgY = Y_GROUND - (H * Math.cos(theta));
+            rotDeg = theta * (180 / Math.PI);
+        }
+        
+        // Update Pencil SVG
+        pencil.setAttribute('transform', `translate(${cgX}, ${cgY}) rotate(${rotDeg})`);
+        
+        // Update Trace
+        cgPathStr += `L ${cgX} ${cgY} `;
+        traceCG.setAttribute('d', cgPathStr);
+        if(mode === 'smooth') traceTip.setAttribute('d', tipPathStr);
+        
+        if (theta < Math.PI / 2) {
+            animId = requestAnimationFrame(animate);
+        }
+    }
+    
+    // Init state
+    resetSim();
+</script>
+
+</body>
+</html>

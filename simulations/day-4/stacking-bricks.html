@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Stacking Bricks - Physics Engine</title>
+    <style>
+        body { 
+            background-color: #f4f6f9; 
+            color: #2c3e50; 
+            font-family: sans-serif; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            padding: 20px;
+            margin: 0; 
+        }
+        .canvas-container {
+            background-color: #ffffff; 
+            border: 2px solid #6c5ce7;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); 
+            padding: 30px;
+            margin-bottom: 20px;
+            width: 850px;
+            text-align: center;
+        }
+        .title { color: #2c3e50; font-size: 22px; font-weight: bold; margin-bottom: 10px; }
+        .desc { color: #555555; font-size: 15px; margin-bottom: 20px; }
+        
+        .controls-wrapper {
+            display: flex;
+            justify-content: space-around;
+            background-color: #e0e7ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        input[type=range] { width: 250px; cursor: pointer; accent-color: #0984e3; }
+        
+        .status-box {
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 15px;
+            transition: 0.3s;
+        }
+        .status-safe { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; animation: shake 0.5s; }
+        
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        .math-info { font-family: 'Courier New', Courier, monospace; font-size: 16px; font-weight: bold; color: #2c3e50; }
+    </style>
+</head>
+<body>
+
+<div class="canvas-container">
+    <div class="title">2009 A/L - ගඩොල් නොපෙරළී තැබීමේ සීමාවන්</div>
+    <div class="desc">ස්ලයිඩර් මගින් l₁ සහ l₂ අගයන් වෙනස් කරමින්, ගුරුත්ව කේන්ද්‍ර දාරයන් පසු කරන විට සිදුවන දේ නිරීක්ෂණය කරන්න.</div>
+    
+    <div id="statusMsg" class="status-box status-safe">
+        පද්ධතිය සමතුලිතයි (Safe)
+    </div>
+
+    <div class="controls-wrapper">
+        <div class="control-group">
+            <label style="font-weight: bold;">ඉහළ ගඩොලේ නෙරා යාම (l₁): <span id="l1ValText" style="color:#0984e3">0.50 L</span></label>
+            <input type="range" id="l1Slider" min="0" max="100" value="50">
+        </div>
+        <div class="control-group">
+            <label style="font-weight: bold;">පහළ ගඩොලේ නෙරා යාම (l₂): <span id="l2ValText" style="color:#e67e22">0.25 L</span></label>
+            <input type="range" id="l2Slider" min="0" max="100" value="25">
+        </div>
+    </div>
+
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 300" width="100%" height="300">
+        <defs>
+            <!-- Hatching for table -->
+            <pattern id="hatch" patternUnits="userSpaceOnUse" width="10" height="10">
+                <path d="M 0 10 L 10 0" stroke="#7f8c8d" stroke-width="2"/>
+            </pattern>
+        </defs>
+
+        <!-- Table -->
+        <rect x="50" y="200" width="350" height="20" fill="#ecf0f1" stroke="#2c3e50" stroke-width="2"/>
+        <rect x="50" y="220" width="350" height="15" fill="url(#hatch)"/>
+        <line x1="400" y1="200" x2="400" y2="280" stroke="#2c3e50" stroke-width="3"/> <!-- Table Edge Line -->
+        <text x="320" y="260" fill="#7f8c8d" font-weight="bold" font-size="18">මේසය</text>
+
+        <!-- Brick Group (can be rotated if toppled) -->
+        <g id="systemGroup" style="transform-origin: 400px 200px; transition: transform 0.3s ease-in;">
+            
+            <!-- Bottom Brick -->
+            <g id="bottomBrickGroup">
+                <rect id="bottomBrick" x="200" y="160" width="280" height="40" fill="#f39c12" stroke="#d35400" stroke-width="2"/>
+                <!-- G2 (Bottom Brick CG) -->
+                <circle id="cg2" cx="340" cy="180" r="4" fill="#34495e"/>
+            </g>
+
+            <!-- Top Brick Group (can be rotated independently if top brick falls) -->
+            <g id="topBrickGroup" style="transition: transform 0.3s ease-in;">
+                <rect id="topBrick" x="340" y="120" width="280" height="40" fill="#f1c40f" stroke="#d35400" stroke-width="2"/>
+                <!-- G1 (Top Brick CG) -->
+                <circle id="cg1" cx="480" cy="140" r="5" fill="#c0392b"/>
+                <line id="cg1Line" x1="480" y1="140" x2="480" y2="160" stroke="#c0392b" stroke-width="2" stroke-dasharray="3,3"/>
+                <text id="cg1Text" x="485" y="135" fill="#c0392b" font-weight="bold" font-size="14">G₁</text>
+            </g>
+
+            <!-- System CG (Combined) -->
+            <circle id="cgSys" cx="410" cy="160" r="6" fill="#27ae60"/>
+            <line id="cgSysLine" x1="410" y1="160" x2="410" y2="200" stroke="#27ae60" stroke-width="3" stroke-dasharray="4,2"/>
+            <text id="cgSysText" x="420" y="175" fill="#27ae60" font-weight="bold" font-size="16">G_sys</text>
+
+        </g>
+        
+        <!-- Table Edge Marker (Pivot) -->
+        <circle cx="400" cy="200" r="6" fill="#2c3e50"/>
+        <text x="395" y="295" fill="#2c3e50" font-weight="bold" font-size="14">මේස දාරය</text>
+        
+    </svg>
+
+    <div class="math-info" id="mathInfo">
+        l₁ = 0.50 L &nbsp;&nbsp;|&nbsp;&nbsp; l₂ = 0.25 L
+    </div>
+</div>
+
+<script>
+    const l1Slider = document.getElementById('l1Slider');
+    const l2Slider = document.getElementById('l2Slider');
+    const l1ValText = document.getElementById('l1ValText');
+    const l2ValText = document.getElementById('l2ValText');
+    
+    const bottomBrick = document.getElementById('bottomBrick');
+    const topBrick = document.getElementById('topBrick');
+    const topBrickGroup = document.getElementById('topBrickGroup');
+    const systemGroup = document.getElementById('systemGroup');
+    
+    const cg1 = document.getElementById('cg1');
+    const cg1Line = document.getElementById('cg1Line');
+    const cg1Text = document.getElementById('cg1Text');
+    
+    const cg2 = document.getElementById('cg2');
+    
+    const cgSys = document.getElementById('cgSys');
+    const cgSysLine = document.getElementById('cgSysLine');
+    const cgSysText = document.getElementById('cgSysText');
+    
+    const statusMsg = document.getElementById('statusMsg');
+    const mathInfo = document.getElementById('mathInfo');
+
+    const L = 280; // Length of brick in pixels
+    const tableEdge = 400; // X coordinate of table edge
+
+    function updateSimulation() {
+        let pct1 = parseFloat(l1Slider.value) / 100;
+        let pct2 = parseFloat(l2Slider.value) / 100;
+        
+        l1ValText.textContent = pct1.toFixed(2) + " L";
+        l2ValText.textContent = pct2.toFixed(2) + " L";
+        mathInfo.innerHTML = `l₁ = ${pct1.toFixed(2)} L &nbsp;&nbsp;|&nbsp;&nbsp; l₂ = ${pct2.toFixed(2)} L`;
+
+        let l1 = pct1 * L;
+        let l2 = pct2 * L;
+
+        // 1. Calculate Positions
+        let bbRight = tableEdge + l2;
+        let bbLeft = bbRight - L;
+        let bbCG = bbLeft + L/2;
+
+        let tbRight = bbRight + l1;
+        let tbLeft = tbRight - L;
+        let tbCG = tbLeft + L/2;
+
+        let sysCG = (bbCG + tbCG) / 2; // Equal masses
+
+        // 2. Update SVG Elements
+        bottomBrick.setAttribute('x', bbLeft);
+        cg2.setAttribute('cx', bbCG);
+
+        topBrick.setAttribute('x', tbLeft);
+        cg1.setAttribute('cx', tbCG);
+        cg1Line.setAttribute('x1', tbCG);
+        cg1Line.setAttribute('x2', tbCG);
+        cg1Text.setAttribute('x', tbCG + 5);
+
+        cgSys.setAttribute('cx', sysCG);
+        cgSysLine.setAttribute('x1', sysCG);
+        cgSysLine.setAttribute('x2', sysCG);
+        cgSysText.setAttribute('x', sysCG + 10);
+
+        // 3. Toppling Logic
+        let topFalls = tbCG > bbRight;
+        let sysFalls = sysCG > tableEdge;
+
+        // Reset Rotations and Colors
+        topBrickGroup.style.transform = 'none';
+        topBrickGroup.style.transformOrigin = `${bbRight}px 160px`;
+        systemGroup.style.transform = 'none';
+        
+        topBrick.setAttribute('fill', '#f1c40f');
+        bottomBrick.setAttribute('fill', '#f39c12');
+
+        if (sysFalls) {
+            statusMsg.textContent = "අවවාදයි: පද්ධතියම මේසයෙන් පෙරළී යයි!";
+            statusMsg.className = "status-box status-danger";
+            systemGroup.style.transform = 'rotate(15deg)';
+            topBrick.setAttribute('fill', '#e74c3c');
+            bottomBrick.setAttribute('fill', '#e74c3c');
+        } else if (topFalls) {
+            statusMsg.textContent = "අවවාදයි: ඉහළ ගඩොල පෙරළී යයි! (G₁ පහළ දාරය පසු කළේය)";
+            statusMsg.className = "status-box status-danger";
+            topBrickGroup.style.transform = 'rotate(15deg)';
+            topBrick.setAttribute('fill', '#e74c3c');
+        } else {
+            statusMsg.textContent = "පද්ධතිය සමතුලිතයි (Safe)";
+            statusMsg.className = "status-box status-safe";
+        }
+    }
+
+    l1Slider.addEventListener('input', updateSimulation);
+    l2Slider.addEventListener('input', updateSimulation);
+    updateSimulation(); // Initialize
+</script>
+
+</body>
+</html>

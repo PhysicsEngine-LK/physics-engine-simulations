@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Harmonic Brick Stacking - Physics Engine</title>
+    <style>
+        body { 
+            background-color: #f4f6f9; 
+            color: #2c3e50; 
+            font-family: sans-serif; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            padding: 20px;
+            margin: 0; 
+        }
+        .canvas-container {
+            background-color: #ffffff; 
+            border: 2px solid #6c5ce7;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); 
+            padding: 20px;
+            margin-bottom: 20px;
+            width: 900px;
+            text-align: center;
+        }
+        .title { color: #2c3e50; font-size: 22px; font-weight: bold; margin-bottom: 5px; }
+        .desc { color: #555555; font-size: 15px; margin-bottom: 20px; }
+        
+        .controls-wrapper {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            background-color: #e0e7ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255,255,255,0.5);
+            padding: 10px;
+            border-radius: 6px;
+            width: 190px;
+        }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: #0984e3; }
+        
+        .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn-pattern { background-color: #27ae60; }
+        .btn-pattern:hover { background-color: #219653; }
+        .btn-reset { background-color: #e74c3c; }
+        .btn-reset:hover { background-color: #c0392b; }
+        
+        .status-box {
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 15px;
+            transition: 0.3s;
+        }
+        .status-safe { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        .info-panel {
+            display: flex;
+            justify-content: space-around;
+            background-color: #fdf2e9;
+            border-left: 5px solid #e67e22;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 15px;
+            color: #d35400;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="canvas-container">
+    <div class="title">හරාත්මක නෙරා යාමේ රටාව (Harmonic Overhang)</div>
+    <div class="desc">ගඩොල් 4ක් සඳහා L/2, L/4, L/6, L/8 රටාව අත්හදා බලන්න. බොත්තම් මගින් පද්ධතිය Reset කිරීමට හෝ උපරිම රටාවට (Pattern) ගෙන ඒමට හැකිය.</div>
+    
+    <div class="btn-group">
+        <button class="btn-pattern" onclick="setPattern()">සීමාකාරී රටාව පෙන්වන්න (L/2, L/4, L/6, L/8)</button>
+        <button class="btn-reset" onclick="resetSim()">Reset (0 ට සකසන්න)</button>
+    </div>
+
+    <div class="controls-wrapper">
+        <div class="control-group">
+            <label>l₁ (ඉහළම): <span id="l1Txt" style="color:#c0392b">0.00 L</span></label>
+            <input type="range" id="l1" min="0" max="60" value="0" step="0.5">
+        </div>
+        <div class="control-group">
+            <label>l₂ (දෙවන): <span id="l2Txt" style="color:#d35400">0.00 L</span></label>
+            <input type="range" id="l2" min="0" max="60" value="0" step="0.5">
+        </div>
+        <div class="control-group">
+            <label>l₃ (තෙවන): <span id="l3Txt" style="color:#f39c12">0.00 L</span></label>
+            <input type="range" id="l3" min="0" max="60" value="0" step="0.5">
+        </div>
+        <div class="control-group">
+            <label>l₄ (පහළම): <span id="l4Txt" style="color:#27ae60">0.00 L</span></label>
+            <input type="range" id="l4" min="0" max="60" value="0" step="0.5">
+        </div>
+    </div>
+    
+    <div id="statusMsg" class="status-box status-safe">පද්ධතිය සමතුලිතයි</div>
+    
+    <div class="info-panel">
+        <div>මුළු නෙරායාම (Total Overhang) = <span id="totOverhang">0.00</span> L</div>
+        <div id="cgStatusText">සියලුම ගුරුත්ව කේන්ද්‍ර ආරක්ෂිත සීමාවේ පවතී.</div>
+    </div>
+
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 350" width="100%" height="350">
+        <defs>
+            <pattern id="hatch" patternUnits="userSpaceOnUse" width="10" height="10">
+                <path d="M 0 10 L 10 0" stroke="#bdc3c7" stroke-width="2"/>
+            </pattern>
+        </defs>
+
+        <!-- Reference Lines -->
+        <line x1="250" y1="50" x2="250" y2="300" stroke="#ecf0f1" stroke-width="2" stroke-dasharray="5,5"/>
+        <text x="245" y="45" fill="#bdc3c7" font-weight="bold" font-size="12">Table Edge Limit</text>
+
+        <!-- Table -->
+        <rect x="0" y="270" width="250" height="20" fill="#ecf0f1" stroke="#95a5a6" stroke-width="2"/>
+        <rect x="0" y="290" width="250" height="40" fill="url(#hatch)"/>
+        <!-- Table Edge Marker -->
+        <circle cx="250" cy="270" r="5" fill="#2c3e50"/>
+
+        <!-- Structural Groups for toppling -->
+        <g id="grpSys" style="transition: transform 0.4s ease-in;">
+            <!-- Brick 4 -->
+            <rect id="b4" y="230" width="240" height="40" fill="#2ecc71" stroke="#27ae60" stroke-width="2"/>
+            <g id="grp123" style="transition: transform 0.4s ease-in;">
+                <!-- Brick 3 -->
+                <rect id="b3" y="190" width="240" height="40" fill="#f1c40f" stroke="#f39c12" stroke-width="2"/>
+                <g id="grp12" style="transition: transform 0.4s ease-in;">
+                    <!-- Brick 2 -->
+                    <rect id="b2" y="150" width="240" height="40" fill="#e67e22" stroke="#d35400" stroke-width="2"/>
+                    <g id="grp1" style="transition: transform 0.4s ease-in;">
+                        <!-- Brick 1 -->
+                        <rect id="b1" y="110" width="240" height="40" fill="#e74c3c" stroke="#c0392b" stroke-width="2"/>
+                        
+                        <!-- Top Brick CG (G1) -->
+                        <circle id="cg1" cy="130" r="4" fill="#ffffff" stroke="#c0392b" stroke-width="2"/>
+                    </g>
+                    <!-- Combined CG 1+2 (G12) -->
+                    <circle id="cg12" cy="150" r="4" fill="#2c3e50"/>
+                </g>
+                <!-- Combined CG 1+2+3 (G123) -->
+                <circle id="cg123" cy="190" r="5" fill="#2c3e50"/>
+            </g>
+            <!-- Combined CG All (G_sys) -->
+            <circle id="cgSys" cy="230" r="6" fill="#8e44ad"/>
+            <!-- Plumb line for G_sys -->
+            <line id="plumbSys" y1="230" y2="270" stroke="#8e44ad" stroke-width="2" stroke-dasharray="4,2"/>
+        </g>
+        
+        <!-- Total L marker -->
+        <line x1="250" y1="320" x2="490" y2="320" stroke="#34495e" stroke-width="2"/>
+        <line x1="250" y1="315" x2="250" y2="325" stroke="#34495e" stroke-width="2"/>
+        <line x1="490" y1="315" x2="490" y2="325" stroke="#34495e" stroke-width="2"/>
+        <text x="360" y="340" fill="#34495e" font-weight="bold">දුර = 1.00 L</text>
+    </svg>
+</div>
+
+<script>
+    const L = 240; // Pixel length of a brick
+    const tableX = 250; // X coordinate of table edge
+    
+    // Sliders
+    const s1 = document.getElementById('l1');
+    const s2 = document.getElementById('l2');
+    const s3 = document.getElementById('l3');
+    const s4 = document.getElementById('l4');
+    
+    // Texts
+    const t1 = document.getElementById('l1Txt');
+    const t2 = document.getElementById('l2Txt');
+    const t3 = document.getElementById('l3Txt');
+    const t4 = document.getElementById('l4Txt');
+    const tTot = document.getElementById('totOverhang');
+    const statusMsg = document.getElementById('statusMsg');
+    const cgStatusText = document.getElementById('cgStatusText');
+    
+    // SVG Elements
+    const b1 = document.getElementById('b1');
+    const b2 = document.getElementById('b2');
+    const b3 = document.getElementById('b3');
+    const b4 = document.getElementById('b4');
+    
+    const grp1 = document.getElementById('grp1');
+    const grp12 = document.getElementById('grp12');
+    const grp123 = document.getElementById('grp123');
+    const grpSys = document.getElementById('grpSys');
+    
+    const cg1 = document.getElementById('cg1');
+    const cg12 = document.getElementById('cg12');
+    const cg123 = document.getElementById('cg123');
+    const cgSys = document.getElementById('cgSys');
+    const plumbSys = document.getElementById('plumbSys');
+
+    function resetSim() {
+        s1.value = 0; s2.value = 0; s3.value = 0; s4.value = 0;
+        updatePhysics();
+    }
+
+    function setPattern() {
+        // L/2 = 50%, L/4 = 25%, L/6 = 16.67%, L/8 = 12.5%
+        s1.value = 50.0;
+        s2.value = 25.0;
+        s3.value = 16.5; // rounded for slider step
+        s4.value = 12.5;
+        updatePhysics();
+    }
+
+    function updatePhysics() {
+        let v1 = parseFloat(s1.value) / 100;
+        let v2 = parseFloat(s2.value) / 100;
+        let v3 = parseFloat(s3.value) / 100;
+        let v4 = parseFloat(s4.value) / 100;
+        
+        t1.textContent = v1.toFixed(3) + " L";
+        t2.textContent = v2.toFixed(3) + " L";
+        t3.textContent = v3.toFixed(3) + " L";
+        t4.textContent = v4.toFixed(3) + " L";
+        
+        let totOverhang = v1 + v2 + v3 + v4;
+        tTot.textContent = totOverhang.toFixed(3);
+        if (totOverhang > 1.0) {
+            tTot.style.color = "#8e44ad"; // highlight if it passes 1.0 L
+        } else {
+            tTot.style.color = "#d35400";
+        }
+
+        // Calculate Pixel Positions (Right Edges)
+        let r4 = tableX + (v4 * L);
+        let r3 = r4 + (v3 * L);
+        let r2 = r3 + (v2 * L);
+        let r1 = r2 + (v1 * L);
+        
+        // Update Brick SVG X positions (Left edges)
+        b4.setAttribute('x', r4 - L);
+        b3.setAttribute('x', r3 - L);
+        b2.setAttribute('x', r2 - L);
+        b1.setAttribute('x', r1 - L);
+        
+        // Calculate CGs
+        let c1 = r1 - L/2;
+        let c2 = r2 - L/2;
+        let c3 = r3 - L/2;
+        let c4 = r4 - L/2;
+        
+        let c12 = (c1 + c2) / 2;
+        let c123 = (c1 + c2 + c3) / 3;
+        let cSys = (c1 + c2 + c3 + c4) / 4;
+        
+        // Update CG SVG positions
+        cg1.setAttribute('cx', c1);
+        cg12.setAttribute('cx', c12);
+        cg123.setAttribute('cx', c123);
+        cgSys.setAttribute('cx', cSys);
+        plumbSys.setAttribute('x1', cSys); plumbSys.setAttribute('x2', cSys);
+        
+        // Reset Transforms
+        grpSys.style.transform = 'none';
+        grp123.style.transform = 'none';
+        grp12.style.transform = 'none';
+        grp1.style.transform = 'none';
+        
+        // Check Failures (from bottom up)
+        let msg = "පද්ධතිය සමතුලිතයි";
+        let cgMsg = "සියලුම ගුරුත්ව කේන්ද්‍ර ආරක්ෂිත සීමාවේ පවතී.";
+        let failed = false;
+        
+        if (cSys > tableX) {
+            grpSys.style.transformOrigin = `${tableX}px 270px`;
+            grpSys.style.transform = 'rotate(15deg)';
+            msg = "අවවාදයි: මුළු පද්ධතියම මේසයෙන් පෙරළේ!";
+            cgMsg = "G_sys (මුළු ගුරුත්ව කේන්ද්‍රය) මේසයේ දාරය පසු කළේය.";
+            failed = true;
+        } else if (c123 > r4) {
+            grp123.style.transformOrigin = `${r4}px 230px`;
+            grp123.style.transform = 'rotate(15deg)';
+            msg = "අවවාදයි: ඉහළ ගඩොල් 3 පෙරළේ!";
+            cgMsg = "G_123 (ඉහළ ගඩොල් 3 හි කේන්ද්‍රය) 4 වන ගඩොල පසු කළේය.";
+            failed = true;
+        } else if (c12 > r3) {
+            grp12.style.transformOrigin = `${r3}px 190px`;
+            grp12.style.transform = 'rotate(15deg)';
+            msg = "අවවාදයි: ඉහළ ගඩොල් 2 පෙරළේ!";
+            cgMsg = "G_12 (ඉහළ ගඩොල් 2 හි කේන්ද්‍රය) 3 වන ගඩොල පසු කළේය.";
+            failed = true;
+        } else if (c1 > r2) {
+            grp1.style.transformOrigin = `${r2}px 150px`;
+            grp1.style.transform = 'rotate(15deg)';
+            msg = "අවවාදයි: ඉහළම ගඩොල පෙරළේ!";
+            cgMsg = "G_1 (ඉහළම ගඩොලේ කේන්ද්‍රය) 2 වන ගඩොල පසු කළේය.";
+            failed = true;
+        }
+        
+        statusMsg.textContent = msg;
+        cgStatusText.textContent = cgMsg;
+        if(failed) {
+            statusMsg.className = "status-box status-danger";
+        } else {
+            statusMsg.className = "status-box status-safe";
+        }
+    }
+    
+    // Add Event Listeners
+    s1.addEventListener('input', updatePhysics);
+    s2.addEventListener('input', updatePhysics);
+    s3.addEventListener('input', updatePhysics);
+    s4.addEventListener('input', updatePhysics);
+    
+    // Init
+    updatePhysics();
+</script>
+
+</body>
+</html>
