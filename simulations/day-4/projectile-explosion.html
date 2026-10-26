@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Projectile Explosion - Physics Engine</title>
+    <style>
+        body { 
+            background-color: #f4f6f9; 
+            color: #2c3e50; 
+            font-family: sans-serif; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            padding: 20px;
+            margin: 0; 
+        }
+        .canvas-container {
+            background-color: #ffffff; 
+            border: 2px solid #6c5ce7;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); 
+            padding: 25px;
+            margin-bottom: 20px;
+            width: 850px;
+            text-align: center;
+        }
+        .title {
+            color: #2c3e50;
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .desc {
+            color: #555555;
+            font-size: 15px;
+            margin-bottom: 25px;
+        }
+        .controls {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        button {
+            background-color: #0984e3;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button:hover { background-color: #076ebf; }
+        .btn-reset { background-color: #e74c3c; }
+        .btn-reset:hover { background-color: #c0392b; }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .leg-m { color: #2c3e50; }
+        .leg-p1 { color: #e67e22; }
+        .leg-p2 { color: #0984e3; }
+        .leg-cm { color: #27ae60; }
+    </style>
+</head>
+<body>
+
+<div class="canvas-container">
+    <div class="title">අභ්‍යන්තර පිපිරීමක් සහිත ප්‍රක්ෂිප්තය</div>
+    <div class="desc">"Play" ඔබා ඉහළම ලක්ෂ්‍යයේදී (R/2) සිදුවන පිපිරීමෙන් පසු කැබලි දෙක සහ ස්කන්ධ කේන්ද්‍රය (CM) ගමන් ගන්නා පථයන් නිරීක්ෂණය කරන්න.</div>
+    
+    <svg id="simSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 300" width="100%" height="300">
+        <!-- Ground -->
+        <line x1="20" y1="250" x2="830" y2="250" stroke="#7f8c8d" stroke-width="4"/>
+        
+        <!-- Markers -->
+        <line x1="50" y1="245" x2="50" y2="260" stroke="#2c3e50" stroke-width="2"/>
+        <text x="45" y="275" fill="#2c3e50" font-weight="bold">0</text>
+        
+        <line x1="250" y1="245" x2="250" y2="260" stroke="#2c3e50" stroke-width="2"/>
+        <text x="240" y="275" fill="#2c3e50" font-weight="bold">R/2</text>
+        
+        <line x1="450" y1="245" x2="450" y2="260" stroke="#2c3e50" stroke-width="2"/>
+        <text x="445" y="275" fill="#2c3e50" font-weight="bold">R</text>
+
+        <line x1="650" y1="245" x2="650" y2="260" stroke="#2c3e50" stroke-width="2"/>
+        <text x="635" y="275" fill="#e74c3c" font-weight="bold">1.5 R</text>
+
+        <!-- Traces -->
+        <path id="pathMain" fill="none" stroke="#bdc3c7" stroke-width="3" stroke-dasharray="5,5"/>
+        <path id="pathP1" fill="none" stroke="#e67e22" stroke-width="2" stroke-dasharray="3,3"/>
+        <path id="pathP2" fill="none" stroke="#0984e3" stroke-width="2" stroke-dasharray="3,3"/>
+        
+        <!-- Objects -->
+        <!-- Center of Mass Ghost -->
+        <circle id="cmGhost" cx="50" cy="250" r="5" fill="#27ae60" opacity="0"/>
+        
+        <!-- Main Mass m -->
+        <circle id="massM" cx="50" cy="250" r="10" fill="#2c3e50"/>
+        
+        <!-- Piece 1 (m/2) -->
+        <circle id="piece1" cx="250" cy="50" r="7" fill="#e67e22" opacity="0"/>
+        
+        <!-- Piece 2 (m/2) -->
+        <circle id="piece2" cx="250" cy="50" r="7" fill="#0984e3" opacity="0"/>
+        
+        <!-- Explosion Effect -->
+        <g id="explosion" opacity="0">
+            <circle cx="250" cy="50" r="20" fill="none" stroke="#e74c3c" stroke-width="3"/>
+            <path d="M 230 30 L 240 40 M 270 30 L 260 40 M 230 70 L 240 60 M 270 70 L 260 60" stroke="#f1c40f" stroke-width="3"/>
+        </g>
+    </svg>
+
+    <div class="legend">
+        <span class="leg-m">● මුල් ස්කන්ධය (m)</span>
+        <span class="leg-p1">● නිශ්චල වූ කැබැල්ල (m/2)</span>
+        <span class="leg-p2">● ඉදිරියට යන කැබැල්ල (m/2)</span>
+        <span class="leg-cm">● ස්කන්ධ කේන්ද්‍රය (CM)</span>
+    </div>
+
+    <div class="controls">
+        <button onclick="playSim()">Play (ආරම්භ කරන්න)</button>
+        <button class="btn-reset" onclick="resetSim()">Reset (මුල් පිහිටීමට)</button>
+    </div>
+</div>
+
+<script>
+    const massM = document.getElementById('massM');
+    const piece1 = document.getElementById('piece1');
+    const piece2 = document.getElementById('piece2');
+    const cmGhost = document.getElementById('cmGhost');
+    const explosion = document.getElementById('explosion');
+    
+    const pathMain = document.getElementById('pathMain');
+    const pathP1 = document.getElementById('pathP1');
+    const pathP2 = document.getElementById('pathP2');
+
+    let animId;
+    let t = 0;
+    let state = 0; // 0: idle, 1: phase 1 (up), 2: phase 2 (down/split)
+    
+    // Trajectory strings
+    let strMain = "M 50 250 ";
+    let strP1 = "M 250 50 ";
+    let strP2 = "M 250 50 ";
+
+    function resetSim() {
+        cancelAnimationFrame(animId);
+        t = 0;
+        state = 0;
+        
+        massM.setAttribute('opacity', 1);
+        massM.setAttribute('cx', 50);
+        massM.setAttribute('cy', 250);
+        
+        piece1.setAttribute('opacity', 0);
+        piece2.setAttribute('opacity', 0);
+        cmGhost.setAttribute('opacity', 0);
+        explosion.setAttribute('opacity', 0);
+        
+        strMain = "M 50 250 ";
+        strP1 = "M 250 50 ";
+        strP2 = "M 250 50 ";
+        
+        pathMain.setAttribute('d', '');
+        pathP1.setAttribute('d', '');
+        pathP2.setAttribute('d', '');
+    }
+
+    function playSim() {
+        if (state === 0) {
+            resetSim();
+            state = 1;
+            loop();
+        }
+    }
+
+    function loop() {
+        if (state === 1) { // Phase 1: Going UP to Apex
+            t += 0.02;
+            if (t >= 1) {
+                t = 1;
+                state = 2; // Trigger Explosion
+                
+                // Explode visually
+                massM.setAttribute('opacity', 0);
+                piece1.setAttribute('opacity', 1);
+                piece2.setAttribute('opacity', 1);
+                cmGhost.setAttribute('opacity', 1);
+                explosion.setAttribute('opacity', 1);
+                
+                setTimeout(() => { explosion.setAttribute('opacity', 0); }, 300);
+                
+                t = 0; // reset time for phase 2
+            }
+            
+            // X goes from 50 to 250. Y goes from 250 to 50
+            let x = 50 + 200 * t;
+            let y = 50 + 200 * Math.pow(1 - t, 2);
+            
+            massM.setAttribute('cx', x);
+            massM.setAttribute('cy', y);
+            
+            strMain += `L ${x} ${y} `;
+            pathMain.setAttribute('d', strMain);
+            
+        } else if (state === 2) { // Phase 2: Split and fall
+            t += 0.02;
+            if (t >= 1) t = 1;
+            
+            // Piece 1: Falls straight down (X remains 250)
+            let y_fall = 50 + 200 * Math.pow(t, 2);
+            piece1.setAttribute('cy', y_fall);
+            strP1 += `L 250 ${y_fall} `;
+            pathP1.setAttribute('d', strP1);
+            
+            // Piece 2: Moves with 2v horizontal speed. (X goes from 250 to 650)
+            let x2 = 250 + 400 * t;
+            piece2.setAttribute('cx', x2);
+            piece2.setAttribute('cy', y_fall);
+            strP2 += `L ${x2} ${y_fall} `;
+            pathP2.setAttribute('d', strP2);
+            
+            // Center of Mass: Continues original path (X goes from 250 to 450)
+            let xcm = 250 + 200 * t;
+            cmGhost.setAttribute('cx', xcm);
+            cmGhost.setAttribute('cy', y_fall);
+            strMain += `L ${xcm} ${y_fall} `;
+            pathMain.setAttribute('d', strMain);
+            
+            if (t >= 1) {
+                state = 0; // end animation
+                return;
+            }
+        }
+        animId = requestAnimationFrame(loop);
+    }
+</script>
+
+</body>
+</html>
