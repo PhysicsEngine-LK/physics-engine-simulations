@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Mobile Crane Dynamics - Physics Engine</title>
+    <style>
+        body { background-color: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        .canvas-container { background-color: #ffffff; border: 2px solid #6c5ce7; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 20px; width: 950px; text-align: center; }
+        .title { color: #2c3e50; font-size: 24px; font-weight: 800; margin-bottom: 5px; }
+        .subtitle { color: #7f8c8d; font-size: 15px; margin-bottom: 15px; }
+        
+        .controls { background-color: #e0e7ff; padding: 15px; border-radius: 10px; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px; border: 1px solid #dcdde1; margin-bottom: 20px; }
+        .control-group { display: flex; flex-direction: column; align-items: center; width: 45%; }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: #0984e3; margin-top: 10px; }
+        label { font-weight: bold; font-size: 16px; color: #2c3e50; }
+        
+        .checkbox-label { cursor: pointer; background: #fff; padding: 10px 20px; border-radius: 6px; border: 2px solid #bdc3c7; font-weight: bold; font-size: 15px; display: flex; align-items: center; gap: 10px; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .checkbox-label:hover { background: #f1f2f6; border-color: #3498db; }
+        input[type=checkbox] { width: 18px; height: 18px; accent-color: #3498db; cursor: pointer; }
+
+        .status-box { background-color: #fdf2e9; border-left: 6px solid #27ae60; padding: 15px; font-size: 18px; font-weight: bold; color: #d35400; margin-top: 15px; display: flex; justify-content: space-around; border-radius: 4px; transition: 0.3s; }
+        .danger { border-left-color: #e74c3c; background-color: #fcebeb; color: #c0392b; animation: shake 0.5s; }
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
+    </style>
+</head>
+<body>
+
+<div class="canvas-container">
+    <div class="title">දොඹකරයේ ගතික චලිතය සහ සමතුලිතතාවය</div>
+    <div class="subtitle">ත්වරණය (a) වෙනස් කරමින් දොඹකරය ධාවනය වන විට ඇතිවන ගතික බලපෑම් නිරීක්ෂණය කරන්න.</div>
+    
+    <div class="controls">
+        <div class="control-group">
+            <label>බහාලුමේ ස්කන්ධය (m): <span id="valMass" style="color:#0984e3;">5</span> ටොන්</label>
+            <input type="range" id="sliderMass" min="0" max="15" value="5" step="0.5">
+        </div>
+        <div class="control-group">
+            <label>දොඹකරයේ චලිතය (a): <span id="valAccel" style="color:#e67e22;">නිශ්චලයි</span></label>
+            <input type="range" id="sliderAccel" min="-5" max="5" value="0" step="1">
+            <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">( සෘණ අගයන් = පසුපසට / ධන අගයන් = ඉදිරියට ත්වරණය )</div>
+        </div>
+        <div style="width: 100%; display: flex; justify-content: center; margin-top: 5px;">
+            <label class="checkbox-label">
+                <input type="checkbox" id="chkForces" onchange="toggleForces()"> 
+                නිදහස් වස්තු සටහනේ බල පෙන්වන්න (Show FBD Forces)
+            </label>
+        </div>
+    </div>
+
+    <svg id="simSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 950 450" width="100%" height="450">
+        <defs>
+            <marker id="arrowGreen" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto">
+                <path d="M 0,0 L 12,6 L 0,12 z" fill="#27ae60" />
+            </marker>
+            <marker id="arrowPurp" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto">
+                <path d="M 0,0 L 12,6 L 0,12 z" fill="#8e44ad" />
+            </marker>
+            <marker id="arrowRed" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto">
+                <path d="M 0,0 L 12,6 L 0,12 z" fill="#e74c3c" />
+            </marker>
+        </defs>
+
+        <!-- Fixed Ground & Distance Markers to show motion -->
+        <g id="environment">
+            <line x1="0" y1="350" x2="950" y2="350" stroke="#7f8c8d" stroke-width="4"/>
+            <!-- Ground texture lines -->
+            <g stroke="#bdc3c7" stroke-width="3">
+                <line x1="100" y1="350" x2="100" y2="370"/>
+                <line x1="300" y1="350" x2="300" y2="370"/>
+                <line x1="500" y1="350" x2="500" y2="370"/>
+                <line x1="700" y1="350" x2="700" y2="370"/>
+                <line x1="900" y1="350" x2="900" y2="370"/>
+            </g>
+        </g>
+        
+        <!-- Moving Crane Group -->
+        <g id="craneGroup" transform="translate(450, 350)">
+            
+            <!-- Chassis -->
+            <rect x="-200" y="-40" width="280" height="40" fill="#f1c40f" stroke="#d35400" stroke-width="2"/>
+            <rect x="-100" y="-80" width="80" height="40" fill="#34495e"/> 
+            
+            <!-- Wheels -->
+            <g id="wheelA" transform="translate(-150, -12)">
+                <circle cx="0" cy="0" r="12" fill="#34495e" stroke="#2c3e50" stroke-width="2"/>
+                <line x1="-12" y1="0" x2="12" y2="0" stroke="#ecf0f1" stroke-width="2"/>
+                <line x1="0" y1="-12" x2="0" y2="12" stroke="#ecf0f1" stroke-width="2"/>
+            </g>
+            <text x="-165" y="20" fill="#e74c3c" font-weight="bold">A</text>
+            
+            <g id="wheelB" transform="translate(0, -12)">
+                <circle cx="0" cy="0" r="12" fill="#34495e" stroke="#2c3e50" stroke-width="2"/>
+                <line x1="-12" y1="0" x2="12" y2="0" stroke="#ecf0f1" stroke-width="2"/>
+                <line x1="0" y1="-12" x2="0" y2="12" stroke="#ecf0f1" stroke-width="2"/>
+            </g>
+            <text x="-5" y="20" fill="#27ae60" font-weight="bold">B</text>
+
+            <!-- Crane Boom -->
+            <line x1="-50" y1="-40" x2="120" y2="-200" stroke="#f39c12" stroke-width="12" stroke-linecap="round"/>
+            <line x1="120" y1="-200" x2="120" y2="-180" stroke="#7f8c8d" stroke-width="2"/> 
+
+            <!-- Crane CG Marker (M = 20t) -->
+            <circle cx="-60" cy="-20" r="6" fill="#8e44ad"/>
+            <text x="-55" y="-25" fill="#8e44ad" font-weight="bold" font-size="14">M</text>
+            
+            <!-- Swinging Load System -->
+            <g id="loadGroup" transform="translate(120, -200)">
+                <line x1="0" y1="0" x2="0" y2="150" stroke="#2c3e50" stroke-width="3"/>
+                <rect id="container" x="-20" y="150" width="40" height="40" fill="#e74c3c" stroke="#c0392b" stroke-width="2"/>
+                <text id="txtLoadMass" x="0" y="175" fill="white" font-weight="bold" font-size="14" text-anchor="middle">5t</text>
+            </g>
+
+            <!-- Local Distance Markers (Moves with crane) -->
+            <g stroke="#95a5a6" stroke-width="1" stroke-dasharray="4,4">
+                <line x1="-150" y1="0" x2="-150" y2="40"/> <!-- A -->
+                <line x1="-60" y1="0" x2="-60" y2="40"/> <!-- CG M -->
+                <line x1="0" y1="0" x2="0" y2="40"/> <!-- B -->
+                <line x1="120" y1="0" x2="120" y2="40"/> <!-- Nominal Overhang -->
+            </g>
+            <g fill="#7f8c8d" font-size="12">
+                <text x="-115" y="30">3 m</text> 
+                <text x="-40" y="30">2 m</text>
+                <text x="45" y="30">4 m</text>
+            </g>
+        </g>
+        
+        <!-- Forces Layer -->
+        <g id="forcesLayer" opacity="0" style="transition: opacity 0.3s; pointer-events: none;">
+            <line id="vecRA" stroke="#27ae60" stroke-width="5" marker-end="url(#arrowGreen)"/>
+            <text id="txtRA" fill="#27ae60" font-weight="bold" font-size="15"></text>
+            
+            <line id="vecRB" stroke="#27ae60" stroke-width="5" marker-end="url(#arrowGreen)"/>
+            <text id="txtRB" fill="#27ae60" font-weight="bold" font-size="15"></text>
+            
+            <line id="vecMg" stroke="#8e44ad" stroke-width="5" marker-end="url(#arrowPurp)"/>
+            <text id="txtMg" fill="#8e44ad" font-weight="bold" font-size="15"></text>
+            
+            <line id="vec_mg" stroke="#e74c3c" stroke-width="5" marker-end="url(#arrowRed)"/>
+            <text id="txt_mg" fill="#e74c3c" font-weight="bold" font-size="15"></text>
+        </g>
+    </svg>
+
+    <div class="status-box" id="statusBox">
+        <div id="statRA">R_A (පිටුපස ආධාරකය): <br><span id="valRA" style="font-size: 24px;">200</span> kN</div>
+        <div id="statStatus">තත්ත්වය: <br><span id="valStatus" style="font-size: 22px;">ආරක්ෂිතයි ✅</span></div>
+    </div>
+</div>
+
+<script>
+    const sliderMass = document.getElementById('sliderMass');
+    const sliderAccel = document.getElementById('sliderAccel');
+    const valMass = document.getElementById('valMass');
+    const valAccel = document.getElementById('valAccel');
+    const chkForces = document.getElementById('chkForces');
+    
+    const craneGroup = document.getElementById('craneGroup');
+    const wheelA = document.getElementById('wheelA');
+    const wheelB = document.getElementById('wheelB');
+    const loadGroup = document.getElementById('loadGroup');
+    const container = document.getElementById('container');
+    const txtLoadMass = document.getElementById('txtLoadMass');
+    const forcesLayer = document.getElementById('forcesLayer');
+    
+    const statusBox = document.getElementById('statusBox');
+    const valRA = document.getElementById('valRA');
+    const valStatus = document.getElementById('valStatus');
+
+    // Force Elements
+    const vecRA = document.getElementById('vecRA'); const txtRA = document.getElementById('txtRA');
+    const vecRB = document.getElementById('vecRB'); const txtRB = document.getElementById('txtRB');
+    const vecMg = document.getElementById('vecMg'); const txtMg = document.getElementById('txtMg');
+    const vec_mg = document.getElementById('vec_mg'); const txt_mg = document.getElementById('txt_mg');
+
+    // Constants
+    const M = 20; // 20 tons
+    const g = 10;
+    const distCG = 2; // m
+    const distA = 5; // m
+    const nominalDistL = 4; // m
+    
+    let currentTheta = 0;
+    let targetTheta = 0;
+    let currentCraneRot = 0;
+    let targetCraneRot = 0;
+
+    // Movement Variables
+    let craneX = 450;
+    let velocity = 0;
+    let wheelRot = 0;
+
+    function toggleForces() {
+        forcesLayer.setAttribute('opacity', chkForces.checked ? "1" : "0");
+    }
+
+    function updatePhysics() {
+        let m = parseFloat(sliderMass.value);
+        let a = parseFloat(sliderAccel.value);
+        
+        valMass.textContent = m;
+        
+        if(a > 0) valAccel.innerHTML = `ඉදිරියට ත්වරණය ${a} ms⁻²`;
+        else if(a < 0) valAccel.innerHTML = `පසුපසට / තිරිංග ${a} ms⁻²`;
+        else valAccel.innerHTML = `නිශ්චලයි / ඒකාකාරයි`;
+
+        // Update container visually
+        let boxSize = 25 + (m * 2);
+        container.setAttribute('x', -boxSize/2);
+        container.setAttribute('y', 150);
+        container.setAttribute('width', boxSize);
+        container.setAttribute('height', boxSize);
+        txtLoadMass.setAttribute('y', 150 + boxSize/2 + 5);
+        txtLoadMass.textContent = m + "t";
+
+        // Calculate Target Pendulum Angle based on pseudo force
+        let thetaRad = Math.atan(a / g); 
+        targetTheta = thetaRad * (180 / Math.PI);
+
+        // Torque Calculation
+        const cableLen = 5; 
+        let horizontalSwing = cableLen * Math.sin(thetaRad); 
+        let actualDistL = nominalDistL - horizontalSwing;
+        
+        let R_A = (400 - (10 * m * actualDistL)) / 5;
+
+        // Toppling Logic
+        if (R_A < 0) {
+            valRA.textContent = "0 (ඉස්සී ඇත)";
+            valStatus.textContent = "අනතුරුදායකයි! දොඹකරය පෙරළේ ❌";
+            statusBox.className = "status-box danger";
+            targetCraneRot = Math.abs(R_A) * 0.2; 
+            if(targetCraneRot > 15) targetCraneRot = 15; 
+        } else {
+            valRA.textContent = R_A.toFixed(1);
+            valStatus.textContent = "ආරක්ෂිතයි ✅";
+            statusBox.className = "status-box";
+            targetCraneRot = 0;
+        }
+    }
+
+    function animate() {
+        let a = parseFloat(sliderAccel.value);
+        
+        // Update physical motion
+        velocity += a * 0.08;
+        velocity *= 0.94; // Friction / Damping
+        craneX += velocity;
+
+        // Keep crane within screen bounds
+        if(craneX > 750) { craneX = 750; velocity = 0; }
+        if(craneX < 250) { craneX = 250; velocity = 0; }
+
+        // Update Wheel Rotation
+        wheelRot += velocity * 4; 
+        wheelA.setAttribute('transform', `translate(-150, -12) rotate(${wheelRot})`);
+        wheelB.setAttribute('transform', `translate(0, -12) rotate(${wheelRot})`);
+
+        // Update Swing and Topple
+        currentTheta += (targetTheta - currentTheta) * 0.1;
+        loadGroup.setAttribute('transform', `translate(120, -200) rotate(${currentTheta})`);
+        
+        currentCraneRot += (targetCraneRot - currentCraneRot) * 0.1;
+        
+        // Apply Global Transform
+        craneGroup.setAttribute('transform', `translate(${craneX}, 350) rotate(${currentCraneRot})`);
+        
+        updateForcesVisuals();
+        requestAnimationFrame(animate);
+    }
+
+    function updateForcesVisuals() {
+        let m = parseFloat(sliderMass.value);
+        let tRad = currentTheta * Math.PI / 180;
+        let rad = currentCraneRot * Math.PI / 180;
+        
+        let actualDistL = 4 - (5 * Math.sin(tRad));
+        let ra_val = (400 - (10 * m * actualDistL)) / 5;
+        if (ra_val < 0) ra_val = 0;
+        let rb_val = 200 + (10 * m) - ra_val;
+        let mg_val = 10 * m;
+
+        // Calculate positions dynamically based on current craneX
+        let ax = craneX - 150 * Math.cos(rad);
+        let ay = 350 - 150 * Math.sin(rad); 
+        let bx = craneX;
+        let by = 350;
+        
+        let cgx = craneX - 60 * Math.cos(rad) + 20 * Math.sin(rad);
+        let cgy = 350 - 60 * Math.sin(rad) - 20 * Math.cos(rad);
+
+        let lcx = 120 - 150 * Math.sin(tRad);
+        let lcy = -200 + 150 * Math.cos(tRad);
+        let lx = craneX + lcx * Math.cos(rad) - lcy * Math.sin(rad);
+        let ly = 350 + lcx * Math.sin(rad) + lcy * Math.cos(rad);
+
+        const sf = 0.6; // Scale factor for vectors
+
+        if (ra_val > 1) {
+            vecRA.setAttribute('display', 'block'); txtRA.setAttribute('display', 'block');
+            vecRA.setAttribute('x1', ax); vecRA.setAttribute('y1', ay);
+            vecRA.setAttribute('x2', ax); vecRA.setAttribute('y2', ay - (ra_val * sf));
+            txtRA.setAttribute('x', ax - 85); txtRA.setAttribute('y', ay - (ra_val * sf) + 15);
+            txtRA.textContent = `RA = ${ra_val.toFixed(0)}kN`;
+        } else {
+            vecRA.setAttribute('display', 'none'); txtRA.setAttribute('display', 'none');
+        }
+
+        vecRB.setAttribute('x1', bx); vecRB.setAttribute('y1', by);
+        vecRB.setAttribute('x2', bx); vecRB.setAttribute('y2', by - (rb_val * sf));
+        txtRB.setAttribute('x', bx + 15); txtRB.setAttribute('y', by - (rb_val * sf) + 15);
+        txtRB.textContent = `RB = ${rb_val.toFixed(0)}kN`;
+
+        vecMg.setAttribute('x1', cgx); vecMg.setAttribute('y1', cgy);
+        vecMg.setAttribute('x2', cgx); vecMg.setAttribute('y2', cgy + (200 * sf));
+        txtMg.setAttribute('x', cgx + 15); txtMg.setAttribute('y', cgy + (200 * sf));
+        txtMg.textContent = `Mg = 200kN`;
+
+        if (mg_val > 0) {
+            vec_mg.setAttribute('display', 'block'); txt_mg.setAttribute('display', 'block');
+            vec_mg.setAttribute('x1', lx); vec_mg.setAttribute('y1', ly);
+            vec_mg.setAttribute('x2', lx); vec_mg.setAttribute('y2', ly + (mg_val * sf));
+            txt_mg.setAttribute('x', lx + 15); txt_mg.setAttribute('y', ly + (mg_val * sf));
+            txt_mg.textContent = `mg = ${mg_val.toFixed(0)}kN`;
+        } else {
+            vec_mg.setAttribute('display', 'none'); txt_mg.setAttribute('display', 'none');
+        }
+    }
+
+    sliderMass.addEventListener('input', updatePhysics);
+    sliderAccel.addEventListener('input', updatePhysics);
+    
+    updatePhysics(); 
+    animate();
+</script>
+
+</body>
+</html>

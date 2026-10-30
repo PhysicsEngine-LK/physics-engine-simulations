@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Accelerating Fluid - Physics Engine</title>
+    <style>
+        body { background-color: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        .canvas-container { background-color: #ffffff; border: 2px solid #6c5ce7; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 25px; width: 850px; text-align: center; }
+        .title { color: #2c3e50; font-size: 24px; font-weight: 800; margin-bottom: 5px; }
+        .subtitle { color: #7f8c8d; font-size: 15px; margin-bottom: 20px; }
+        
+        .controls { background-color: #e0e7ff; padding: 20px 30px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #dcdde1; display: flex; flex-direction: column; align-items: center;}
+        input[type=range] { width: 80%; cursor: pointer; accent-color: #0984e3; margin-top: 15px; margin-bottom: 5px; }
+        label { font-weight: bold; font-size: 18px; color: #2c3e50; }
+        
+        .status-box { background-color: #fdf2e9; border-left: 6px solid #27ae60; padding: 15px; font-size: 18px; font-weight: bold; color: #d35400; display: flex; justify-content: space-around; border-radius: 4px; transition: 0.3s; margin-top: 15px;}
+        .danger { border-left-color: #e74c3c; background-color: #fcebeb; color: #c0392b; animation: shake 0.5s; }
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
+        
+        .math-text { font-family: 'Courier New', Courier, monospace; font-weight: bold; background: #fff; padding: 5px 10px; border-radius: 5px; border: 1px solid #ccc;}
+    </style>
+</head>
+<body>
+
+<div class="canvas-container">
+    <div class="title">ත්වරණය වන පද්ධතියක ද්‍රව පෘෂ්ඨය (tan θ = a/g)</div>
+    <div class="subtitle">ට්‍රක් රථයේ ත්වරණය (a) වෙනස් කරමින් ජල පෘෂ්ඨය ඇලවී පිටතට ඉහිරී යන සීමාව නිරීක්ෂණය කරන්න.</div>
+    
+    <div class="controls">
+        <label>ට්‍රක් රථයේ ඉදිරි ත්වරණය (a): <span id="valAccel" style="color:#0984e3; font-size: 22px;">0.0</span> ms⁻²</label>
+        <input type="range" id="sliderAccel" min="0" max="10" value="0" step="0.1">
+        <div style="display: flex; gap: 20px; margin-top: 15px;">
+            <div class="math-text">g = 10 ms⁻²</div>
+            <div class="math-text">r = 20 cm</div>
+            <div class="math-text">h₀ = 40 cm</div>
+            <div class="math-text" id="lblTan">tan θ = 0.00</div>
+        </div>
+    </div>
+
+    <svg id="simSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 350" width="100%" height="350">
+        <!-- Moving Ground -->
+        <g id="groundGroup">
+            <line x1="0" y1="300" x2="1000" y2="300" stroke="#7f8c8d" stroke-width="4"/>
+            <!-- Road markers -->
+            <line id="road1" x1="100" y1="300" x2="150" y2="300" stroke="#ecf0f1" stroke-width="6"/>
+            <line id="road2" x1="300" y1="300" x2="350" y2="300" stroke="#ecf0f1" stroke-width="6"/>
+            <line id="road3" x1="500" y1="300" x2="550" y2="300" stroke="#ecf0f1" stroke-width="6"/>
+            <line id="road4" x1="700" y1="300" x2="750" y2="300" stroke="#ecf0f1" stroke-width="6"/>
+            <line id="road5" x1="900" y1="300" x2="950" y2="300" stroke="#ecf0f1" stroke-width="6"/>
+        </g>
+
+        <!-- Truck & Tank Group (Fixed in center, ground moves backward) -->
+        <g id="truckGroup" transform="translate(425, 270)">
+            
+            <!-- Truck Chassis -->
+            <rect x="-120" y="-15" width="300" height="15" fill="#34495e" rx="4"/>
+            <!-- Truck Cabin -->
+            <path d="M 120, -15 L 180, -15 L 180, -70 L 140, -70 L 120, -40 Z" fill="#e67e22"/>
+            <rect x="145" y="-60" width="30" height="25" fill="#ecf0f1" rx="2"/> <!-- Window -->
+
+            <!-- Wheels -->
+            <g transform="translate(-80, 0)">
+                <circle cx="0" cy="15" r="15" fill="#2c3e50" stroke="#7f8c8d" stroke-width="3"/>
+                <circle cx="0" cy="15" r="6" fill="#bdc3c7"/>
+            </g>
+            <g transform="translate(130, 0)">
+                <circle cx="0" cy="15" r="15" fill="#2c3e50" stroke="#7f8c8d" stroke-width="3"/>
+                <circle cx="0" cy="15" r="6" fill="#bdc3c7"/>
+            </g>
+
+            <!-- Tank Base -->
+            <g transform="translate(0, -15)">
+                <!-- Back Glass -->
+                <rect x="-60" y="-150" width="120" height="150" fill="#ecf0f1" opacity="0.6" stroke="none"/>
+                
+                <!-- Water Polygon -->
+                <polygon id="waterPoly" points="-60,0 60,0 60,-120 -60,-120" fill="rgba(52, 152, 219, 0.7)" stroke="#2980b9" stroke-width="2"/>
+                
+                <!-- Spilling Water -->
+                <path id="spillEffect" d="M -60,-150 Q -80,-120 -70,-80 Q -65,-50 -75,-20" stroke="#3498db" stroke-width="4" fill="none" stroke-dasharray="5,5" opacity="0"/>
+
+                <!-- Original Water Level (Dotted line) -->
+                <line x1="-60" y1="-120" x2="60" y2="-120" stroke="#34495e" stroke-width="1.5" stroke-dasharray="4,4"/>
+                
+                <!-- Pivot Point (MOVED TEXT TO THE RIGHT) -->
+                <circle cx="0" cy="-120" r="4" fill="#e74c3c"/>
+                <text x="8" y="-125" fill="#e74c3c" font-size="12" font-weight="bold">Pivot</text>
+
+                <!-- Tank Glass Outline -->
+                <rect x="-60" y="-150" width="120" height="150" fill="none" stroke="#7f8c8d" stroke-width="4" rx="2"/>
+                
+                <!-- Dimensions -->
+                <g stroke="#95a5a6" stroke-width="1.5" stroke-dasharray="2,2">
+                    <line x1="70" y1="0" x2="100" y2="0"/>
+                    <line x1="70" y1="-120" x2="85" y2="-120"/>
+                    <line x1="70" y1="-150" x2="100" y2="-150"/>
+                    
+                    <line x1="90" y1="0" x2="90" y2="-150" stroke-dasharray="none" marker-end="url(#arrowDim)" marker-start="url(#arrowDim)"/>
+                    <line x1="75" y1="-120" x2="75" y2="-150" stroke-dasharray="none" stroke="#e67e22" stroke-width="2"/>
+                </g>
+                <text x="100" y="-70" fill="#2c3e50" font-size="14" font-weight="bold">50 cm</text>
+                <text x="80" y="-130" fill="#e67e22" font-size="14" font-weight="bold">10 cm</text>
+                
+                <line x1="-60" y1="-165" x2="0" y2="-165" stroke="#95a5a6" stroke-width="1.5" marker-end="url(#arrowDim)" marker-start="url(#arrowDim)"/>
+                <text x="-40" y="-172" fill="#2c3e50" font-size="14" font-weight="bold">r=20</text>
+            </g>
+            
+            <!-- Pseudo Force Vector (Starts exactly at Pivot) -->
+            <g id="forceGroup" transform="translate(0, -135)" opacity="0">
+                <line x1="0" y1="0" x2="-55" y2="0" stroke="#e74c3c" stroke-width="4" marker-end="url(#arrowRed)"/>
+                <text x="-15" y="-10" fill="#e74c3c" font-weight="bold" font-size="16" text-anchor="end">ma (ව්‍යාජ බලය)</text>
+            </g>
+
+        </g>
+        
+        <defs>
+            <marker id="arrowDim" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+                <path d="M 0,0 L 10,5 L 0,10 z" fill="#95a5a6" />
+            </marker>
+            <marker id="arrowRed" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
+                <path d="M 0,2 L 12,7 L 0,12 z" fill="#e74c3c" />
+            </marker>
+        </defs>
+
+    </svg>
+
+    <div class="status-box" id="statusBox">
+        <div id="statHeight">පිටුපස ජල මට්ටම: <br><span id="valHeight" style="font-size: 24px;">40.0</span> cm</div>
+        <div id="statStatus">තත්ත්වය: <br><span id="valStatus" style="font-size: 22px;">ආරක්ෂිතයි ✅</span></div>
+    </div>
+</div>
+
+<script>
+    const sliderAccel = document.getElementById('sliderAccel');
+    const valAccel = document.getElementById('valAccel');
+    const lblTan = document.getElementById('lblTan');
+    const waterPoly = document.getElementById('waterPoly');
+    const spillEffect = document.getElementById('spillEffect');
+    const forceGroup = document.getElementById('forceGroup');
+    const statusBox = document.getElementById('statusBox');
+    const valHeight = document.getElementById('valHeight');
+    const valStatus = document.getElementById('valStatus');
+    
+    const roads = [
+        document.getElementById('road1'), document.getElementById('road2'),
+        document.getElementById('road3'), document.getElementById('road4'),
+        document.getElementById('road5')
+    ];
+
+    const g = 10;
+    const r = 20; 
+    const h0 = 40; 
+    const hMax = 50; 
+    const pxPerCm = 3; 
+
+    let offset = 0; 
+
+    function updatePhysics() {
+        let a = parseFloat(sliderAccel.value);
+        valAccel.textContent = a.toFixed(1);
+        
+        let tanTheta = a / g;
+        lblTan.textContent = `tan θ = ${tanTheta.toFixed(2)}`;
+        
+        let rise_cm = r * tanTheta; 
+        
+        let hLeft_cm = h0 + rise_cm;
+        let hRight_cm = h0 - rise_cm;
+        
+        valHeight.textContent = hLeft_cm.toFixed(1);
+
+        let leftY_px = - (hLeft_cm * pxPerCm);
+        let rightY_px = - (hRight_cm * pxPerCm);
+        
+        waterPoly.setAttribute('points', `-60,0 60,0 60,${rightY_px} -60,${leftY_px}`);
+        
+        if(a > 0) {
+            forceGroup.setAttribute('opacity', 1);
+        } else {
+            forceGroup.setAttribute('opacity', 0);
+        }
+
+        if (hLeft_cm > hMax) {
+            valStatus.innerHTML = "අනතුරුදායකයි! ජලය ඉහිරේ ❌";
+            statusBox.className = "status-box danger";
+            spillEffect.setAttribute('opacity', 1);
+            waterPoly.setAttribute('fill', 'rgba(231, 76, 60, 0.7)'); 
+            waterPoly.setAttribute('stroke', '#c0392b');
+        } else {
+            valStatus.innerHTML = "ආරක්ෂිතයි ✅";
+            statusBox.className = "status-box";
+            spillEffect.setAttribute('opacity', 0);
+            waterPoly.setAttribute('fill', 'rgba(52, 152, 219, 0.7)');
+            waterPoly.setAttribute('stroke', '#2980b9');
+        }
+    }
+
+    function animateGround() {
+        let a = parseFloat(sliderAccel.value);
+        
+        let v = a * 1.5; 
+        offset -= v; 
+        
+        if(offset <= -200) offset += 200; 
+
+        roads.forEach((road, index) => {
+            let startX = (index * 200) + offset;
+            road.setAttribute('x1', startX);
+            road.setAttribute('x2', startX + 50);
+        });
+
+        requestAnimationFrame(animateGround);
+    }
+
+    sliderAccel.addEventListener('input', updatePhysics);
+    
+    updatePhysics(); 
+    animateGround(); 
+</script>
+
+</body>
+</html>
