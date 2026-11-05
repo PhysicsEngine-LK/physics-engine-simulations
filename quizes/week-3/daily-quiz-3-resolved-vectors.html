@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Resolved Vectors Toppling Simulation - Physics Engine</title>
+    <style>
+        body { 
+            background-color: #f8f9fa; 
+            color: #2c3e50; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            padding: 20px; 
+            margin: 0; 
+        }
+        .canvas-container { 
+            background-color: #ffffff; 
+            border: 2px solid #6c5ce7; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            padding: 25px; 
+            width: 850px; 
+            text-align: center; 
+        }
+        .title { color: #2c3e50; font-size: 24px; font-weight: 800; margin-bottom: 5px; }
+        .subtitle { color: #7f8c8d; font-size: 15px; margin-bottom: 20px; }
+        
+        .controls { 
+            background-color: #eef2f5; 
+            padding: 15px 30px; 
+            border-radius: 10px; 
+            margin-bottom: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            border: 1px solid #dcdde1;
+        }
+        input[type=range] { width: 400px; cursor: pointer; accent-color: #0984e3; margin-top: 10px; }
+        
+        .math-box { 
+            background-color: #fdf2e9; 
+            border-left: 6px solid #e67e22; 
+            padding: 15px; 
+            font-size: 17px; 
+            font-weight: bold; 
+            color: #d35400; 
+            width: 90%; 
+            margin: 10px auto 0; 
+            display: flex; 
+            justify-content: space-between;
+            border-radius: 0 8px 8px 0;
+        }
+        .danger-text { color: #e74c3c; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+        
+        svg { background-color: #ffffff; border-radius: 8px; border: 1px solid #ecf0f1; }
+    </style>
+</head>
+<body>
+
+<div class="canvas-container">
+    <div class="title">ආනත තලය මත පෙරළීම සහ බල විභේදනය</div>
+    <div class="subtitle">G හිදී mg බලය සංරචක (mg sinθ, mg cosθ) වලට විභේදනය වීම සහ f, R සමග ඒවායේ සමතුලිතතාවය නිරීක්ෂණය කරන්න.</div>
+    
+    <div class="controls">
+        <label style="font-weight: 700; font-size: 18px;">ආනති කෝණය (θ): <span id="angleVal" style="color:#0984e3; font-size: 20px;">0°</span></label>
+        <input type="range" id="angleSlider" min="0" max="40" value="0" step="1">
+    </div>
+
+    <svg id="simSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 480" width="100%" height="480">
+        <defs>
+            <marker id="arrowRed" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto">
+                <path d="M 0,2 L 12,7 L 0,12 z" fill="#e74c3c" />
+            </marker>
+            <marker id="arrowBlue" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto">
+                <path d="M 0,2 L 12,7 L 0,12 z" fill="#0984e3" />
+            </marker>
+            <marker id="arrowGreen" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto">
+                <path d="M 0,2 L 12,7 L 0,12 z" fill="#27ae60" />
+            </marker>
+        </defs>
+
+        <!-- Fixed Base Line -->
+        <line x1="80" y1="420" x2="780" y2="420" stroke="#bdc3c7" stroke-width="2" stroke-dasharray="6,4"/>
+
+        <!-- Angle Arc -->
+        <path id="angleArc" d="" fill="none" stroke="#e67e22" stroke-width="2"/>
+        <text id="angleText" x="200" y="410" fill="#e67e22" font-weight="bold" font-size="16">θ</text>
+
+        <!-- Inclined Plane -->
+        <line id="planeLine" x1="150" y1="420" x2="700" y2="420" stroke="#2c3e50" stroke-width="5" stroke-linecap="round"/>
+
+        <!-- Block -->
+        <polygon id="blockPoly" points="" fill="rgba(241, 196, 15, 0.8)" stroke="#d35400" stroke-width="2.5"/>
+        <line id="centerLine" x1="0" y1="0" x2="0" y2="0" stroke="#e67e22" stroke-width="1.5" stroke-dasharray="5,5"/>
+
+        <!-- Contact Point (Q) & Pivot (P) -->
+        <circle id="pointP" cx="0" cy="0" r="5" fill="#2c3e50"/>
+        <text id="txtP" x="0" y="0" fill="#2c3e50" font-weight="bold" font-size="16">P</text>
+        <circle id="pointQ" cx="0" cy="0" r="6" fill="#8e44ad"/>
+        <text id="txtQ" x="0" y="0" fill="#8e44ad" font-weight="bold" font-size="16">Q</text>
+
+        <!-- Center of Gravity G -->
+        <circle id="pointG" cx="0" cy="0" r="5" fill="#c0392b"/>
+        <text id="txtG" x="0" y="0" fill="#c0392b" font-weight="bold" font-size="16">G</text>
+
+        <!-- Components of mg (Dashed Red) -->
+        <line id="vecMgCos" x1="0" y1="0" x2="0" y2="0" stroke="#e74c3c" stroke-width="2.5" stroke-dasharray="5,5" marker-end="url(#arrowRed)"/>
+        <text id="txtMgCos" x="0" y="0" fill="#e74c3c" font-weight="bold" font-size="15">mg cosθ</text>
+
+        <line id="vecMgSin" x1="0" y1="0" x2="0" y2="0" stroke="#e74c3c" stroke-width="2.5" stroke-dasharray="5,5" marker-end="url(#arrowRed)"/>
+        <text id="txtMgSin" x="0" y="0" fill="#e74c3c" font-weight="bold" font-size="15">mg sinθ</text>
+
+        <!-- Vector: mg (Solid Red) -->
+        <line id="vecMg" x1="0" y1="0" x2="0" y2="0" stroke="#e74c3c" stroke-width="3.5" marker-end="url(#arrowRed)"/>
+        <text id="txtMg" x="0" y="0" fill="#e74c3c" font-weight="bold" font-size="18">mg</text>
+        <line id="lineMg" x1="0" y1="0" x2="0" y2="0" stroke="#e74c3c" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+        <!-- Vector: R (Blue) -->
+        <line id="vecR" x1="0" y1="0" x2="0" y2="0" stroke="#0984e3" stroke-width="3.5" marker-end="url(#arrowBlue)"/>
+        <text id="txtR" x="0" y="0" fill="#0984e3" font-weight="bold" font-size="18">R</text>
+
+        <!-- Vector: f (Green) -->
+        <line id="vecF" x1="0" y1="0" x2="0" y2="0" stroke="#27ae60" stroke-width="3.5" marker-end="url(#arrowGreen)"/>
+        <text id="txtF" x="0" y="0" fill="#27ae60" font-weight="bold" font-size="18">f</text>
+    </svg>
+
+    <div class="math-box">
+        <div id="mathR">Q හි විස්ථාපනය = 0.0 cm</div>
+        <div id="mathStatus">තත්ත්වය: සමතුලිතයි</div>
+    </div>
+</div>
+
+<script>
+    const slider = document.getElementById('angleSlider');
+    const angleVal = document.getElementById('angleVal');
+    
+    // Elements
+    const planeLine = document.getElementById('planeLine');
+    const angleArc = document.getElementById('angleArc');
+    const angleText = document.getElementById('angleText');
+    const blockPoly = document.getElementById('blockPoly');
+    const centerLine = document.getElementById('centerLine');
+    
+    const pointP = document.getElementById('pointP');
+    const txtP = document.getElementById('txtP');
+    const pointQ = document.getElementById('pointQ');
+    const txtQ = document.getElementById('txtQ');
+    const pointG = document.getElementById('pointG');
+    const txtG = document.getElementById('txtG');
+    
+    const vecMg = document.getElementById('vecMg');
+    const txtMg = document.getElementById('txtMg');
+    const lineMg = document.getElementById('lineMg');
+    
+    const vecMgCos = document.getElementById('vecMgCos');
+    const txtMgCos = document.getElementById('txtMgCos');
+    const vecMgSin = document.getElementById('vecMgSin');
+    const txtMgSin = document.getElementById('txtMgSin');
+
+    const vecR = document.getElementById('vecR');
+    const txtR = document.getElementById('txtR');
+    const vecF = document.getElementById('vecF');
+    const txtF = document.getElementById('txtF');
+    
+    const mathR = document.getElementById('mathR');
+    const mathStatus = document.getElementById('mathStatus');
+
+    // Constants
+    const pivotX = 150;
+    const pivotY = 420;
+    const planeLen = 550;
+    const distToBlock = 300; 
+    const H = 160; 
+    const r = 40;  
+    const mgLen = 140; // Master Length for forces
+
+    function updatePhysics() {
+        let thetaDeg = parseFloat(slider.value);
+        let rad = thetaDeg * (Math.PI / 180);
+        angleVal.textContent = thetaDeg + "°";
+
+        let planeDirX = Math.cos(rad);
+        let planeDirY = -Math.sin(rad);
+        let normalDirX = -Math.sin(rad);
+        let normalDirY = -Math.cos(rad);
+
+        planeLine.setAttribute('x2', pivotX + planeLen * planeDirX);
+        planeLine.setAttribute('y2', pivotY + planeLen * planeDirY);
+
+        if (thetaDeg > 0) {
+            let arcX = pivotX + 60 * Math.cos(-rad);
+            let arcY = pivotY + 60 * Math.sin(-rad);
+            angleArc.setAttribute('d', `M ${pivotX + 60} ${pivotY} A 60 60 0 0 0 ${arcX} ${arcY}`);
+            angleText.setAttribute('x', pivotX + 70 * Math.cos(-rad/2));
+            angleText.setAttribute('y', pivotY + 70 * Math.sin(-rad/2) + 5);
+        } else {
+            angleArc.setAttribute('d', "");
+            angleText.setAttribute('x', -100); 
+        }
+
+        let bx = pivotX + distToBlock * planeDirX;
+        let by = pivotY + distToBlock * planeDirY;
+
+        let brX = bx + r * planeDirX; let brY = by + r * planeDirY; 
+        let blX = bx - r * planeDirX; let blY = by - r * planeDirY; 
+        let tlX = blX + H * normalDirX; let tlY = blY + H * normalDirY; 
+        let trX = brX + H * normalDirX; let trY = brY + H * normalDirY; 
+
+        blockPoly.setAttribute('points', `${blX},${blY} ${brX},${brY} ${trX},${trY} ${tlX},${tlY}`);
+
+        let cxTop = bx + H * normalDirX;
+        let cyTop = by + H * normalDirY;
+        centerLine.setAttribute('x1', bx); centerLine.setAttribute('y1', by);
+        centerLine.setAttribute('x2', cxTop); centerLine.setAttribute('y2', cyTop);
+
+        pointP.setAttribute('cx', blX); pointP.setAttribute('cy', blY);
+        txtP.setAttribute('x', blX - 25); txtP.setAttribute('y', blY + 20);
+
+        let gx = bx + (H/2) * normalDirX;
+        let gy = by + (H/2) * normalDirY;
+        pointG.setAttribute('cx', gx); pointG.setAttribute('cy', gy);
+        txtG.setAttribute('x', gx + 15); txtG.setAttribute('y', gy - 5);
+
+        let theoreticalShift = (H/2) * Math.tan(rad);
+        let actualShift = Math.min(theoreticalShift, r); 
+        
+        let qx = bx - actualShift * planeDirX;
+        let qy = by - actualShift * planeDirY;
+        
+        pointQ.setAttribute('cx', qx); pointQ.setAttribute('cy', qy);
+        txtQ.setAttribute('x', qx + 8); txtQ.setAttribute('y', qy + 25);
+
+        // 1. mg vector (Solid Red)
+        vecMg.setAttribute('x1', gx); vecMg.setAttribute('y1', gy);
+        vecMg.setAttribute('x2', gx); vecMg.setAttribute('y2', gy + mgLen);
+        txtMg.setAttribute('x', gx + 10); txtMg.setAttribute('y', gy + mgLen + 5); 
+        
+        lineMg.setAttribute('x1', gx); lineMg.setAttribute('y1', gy);
+        lineMg.setAttribute('x2', gx); lineMg.setAttribute('y2', qy + 20); 
+
+        // 2. mg Components (Dashed Red)
+        let mgCosLen = mgLen * Math.cos(rad);
+        let mgSinLen = mgLen * Math.sin(rad);
+
+        // mg cosθ (points DOWN relative to plane = -normalDir)
+        let intoPlaneX = -normalDirX;
+        let intoPlaneY = -normalDirY;
+        vecMgCos.setAttribute('x1', gx); vecMgCos.setAttribute('y1', gy);
+        vecMgCos.setAttribute('x2', gx + mgCosLen * intoPlaneX); vecMgCos.setAttribute('y2', gy + mgCosLen * intoPlaneY);
+        txtMgCos.setAttribute('x', gx + mgCosLen * intoPlaneX + 15); txtMgCos.setAttribute('y', gy + mgCosLen * intoPlaneY);
+
+        // mg sinθ (points DOWN the plane = -planeDir)
+        let downPlaneX = -planeDirX;
+        let downPlaneY = -planeDirY;
+        
+        if (thetaDeg > 0) {
+            vecMgSin.style.display = 'block'; txtMgSin.style.display = 'block';
+            vecMgSin.setAttribute('x1', gx); vecMgSin.setAttribute('y1', gy);
+            vecMgSin.setAttribute('x2', gx + mgSinLen * downPlaneX); vecMgSin.setAttribute('y2', gy + mgSinLen * downPlaneY);
+            txtMgSin.setAttribute('x', gx + mgSinLen * downPlaneX - 45); txtMgSin.setAttribute('y', gy + mgSinLen * downPlaneY + 25);
+        } else {
+            vecMgSin.style.display = 'none'; txtMgSin.style.display = 'none';
+        }
+
+        // 3. R vector (Blue) - Exact match to mgCosLen for visual equilibrium
+        let rTipX = qx + mgCosLen * normalDirX;
+        let rTipY = qy + mgCosLen * normalDirY;
+        vecR.setAttribute('x1', qx); vecR.setAttribute('y1', qy);
+        vecR.setAttribute('x2', rTipX); vecR.setAttribute('y2', rTipY);
+        txtR.setAttribute('x', rTipX - 25); txtR.setAttribute('y', rTipY - 5); 
+
+        // 4. f vector (Green) - Exact match to mgSinLen for visual equilibrium
+        if (thetaDeg > 0) {
+            vecF.style.display = 'block'; txtF.style.display = 'block';
+            
+            // Offset f slightly down the y-axis of the local plane so it doesn't overlap the block outline
+            let fOffsetX = qx - 8 * normalDirX; 
+            let fOffsetY = qy - 8 * normalDirY;
+            let fTipX = fOffsetX + mgSinLen * planeDirX;
+            let fTipY = fOffsetY + mgSinLen * planeDirY;
+            
+            vecF.setAttribute('x1', fOffsetX); vecF.setAttribute('y1', fOffsetY);
+            vecF.setAttribute('x2', fTipX); vecF.setAttribute('y2', fTipY);
+            txtF.setAttribute('x', fTipX + 10); txtF.setAttribute('y', fTipY - 5); 
+        } else {
+            vecF.style.display = 'none'; txtF.style.display = 'none';
+        }
+
+        // Status Logic
+        mathR.innerHTML = `Q හි විස්ථාපනය = <b>${actualShift.toFixed(1)} cm</b> (උපරිමය ${r} cm)`;
+        
+        let toppleLimit = Math.atan((2*r)/H) * (180/Math.PI);
+        if (thetaDeg >= toppleLimit) {
+            mathStatus.innerHTML = "<span class='danger-text'>තත්ත්වය: වස්තුව පෙරළී යයි!</span>";
+            pointQ.setAttribute('fill', '#e74c3c'); txtQ.setAttribute('fill', '#e74c3c');
+        } else {
+            mathStatus.innerHTML = "තත්ත්වය: සමතුලිතයි";
+            pointQ.setAttribute('fill', '#8e44ad'); txtQ.setAttribute('fill', '#8e44ad');
+        }
+    }
+
+    slider.addEventListener('input', updatePhysics);
+    updatePhysics(); // Init
+</script>
+
+</body>
+</html>
