@@ -46,6 +46,20 @@
   .eq { font-family: 'Courier New', monospace; font-weight: 700; background: #fff; border: 1px solid #dfe6e9; border-radius: 6px; padding: 8px 12px; margin: 6px 0; display: block; }
   .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .row { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .side .status { margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 15px; }
+    .side .status > div:first-child { grid-column: 1 / -1; }
+    .side .modes { margin-bottom: 12px; }
+    .side .mode span:last-child { display: none; }
+    .side .eqbox { grid-template-columns: 1fr; margin-top: 0; }
+    .side .eqbox .num { text-align: left; }
+    .main > .cvs:first-child { margin-top: 0; }
+  }
 </style>
 </head>
 <body>
@@ -55,35 +69,39 @@
   <h1>ත්වරණය වන ලොරියක තට්ටුව මත කොන්ක්‍රීට් කුට්ටිය</h1>
   <p class="sub">ලොරියේ ත්වරණය (a) වැඩි කර "▶ ධාවනය" ඔබන්න. a ≤ μg නම් කුට්ටිය ලොරිය සමඟම යයි. a &gt; μg වූ විට සර්ෂණයට කුට්ටිය රඳවා ගත නොහැකිව එය පිටුපසට ලිස්සා වැටේ. ස්කන්ධය (m) වෙනස් කළත් a_max වෙනස් නොවන බවද බලන්න.</p>
 
-  <div class="controls">
-    <div><label>ලොරියේ ත්වරණය a = <span class="v" id="aVal">2.0</span> ms⁻²</label><input type="range" id="aS" min="0" max="6" step="0.1" value="2"></div>
-    <div><label>ස්ථිතික සර්ෂණ සංගුණකය μ = <span class="v" id="muVal">0.30</span></label><input type="range" id="muS" min="0.1" max="0.8" step="0.05" value="0.3"></div>
-    <div><label>කුට්ටියේ ස්කන්ධය m = <span class="v" id="mVal">2000</span> kg</label><input type="range" id="mS" min="500" max="5000" step="100" value="2000"></div>
-    <div class="btns">
-      <button class="solid" id="runBtn">▶ ධාවනය</button>
-      <button id="resetBtn">↺ නැවත</button>
-      <button id="q231">231: μ = 0.3, a = 3 ms⁻²</button>
+  <div class="layout">
+   <aside class="side">
+    <div class="controls">
+      <div><label>ලොරියේ ත්වරණය a = <span class="v" id="aVal">2.0</span> ms⁻²</label><input type="range" id="aS" min="0" max="6" step="0.1" value="2"></div>
+      <div><label>ස්ථිතික සර්ෂණ සංගුණකය μ = <span class="v" id="muVal">0.30</span></label><input type="range" id="muS" min="0.1" max="0.8" step="0.05" value="0.3"></div>
+      <div><label>කුට්ටියේ ස්කන්ධය m = <span class="v" id="mVal">2000</span> kg</label><input type="range" id="mS" min="500" max="5000" step="100" value="2000"></div>
+      <div class="btns">
+        <button class="solid" id="runBtn">▶ ධාවනය</button>
+        <button id="resetBtn">↺ නැවත</button>
+        <button id="q231">231: μ = 0.3, a = 3 ms⁻²</button>
+      </div>
     </div>
-  </div>
-
-  <div class="cvs"><canvas id="scene" class="scene"></canvas></div>
-
-  <div class="row">
-    <div class="panel">
-      <h3>226 – කුට්ටියේ නිදහස් වස්තු සටහන</h3>
-      <canvas id="fbd" class="fbd"></canvas>
+   </aside>
+   <div class="main">
+    <div class="cvs"><canvas id="scene" class="scene"></canvas></div>
+    <div class="row">
+      <div class="panel">
+        <h3>226 – කුට්ටියේ නිදහස් වස්තු සටහන</h3>
+        <canvas id="fbd" class="fbd"></canvas>
+      </div>
+      <div class="panel">
+        <h3>228 – 230 – සර්ෂණය ප්‍රමාණවත්ද?</h3>
+        <div class="kv"><span>අවශ්‍ය සර්ෂණය f = ma</span><b id="fNeed">–</b></div>
+        <div class="kv"><span>අභිලම්බ ප්‍රතික්‍රියාව R = mg</span><b id="rVal">–</b></div>
+        <div class="kv"><span>සීමාකාරී සර්ෂණය f_lim = μmg</span><b id="fLim">–</b></div>
+        <div class="meter"><div id="bar"></div><span class="lim"></span></div>
+        <div class="note">කළු ඉර = f_lim. තීරුව එය පසු කළොත් කුට්ටිය ලිස්සයි.</div>
+        <div class="status" id="status">–</div>
+        <div class="amax">a_max = μg = <span id="amax">3.0</span> ms⁻²</div>
+        <div class="note" id="massNote">m වෙනස් කර බලන්න: ma සහ μmg දෙකම එකම අනුපාතයෙන් වෙනස් වන නිසා a_max = μg ස්කන්ධය මත රඳා නොපවතී.</div>
+      </div>
     </div>
-    <div class="panel">
-      <h3>228 – 230 – සර්ෂණය ප්‍රමාණවත්ද?</h3>
-      <div class="kv"><span>අවශ්‍ය සර්ෂණය f = ma</span><b id="fNeed">–</b></div>
-      <div class="kv"><span>අභිලම්බ ප්‍රතික්‍රියාව R = mg</span><b id="rVal">–</b></div>
-      <div class="kv"><span>සීමාකාරී සර්ෂණය f_lim = μmg</span><b id="fLim">–</b></div>
-      <div class="meter"><div id="bar"></div><span class="lim"></span></div>
-      <div class="note">කළු ඉර = f_lim. තීරුව එය පසු කළොත් කුට්ටිය ලිස්සයි.</div>
-      <div class="status" id="status">–</div>
-      <div class="amax">a_max = μg = <span id="amax">3.0</span> ms⁻²</div>
-      <div class="note" id="massNote">m වෙනස් කර බලන්න: ma සහ μmg දෙකම එකම අනුපාතයෙන් වෙනස් වන නිසා a_max = μg ස්කන්ධය මත රඳා නොපවතී.</div>
-    </div>
+   </div>
   </div>
 
   <h2>විසඳුම්</h2>

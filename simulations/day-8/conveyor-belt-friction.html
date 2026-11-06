@@ -44,6 +44,20 @@
   .eq { font-family: 'Courier New', monospace; font-weight: 700; background: #fff; border: 1px solid #dfe6e9; border-radius: 6px; padding: 8px 12px; margin: 6px 0; display: block; }
   .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .opts { grid-template-columns: repeat(2, 1fr); } .wrap { padding: 14px; } h1 { font-size: 19px; } .status { font-size: 14px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .side .status { margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 15px; }
+    .side .status > div:first-child { grid-column: 1 / -1; }
+    .side .modes { margin-bottom: 12px; }
+    .side .mode span:last-child { display: none; }
+    .side .eqbox { grid-template-columns: 1fr; margin-top: 0; }
+    .side .eqbox .num { text-align: left; }
+    .main > .cvs:first-child { margin-top: 0; }
+  }
 </style>
 </head>
 <body>
@@ -53,28 +67,31 @@
   <h1>නියත ප්‍රවේගයෙන් යන වාහක පටියක් මත තබන පෙට්ටිය</h1>
   <p class="sub">t = 0 දී පෙට්ටිය පටිය මත සීරුවෙන් තබන්න. පෙට්ටිය පටියේ වේගයට පැමිණෙන තුරු (t₀) එය පටිය මත ලිස්සයි – ඒ කාලය පුරා ගතික සර්ෂණය නියතයි. t₀ න් පසු ලිස්සීමක් හෝ ත්වරණයක් නැති නිසා සර්ෂණය ශුන්‍ය වේ.</p>
 
-  <div class="controls">
-    <div><label>පටියේ ප්‍රවේගය u = <span class="v" id="uVal">3.0</span> ms⁻¹</label><input type="range" id="uS" min="0.5" max="4" step="0.1" value="3"></div>
-    <div><label>ගතික සර්ෂණ සංගුණකය μₖ = <span class="v" id="muVal">0.15</span></label><input type="range" id="muS" min="0.1" max="0.8" step="0.05" value="0.15"></div>
-    <div><label>පෙට්ටියේ ස්කන්ධය m = <span class="v" id="mVal">2</span> kg</label><input type="range" id="mS" min="1" max="10" step="0.5" value="2"></div>
-    <div class="btns">
-      <button class="solid" id="dropBtn">📦 පෙට්ටිය තබන්න (t = 0)</button>
-      <button id="slowBtn">🐢 සෙමින්: නැත</button>
-      <span style="font-size:13px;color:#636e72">g = 10 ms⁻²</span>
+  <div class="layout">
+   <aside class="side">
+    <div class="controls">
+      <div><label>පටියේ ප්‍රවේගය u = <span class="v" id="uVal">3.0</span> ms⁻¹</label><input type="range" id="uS" min="0.5" max="4" step="0.1" value="3"></div>
+      <div><label>ගතික සර්ෂණ සංගුණකය μₖ = <span class="v" id="muVal">0.15</span></label><input type="range" id="muS" min="0.1" max="0.8" step="0.05" value="0.15"></div>
+      <div><label>පෙට්ටියේ ස්කන්ධය m = <span class="v" id="mVal">2</span> kg</label><input type="range" id="mS" min="1" max="10" step="0.5" value="2"></div>
+      <div class="btns">
+        <button class="solid" id="dropBtn">📦 පෙට්ටිය තබන්න (t = 0)</button>
+        <button id="slowBtn">🐢 සෙමින්: නැත</button>
+        <span style="font-size:13px;color:#636e72">g = 10 ms⁻²</span>
+      </div>
     </div>
+    <div class="status" id="status">
+      <div><small>තත්ත්වය</small><span id="stState">පෙට්ටිය තබා නැත</span></div>
+      <div><small>t</small><span id="stT">0.00</span> s</div>
+      <div><small>පෙට්ටියේ v</small><span id="stV">0.00</span> ms⁻¹</div>
+      <div><small>සර්ෂණය F</small><span id="stF">0.0</span> N</div>
+      <div><small>t₀ = u / μₖg</small><span id="stT0">–</span> s</div>
+    </div>
+   </aside>
+   <div class="main">
+    <div class="cvs"><canvas id="scene" class="scene"></canvas></div>
+    <div class="cvs"><canvas id="graph" class="graph"></canvas></div>
+   </div>
   </div>
-
-  <div class="cvs"><canvas id="scene" class="scene"></canvas></div>
-
-  <div class="status" id="status">
-    <div><small>තත්ත්වය</small><span id="stState">පෙට්ටිය තබා නැත</span></div>
-    <div><small>t</small><span id="stT">0.00</span> s</div>
-    <div><small>පෙට්ටියේ v</small><span id="stV">0.00</span> ms⁻¹</div>
-    <div><small>සර්ෂණය F</small><span id="stF">0.0</span> N</div>
-    <div><small>t₀ = u / μₖg</small><span id="stT0">–</span> s</div>
-  </div>
-
-  <div class="cvs"><canvas id="graph" class="graph"></canvas></div>
 
   <h2>ප්‍රශ්නයේ පිළිතුරු 5 – නිවැරදි ප්‍රස්තාරය කුමක්ද?</h2>
   <div class="opts" id="opts"></div>

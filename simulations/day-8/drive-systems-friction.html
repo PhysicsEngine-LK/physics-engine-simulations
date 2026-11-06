@@ -50,6 +50,20 @@
   .note { font-size: 13px; color: #636e72; line-height: 1.5; }
   .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls, .row { grid-template-columns: 1fr; } .modes { gap: 6px; } .mode b { font-size: 14px; } .mode span { display: none; } .eqbox { grid-template-columns: 1fr; } .eqbox .num { text-align: left; } .wrap { padding: 14px; } h1 { font-size: 19px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .side .status { margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 15px; }
+    .side .status > div:first-child { grid-column: 1 / -1; }
+    .side .modes { margin-bottom: 12px; }
+    .side .mode span:last-child { display: none; }
+    .side .eqbox { grid-template-columns: 1fr; margin-top: 0; }
+    .side .eqbox .num { text-align: left; }
+    .main > .cvs:first-child { margin-top: 0; }
+  }
 </style>
 </head>
 <body>
@@ -59,44 +73,46 @@
   <h1>රෝද ධාවන පද්ධති: රෝද මත සර්ෂණ බලවල දිශාව</h1>
   <p class="sub">එන්ජිමෙන් බලය ලැබෙන (ධාවක) රෝද මත පොළොවෙන් <b style="color:#00a37a">ඉදිරියට F</b> සර්ෂණයක් ද, නිදහස් රෝද මත <b style="color:#d35400">පිටුපසට f</b> කුඩා සර්ෂණයක් ද යෙදේ. පද්ධතිය මාරු කර බලන්න.</p>
 
-  <div class="modes">
-    <button class="mode on" data-mode="FWD"><span class="qtag">238</span><b>FWD</b><span>ඉදිරිපස රෝද ධාවනය</span></button>
-    <button class="mode" data-mode="RWD"><span class="qtag">239</span><b>RWD</b><span>පසුපස රෝද ධාවනය</span></button>
-    <button class="mode" data-mode="AWD"><span class="qtag">240</span><b>AWD / 4WD</b><span>සියලු රෝද ධාවනය</span></button>
-  </div>
-
-  <div class="controls">
-    <div><label>ධාවක සර්ෂණ බලය F = <span class="v" id="FVal">3000</span> N</label><input type="range" id="FS" min="1000" max="6000" step="100" value="3000"></div>
-    <div><label>නිදහස් රෝද මත සර්ෂණය f = <span class="v" id="fVal">300</span> N</label><input type="range" id="fS" min="0" max="800" step="50" value="300"></div>
-    <div class="btns">
-      <button class="b solid" id="runBtn">▶ ධාවනය</button>
-      <button class="b" id="resetBtn">↺ නැවත</button>
-      <label class="chk"><input type="checkbox" id="n3Chk"> නිව්ටන් III: රෝද පොළොව මත යොදන බල ද පෙන්වන්න</label>
-      <span class="note">m = 1200 kg (වාතයේ ප්‍රතිරෝධය නොසලකා)</span>
+  <div class="layout">
+   <aside class="side">
+    <div class="modes">
+      <button class="mode on" data-mode="FWD"><span class="qtag">238</span><b>FWD</b><span>ඉදිරිපස රෝද ධාවනය</span></button>
+      <button class="mode" data-mode="RWD"><span class="qtag">239</span><b>RWD</b><span>පසුපස රෝද ධාවනය</span></button>
+      <button class="mode" data-mode="AWD"><span class="qtag">240</span><b>AWD / 4WD</b><span>සියලු රෝද ධාවනය</span></button>
     </div>
-  </div>
-
-  <div class="cvs"><canvas id="scene" class="scene"></canvas></div>
-
-  <div class="eqbox">
-    <div>
-      <div class="lines" id="eqLines"></div>
-      <div class="main" id="eqMain"></div>
+    <div class="controls">
+      <div><label>ධාවක සර්ෂණ බලය F = <span class="v" id="FVal">3000</span> N</label><input type="range" id="FS" min="1000" max="6000" step="100" value="3000"></div>
+      <div><label>නිදහස් රෝද මත සර්ෂණය f = <span class="v" id="fVal">300</span> N</label><input type="range" id="fS" min="0" max="800" step="50" value="300"></div>
+      <div class="btns">
+        <button class="b solid" id="runBtn">▶ ධාවනය</button>
+        <button class="b" id="resetBtn">↺ නැවත</button>
+        <label class="chk"><input type="checkbox" id="n3Chk"> නිව්ටන් III: රෝද පොළොව මත යොදන බල ද පෙන්වන්න</label>
+        <span class="note">m = 1200 kg (වාතයේ ප්‍රතිරෝධය නොසලකා)</span>
+      </div>
     </div>
-    <div class="num" id="eqNum"></div>
-  </div>
-
-  <div class="row">
-    <div class="panel">
-      <h3>🔧 ධාවක රෝදය – සර්ෂණය ඉදිරියට ඇයි?</h3>
-      <canvas id="wd"></canvas>
-      <p>එන්ජිම රෝදය කරකවයි. සර්ෂණය නොමැති නම් රෝදයේ පහළ ලක්ෂ්‍යය පොළොව මත <b>පිටුපසට ලිස්සයි</b> (අයිස් මත රෝදය කැරකෙනවා වගේ). එම ලිස්සීමේ ප්‍රවණතාවට විරුද්ධව පොළොව රෝදය මත <b>ඉදිරියට F</b> යොදයි – රථය ඉදිරියට තල්ලු කරන්නේ මෙම බලයයි.</p>
+    <div class="eqbox">
+      <div>
+        <div class="lines" id="eqLines"></div>
+        <div class="main" id="eqMain"></div>
+      </div>
+      <div class="num" id="eqNum"></div>
     </div>
-    <div class="panel">
-      <h3>🛞 නිදහස් රෝදය – සර්ෂණය පිටුපසට ඇයි?</h3>
-      <canvas id="wn"></canvas>
-      <p>නිදහස් රෝදයට එන්ජිමෙන් බලයක් නැත; අක්ෂය මගින් එය ඉදිරියට ඇදගෙන යයි. එය නොකැරකී ගියොත් පහළ ලක්ෂ්‍යය <b>ඉදිරියට ලිස්සයි</b>. එනිසා පොළොව <b>පිටුපසට කුඩා f</b> යොදයි – මෙම බලයේ ව්‍යාවර්තයෙන් රෝදය කැරකෙයි.</p>
+   </aside>
+   <div class="main">
+    <div class="cvs"><canvas id="scene" class="scene"></canvas></div>
+    <div class="row">
+      <div class="panel">
+        <h3>🔧 ධාවක රෝදය – සර්ෂණය ඉදිරියට ඇයි?</h3>
+        <canvas id="wd"></canvas>
+        <p>එන්ජිම රෝදය කරකවයි. සර්ෂණය නොමැති නම් රෝදයේ පහළ ලක්ෂ්‍යය පොළොව මත <b>පිටුපසට ලිස්සයි</b> (අයිස් මත රෝදය කැරකෙනවා වගේ). එම ලිස්සීමේ ප්‍රවණතාවට විරුද්ධව පොළොව රෝදය මත <b>ඉදිරියට F</b> යොදයි – රථය ඉදිරියට තල්ලු කරන්නේ මෙම බලයයි.</p>
+      </div>
+      <div class="panel">
+        <h3>🛞 නිදහස් රෝදය – සර්ෂණය පිටුපසට ඇයි?</h3>
+        <canvas id="wn"></canvas>
+        <p>නිදහස් රෝදයට එන්ජිමෙන් බලයක් නැත; අක්ෂය මගින් එය ඉදිරියට ඇදගෙන යයි. එය නොකැරකී ගියොත් පහළ ලක්ෂ්‍යය <b>ඉදිරියට ලිස්සයි</b>. එනිසා පොළොව <b>පිටුපසට කුඩා f</b> යොදයි – මෙම බලයේ ව්‍යාවර්තයෙන් රෝදය කැරකෙයි.</p>
+      </div>
     </div>
+   </div>
   </div>
 
   <h2>විසඳුම්</h2>
