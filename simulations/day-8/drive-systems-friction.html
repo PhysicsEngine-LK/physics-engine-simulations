@@ -121,7 +121,7 @@
     <div class="ans">
       • ඉදිරි රෝද (ධාවක): පොළොවෙන් <b>ඉදිරියට F</b><br>
       • පසු රෝද (නිදහස්): පොළොවෙන් <b>පිටුපසට f</b>
-      <span class="eq">F_net = F − f</span>
+      <span class="eq">F<sub>net</sub> = F − f</span>
     </div>
   </details>
   <details>
@@ -129,7 +129,7 @@
     <div class="ans">
       • පසු රෝද (ධාවක): පොළොවෙන් <b>ඉදිරියට F</b><br>
       • ඉදිරි රෝද (නිදහස්): පොළොවෙන් <b>පිටුපසට f</b>
-      <span class="eq">F_net = F − f</span>
+      <span class="eq">F<sub>net</sub> = F − f</span>
       (FWD ට සමාන ප්‍රකාශනයකි – වෙනස වන්නේ බල ක්‍රියා කරන රෝද පමණි.)
     </div>
   </details>
@@ -138,7 +138,7 @@
     <div class="ans">
       • සියලු රෝද ධාවක රෝද නිසා, ඉදිරි රෝද මත F₁ ද පසු රෝද මත F₂ ද යන දෙකම <b>ඉදිරියට</b><br>
       • පිටුපසට ක්‍රියා කරන f නැත (නිදහස් රෝද නැති නිසා)
-      <span class="eq">F_net = F₁ + F₂</span>
+      <span class="eq">F<sub>net</sub> = F₁ + F₂</span>
       බලය රෝද හතරටම බෙදී යන නිසා, එක් රෝදයක් ලිස්සීමට පෙර ලබාගත හැකි මුළු සර්ෂණය වැඩියි – ලිස්සන මාර්ගවල AWD වඩා හොඳින් ත්වරණය වන්නේ එබැවිනි.
     </div>
   </details>
@@ -168,9 +168,19 @@ function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
   ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
   ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
 }
+// Draws text; "x_abc" is drawn with "abc" as a real subscript.
 function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
-  ctx.fillStyle = col; ctx.font = `${weight} ${size}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
-  ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.fillText(t, x, y);
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/); // even = normal text, odd = subscript
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
 }
 function pill(ctx, t, x, y, col, size = 15, align = 'center') {
   ctx.font = `800 ${size}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
@@ -283,14 +293,14 @@ function closeup(s, driven) {
 function updateEq() {
   const fr = forces();
   const L = {
-    FWD: ['ඉදිරි රෝද (ධාවක): F → ඉදිරියට', 'පසු රෝද (නිදහස්): f → පිටුපසට', 'F_net = F − f'],
-    RWD: ['පසු රෝද (ධාවක): F → ඉදිරියට', 'ඉදිරි රෝද (නිදහස්): f → පිටුපසට', 'F_net = F − f'],
-    AWD: ['ඉදිරි රෝද (ධාවක): F₁ → ඉදිරියට', 'පසු රෝද (ධාවක): F₂ → ඉදිරියට', 'F_net = F₁ + F₂'],
+    FWD: ['ඉදිරි රෝද (ධාවක): F → ඉදිරියට', 'පසු රෝද (නිදහස්): f → පිටුපසට', 'F<sub>net</sub> = F − f'],
+    RWD: ['පසු රෝද (ධාවක): F → ඉදිරියට', 'ඉදිරි රෝද (නිදහස්): f → පිටුපසට', 'F<sub>net</sub> = F − f'],
+    AWD: ['ඉදිරි රෝද (ධාවක): F₁ → ඉදිරියට', 'පසු රෝද (ධාවක): F₂ → ඉදිරියට', 'F<sub>net</sub> = F₁ + F₂'],
   }[MODE];
   document.getElementById('eqLines').innerHTML = L[0] + '<br>' + L[1];
-  document.getElementById('eqMain').textContent = L[2];
+  document.getElementById('eqMain').innerHTML = L[2];
   const sub = MODE === 'AWD' ? `= ${F / 2} + ${F / 2}` : `= ${F} − ${f}`;
-  document.getElementById('eqNum').innerHTML = `F_net ${sub} = <b>${fr.net} N</b><br>a = F_net / m = <b>${(fr.net / MASS).toFixed(2)} ms⁻²</b>`;
+  document.getElementById('eqNum').innerHTML = `F<sub>net</sub> ${sub} = <b>${fr.net} N</b><br>a = F<sub>net</sub> / m = <b>${(fr.net / MASS).toFixed(2)} ms⁻²</b>`;
 }
 
 const FSl = document.getElementById('FS'), fSl = document.getElementById('fS');

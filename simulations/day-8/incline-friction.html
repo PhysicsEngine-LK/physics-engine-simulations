@@ -144,9 +144,19 @@ function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
   ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
   ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
 }
+// Draws text; "x_abc" is drawn with "abc" as a real subscript.
 function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
-  ctx.fillStyle = col; ctx.font = `${weight} ${size}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
-  ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.fillText(t, x, y);
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/); // even = normal text, odd = subscript
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
 }
 const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
 

@@ -112,8 +112,8 @@
     <div class="ans">
       තිරස් පෘෂ්ඨයක් නිසා අභිලම්බ ප්‍රතික්‍රියාව බරට සමානයි:
       <span class="eq">R = mg = 100 × 10 = 1000 N</span>
-      <span class="eq">f_limiting = μR = 0.2 × 1000 = 200 N</span>
-      <span class="eq">f_kinetic = μₖR = 0.18 × 1000 = 180 N</span>
+      <span class="eq">f<sub>limiting</sub> = μR = 0.2 × 1000 = 200 N</span>
+      <span class="eq">f<sub>kinetic</sub> = μₖR = 0.18 × 1000 = 180 N</span>
       μₖ &lt; μ නිසා චලනය වන විට සර්ෂණය, චලනය ආරම්භ වීමට පෙර උපරිම සර්ෂණයට වඩා අඩුයි.
     </div>
   </details>
@@ -122,7 +122,7 @@
     <div class="ans">
       • <b>P ≤ 200 N</b>: කුට්ටිය නිශ්චලයි. ස්ථිතික සර්ෂණය "අවශ්‍ය තරමට" පමණක් ක්‍රියා කරයි, එනිසා <b>f = P</b> (0, 100, 150 N).<br>
       • <b>P = 200 N</b>: f එහි උපරිම අගය වන 200 N ට ළඟා වේ – <b>සීමාකාරී සමතුලිතතාව</b> (චලනය වීමට ආසන්නයි).<br>
-      • <b>P &gt; 200 N</b>: ස්ථිතික සර්ෂණයට P සමතුලිත කළ නොහැක, කුට්ටිය චලනය වේ. දැන් <b>f = f_kinetic = 180 N</b> (205 N, 250 N දෙකටම), P මත රඳා නොපවතී.
+      • <b>P &gt; 200 N</b>: ස්ථිතික සර්ෂණයට P සමතුලිත කළ නොහැක, කුට්ටිය චලනය වේ. දැන් <b>f = f<sub>kinetic</sub> = 180 N</b> (205 N, 250 N දෙකටම), P මත රඳා නොපවතී.
     </div>
   </details>
   <details>
@@ -138,8 +138,8 @@
     <div class="ans">
       ඉහත ප්‍රස්තාරය බලන්න:<br>
       • 0 ≤ P ≤ 200 N : f = P (මූල ලක්ෂ්‍යය හරහා අනුක්‍රමණය 1 වූ සරල රේඛාව).<br>
-      • P = 200 N දී f උපරිමයි (f_limiting = 200 N).<br>
-      • P &gt; 200 N : f හදිසියේ 180 N ට අඩු වී, ඉන්පසු තිරස් රේඛාවක් ලෙස නියතව පවතී (f_kinetic = 180 N).
+      • P = 200 N දී f උපරිමයි (f<sub>limiting</sub> = 200 N).<br>
+      • P &gt; 200 N : f හදිසියේ 180 N ට අඩු වී, ඉන්පසු තිරස් රේඛාවක් ලෙස නියතව පවතී (f<sub>kinetic</sub> = 180 N).
     </div>
   </details>
 </div>
@@ -169,9 +169,19 @@ function arrow(ctx, x1, y1, x2, y2, col, lw = 4) {
   ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
   ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
 }
+// Draws text; "x_abc" is drawn with "abc" as a real subscript.
 function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
-  ctx.fillStyle = col; ctx.font = `${weight} ${size}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
-  ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.fillText(t, x, y);
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/); // even = normal text, odd = subscript
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
 }
 
 // ---------- state ----------
