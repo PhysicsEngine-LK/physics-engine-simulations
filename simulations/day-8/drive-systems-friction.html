@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>රෝද ධාවන පද්ධති සහ සර්ෂණය (238–240) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 16px; line-height: 1.6; }
+  .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .mode { border: 2px solid #d6d2ff; background: #fbfaff; border-radius: 12px; padding: 10px; cursor: pointer; text-align: center; font: inherit; color: #2c3e50; }
+  .mode b { display: block; font-size: 17px; }
+  .mode span { font-size: 13px; color: #636e72; }
+  .mode.on { border-color: #6c5ce7; background: #6c5ce7; color: #fff; }
+  .mode.on span { color: #e0dcff; }
+  .mode .qtag { background: #fff; color: #6c5ce7; display: inline-block; margin-bottom: 4px; }
+  .mode:not(.on) .qtag { background: #6c5ce7; color: #fff; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; }
+  button.b { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button.b.solid { background: #6c5ce7; color: #fff; }
+  .chk { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: linear-gradient(#dff1ff, #f7fcff 75%); border: 1px solid #dfe6e9; }
+  .eqbox { margin-top: 14px; background: #f1efff; border: 2px solid #6c5ce7; border-radius: 12px; padding: 14px 16px; display: grid; grid-template-columns: 1fr auto; gap: 8px 20px; align-items: center; }
+  .eqbox .main { font-family: 'Courier New', monospace; font-size: 24px; font-weight: 800; color: #6c5ce7; }
+  .eqbox .lines { font-size: 15px; line-height: 1.7; }
+  .eqbox .num { text-align: right; font-weight: 700; font-size: 15px; line-height: 1.7; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  .panel { border: 1px solid #dfe6e9; border-radius: 10px; padding: 12px; }
+  .panel h3 { margin: 0 0 6px; font-size: 16px; }
+  .panel p { font-size: 14px; line-height: 1.6; margin: 8px 0 0; color: #2d3436; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .eq { font-family: 'Courier New', monospace; font-weight: 700; background: #fff; border: 1px solid #dfe6e9; border-radius: 6px; padding: 8px 12px; margin: 6px 0; display: block; }
+  .note { font-size: 13px; color: #636e72; line-height: 1.5; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls, .row { grid-template-columns: 1fr; } .modes { gap: 6px; } .mode b { font-size: 14px; } .mode span { display: none; } .eqbox { grid-template-columns: 1fr; } .eqbox .num { text-align: left; } .wrap { padding: 14px; } h1 { font-size: 19px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">238</span><span class="qtag">239</span><span class="qtag">240</span></div>
+  <h1>රෝද ධාවන පද්ධති: රෝද මත සර්ෂණ බලවල දිශාව</h1>
+  <p class="sub">එන්ජිමෙන් බලය ලැබෙන (ධාවක) රෝද මත පොළොවෙන් <b style="color:#00a37a">ඉදිරියට F</b> සර්ෂණයක් ද, නිදහස් රෝද මත <b style="color:#d35400">පිටුපසට f</b> කුඩා සර්ෂණයක් ද යෙදේ. පද්ධතිය මාරු කර බලන්න.</p>
+
+  <div class="modes">
+    <button class="mode on" data-mode="FWD"><span class="qtag">238</span><b>FWD</b><span>ඉදිරිපස රෝද ධාවනය</span></button>
+    <button class="mode" data-mode="RWD"><span class="qtag">239</span><b>RWD</b><span>පසුපස රෝද ධාවනය</span></button>
+    <button class="mode" data-mode="AWD"><span class="qtag">240</span><b>AWD / 4WD</b><span>සියලු රෝද ධාවනය</span></button>
+  </div>
+
+  <div class="controls">
+    <div><label>ධාවක සර්ෂණ බලය F = <span class="v" id="FVal">3000</span> N</label><input type="range" id="FS" min="1000" max="6000" step="100" value="3000"></div>
+    <div><label>නිදහස් රෝද මත සර්ෂණය f = <span class="v" id="fVal">300</span> N</label><input type="range" id="fS" min="0" max="800" step="50" value="300"></div>
+    <div class="btns">
+      <button class="b solid" id="runBtn">▶ ධාවනය</button>
+      <button class="b" id="resetBtn">↺ නැවත</button>
+      <label class="chk"><input type="checkbox" id="n3Chk"> නිව්ටන් III: රෝද පොළොව මත යොදන බල ද පෙන්වන්න</label>
+      <span class="note">m = 1200 kg (වාතයේ ප්‍රතිරෝධය නොසලකා)</span>
+    </div>
+  </div>
+
+  <div class="cvs"><canvas id="scene" class="scene"></canvas></div>
+
+  <div class="eqbox">
+    <div>
+      <div class="lines" id="eqLines"></div>
+      <div class="main" id="eqMain"></div>
+    </div>
+    <div class="num" id="eqNum"></div>
+  </div>
+
+  <div class="row">
+    <div class="panel">
+      <h3>🔧 ධාවක රෝදය – සර්ෂණය ඉදිරියට ඇයි?</h3>
+      <canvas id="wd"></canvas>
+      <p>එන්ජිම රෝදය කරකවයි. සර්ෂණය නොමැති නම් රෝදයේ පහළ ලක්ෂ්‍යය පොළොව මත <b>පිටුපසට ලිස්සයි</b> (අයිස් මත රෝදය කැරකෙනවා වගේ). එම ලිස්සීමේ ප්‍රවණතාවට විරුද්ධව පොළොව රෝදය මත <b>ඉදිරියට F</b> යොදයි – රථය ඉදිරියට තල්ලු කරන්නේ මෙම බලයයි.</p>
+    </div>
+    <div class="panel">
+      <h3>🛞 නිදහස් රෝදය – සර්ෂණය පිටුපසට ඇයි?</h3>
+      <canvas id="wn"></canvas>
+      <p>නිදහස් රෝදයට එන්ජිමෙන් බලයක් නැත; අක්ෂය මගින් එය ඉදිරියට ඇදගෙන යයි. එය නොකැරකී ගියොත් පහළ ලක්ෂ්‍යය <b>ඉදිරියට ලිස්සයි</b>. එනිසා පොළොව <b>පිටුපසට කුඩා f</b> යොදයි – මෙම බලයේ ව්‍යාවර්තයෙන් රෝදය කැරකෙයි.</p>
+    </div>
+  </div>
+
+  <h2>විසඳුම්</h2>
+  <details>
+    <summary><span class="qtag">238</span>ඉදිරිපස රෝද ධාවනය (FWD)</summary>
+    <div class="ans">
+      • ඉදිරි රෝද (ධාවක): පොළොවෙන් <b>ඉදිරියට F</b><br>
+      • පසු රෝද (නිදහස්): පොළොවෙන් <b>පිටුපසට f</b>
+      <span class="eq">F_net = F − f</span>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">239</span>පසුපස රෝද ධාවනය (RWD)</summary>
+    <div class="ans">
+      • පසු රෝද (ධාවක): පොළොවෙන් <b>ඉදිරියට F</b><br>
+      • ඉදිරි රෝද (නිදහස්): පොළොවෙන් <b>පිටුපසට f</b>
+      <span class="eq">F_net = F − f</span>
+      (FWD ට සමාන ප්‍රකාශනයකි – වෙනස වන්නේ බල ක්‍රියා කරන රෝද පමණි.)
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">240</span>සියලු රෝද ධාවනය (AWD / 4WD)</summary>
+    <div class="ans">
+      • සියලු රෝද ධාවක රෝද නිසා, ඉදිරි රෝද මත F₁ ද පසු රෝද මත F₂ ද යන දෙකම <b>ඉදිරියට</b><br>
+      • පිටුපසට ක්‍රියා කරන f නැත (නිදහස් රෝද නැති නිසා)
+      <span class="eq">F_net = F₁ + F₂</span>
+      බලය රෝද හතරටම බෙදී යන නිසා, එක් රෝදයක් ලිස්සීමට පෙර ලබාගත හැකි මුළු සර්ෂණය වැඩියි – ලිස්සන මාර්ගවල AWD වඩා හොඳින් ත්වරණය වන්නේ එබැවිනි.
+    </div>
+  </details>
+</div>
+
+<script>
+const MASS = 1200;
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(15, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  ctx.fillStyle = col; ctx.font = `${weight} ${size}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
+  ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.fillText(t, x, y);
+}
+function pill(ctx, t, x, y, col, size = 15, align = 'center') {
+  ctx.font = `800 ${size}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
+  const w = ctx.measureText(t).width + 14, h = size + 10;
+  const left = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.roundRect(left, y - h / 2, w, h, 7); ctx.fill(); ctx.stroke();
+  text(ctx, t, left + w / 2, y, col, size, 'center', 800);
+}
+
+let MODE = 'FWD', F = 3000, f = 300, running = false, x = 0, v = 0, spin = 0;
+const GREEN = '#00a37a', ORANGE = '#e17055';
+
+function forces() {
+  if (MODE === 'FWD') return { front: F, rear: -f, net: F - f };
+  if (MODE === 'RWD') return { front: -f, rear: F, net: F - f };
+  return { front: F / 2, rear: F / 2, net: F };
+}
+
+// ---------- main scene ----------
+const sc = stage(document.getElementById('scene'), 900, 360);
+const ROAD = 290, RX = 300, FX = 620, WR = 42, SCALE = 0.04; // px per N
+function wheel(c, wx, driven) {
+  c.save(); c.translate(wx, ROAD - WR); c.rotate(x / 0.32);
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(0, 0, WR, 0, 7); c.fill();
+  c.fillStyle = driven ? '#a29bfe' : '#b2bec3'; c.beginPath(); c.arc(0, 0, WR - 12, 0, 7); c.fill();
+  c.strokeStyle = '#2d3436'; c.lineWidth = 4;
+  for (let i = 0; i < 5; i++) { const a = i * 2 * Math.PI / 5; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * (WR - 13), Math.sin(a) * (WR - 13)); c.stroke(); }
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(0, 0, 6, 0, 7); c.fill();
+  c.restore();
+  if (driven) { c.strokeStyle = '#6c5ce7'; c.lineWidth = 3; c.setLineDash([4, 4]); c.beginPath(); c.arc(wx, ROAD - WR, WR + 7, 0, 7); c.stroke(); c.setLineDash([]); }
+  pill(c, driven ? 'ධාවක රෝදය' : 'නිදහස් රෝදය', wx, ROAD + 58, driven ? '#6c5ce7' : '#636e72', 12);
+}
+function wheelForce(c, wx, val, label, n3) {
+  const y = ROAD - 7, L = Math.abs(val) * SCALE + (val ? 18 : 0), dir = Math.sign(val);
+  if (!val) return;
+  const col = dir > 0 ? GREEN : ORANGE;
+  arrow(c, wx, y, wx + dir * L, y, col, 7);
+  pill(c, label, wx + dir * (Math.max(L, WR) + 8), ROAD - 30, col, 17, dir > 0 ? 'left' : 'right');
+  if (n3) {
+    arrow(c, wx, ROAD + 16, wx - dir * L * 0.9, ROAD + 16, '#fff', 3, [6, 5]);
+    pill(c, 'රෝදය → පොළොව', wx - dir * (L * 0.9 + 6), ROAD + 34, '#2d3436', 11, dir > 0 ? 'right' : 'left');
+  }
+}
+function drawScene() {
+  const c = sc.ctx; c.clearRect(0, 0, 900, 360);
+  // background + road
+  c.fillStyle = '#b8e0b9'; c.fillRect(0, ROAD - 30, 900, 30);
+  const off = (x * 40) % 160;
+  c.fillStyle = '#7fbf86'; for (let i = -1; i < 8; i++) { c.beginPath(); c.arc(i * 160 - off * 0.5 + 60, ROAD - 30, 34, Math.PI, 0); c.fill(); }
+  c.fillStyle = '#57606f'; c.fillRect(0, ROAD, 900, 70);
+  c.fillStyle = '#dfe6e9'; for (let i = -1; i < 8; i++) c.fillRect(i * 160 - off, ROAD + 46, 80, 5);
+
+  const fr = forces(), n3 = document.getElementById('n3Chk').checked;
+  const frontDriven = MODE !== 'RWD', rearDriven = MODE !== 'FWD';
+  // body
+  const top = ROAD - WR - 135;
+  c.fillStyle = '#0984e3'; c.strokeStyle = '#0767b3'; c.lineWidth = 2;
+  c.beginPath();
+  c.moveTo(RX - 95, ROAD - WR + 6); c.lineTo(RX - 100, top + 55); c.quadraticCurveTo(RX - 95, top + 40, RX - 60, top + 40);
+  c.lineTo(RX + 20, top + 40); c.lineTo(RX + 80, top); c.lineTo(FX - 80, top); c.lineTo(FX - 10, top + 45);
+  c.lineTo(FX + 80, top + 55); c.quadraticCurveTo(FX + 105, top + 62, FX + 105, top + 85); c.lineTo(FX + 100, ROAD - WR + 6); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = '#c7ecff';
+  c.beginPath(); c.moveTo(RX + 35, top + 42); c.lineTo(RX + 86, top + 8); c.lineTo(RX + 170, top + 8); c.lineTo(RX + 170, top + 42); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(RX + 182, top + 8); c.lineTo(FX - 84, top + 8); c.lineTo(FX - 28, top + 42); c.lineTo(RX + 182, top + 42); c.closePath(); c.fill();
+  // engine (front) + drive shafts
+  c.fillStyle = '#2d3436'; c.fillRect(FX - 10, top + 62, 70, 44); text(c, 'එන්ජිම', FX + 25, top + 84, '#fff', 12, 'center', 800);
+  c.lineWidth = 7; c.lineCap = 'round';
+  const shaftY = ROAD - WR;
+  if (frontDriven) { c.strokeStyle = '#fdcb6e'; c.beginPath(); c.moveTo(FX + 25, top + 106); c.lineTo(FX, shaftY); c.stroke(); }
+  if (rearDriven) { c.strokeStyle = '#fdcb6e'; c.beginPath(); c.moveTo(FX - 10, top + 100); c.lineTo(RX + 30, shaftY - 4); c.lineTo(RX, shaftY); c.stroke(); }
+  wheel(c, RX, rearDriven); wheel(c, FX, frontDriven);
+  const lbl = MODE === 'AWD' ? ['F₂', 'F₁'] : MODE === 'FWD' ? ['f', 'F'] : ['F', 'f'];
+  wheelForce(c, RX, fr.rear, lbl[0], n3);
+  wheelForce(c, FX, fr.front, lbl[1], n3);
+  // net force
+  arrow(c, (RX + FX) / 2 - fr.net * SCALE / 2, top - 30, (RX + FX) / 2 + fr.net * SCALE / 2 + 10, top - 30, '#6c5ce7', 8);
+  text(c, `F_net = ${fr.net} N`, (RX + FX) / 2, top - 58, '#6c5ce7', 18, 'center', 800);
+  text(c, 'පිටුපස', 20, 24, '#7f8c8d', 14); text(c, 'ඉදිරිය →', 880, 24, '#7f8c8d', 14, 'right');
+  text(c, `v = ${(v * 3.6).toFixed(0)} km/h`, 20, 50, '#2d3436', 15);
+}
+
+// ---------- wheel close-ups ----------
+const wd = stage(document.getElementById('wd'), 400, 230), wn = stage(document.getElementById('wn'), 400, 230);
+function closeup(s, driven) {
+  const c = s.ctx; c.clearRect(0, 0, 400, 230);
+  const cx = 200, cy = 105, r = 70, gy = cy + r;
+  c.fillStyle = '#dfe6e9'; c.fillRect(0, gy, 400, 230 - gy); c.strokeStyle = '#636e72'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, gy); c.lineTo(400, gy); c.stroke();
+  c.save(); c.translate(cx, cy); c.rotate(spin);
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill();
+  c.fillStyle = driven ? '#a29bfe' : '#b2bec3'; c.beginPath(); c.arc(0, 0, r - 18, 0, 7); c.fill();
+  c.strokeStyle = '#2d3436'; c.lineWidth = 5; for (let i = 0; i < 5; i++) { const a = i * 2 * Math.PI / 5; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * (r - 18), Math.sin(a) * (r - 18)); c.stroke(); }
+  c.restore();
+  // rotation sense (clockwise for motion to the right)
+  c.strokeStyle = driven ? '#6c5ce7' : '#7f8c8d'; c.lineWidth = 3;
+  c.beginPath(); c.arc(cx, cy, r + 14, -2.3, -0.9); c.stroke();
+  arrow(c, cx + (r + 14) * Math.cos(-1.05), cy + (r + 14) * Math.sin(-1.05), cx + (r + 14) * Math.cos(-0.85), cy + (r + 14) * Math.sin(-0.85), driven ? '#6c5ce7' : '#7f8c8d', 3);
+  text(c, driven ? 'එන්ජිමේ ව්‍යාවර්තය' : 'සර්ෂණයෙන් කැරකේ', cx, cy - r - 30, driven ? '#6c5ce7' : '#7f8c8d', 13, 'center');
+  // axle force for the free wheel
+  if (!driven) { arrow(c, cx, cy, cx + 75, cy, '#2d3436', 4); text(c, 'අක්ෂයෙන් ඇදීම', cx + 80, cy - 16, '#2d3436', 12); }
+  // slip tendency at contact (dashed red) and friction
+  const dir = driven ? -1 : 1;
+  arrow(c, cx, gy - 12, cx + dir * 70, gy - 12, '#d63031', 3, [5, 4]);
+  text(c, driven ? 'ලිස්සීමේ ප්‍රවණතාව' : 'ලිස්සීමේ ප්‍රවණතාව', cx + dir * 74, gy - 28, '#d63031', 12, driven ? 'right' : 'left');
+  arrow(c, cx, gy + 14, cx - dir * 95, gy + 14, driven ? GREEN : ORANGE, 7);
+  text(c, driven ? 'F (පොළොවෙන්)' : 'f (පොළොවෙන්)', cx - dir * 100, gy + 34, driven ? GREEN : ORANGE, 15, driven ? 'right' : 'left', 800);
+}
+
+// ---------- equation panel ----------
+function updateEq() {
+  const fr = forces();
+  const L = {
+    FWD: ['ඉදිරි රෝද (ධාවක): F → ඉදිරියට', 'පසු රෝද (නිදහස්): f → පිටුපසට', 'F_net = F − f'],
+    RWD: ['පසු රෝද (ධාවක): F → ඉදිරියට', 'ඉදිරි රෝද (නිදහස්): f → පිටුපසට', 'F_net = F − f'],
+    AWD: ['ඉදිරි රෝද (ධාවක): F₁ → ඉදිරියට', 'පසු රෝද (ධාවක): F₂ → ඉදිරියට', 'F_net = F₁ + F₂'],
+  }[MODE];
+  document.getElementById('eqLines').innerHTML = L[0] + '<br>' + L[1];
+  document.getElementById('eqMain').textContent = L[2];
+  const sub = MODE === 'AWD' ? `= ${F / 2} + ${F / 2}` : `= ${F} − ${f}`;
+  document.getElementById('eqNum').innerHTML = `F_net ${sub} = <b>${fr.net} N</b><br>a = F_net / m = <b>${(fr.net / MASS).toFixed(2)} ms⁻²</b>`;
+}
+
+const FSl = document.getElementById('FS'), fSl = document.getElementById('fS');
+function readInputs() {
+  F = +FSl.value; f = +fSl.value;
+  document.getElementById('FVal').textContent = F; document.getElementById('fVal').textContent = f;
+  updateEq();
+}
+FSl.addEventListener('input', readInputs); fSl.addEventListener('input', readInputs);
+document.querySelectorAll('.mode').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.mode').forEach(o => o.classList.toggle('on', o === b));
+  MODE = b.dataset.mode; updateEq();
+}));
+const runBtn = document.getElementById('runBtn');
+runBtn.addEventListener('click', () => { running = !running; runBtn.textContent = running ? '⏸ නවත්වන්න' : '▶ ධාවනය'; });
+document.getElementById('resetBtn').addEventListener('click', () => { running = false; runBtn.textContent = '▶ ධාවනය'; x = 0; v = 0; });
+
+readInputs();
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (running) {
+    v += forces().net / MASS * dt;
+    if (v > 100 / 3.6) { v = 100 / 3.6; }
+    x += v * dt;
+  }
+  // wheels spin with the car; when parked show a slow spin so the close-ups are clear
+  spin += (running ? v / 0.32 : 1.2) * dt;
+  drawScene(); closeup(wd, true); closeup(wn, false);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

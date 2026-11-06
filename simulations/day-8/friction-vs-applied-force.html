@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>සර්ෂණය සහ යොදන බලය (222–225) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 16px; line-height: 1.6; }
+  .given { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .chip { font-family: 'Courier New', monospace; font-weight: 700; background: #f8f9ff; border: 1px solid #d6d2ff; border-radius: 6px; padding: 5px 10px; font-size: 14px; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; }
+  .controls label { font-weight: 700; font-size: 17px; }
+  .big { color: #0984e3; font-size: 22px; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 12px 0 6px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  .muted { color: #636e72; font-size: 13px; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: linear-gradient(#eaf6ff, #fdfdfd); border: 1px solid #dfe6e9; }
+  .graph { background: #fff; border: 1px solid #dfe6e9; }
+  .cvs:has(.graph) { margin-top: 14px; }
+  .status { margin-top: 14px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 12px 16px; border-radius: 6px; font-weight: 700; font-size: 17px; display: flex; flex-wrap: wrap; gap: 10px 26px; justify-content: space-between; transition: .25s; }
+  .status.limit { border-left-color: #f39c12; background: #fef5e7; }
+  .status.move { border-left-color: #e74c3c; background: #fdedec; }
+  .status small { display: block; font-size: 13px; color: #636e72; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 15px; }
+  th, td { border: 1px solid #dfe6e9; padding: 8px; text-align: center; }
+  th { background: #6c5ce7; color: #fff; }
+  tr.hl td { background: #fff7d6; }
+  td.hidden { color: #b2bec3; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .eq { font-family: 'Courier New', monospace; font-weight: 700; background: #fff; border: 1px solid #dfe6e9; border-radius: 6px; padding: 8px 12px; margin: 6px 0; display: block; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } }
+  @media (max-width: 600px) { .wrap { padding: 14px; } h1 { font-size: 19px; } .status { font-size: 15px; } table { font-size: 13px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">222</span><span class="qtag">223</span><span class="qtag">224</span><span class="qtag">225</span></div>
+  <h1>යොදන බලය (P) වැඩි කරන විට සර්ෂණ බලය (f) වෙනස් වන හැටි</h1>
+  <p class="sub">P ක්‍රමයෙන් වැඩි කර බලන්න. කුට්ටිය නිශ්චලව සිටින තාක් f = P වේ. f සීමාකාරී අගයට (200 N) ළඟා වූ පසු කුට්ටිය චලනය වී, සර්ෂණය ගතික අගයට (180 N) අඩු වේ.</p>
+  <div class="given">
+    <span class="chip">m = 100 kg</span><span class="chip">g = 10 ms⁻²</span><span class="chip">μ = 0.2</span><span class="chip">μₖ = 0.18</span>
+  </div>
+
+  <div class="controls">
+    <label>යොදන බලය P = <span class="big" id="pVal">0</span> N</label>
+    <input type="range" id="pSlider" min="0" max="300" step="1" value="0">
+    <div class="btns">
+      <span class="muted">223 වගුවේ අගයන් (නිශ්චලතාවයේ සිට):</span>
+      <button data-p="0">0 N</button><button data-p="100">100 N</button><button data-p="150">150 N</button>
+      <button data-p="200">200 N</button><button data-p="205">205 N</button><button data-p="250">250 N</button>
+      <button class="solid" id="resetBtn">↺ නැවත නිශ්චල කරන්න</button>
+    </div>
+  </div>
+
+  <div class="cvs"><canvas id="scene" class="scene"></canvas></div>
+
+  <div class="status" id="status">
+    <div><small>තත්ත්වය</small><span id="stState">නිශ්චලයි</span></div>
+    <div><small>සර්ෂණ බලය f</small><span id="stF">0</span> N</div>
+    <div><small>ත්වරණය a</small><span id="stA">0.00</span> ms⁻²</div>
+    <div><small>ප්‍රවේගය v</small><span id="stV">0.00</span> ms⁻¹</div>
+  </div>
+
+  <div class="cvs"><canvas id="graph" class="graph"></canvas></div>
+
+  <h2>223 – වගුව (බොත්තම් ඔබා එක් එක් අගය පරීක්ෂා කරන්න)</h2>
+  <table>
+    <thead><tr><th>P (N)</th><th>f (N)</th><th>කුට්ටියේ තත්ත්වය</th><th>a (ms⁻²)</th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="btns" style="margin-top:10px"><button id="showAll">සියලු පිළිතුරු පෙන්වන්න</button></div>
+
+  <h2>විසඳුම්</h2>
+  <details>
+    <summary><span class="qtag">222</span>සීමාකාරී සහ ගතික සර්ෂණ බල</summary>
+    <div class="ans">
+      තිරස් පෘෂ්ඨයක් නිසා අභිලම්බ ප්‍රතික්‍රියාව බරට සමානයි:
+      <span class="eq">R = mg = 100 × 10 = 1000 N</span>
+      <span class="eq">f_limiting = μR = 0.2 × 1000 = 200 N</span>
+      <span class="eq">f_kinetic = μₖR = 0.18 × 1000 = 180 N</span>
+      μₖ &lt; μ නිසා චලනය වන විට සර්ෂණය, චලනය ආරම්භ වීමට පෙර උපරිම සර්ෂණයට වඩා අඩුයි.
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">223</span>P අනුව f වෙනස් වන හැටි</summary>
+    <div class="ans">
+      • <b>P ≤ 200 N</b>: කුට්ටිය නිශ්චලයි. ස්ථිතික සර්ෂණය "අවශ්‍ය තරමට" පමණක් ක්‍රියා කරයි, එනිසා <b>f = P</b> (0, 100, 150 N).<br>
+      • <b>P = 200 N</b>: f එහි උපරිම අගය වන 200 N ට ළඟා වේ – <b>සීමාකාරී සමතුලිතතාව</b> (චලනය වීමට ආසන්නයි).<br>
+      • <b>P &gt; 200 N</b>: ස්ථිතික සර්ෂණයට P සමතුලිත කළ නොහැක, කුට්ටිය චලනය වේ. දැන් <b>f = f_kinetic = 180 N</b> (205 N, 250 N දෙකටම), P මත රඳා නොපවතී.
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">224</span>P = 250 N විට ත්වරණය</summary>
+    <div class="ans">
+      කුට්ටිය චලනය වන නිසා f = 180 N. නිව්ටන්ගේ දෙවන නියමය (F = ma):
+      <span class="eq">P − f = ma  →  250 − 180 = 100 × a</span>
+      <span class="eq">a = 70 / 100 = 0.7 ms⁻²</span>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">225</span>f – P ප්‍රස්තාරය</summary>
+    <div class="ans">
+      ඉහත ප්‍රස්තාරය බලන්න:<br>
+      • 0 ≤ P ≤ 200 N : f = P (මූල ලක්ෂ්‍යය හරහා අනුක්‍රමණය 1 වූ සරල රේඛාව).<br>
+      • P = 200 N දී f උපරිමයි (f_limiting = 200 N).<br>
+      • P &gt; 200 N : f හදිසියේ 180 N ට අඩු වී, ඉන්පසු තිරස් රේඛාවක් ලෙස නියතව පවතී (f_kinetic = 180 N).
+    </div>
+  </details>
+</div>
+
+<script>
+const m = 100, g = 10, MU_S = 0.2, MU_K = 0.18;
+const R = m * g, F_LIM = MU_S * R, F_KIN = MU_K * R;
+
+// ---------- canvas helpers ----------
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(15, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  ctx.fillStyle = col; ctx.font = `${weight} ${size}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
+  ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.fillText(t, x, y);
+}
+
+// ---------- state ----------
+const slider = document.getElementById('pSlider');
+let P = 0, x = 0, v = 0, f = 0, a = 0, state = 'rest';
+
+function physics(dt) {
+  if (v <= 0) {
+    v = 0;
+    if (P < F_LIM) { f = P; a = 0; state = 'rest'; }
+    else if (P === F_LIM) { f = F_LIM; a = 0; state = 'limit'; }
+    else { f = F_KIN; a = (P - F_KIN) / m; state = 'move'; }
+  } else {
+    f = F_KIN; a = (P - F_KIN) / m; state = 'move';
+  }
+  if (state === 'move') {
+    v += a * dt;
+    if (v <= 0) { v = 0; }
+    x += v * dt;
+  }
+}
+
+// ---------- scene ----------
+const sc = stage(document.getElementById('scene'), 900, 330);
+const GROUND = 235, PPM = 45, HSCALE = 0.55;
+function drawScene() {
+  const c = sc.ctx; c.clearRect(0, 0, 900, 330);
+  // ground with scrolling marks (camera follows the block)
+  c.fillStyle = '#b2bec3'; c.fillRect(0, GROUND, 900, 95);
+  c.fillStyle = '#95a5a6'; c.fillRect(0, GROUND, 900, 4);
+  const off = (x * PPM) % 60;
+  c.strokeStyle = '#7f8c8d'; c.lineWidth = 2;
+  for (let i = -1; i < 17; i++) { const gx = i * 60 - off; c.beginPath(); c.moveTo(gx, GROUND + 4); c.lineTo(gx - 18, GROUND + 22); c.stroke(); }
+  // distance marker
+  text(c, `ගිය දුර: ${x.toFixed(1)} m`, 880, 310, '#2d3436', 15, 'right');
+
+  // block
+  const bx = 470, bw = 130, bh = 95, by = GROUND - bh;
+  c.fillStyle = '#a29bfe'; c.strokeStyle = '#6c5ce7'; c.lineWidth = 3;
+  c.beginPath(); c.roundRect(bx - bw / 2, by, bw, bh, 6); c.fill(); c.stroke();
+  text(c, '100 kg', bx, by + bh / 2, '#fff', 20, 'center', 800);
+
+  // W and R (fixed length, labelled)
+  arrow(c, bx + 30, by + bh / 2 + 18, bx + 30, GROUND + 75, '#2d3436', 4);
+  text(c, 'W = 1000 N', bx + 40, GROUND + 64, '#2d3436', 15);
+  arrow(c, bx + 30, by, bx + 30, by - 70, '#00b894', 4);
+  text(c, 'R = 1000 N', bx + 40, by - 60, '#00b894', 15);
+
+  // P: pushes on the left face
+  const pl = P * HSCALE;
+  if (P > 0) {
+    arrow(c, bx - bw / 2 - pl - 4, by + 35, bx - bw / 2 - 4, by + 35, '#0984e3', 6);
+    text(c, `P = ${P} N`, bx - bw / 2 - pl / 2 - 4, by + 12, '#0984e3', 17, 'center', 800);
+  }
+  // f: along the contact surface, opposite to (tendency of) motion
+  const fl = f * HSCALE;
+  if (f > 0) {
+    arrow(c, bx - bw / 2 + 4, GROUND - 8, bx - bw / 2 + 4 - fl, GROUND - 8, '#e17055', 6);
+    text(c, `f = ${Math.round(f)} N`, bx - bw / 2 - fl / 2, GROUND + 20, '#d35400', 17, 'center', 800);
+  }
+  if (state === 'move') {
+    arrow(c, bx - 160, by - 40, bx - 70, by - 40, '#d63031', 3);
+    text(c, 'චලිත දිශාව', bx - 115, by - 58, '#d63031', 14, 'center');
+  }
+  text(c, 'තිරස් බල ඊතල පරිමාණයට අඳින ලදී (R, W හැර)', 14, 20, '#636e72', 13, 'left', 600);
+}
+
+// ---------- graph ----------
+const gr = stage(document.getElementById('graph'), 900, 360);
+const G = { x0: 80, y0: 300, w: 780, h: 250, pmax: 300, fmax: 250 };
+const gx = p => G.x0 + p / G.pmax * G.w, gy = ff => G.y0 - ff / G.fmax * G.h;
+function drawGraph() {
+  const c = gr.ctx; c.clearRect(0, 0, 900, 360);
+  text(c, '225 – සර්ෂණ බලය (f) එදිරිව යොදන බලය (P)', 450, 22, '#2c3e50', 17, 'center', 800);
+  // grid
+  c.strokeStyle = '#ecf0f1'; c.lineWidth = 1;
+  for (let p = 0; p <= 300; p += 50) { c.beginPath(); c.moveTo(gx(p), gy(0)); c.lineTo(gx(p), gy(G.fmax)); c.stroke(); text(c, p, gx(p), G.y0 + 16, '#636e72', 13, 'center', 600); }
+  for (let ff = 0; ff <= 250; ff += 50) { c.beginPath(); c.moveTo(gx(0), gy(ff)); c.lineTo(gx(300), gy(ff)); c.stroke(); text(c, ff, G.x0 - 10, gy(ff), '#636e72', 13, 'right', 600); }
+  // axes
+  arrow(c, G.x0, G.y0, G.x0 + G.w + 20, G.y0, '#2d3436', 2);
+  arrow(c, G.x0, G.y0, G.x0, G.y0 - G.h - 20, '#2d3436', 2);
+  text(c, 'P (N)', G.x0 + G.w + 12, G.y0 + 34, '#2d3436', 15, 'right');
+  text(c, 'f (N)', G.x0 + 8, G.y0 - G.h - 22, '#2d3436', 15);
+  // guides
+  c.setLineDash([6, 5]); c.lineWidth = 1.5;
+  c.strokeStyle = '#6c5ce7'; c.beginPath(); c.moveTo(gx(0), gy(F_LIM)); c.lineTo(gx(300), gy(F_LIM)); c.stroke();
+  c.strokeStyle = '#e17055'; c.beginPath(); c.moveTo(gx(0), gy(F_KIN)); c.lineTo(gx(300), gy(F_KIN)); c.stroke();
+  c.strokeStyle = '#95a5a6'; c.beginPath(); c.moveTo(gx(200), gy(0)); c.lineTo(gx(200), gy(F_LIM)); c.stroke();
+  c.setLineDash([]);
+  text(c, 'f_limiting = 200 N', gx(300) - 4, gy(F_LIM) - 12, '#6c5ce7', 14, 'right');
+  text(c, 'f_kinetic = 180 N', gx(300) - 4, gy(F_KIN) + 14, '#d35400', 14, 'right');
+  // curve
+  c.lineWidth = 4; c.lineCap = 'round';
+  c.strokeStyle = '#6c5ce7'; c.beginPath(); c.moveTo(gx(0), gy(0)); c.lineTo(gx(200), gy(200)); c.stroke();
+  c.strokeStyle = '#e17055'; c.beginPath(); c.moveTo(gx(200), gy(180)); c.lineTo(gx(300), gy(180)); c.stroke();
+  c.fillStyle = '#6c5ce7'; c.beginPath(); c.arc(gx(200), gy(200), 6, 0, 7); c.fill();
+  text(c, 'ස්ථිතික: f = P', gx(95), gy(125), '#6c5ce7', 15, 'center');
+  text(c, 'ගතික: f නියතයි', gx(250), gy(180) + 34, '#d35400', 15, 'center');
+  text(c, 'නිශ්චලයි', gx(100), G.y0 - 18, '#27ae60', 14, 'center');
+  text(c, 'චලනය වේ', gx(250), G.y0 - 18, '#e74c3c', 14, 'center');
+  // current point
+  c.fillStyle = '#d63031'; c.strokeStyle = '#fff'; c.lineWidth = 3;
+  c.beginPath(); c.arc(gx(P), gy(f), 9, 0, 7); c.fill(); c.stroke();
+}
+
+// ---------- UI ----------
+const rows = [0, 100, 150, 200, 205, 250];
+const revealed = new Set();
+const tbody = document.getElementById('tbody');
+function rowData(p) {
+  if (p < F_LIM) return [p, 'නිශ්චලයි (ස්ථිතික සර්ෂණය)', '0'];
+  if (p === F_LIM) return [p, 'සීමාකාරී සමතුලිතතාව', '0'];
+  return [F_KIN, 'චලනය වේ (ගතික සර්ෂණය)', ((p - F_KIN) / m).toFixed(2)];
+}
+function renderTable(active) {
+  tbody.innerHTML = rows.map(p => {
+    const show = revealed.has(p), d = rowData(p);
+    const cell = (t) => show ? `<td>${t}</td>` : `<td class="hidden">?</td>`;
+    return `<tr class="${p === active ? 'hl' : ''}"><td><b>${p}</b></td>${cell(d[0])}${cell(d[1])}${cell(d[2])}</tr>`;
+  }).join('');
+}
+function setP(p, fromRest) {
+  P = p; slider.value = p; document.getElementById('pVal').textContent = p;
+  if (fromRest) { v = 0; x = 0; }
+  if (rows.includes(p)) revealed.add(p);
+  renderTable(p);
+}
+slider.addEventListener('input', () => setP(+slider.value, false));
+document.querySelectorAll('button[data-p]').forEach(b => b.addEventListener('click', () => setP(+b.dataset.p, true)));
+document.getElementById('resetBtn').addEventListener('click', () => { v = 0; x = 0; });
+document.getElementById('showAll').addEventListener('click', () => { rows.forEach(r => revealed.add(r)); renderTable(P); });
+
+const st = document.getElementById('status');
+function updateStatus() {
+  const labels = { rest: 'නිශ්චලයි ✅ (f = P)', limit: 'සීමාකාරී සමතුලිතතාව ⚠️', move: 'චලනය වේ 🚀 (f = μₖR)' };
+  document.getElementById('stState').textContent = labels[state];
+  document.getElementById('stF').textContent = Math.round(f);
+  document.getElementById('stA').textContent = a.toFixed(2);
+  document.getElementById('stV').textContent = v.toFixed(2);
+  st.className = 'status' + (state === 'limit' ? ' limit' : state === 'move' ? ' move' : '');
+}
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  physics(dt); drawScene(); drawGraph(); updateStatus();
+  requestAnimationFrame(loop);
+}
+renderTable(null);
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

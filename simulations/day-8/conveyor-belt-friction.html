@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>වාහක පටිය මත පෙට්ටිය (249) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 16px; line-height: 1.6; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: linear-gradient(#f3f0ff, #fff); border: 1px solid #dfe6e9; }
+  .graph { background: #fff; border: 1px solid #dfe6e9; }
+  .cvs:has(.graph) { margin-top: 14px; }
+  .status { margin-top: 14px; border-left: 6px solid #e17055; background: #fdf2ec; padding: 12px 16px; border-radius: 6px; font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; gap: 10px 26px; justify-content: space-between; }
+  .status.done { border-left-color: #27ae60; background: #eafaf1; }
+  .status small { display: block; font-size: 13px; color: #636e72; font-weight: 600; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  .opts { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .opt { border: 2px solid #dfe6e9; border-radius: 10px; padding: 6px; text-align: center; font-weight: 800; transition: .2s; }
+  .opt.right { border-color: #27ae60; background: #eafaf1; }
+  .opt.wrong { opacity: .55; }
+  .opt .why { font-size: 12px; font-weight: 600; color: #636e72; display: none; margin-top: 4px; line-height: 1.4; text-align: left; }
+  .opt.right .why, .opt.wrong .why { display: block; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin: 14px 0 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .eq { font-family: 'Courier New', monospace; font-weight: 700; background: #fff; border: 1px solid #dfe6e9; border-radius: 6px; padding: 8px 12px; margin: 6px 0; display: block; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .opts { grid-template-columns: repeat(2, 1fr); } .wrap { padding: 14px; } h1 { font-size: 19px; } .status { font-size: 14px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">249</span><span class="qtag">1996</span></div>
+  <h1>නියත ප්‍රවේගයෙන් යන වාහක පටියක් මත තබන පෙට්ටිය</h1>
+  <p class="sub">t = 0 දී පෙට්ටිය පටිය මත සීරුවෙන් තබන්න. පෙට්ටිය පටියේ වේගයට පැමිණෙන තුරු (t₀) එය පටිය මත ලිස්සයි – ඒ කාලය පුරා ගතික සර්ෂණය නියතයි. t₀ න් පසු ලිස්සීමක් හෝ ත්වරණයක් නැති නිසා සර්ෂණය ශුන්‍ය වේ.</p>
+
+  <div class="controls">
+    <div><label>පටියේ ප්‍රවේගය u = <span class="v" id="uVal">3.0</span> ms⁻¹</label><input type="range" id="uS" min="0.5" max="4" step="0.1" value="3"></div>
+    <div><label>ගතික සර්ෂණ සංගුණකය μₖ = <span class="v" id="muVal">0.15</span></label><input type="range" id="muS" min="0.1" max="0.8" step="0.05" value="0.15"></div>
+    <div><label>පෙට්ටියේ ස්කන්ධය m = <span class="v" id="mVal">2</span> kg</label><input type="range" id="mS" min="1" max="10" step="0.5" value="2"></div>
+    <div class="btns">
+      <button class="solid" id="dropBtn">📦 පෙට්ටිය තබන්න (t = 0)</button>
+      <button id="slowBtn">🐢 සෙමින්: නැත</button>
+      <span style="font-size:13px;color:#636e72">g = 10 ms⁻²</span>
+    </div>
+  </div>
+
+  <div class="cvs"><canvas id="scene" class="scene"></canvas></div>
+
+  <div class="status" id="status">
+    <div><small>තත්ත්වය</small><span id="stState">පෙට්ටිය තබා නැත</span></div>
+    <div><small>t</small><span id="stT">0.00</span> s</div>
+    <div><small>පෙට්ටියේ v</small><span id="stV">0.00</span> ms⁻¹</div>
+    <div><small>සර්ෂණය F</small><span id="stF">0.0</span> N</div>
+    <div><small>t₀ = u / μₖg</small><span id="stT0">–</span> s</div>
+  </div>
+
+  <div class="cvs"><canvas id="graph" class="graph"></canvas></div>
+
+  <h2>ප්‍රශ්නයේ පිළිතුරු 5 – නිවැරදි ප්‍රස්තාරය කුමක්ද?</h2>
+  <div class="opts" id="opts"></div>
+  <div style="margin-top:10px"><button id="ansBtn">✅ පිළිතුර පෙන්වන්න</button></div>
+
+  <details>
+    <summary><span class="qtag">249</span>සම්පූර්ණ පැහැදිලි කිරීම</summary>
+    <div class="ans">
+      <b>0 &lt; t &lt; t₀ :</b> පෙට්ටියේ වේගය පටියේ වේගයට වඩා අඩුයි. එනිසා පටියට සාපේක්ෂව පෙට්ටිය පිටුපසට ලිස්සයි. මෙම සාපේක්ෂ චලිතයට විරුද්ධව පෙට්ටිය මත <b>ඉදිරියට ගතික සර්ෂණයක්</b> ක්‍රියා කරයි:
+      <span class="eq">F = μₖR = μₖmg  (නියතයි)   →   a = μₖg</span>
+      <b>t = t₀ :</b> පෙට්ටියේ වේගය = පටියේ වේගය (u). සාපේක්ෂ චලිතය නවතී.
+      <span class="eq">u = 0 + μₖg·t₀   →   t₀ = u / μₖg</span>
+      <b>t &gt; t₀ :</b> පටිය <b>නියත ප්‍රවේගයෙන්</b> යන නිසා පෙට්ටියද නියත ප්‍රවේගයෙන් යයි → a = 0 → සම්ප්‍රයුක්ත බලය ශුන්‍යයි. පෙට්ටිය මත ඇති එකම තිරස් බලය සර්ෂණය නිසා <b>F = 0</b>. (ලිස්සීමේ ප්‍රවණතාවක්වත් නැති නිසා ස්ථිතික සර්ෂණයක්ද අවශ්‍ය නැත.)
+      <br><br>∴ F – t ප්‍රස්තාරය: t₀ දක්වා නියත අගයක්, ඉන්පසු හදිසියේ ශුන්‍යයට → <b>පිළිතුර (4)</b>
+    </div>
+  </details>
+</div>
+
+<script>
+const g = 10;
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+    if (s.onfit) s.onfit();
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(14, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  ctx.fillStyle = col; ctx.font = `${weight} ${size}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
+  ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.fillText(t, x, y);
+}
+
+const uS = document.getElementById('uS'), muS = document.getElementById('muS'), mS = document.getElementById('mS');
+let U = 3, MU = 0.15, M = 2;
+let dropped = false, t = 0, xb = 0, vb = 0, F = 0, belt = 0, ppm = 100, Tend = 1, done = false, slow = false;
+let trace = [];
+const X0 = 110, XEND = 800; // belt top usable range (screen px)
+
+function t0() { return U / (MU * g); }
+function drop() {
+  dropped = true; done = false; t = 0; xb = 0; vb = 0; trace = [];
+  const T0 = t0(); Tend = T0 * 1.8 + 0.3;
+  const dist = U * U / (2 * MU * g) + U * (Tend - T0);
+  ppm = Math.min(140, (XEND - X0 - 70) / dist);
+}
+function step(dt) {
+  if (slow) dt *= 0.3;
+  belt += U * dt;
+  if (!dropped || done) return;
+  if (vb < U) { F = MU * M * g; vb = Math.min(U, vb + MU * g * dt); }
+  else { F = 0; vb = U; }
+  xb += vb * dt; t += dt;
+  trace.push([t, F, vb]);
+  if (t >= Tend) done = true;
+}
+
+// ---------- scene ----------
+const sc = stage(document.getElementById('scene'), 900, 250);
+const BY = 150; // belt top
+function drawScene() {
+  const c = sc.ctx; c.clearRect(0, 0, 900, 250);
+  const rr = 26, rollers = [70, 250, 450, 650, 830];
+  // belt loop
+  c.fillStyle = '#2d3436';
+  c.beginPath(); c.roundRect(70 - rr - 4, BY - 4, 760 + 2 * rr + 8, 2 * rr + 8, rr + 4); c.fill();
+  // belt markings (move with belt)
+  const pxSpeed = dropped ? ppm : 100;
+  const off = (belt * pxSpeed) % 50;
+  c.fillStyle = '#636e72';
+  for (let X = 70 - 50 + off; X < 830; X += 50) { if (X > 66) c.fillRect(X, BY - 3, 18, 4); }
+  for (let X = 830 - off; X > 70; X -= 50) c.fillRect(X - 18, BY + 2 * rr + 2, 18, 3);
+  rollers.forEach(rx => {
+    c.save(); c.translate(rx, BY + rr); c.rotate(belt * pxSpeed / rr);
+    c.fillStyle = '#b2bec3'; c.beginPath(); c.arc(0, 0, rr - 3, 0, 7); c.fill();
+    c.strokeStyle = '#636e72'; c.lineWidth = 3; c.beginPath(); c.arc(0, 0, rr - 10, 0.3, 5.5); c.stroke();
+    c.fillStyle = '#2d3436'; c.beginPath(); c.arc(0, 0, 4, 0, 7); c.fill();
+    c.restore();
+  });
+  arrow(c, 380, BY + 2 * rr + 30, 520, BY + 2 * rr + 30, '#636e72', 3);
+  text(c, `පටිය: u = ${U.toFixed(1)} ms⁻¹ (නියතයි)`, 450, BY + 2 * rr + 48 - 4, '#636e72', 13, 'center');
+
+  // box
+  const bw = 66, bh = 50;
+  const bx = X0 + (dropped ? xb * ppm : 0);
+  const by = dropped ? BY - bh - 4 : 18;
+  c.fillStyle = '#e1b382'; c.strokeStyle = '#a0522d'; c.lineWidth = 2;
+  c.fillRect(bx, by, bw, bh); c.strokeRect(bx, by, bw, bh);
+  c.strokeStyle = '#c08a5b'; c.beginPath(); c.moveTo(bx + bw / 2, by); c.lineTo(bx + bw / 2, by + bh); c.stroke();
+  text(c, `${M} kg`, bx + bw / 2, by + bh / 2 + 2, '#5d3a1a', 13, 'center', 800);
+  if (!dropped) { arrow(c, bx + bw / 2, by + bh + 8, bx + bw / 2, BY - 12, '#a4b0be', 2, [4, 4]); text(c, 'සිරස්ව සීරුවෙන් තබන්න', bx + bw + 10, by + 25, '#7f8c8d', 13); }
+
+  if (dropped) {
+    if (F > 0) {
+      arrow(c, bx + bw / 2 - 10, BY - 10, bx + bw / 2 + 40 + F * 2, BY - 10, '#00a37a', 6);
+      text(c, `F = μₖmg = ${F.toFixed(1)} N`, bx + bw / 2 + 48 + F * 2, BY - 22, '#00a37a', 15, 'left', 800);
+      text(c, 'පෙට්ටිය පටියට වඩා සෙමින් → පටිය මත ලිස්සයි', 20, 24, '#e17055', 15, 'left', 800);
+    } else {
+      text(c, 'පෙට්ටිය = පටියේ වේගය → ලිස්සීමක් නැත, F = 0', 20, 24, '#27ae60', 15, 'left', 800);
+    }
+    // velocity arrows: box vs belt
+    arrow(c, bx + 4, by - 16, bx + 4 + vb * 22, by - 16, '#0984e3', 3);
+    text(c, `v = ${vb.toFixed(2)}`, bx + 8 + vb * 22, by - 16, '#0984e3', 13);
+  }
+}
+
+// ---------- graphs ----------
+const gr = stage(document.getElementById('graph'), 900, 320);
+function axes(c, x0, y0, w, h, xl, yl) {
+  arrow(c, x0, y0, x0 + w + 16, y0, '#2d3436', 2);
+  arrow(c, x0, y0, x0, y0 - h - 16, '#2d3436', 2);
+  text(c, xl, x0 + w + 14, y0 + 16, '#2d3436', 14, 'right');
+  text(c, yl, x0 + 8, y0 - h - 16, '#2d3436', 14);
+  text(c, '0', x0 - 8, y0 + 12, '#2d3436', 13, 'right');
+}
+function drawGraph() {
+  const c = gr.ctx; c.clearRect(0, 0, 900, 320);
+  const T0 = t0(), Tmax = dropped ? Tend : T0 * 1.8 + 0.3;
+  const P = [{ x0: 95, title: 'සර්ෂණ බලය F – කාලය t', key: 1, max: Math.max(MU * M * g * 1.35, 1), col: '#00a37a', yl: 'F (N)' },
+             { x0: 530, title: 'ප්‍රවේගය v – කාලය t', key: 2, max: 4.6, col: '#0984e3', yl: 'v (ms⁻¹)' }];
+  P.forEach(p => {
+    const y0 = 270, w = 320, h = 200, gx = tt => p.x0 + tt / Tmax * w, gy = val => y0 - val / p.max * h;
+    text(c, p.title, p.x0 + w / 2, 24, '#2c3e50', 15, 'center', 800);
+    axes(c, p.x0, y0, w, h, 't (s)', p.yl);
+    // t0 marker
+    c.setLineDash([5, 5]); c.strokeStyle = '#95a5a6'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(gx(T0), y0); c.lineTo(gx(T0), y0 - h); c.stroke(); c.setLineDash([]);
+    text(c, `t₀ = ${T0.toFixed(2)} s`, gx(T0), y0 + 16, '#2d3436', 13, 'center');
+    if (p.key === 1) {
+      const Fk = MU * M * g;
+      text(c, `μₖmg = ${Fk.toFixed(1)}`, p.x0 - 6, gy(Fk), '#00a37a', 12, 'right');
+    } else {
+      c.setLineDash([3, 4]); c.strokeStyle = '#e17055'; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(gx(0), gy(U)); c.lineTo(gx(Tmax), gy(U)); c.stroke(); c.setLineDash([]);
+      text(c, 'පටිය u', gx(Tmax), gy(U) - 12, '#e17055', 12, 'right');
+    }
+    // trace
+    if (trace.length) {
+      c.strokeStyle = p.col; c.lineWidth = 4; c.lineJoin = 'round'; c.beginPath();
+      c.moveTo(gx(0), gy(trace[0][p.key]));
+      for (let i = 1; i < trace.length; i++) {
+        const [tt, ff, vv] = trace[i], prev = trace[i - 1];
+        const val = p.key === 1 ? ff : vv, pv = p.key === 1 ? prev[1] : prev[2];
+        if (p.key === 1 && val !== pv) c.lineTo(gx(tt), gy(pv)); // vertical drop at t0
+        c.lineTo(gx(tt), gy(val));
+      }
+      c.stroke();
+      const lastP = trace[trace.length - 1];
+      c.fillStyle = '#d63031'; c.beginPath(); c.arc(gx(lastP[0]), gy(lastP[p.key]), 6, 0, 7); c.fill();
+    }
+  });
+}
+
+// ---------- the five options (redrawn sketches) ----------
+const OPTS = [
+  { pts: [[0, 0], [.35, .8], [.42, .9], [.5, .7], [1, .7]], why: 'F බිංදුවේ සිට ක්‍රමයෙන් වැඩි නොවේ; ලිස්සන නිසා t = 0 සිටම F නියතයි. t₀ න් පසු F ≠ 0 ද වැරදියි.' },
+  { pts: [[0, .65], [1, .65]], why: 't₀ න් පසුද F නියතව පවතී යැයි පෙන්වයි. නමුත් එවිට a = 0 නිසා F = 0 විය යුතුයි.' },
+  { pts: [[0, .45], [.5, .45], [.5, .6], [1, .6]], why: 't₀ න් පසු F වැඩි වීමට හේතුවක් නැත. F = 0 විය යුතුයි.' },
+  { pts: [[0, .65], [.5, .65], [.5, 0], [1, 0]], why: 'නිවැරදියි! t₀ දක්වා F = μₖmg (නියත), ඉන්පසු පෙට්ටිය පටිය සමඟ නියත ප්‍රවේගයෙන් යන නිසා F = 0.', right: true },
+  { pts: [[0, .55], [.5, .55], [.5, .65], [.58, .65], [.58, 0], [1, 0]], why: 't₀ දී F වැඩි වීමක් (උච්චයක්) නැත; F සෘජුවම ශුන්‍යයට වැටේ.' },
+];
+const optsEl = document.getElementById('opts');
+OPTS.forEach((o, i) => {
+  const d = document.createElement('div'); d.className = 'opt';
+  d.innerHTML = `(${i + 1})<canvas></canvas><div class="why">${o.why}</div>`;
+  optsEl.appendChild(d);
+  const s = stage(d.querySelector('canvas'), 180, 130);
+  s.onfit = () => {
+    const c = s.ctx, x0 = 22, y0 = 108, w = 145, h = 85;
+    c.clearRect(0, 0, 180, 130);
+    arrow(c, x0, y0, x0 + w + 8, y0, '#2d3436', 1.5); arrow(c, x0, y0, x0, y0 - h - 12, '#2d3436', 1.5);
+    text(c, 'F', x0 - 12, 14, '#2d3436', 13); text(c, 't', x0 + w + 6, y0 + 12, '#2d3436', 13);
+    c.setLineDash([3, 3]); c.strokeStyle = '#95a5a6'; c.lineWidth = 1; c.beginPath(); c.moveTo(x0 + w * .5, y0); c.lineTo(x0 + w * .5, y0 - h); c.stroke(); c.setLineDash([]);
+    text(c, 't₀', x0 + w * .5, y0 + 12, '#2d3436', 12, 'center');
+    c.strokeStyle = '#2d3436'; c.lineWidth = 2.5; c.beginPath();
+    o.pts.forEach(([px, py], k) => { const X = x0 + px * w, Y = y0 - py * h; k ? c.lineTo(X, Y) : c.moveTo(X, Y); });
+    c.stroke();
+  };
+  s.onfit();
+  o.el = d;
+});
+document.getElementById('ansBtn').addEventListener('click', () => OPTS.forEach(o => o.el.classList.add(o.right ? 'right' : 'wrong')));
+
+// ---------- UI ----------
+function readInputs() {
+  U = +uS.value; MU = +muS.value; M = +mS.value;
+  document.getElementById('uVal').textContent = U.toFixed(1);
+  document.getElementById('muVal').textContent = MU.toFixed(2);
+  document.getElementById('mVal').textContent = M;
+  document.getElementById('stT0').textContent = t0().toFixed(2);
+  dropped = false; done = false; trace = []; t = 0; vb = 0; F = 0;
+}
+[uS, muS, mS].forEach(e => e.addEventListener('input', readInputs));
+document.getElementById('dropBtn').addEventListener('click', drop);
+document.getElementById('slowBtn').addEventListener('click', e => { slow = !slow; e.target.textContent = slow ? '🐢 සෙමින්: ඔව්' : '🐢 සෙමින්: නැත'; });
+
+const st = document.getElementById('status');
+function updateStatus() {
+  const s = !dropped ? 'පෙට්ටිය තබා නැත' : vb < U ? 'ලිස්සයි – ගතික සර්ෂණය' : 'පටිය සමඟ යයි – F = 0';
+  document.getElementById('stState').textContent = s;
+  document.getElementById('stT').textContent = t.toFixed(2);
+  document.getElementById('stV').textContent = vb.toFixed(2);
+  document.getElementById('stF').textContent = (dropped ? F : 0).toFixed(1);
+  st.className = 'status' + (dropped && vb >= U ? ' done' : '');
+}
+
+readInputs();
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.04, (now - last) / 1000); last = now;
+  step(dt); drawScene(); drawGraph(); updateStatus();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

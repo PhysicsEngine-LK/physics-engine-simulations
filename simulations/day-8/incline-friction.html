@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ආනත තලය මත සර්ෂණය (233–235) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 16px; line-height: 1.6; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  .chk { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: linear-gradient(#f0f7ff, #fff); border: 1px solid #dfe6e9; }
+  .graph { background: #fff; border: 1px solid #dfe6e9; }
+  .cvs:has(.graph) { margin-top: 14px; }
+  .status { margin-top: 14px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 12px 16px; border-radius: 6px; font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; gap: 10px 26px; justify-content: space-between; }
+  .status.limit { border-left-color: #f39c12; background: #fef5e7; }
+  .status.move { border-left-color: #e74c3c; background: #fdedec; }
+  .status small { display: block; font-size: 13px; color: #636e72; font-weight: 600; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .eq { font-family: 'Courier New', monospace; font-weight: 700; background: #fff; border: 1px solid #dfe6e9; border-radius: 6px; padding: 8px 12px; margin: 6px 0; display: block; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } .status { font-size: 14px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">233</span><span class="qtag">234</span><span class="qtag">235</span></div>
+  <h1>ආනතිය (θ) වැඩි කරන විට සර්ෂණ බලය (f) වෙනස් වන හැටි</h1>
+  <p class="sub">"▶ ක්‍රමයෙන් ඇල කරන්න" ඔබා θ ශුන්‍යයේ සිට වැඩි කරන්න. මුලින් f = mg sin θ ලෙස වැඩි වේ. tan θ = μ වූ විට වස්තුව ලිස්සීමට පටන් ගෙන, f = μₖmg cos θ ලෙස අඩු වේ.</p>
+
+  <div class="controls">
+    <div><label>ආනතිය θ = <span class="v" id="thVal">0.0</span>°</label><input type="range" id="thS" min="0" max="90" step="0.5" value="0"></div>
+    <div><label>μ (ස්ථිතික) = <span class="v" id="muVal">0.50</span></label><input type="range" id="muS" min="0.2" max="1" step="0.05" value="0.5"></div>
+    <div><label>μₖ (ගතික) = <span class="v" id="mukVal">0.40</span></label><input type="range" id="mukS" min="0.1" max="1" step="0.05" value="0.4"></div>
+    <div class="btns">
+      <button class="solid" id="autoBtn">▶ ක්‍රමයෙන් ඇල කරන්න</button>
+      <button id="resetBtn">↺ θ = 0</button>
+      <label class="chk"><input type="checkbox" id="compChk" checked> mg sin θ, mg cos θ සංරචක</label>
+      <span class="note" style="margin:0">m = 2 kg, g = 10 ms⁻² (mg = 20 N)</span>
+    </div>
+  </div>
+
+  <div class="cvs"><canvas id="scene" class="scene"></canvas></div>
+
+  <div class="status" id="status">
+    <div><small>තත්ත්වය</small><span id="stState">–</span></div>
+    <div><small>සර්ෂණ බලය f</small><span id="stF">0</span> N</div>
+    <div><small>tan θ</small><span id="stTan">0</span></div>
+    <div><small>θc = tan⁻¹μ</small><span id="stTc">–</span>°</div>
+  </div>
+
+  <div class="cvs"><canvas id="graph" class="graph"></canvas></div>
+
+  <h2>විසඳුම්</h2>
+  <details>
+    <summary><span class="qtag">233</span>θ කුඩා විට (සමතුලිතයි)</summary>
+    <div class="ans">
+      තලයට සමාන්තරව බල සලකමු. වස්තුව සමතුලිත නිසා:
+      <span class="eq">f − mg sin θ = 0   →   f = mg sin θ</span>
+      මෙය ස්ථිතික සර්ෂණයයි – එය අවශ්‍ය තරමට පමණක් ක්‍රියා කරයි. θ වැඩි වන විට sin θ වැඩි වන නිසා <b>f ද වැඩි වේ</b>. (තලයට ලම්බව: R = mg cos θ)
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">234</span>ලිස්සීමෙන් පසු (ගතික සර්ෂණය)</summary>
+    <div class="ans">
+      සීමාකාරී අවස්ථාවේ: mg sin θc = μ mg cos θc  →  <b>tan θc = μ</b>.<br>
+      ඉන් ඔබ්බට වස්තුව ලිස්සයි. දැන් සර්ෂණය ගතිකයි:
+      <span class="eq">R = mg cos θ   →   f = μₖR = μₖ mg cos θ</span>
+      θ තවදුරටත් වැඩි වන විට cos θ අඩු වන නිසා <b>f අඩු වේ</b> (θ = 90° දී f = 0).
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">235</span>සම්පූර්ණ f – θ ප්‍රස්තාරය</summary>
+    <div class="ans">
+      • <b>0 ≤ θ ≤ θc</b> :  f = mg sin θ  (0 සිට වැඩි වන sine වක්‍රය)<br>
+      • <b>θ = θc</b> :  f උපරිමයි = μ mg cos θc ; ඉන්පසු හදිසියේ μₖ mg cos θc දක්වා පහළ වැටේ (μₖ &lt; μ නිසා)<br>
+      • <b>θc &lt; θ ≤ 90°</b> :  f = μₖ mg cos θ  (අඩු වන cosine වක්‍රය, 90° දී ශුන්‍යයි)<br>
+      ඉහත ප්‍රස්තාරයේ තද රේඛාව එයයි. ඉරි කඩ රේඛා: mg sin θ හි දිගුව සහ μ mg cos θ (සීමාකාරී සර්ෂණය).
+    </div>
+  </details>
+  <p class="note">θ ලිස්සීමෙන් පසු අඩු කළොත්, tan θ &lt; μₖ වන තුරු වස්තුව දිගටම ලිස්සයි (ගතික සර්ෂණය ස්ථිතික සර්ෂණයට වඩා අඩු නිසා).</p>
+</div>
+
+<script>
+const m = 2, g = 10, mg = m * g;
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(14, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  ctx.fillStyle = col; ctx.font = `${weight} ${size}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
+  ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.fillText(t, x, y);
+}
+const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
+
+const thS = document.getElementById('thS'), muS = document.getElementById('muS'), mukS = document.getElementById('mukS');
+let TH = 0, MU = 0.5, MUK = 0.4, auto = false;
+let sliding = false, d = 0, v = 0, f = 0, state = 'rest'; // d: distance slid down the plank (m)
+const PLANK = 6, START = 2.7; // plank length (m), block start (m from top)
+
+function physics(dt) {
+  if (auto) {
+    TH = Math.min(90, TH + 4 * dt); thS.value = TH; showTh();
+    if (TH >= 90) toggleAuto(false);
+  }
+  const s = Math.sin(rad(TH)), c = Math.cos(rad(TH)), tn = Math.tan(rad(TH));
+  if (!sliding) {
+    if (TH < 90 && tn < MU - 1e-9) { f = mg * s; state = 'rest'; }
+    else if (TH < 90 && Math.abs(tn - MU) <= 1e-9) { f = mg * s; state = 'limit'; }
+    else { sliding = true; }
+  }
+  if (sliding) {
+    const a = g * (s - MUK * c);
+    v += a * dt;
+    if (v <= 0) { v = 0; if (tn <= MU) { sliding = false; f = mg * s; state = tn < MU ? 'rest' : 'limit'; return; } }
+    d += v * dt;
+    if (d > PLANK - START - 0.7) { d = 0; v = 0; } // loop back to the start
+    f = MUK * mg * c; state = 'move';
+  }
+}
+
+// ---------- scene ----------
+const sc = stage(document.getElementById('scene'), 900, 400);
+const PX = 110, PY = 360, LPX = 600, FS = 7; // pivot, plank px, px per N
+function drawScene() {
+  const c = sc.ctx; c.clearRect(0, 0, 900, 400);
+  const th = rad(TH), ux = Math.cos(th), uy = -Math.sin(th); // up-slope unit vector (screen)
+  const ox = -Math.sin(th), oy = -Math.cos(th); // outward normal (up-left)
+  // ground + plank
+  c.fillStyle = '#dfe6e9'; c.fillRect(0, PY, 900, 40);
+  c.strokeStyle = '#636e72'; c.lineWidth = 3; c.beginPath(); c.moveTo(20, PY); c.lineTo(880, PY); c.stroke();
+  const LP = Math.min(LPX, 330 / Math.max(Math.sin(th), 0.01)); // shorten the plank so it stays on screen
+  const ex = PX + LP * ux, ey = PY + LP * uy;
+  c.strokeStyle = '#8e6e53'; c.lineWidth = 10; c.lineCap = 'round'; c.beginPath(); c.moveTo(PX, PY); c.lineTo(ex, ey); c.stroke();
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(PX, PY, 7, 0, 7); c.fill();
+  // angle arc
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 2; c.beginPath(); c.arc(PX, PY, 70, -th, 0); c.stroke();
+  text(c, `θ = ${TH.toFixed(1)}°`, PX + 80, PY - 18 - TH * 0.25, '#6c5ce7', 16);
+
+  // block
+  const along = (PLANK - START - d) / PLANK * LP; // px from pivot
+  const bw = 80, bh = 56;
+  const bcx = PX + along * ux + ox * (bh / 2 + 5), bcy = PY + along * uy + oy * (bh / 2 + 5);
+  c.save(); c.translate(bcx, bcy); c.rotate(-th);
+  c.fillStyle = state === 'move' ? '#fab1a0' : '#a29bfe'; c.strokeStyle = state === 'move' ? '#e17055' : '#6c5ce7'; c.lineWidth = 3;
+  c.beginPath(); c.roundRect(-bw / 2, -bh / 2, bw, bh, 5); c.fill(); c.stroke();
+  c.restore();
+  text(c, 'm', bcx, bcy, '#fff', 18, 'center', 800);
+
+  const s = Math.sin(th), co = Math.cos(th);
+  // contact point (centre of the bottom face)
+  const cpx = bcx - ox * (bh / 2), cpy = bcy - oy * (bh / 2);
+  // weight
+  arrow(c, bcx, bcy, bcx, bcy + mg * FS, '#2d3436', 4);
+  text(c, 'mg', bcx + 10, bcy + mg * FS - 6, '#2d3436', 16);
+  // components
+  if (document.getElementById('compChk').checked && TH > 0.5) {
+    arrow(c, bcx, bcy, bcx - ux * mg * s * FS, bcy - uy * mg * s * FS, '#b2bec3', 3, [6, 5]);
+    text(c, 'mg sin θ', bcx - ux * mg * s * FS - 8, bcy - uy * mg * s * FS + 16, '#7f8c8d', 13, 'right');
+    arrow(c, bcx, bcy, bcx - ox * mg * co * FS, bcy - oy * mg * co * FS, '#b2bec3', 3, [6, 5]);
+    text(c, 'mg cos θ', bcx - ox * mg * co * FS + 10, bcy - oy * mg * co * FS + 6, '#7f8c8d', 13, 'left');
+  }
+  // normal reaction
+  const Rn = mg * co;
+  arrow(c, bcx + ox * bh / 2, bcy + oy * bh / 2, bcx + ox * (bh / 2 + Rn * FS), bcy + oy * (bh / 2 + Rn * FS), '#00b894', 4);
+  text(c, 'R', bcx + ox * (bh / 2 + Rn * FS) + ux * 16, bcy + oy * (bh / 2 + Rn * FS) + uy * 16, '#00b894', 18, 'center', 800);
+  // friction, up the slope at the contact surface
+  if (f > 0.01) {
+    const fx = cpx + ox * 6 + ux * bw / 2, fy = cpy + oy * 6 + uy * bw / 2;
+    arrow(c, fx, fy, fx + ux * f * FS, fy + uy * f * FS, '#e17055', 6);
+    text(c, `f = ${f.toFixed(1)} N`, fx + ux * (f * FS + 30) - ox * 34, fy + uy * (f * FS + 30) - oy * 34, '#d35400', 16, 'center', 800);
+  }
+  const badge = { rest: ['නිශ්චලයි', '#27ae60'], limit: ['සීමාකාරී සමතුලිතතාව', '#e67e22'], move: ['ලිස්සයි ↘', '#d63031'] }[state];
+  text(c, badge[0], 20, 26, badge[1], 20, 'left', 800);
+  text(c, 'බල ඊතල පරිමාණයට ඇඳ ඇත', 880, 26, '#95a5a6', 13, 'right', 600);
+}
+
+// ---------- graph ----------
+const gr = stage(document.getElementById('graph'), 900, 380);
+const G = { x0: 80, y0: 320, w: 760, h: 260 };
+function drawGraph() {
+  const c = gr.ctx; c.clearRect(0, 0, 900, 380);
+  const fmax = 22, gx = t => G.x0 + t / 90 * G.w, gy = ff => G.y0 - ff / fmax * G.h;
+  text(c, '235 – සර්ෂණ බලය (f) එදිරිව ආනතිය (θ)', 450, 22, '#2c3e50', 17, 'center', 800);
+  c.strokeStyle = '#ecf0f1'; c.lineWidth = 1;
+  for (let t = 0; t <= 90; t += 15) { c.beginPath(); c.moveTo(gx(t), gy(0)); c.lineTo(gx(t), gy(fmax)); c.stroke(); text(c, t + '°', gx(t), G.y0 + 16, '#636e72', 13, 'center', 600); }
+  for (let ff = 0; ff <= 20; ff += 5) { c.beginPath(); c.moveTo(gx(0), gy(ff)); c.lineTo(gx(90), gy(ff)); c.stroke(); text(c, ff, G.x0 - 10, gy(ff), '#636e72', 13, 'right', 600); }
+  arrow(c, G.x0, G.y0, G.x0 + G.w + 25, G.y0, '#2d3436', 2);
+  arrow(c, G.x0, G.y0, G.x0, G.y0 - G.h - 25, '#2d3436', 2);
+  text(c, 'θ', G.x0 + G.w + 22, G.y0 + 18, '#2d3436', 16);
+  text(c, 'f (N)', G.x0 + 10, G.y0 - G.h - 22, '#2d3436', 15);
+  const tc = deg(Math.atan(MU));
+  const curve = (fn, a, b, col, lw, dash) => {
+    c.strokeStyle = col; c.lineWidth = lw; c.setLineDash(dash || []); c.beginPath();
+    for (let t = a; t <= b + 1e-6; t += 0.5) { const X = gx(t), Y = gy(fn(rad(t))); t === a ? c.moveTo(X, Y) : c.lineTo(X, Y); }
+    c.stroke(); c.setLineDash([]);
+  };
+  // reference (dashed)
+  curve(t => mg * Math.sin(t), tc, 90, '#d6d2ff', 2, [6, 5]);
+  curve(t => MU * mg * Math.cos(t), 0, 90, '#a29bfe', 2, [6, 5]);
+  curve(t => MUK * mg * Math.cos(t), 0, tc, '#fab1a0', 2, [6, 5]);
+  text(c, 'μmg cos θ (සීමාකාරී)', gx(4), gy(MU * mg) - 12, '#6c5ce7', 13);
+  // actual f
+  curve(t => mg * Math.sin(t), 0, tc, '#6c5ce7', 4);
+  curve(t => MUK * mg * Math.cos(t), tc, 90, '#e17055', 4);
+  c.strokeStyle = '#95a5a6'; c.lineWidth = 1.5; c.setLineDash([4, 4]);
+  c.beginPath(); c.moveTo(gx(tc), gy(0)); c.lineTo(gx(tc), gy(mg * Math.sin(rad(tc)))); c.stroke(); c.setLineDash([]);
+  c.strokeStyle = '#2d3436'; c.lineWidth = 2; c.beginPath(); c.moveTo(gx(tc), gy(mg * Math.sin(rad(tc)))); c.lineTo(gx(tc), gy(MUK * mg * Math.cos(rad(tc)))); c.stroke();
+  text(c, `θc = ${tc.toFixed(1)}°`, gx(tc), G.y0 - 14, '#2d3436', 14, 'center');
+  text(c, 'f = mg sin θ', gx(tc * 0.55) - 6, gy(mg * Math.sin(rad(tc * 0.55))) - 16, '#6c5ce7', 15, 'right');
+  text(c, 'f = μₖmg cos θ', gx(tc + (90 - tc) * 0.45) + 8, gy(MUK * mg * Math.cos(rad(tc + (90 - tc) * 0.45))) - 16, '#d35400', 15);
+  // current point
+  c.fillStyle = '#d63031'; c.strokeStyle = '#fff'; c.lineWidth = 3;
+  c.beginPath(); c.arc(gx(TH), gy(f), 9, 0, 7); c.fill(); c.stroke();
+}
+
+function showTh() { document.getElementById('thVal').textContent = TH.toFixed(1); }
+function readInputs() {
+  TH = +thS.value; MU = +muS.value;
+  if (+mukS.value > MU) mukS.value = MU;
+  MUK = +mukS.value;
+  showTh();
+  document.getElementById('muVal').textContent = MU.toFixed(2);
+  document.getElementById('mukVal').textContent = MUK.toFixed(2);
+}
+thS.addEventListener('input', () => { toggleAuto(false); readInputs(); });
+muS.addEventListener('input', readInputs); mukS.addEventListener('input', readInputs);
+const autoBtn = document.getElementById('autoBtn');
+function toggleAuto(on) { auto = on; autoBtn.textContent = on ? '⏸ නවත්වන්න' : '▶ ක්‍රමයෙන් ඇල කරන්න'; }
+autoBtn.addEventListener('click', () => { if (!auto && TH >= 90) { TH = 0; thS.value = 0; sliding = false; d = 0; v = 0; } toggleAuto(!auto); });
+document.getElementById('resetBtn').addEventListener('click', () => { toggleAuto(false); thS.value = 0; sliding = false; d = 0; v = 0; readInputs(); });
+
+const st = document.getElementById('status');
+function updateStatus() {
+  const L = { rest: 'නිශ්චලයි ✅ (f = mg sin θ)', limit: 'සීමාකාරී සමතුලිතතාව ⚠️', move: 'ලිස්සයි 🛝 (f = μₖmg cos θ)' };
+  document.getElementById('stState').textContent = L[state];
+  document.getElementById('stF').textContent = f.toFixed(2);
+  document.getElementById('stTan').textContent = TH >= 90 ? '∞' : Math.tan(rad(TH)).toFixed(2);
+  document.getElementById('stTc').textContent = deg(Math.atan(MU)).toFixed(1);
+  st.className = 'status' + (state === 'limit' ? ' limit' : state === 'move' ? ' move' : '');
+}
+
+readInputs();
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  physics(dt); drawScene(); drawGraph(); updateStatus();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

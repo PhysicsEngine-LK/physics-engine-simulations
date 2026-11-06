@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ලොරිය මත කුට්ටිය (226–231) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 16px; line-height: 1.6; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: linear-gradient(#d6efff, #f4fbff 70%); border: 1px solid #dfe6e9; }
+  .row { display: grid; grid-template-columns: 1fr 1.15fr; gap: 14px; margin-top: 14px; }
+  .panel { border: 1px solid #dfe6e9; border-radius: 10px; padding: 14px; background: #fff; }
+  .panel h3 { margin: 0 0 8px; font-size: 16px; }
+  .fbd { background: #fff; }
+  .meter { height: 26px; background: #ecf0f1; border-radius: 13px; overflow: hidden; position: relative; margin: 6px 0 4px; }
+  .meter > div { height: 100%; background: #27ae60; width: 0; transition: width .15s, background .15s; }
+  .meter .lim { position: absolute; top: 0; bottom: 0; left: 80%; width: 3px; background: #2d3436; }
+  .kv { display: flex; justify-content: space-between; font-size: 15px; padding: 5px 0; border-bottom: 1px dashed #dfe6e9; }
+  .kv b { font-family: 'Courier New', monospace; }
+  .status { margin-top: 10px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 10px 14px; border-radius: 6px; font-weight: 700; font-size: 16px; }
+  .status.bad { border-left-color: #e74c3c; background: #fdedec; color: #c0392b; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .amax { background: #f1efff; border: 2px solid #6c5ce7; border-radius: 10px; padding: 10px 12px; margin-top: 10px; font-weight: 700; text-align: center; font-size: 17px; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .eq { font-family: 'Courier New', monospace; font-weight: 700; background: #fff; border: 1px solid #dfe6e9; border-radius: 6px; padding: 8px 12px; margin: 6px 0; display: block; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .row { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">226</span><span class="qtag">227</span><span class="qtag">228</span><span class="qtag">229</span><span class="qtag">230</span><span class="qtag">231</span></div>
+  <h1>ත්වරණය වන ලොරියක තට්ටුව මත කොන්ක්‍රීට් කුට්ටිය</h1>
+  <p class="sub">ලොරියේ ත්වරණය (a) වැඩි කර "▶ ධාවනය" ඔබන්න. a ≤ μg නම් කුට්ටිය ලොරිය සමඟම යයි. a &gt; μg වූ විට සර්ෂණයට කුට්ටිය රඳවා ගත නොහැකිව එය පිටුපසට ලිස්සා වැටේ. ස්කන්ධය (m) වෙනස් කළත් a_max වෙනස් නොවන බවද බලන්න.</p>
+
+  <div class="controls">
+    <div><label>ලොරියේ ත්වරණය a = <span class="v" id="aVal">2.0</span> ms⁻²</label><input type="range" id="aS" min="0" max="6" step="0.1" value="2"></div>
+    <div><label>ස්ථිතික සර්ෂණ සංගුණකය μ = <span class="v" id="muVal">0.30</span></label><input type="range" id="muS" min="0.1" max="0.8" step="0.05" value="0.3"></div>
+    <div><label>කුට්ටියේ ස්කන්ධය m = <span class="v" id="mVal">2000</span> kg</label><input type="range" id="mS" min="500" max="5000" step="100" value="2000"></div>
+    <div class="btns">
+      <button class="solid" id="runBtn">▶ ධාවනය</button>
+      <button id="resetBtn">↺ නැවත</button>
+      <button id="q231">231: μ = 0.3, a = 3 ms⁻²</button>
+    </div>
+  </div>
+
+  <div class="cvs"><canvas id="scene" class="scene"></canvas></div>
+
+  <div class="row">
+    <div class="panel">
+      <h3>226 – කුට්ටියේ නිදහස් වස්තු සටහන</h3>
+      <canvas id="fbd" class="fbd"></canvas>
+    </div>
+    <div class="panel">
+      <h3>228 – 230 – සර්ෂණය ප්‍රමාණවත්ද?</h3>
+      <div class="kv"><span>අවශ්‍ය සර්ෂණය f = ma</span><b id="fNeed">–</b></div>
+      <div class="kv"><span>අභිලම්බ ප්‍රතික්‍රියාව R = mg</span><b id="rVal">–</b></div>
+      <div class="kv"><span>සීමාකාරී සර්ෂණය f_lim = μmg</span><b id="fLim">–</b></div>
+      <div class="meter"><div id="bar"></div><span class="lim"></span></div>
+      <div class="note">කළු ඉර = f_lim. තීරුව එය පසු කළොත් කුට්ටිය ලිස්සයි.</div>
+      <div class="status" id="status">–</div>
+      <div class="amax">a_max = μg = <span id="amax">3.0</span> ms⁻²</div>
+      <div class="note" id="massNote">m වෙනස් කර බලන්න: ma සහ μmg දෙකම එකම අනුපාතයෙන් වෙනස් වන නිසා a_max = μg ස්කන්ධය මත රඳා නොපවතී.</div>
+    </div>
+  </div>
+
+  <h2>විසඳුම්</h2>
+  <details>
+    <summary><span class="qtag">226</span>නිදහස් වස්තු සටහන</summary>
+    <div class="ans">
+      කුට්ටිය මත ක්‍රියා කරන බාහිර බල තුනක් පමණි:<br>
+      • <b>W = mg</b> – බර, සිරස්ව පහළට<br>
+      • <b>R</b> – තට්ටුවෙන් ලැබෙන අභිලම්බ ප්‍රතික්‍රියාව, සිරස්ව ඉහළට<br>
+      • <b>f</b> – තට්ටුවෙන් ලැබෙන සර්ෂණ බලය, තිරස්ව <b>ඉදිරියට</b><br>
+      (ත්වරණය a ඉදිරියට. "ma" යනු බලයක් නොවේ – එය FBD එකේ ඇඳිය යුතු නැත.)
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">227</span>සර්ෂණය ඉදිරියට යෙදෙන්නේ ඇයි?</summary>
+    <div class="ans">
+      • <b>සාපේක්ෂ චලිතය:</b> ලොරිය ඉදිරියට ත්වරණය වන විට, අවස්ථිතිය නිසා කුට්ටිය එහි පැවති චලිත තත්ත්වයේම සිටීමට උත්සාහ කරයි. එනිසා <b>ලොරියට සාපේක්ෂව</b> කුට්ටිය පිටුපසට ලිස්සීමට නැඹුරු වේ. සර්ෂණය සෑම විටම සාපේක්ෂ චලිතයට (හෝ එහි ප්‍රවණතාවට) විරුද්ධව ක්‍රියා කරන නිසා, කුට්ටිය මත සර්ෂණය <b>ඉදිරියට</b> ය.<br>
+      • <b>නිව්ටන්ගේ 3 වන නියමය:</b> කුට්ටිය තට්ටුව මත පිටුපසට සර්ෂණ බලයක් යොදයි. එයට සමාන හා ප්‍රතිවිරුද්ධ ප්‍රතික්‍රියාව ලෙස තට්ටුව කුට්ටිය මත ඉදිරියට f යොදයි.<br>
+      • (තවද: කුට්ටියද ඉදිරියට ත්වරණය වේ. ඒ මත ඇති එකම තිරස් බලය f නිසා, නිව්ටන් 2 අනුව f ඉදිරියට විය යුතුය.)
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">228</span>f සඳහා ප්‍රකාශනය</summary>
+    <div class="ans">
+      කුට්ටිය ලොරියට සාපේක්ෂව නිශ්චල නම් එහි ත්වරණයද a වේ. තිරස්ව F = ma යෙදීමෙන්:
+      <span class="eq">f = ma</span>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">229</span>R සහ f_limiting</summary>
+    <div class="ans">
+      සිරස් දිශාවට ත්වරණයක් නැත:
+      <span class="eq">R − mg = 0  →  R = mg</span>
+      <span class="eq">f_limiting = μR = μmg</span>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">230</span>a_max ව්‍යුත්පන්න කිරීම</summary>
+    <div class="ans">
+      නොලිස්සීමට අවශ්‍ය සර්ෂණය, ලබාගත හැකි උපරිම සර්ෂණය නොඉක්මවිය යුතුය:
+      <span class="eq">f ≤ f_limiting  →  ma ≤ μmg</span>
+      <span class="eq">a ≤ μg   ∴  a_max = μg</span>
+      m දෙපසින්ම කැපී යයි. එනිසා a_max කුට්ටියේ <b>ස්කන්ධය මත රඳා නොපවතී</b> – μ සහ g මත පමණක් රඳා පවතී. (බර කුට්ටියකට වැඩි සර්ෂණයක් අවශ්‍ය වුවත්, එයට වැඩි සර්ෂණයක්ද ලැබේ.)
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">231</span>μ = 0.3 විට a_max</summary>
+    <div class="ans">
+      <span class="eq">a_max = μg = 0.3 × 10 = 3 ms⁻²</span>
+      "231" බොත්තම ඔබා a = 3 ms⁻² (සීමාව) පරීක්ෂා කරන්න, ඉන්පසු a ස්වල්පයක් වැඩි කර බලන්න.
+    </div>
+  </details>
+  <p class="note">සටහන: සරල කිරීම සඳහා කුට්ටිය ලිස්සන විටද ගතික සර්ෂණ සංගුණකය μ ට සමාන යැයි සලකා ඇත.</p>
+</div>
+
+<script>
+const g = 10, PPM = 46, BED = 9, BL = 2.6; // bed length (m), block length (m)
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(15, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  ctx.fillStyle = col; ctx.font = `${weight} ${size}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
+  ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.fillText(t, x, y);
+}
+
+const aS = document.getElementById('aS'), muS = document.getElementById('muS'), mS = document.getElementById('mS');
+let A = 2, MU = 0.3, M = 2000;
+let running = false, t = 0;
+let vT = 0, xT = 0;               // truck (ground frame)
+let xr = 0, vr = 0, slipping = false; // block rear position on bed (m from rear edge) and velocity relative to truck
+let fallen = false, xBg = 0, vBg = 0, yDrop = 0, vy = 0; // after falling off
+const XR0 = (BED - BL) / 2 + 1.2;
+
+function reset() { running = false; t = 0; vT = 0; xT = 0; xr = XR0; vr = 0; slipping = false; fallen = false; yDrop = 0; vy = 0; document.getElementById('runBtn').textContent = '▶ ධාවනය'; }
+reset();
+
+function step(dt) {
+  if (!running) return;
+  t += dt;
+  vT += A * dt; xT += vT * dt;
+  if (!fallen) {
+    if (!slipping && M * A > MU * M * g + 1e-9) slipping = true;
+    if (slipping) {
+      const aRel = MU * g - A;     // block accel relative to truck (friction forward, truck accelerates)
+      vr += aRel * dt;
+      if (vr >= 0 && A <= MU * g) { vr = 0; slipping = false; }
+      xr += vr * dt;
+      if (xr + BL / 2 < 0) { fallen = true; xBg = xT + xr; vBg = vT + vr; }
+    }
+  } else {
+    vy += 9.8 * dt; yDrop = Math.min(1.25, yDrop + vy * dt);
+    if (yDrop >= 1.25) { vBg = Math.max(0, vBg - 6 * dt); }
+    xBg += vBg * dt;
+  }
+  if (t > 7 || (fallen && xBg - xT < -12)) { running = false; document.getElementById('runBtn').textContent = '▶ ධාවනය'; }
+}
+
+// ---------- scene ----------
+const sc = stage(document.getElementById('scene'), 900, 330);
+const ROAD = 270, REAR = 160; // screen x of bed rear edge
+function drawTruck(c) {
+  const bedY = ROAD - 62, bedW = BED * PPM;
+  // chassis + bed
+  c.fillStyle = '#2d3436'; c.fillRect(REAR - 6, bedY + 14, bedW + 120, 16);
+  c.fillStyle = '#636e72'; c.fillRect(REAR, bedY, bedW, 14);
+  c.fillStyle = '#f9ca24'; for (let i = 0; i < bedW; i += 24) c.fillRect(REAR + i, bedY + 3, 12, 8);
+  // cab
+  const cx = REAR + bedW + 8;
+  c.fillStyle = '#f0b400'; c.strokeStyle = '#c79100'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(cx, bedY + 30); c.lineTo(cx, bedY - 78); c.lineTo(cx + 78, bedY - 78); c.lineTo(cx + 110, bedY - 20); c.lineTo(cx + 112, bedY + 30); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = '#c7ecff'; c.beginPath(); c.moveTo(cx + 54, bedY - 68); c.lineTo(cx + 80, bedY - 68); c.lineTo(cx + 100, bedY - 28); c.lineTo(cx + 54, bedY - 28); c.closePath(); c.fill();
+  // wheels
+  const wr = 22, ang = xT / (wr / PPM);
+  [REAR + 40, REAR + 95, REAR + bedW + 70].forEach(wx => {
+    c.save(); c.translate(wx, ROAD - wr); c.rotate(ang);
+    c.fillStyle = '#2d3436'; c.beginPath(); c.arc(0, 0, wr, 0, 7); c.fill();
+    c.fillStyle = '#b2bec3'; c.beginPath(); c.arc(0, 0, 9, 0, 7); c.fill();
+    c.strokeStyle = '#636e72'; c.lineWidth = 3; c.beginPath(); c.moveTo(-9, 0); c.lineTo(9, 0); c.moveTo(0, -9); c.lineTo(0, 9); c.stroke();
+    c.restore();
+  });
+  return bedY;
+}
+function drawBlock(c, x, y, w, h) {
+  c.fillStyle = '#b2bec3'; c.strokeStyle = '#7f8c8d'; c.lineWidth = 2;
+  c.fillRect(x, y, w, h); c.strokeRect(x, y, w, h);
+  c.fillStyle = 'rgba(99,110,114,.35)';
+  [[.2, .3], [.55, .6], [.8, .25], [.35, .75]].forEach(([u, v]) => { c.beginPath(); c.arc(x + u * w, y + v * h, 3, 0, 7); c.fill(); });
+  text(c, `${M} kg`, x + w / 2, y + h / 2, '#2d3436', 14, 'center', 800);
+}
+function drawScene() {
+  const c = sc.ctx; c.clearRect(0, 0, 900, 330);
+  // hills + road (scroll with truck)
+  c.fillStyle = '#a3d9a5'; c.beginPath(); c.moveTo(0, ROAD);
+  for (let X = 0; X <= 900; X += 20) c.lineTo(X, ROAD - 40 - 18 * Math.sin((X + xT * PPM * 0.2) / 90)); c.lineTo(900, ROAD); c.fill();
+  c.fillStyle = '#57606f'; c.fillRect(0, ROAD, 900, 60);
+  c.fillStyle = '#ecf0f1'; const off = (xT * PPM) % 120;
+  for (let i = -1; i < 10; i++) c.fillRect(i * 120 - off, ROAD + 28, 60, 5);
+
+  const bedY = drawTruck(c);
+  const bh = 52, bw = BL * PPM;
+  let bx, by;
+  if (!fallen) { bx = REAR + xr * PPM; by = bedY - bh; }
+  else { bx = REAR + (xBg - xT) * PPM; by = bedY - bh + yDrop * PPM; }
+  drawBlock(c, bx, by, bw, bh);
+
+  // forces on the block (while on the bed)
+  if (!fallen && A > 0) {
+    const fShow = slipping || A > MU * g ? MU * g : A; // per unit mass
+    const fl = 14 + fShow * 14;
+    arrow(c, bx + bw / 2 - fl / 2, bedY - 6, bx + bw / 2 + fl / 2, bedY - 6, '#e17055', 5);
+    text(c, 'f', bx + bw / 2 + fl / 2 + 10, bedY - 14, '#d35400', 17);
+    // tendency of relative motion (backwards)
+    arrow(c, bx + bw - 6, by - 18, bx + 6, by - 18, slipping ? '#d63031' : '#a4b0be', 3, slipping ? null : [6, 5]);
+    text(c, slipping ? 'ලිස්සයි! (ලොරියට සාපේක්ෂව පිටුපසට)' : 'ලිස්සීමේ ප්‍රවණතාව (පිටුපසට)', bx + bw / 2, by - 36, slipping ? '#d63031' : '#636e72', 13, 'center');
+  }
+  // truck acceleration arrow
+  if (A > 0) { arrow(c, 760, 40, 760 + 20 + A * 14, 40, '#0984e3', 5); text(c, `a = ${A.toFixed(1)} ms⁻²`, 750, 40, '#0984e3', 16, 'right'); }
+  text(c, `t = ${t.toFixed(1)} s   v = ${(vT * 3.6).toFixed(0)} km/h`, 16, 22, '#2d3436', 15);
+  if (fallen) text(c, 'කුට්ටිය ලිස්සා වැටුණි! ❌', 16, 50, '#d63031', 18, 'left', 800);
+}
+
+// ---------- FBD ----------
+const fb = stage(document.getElementById('fbd'), 400, 330);
+function drawFBD() {
+  const c = fb.ctx; c.clearRect(0, 0, 400, 330);
+  const cx = 135, cy = 165, hw = 60, hh = 42, s = 220; // s: px per (f / mg)
+  c.fillStyle = '#dfe6e9'; c.strokeStyle = '#636e72'; c.lineWidth = 2;
+  c.fillRect(cx - hw, cy - hh, 2 * hw, 2 * hh); c.strokeRect(cx - hw, cy - hh, 2 * hw, 2 * hh);
+  text(c, 'm', cx, cy, '#2d3436', 20, 'center', 800);
+  c.strokeStyle = '#95a5a6'; c.beginPath(); c.moveTo(10, cy + hh); c.lineTo(390, cy + hh); c.stroke();
+  // W, R
+  arrow(c, cx - 25, cy + 10, cx - 25, cy + hh + 105, '#2d3436', 5);
+  text(c, `W = mg = ${(M * g / 1000).toFixed(0)} kN`, cx - 12, cy + hh + 98, '#2d3436', 16);
+  arrow(c, cx - 25, cy - hh, cx - 25, cy - hh - 100, '#00b894', 5);
+  text(c, `R = ${(M * g / 1000).toFixed(0)} kN`, cx - 12, cy - hh - 92, '#00b894', 16);
+  // f (forward) along the contact surface, with dashed f_lim mark
+  const y = cy + hh - 8, x0 = cx + hw;
+  const fl = (slipping ? MU : Math.min(A / g, MU)) * s, flim = MU * s, need = A / g * s;
+  c.setLineDash([5, 5]); c.strokeStyle = '#6c5ce7'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(x0 + flim, y - 14); c.lineTo(x0 + flim, y + 14); c.stroke(); c.setLineDash([]);
+  text(c, `f_lim = ${(MU * M * g / 1000).toFixed(1)} kN`, Math.min(x0 + flim, 330), y + 28, '#6c5ce7', 14, 'center');
+  if (A / g > MU) {
+    c.setLineDash([3, 4]); c.strokeStyle = '#d63031'; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(x0 + flim, y); c.lineTo(x0 + Math.min(need, 255), y); c.stroke(); c.setLineDash([]);
+    text(c, 'අවශ්‍ය ma (ලැබෙන්නේ නැත)', 390, y - 52, '#d63031', 13, 'right');
+  }
+  if (A > 0) {
+    arrow(c, x0, y, x0 + fl, y, '#e17055', 6);
+    text(c, `f = ${((slipping || A > MU * g ? MU * g : A) * M / 1000).toFixed(1)} kN`, x0 + 6, y - 24, '#d35400', 16, 'left', 800);
+  }
+  // acceleration (not a force)
+  const aBlock = slipping || A > MU * g ? MU * g : A;
+  if (aBlock > 0) {
+    const L = 24 + aBlock * 12, ay = cy - hh - 28, ax = cx + 15;
+    c.strokeStyle = '#0984e3'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(ax, ay - 3); c.lineTo(ax + L, ay - 3); c.moveTo(ax, ay + 3); c.lineTo(ax + L, ay + 3); c.stroke();
+    arrow(c, ax + L - 4, ay, ax + L + 10, ay, '#0984e3', 1);
+    text(c, `a = ${aBlock.toFixed(1)} ms⁻² (බලයක් නොවේ)`, ax + L + 16, ay, '#0984e3', 13);
+  }
+  text(c, 'ඉදිරියට →', 390, 318, '#636e72', 13, 'right');
+}
+
+// ---------- panel ----------
+function updatePanel() {
+  const need = M * A, lim = MU * M * g, ratio = need / lim;
+  document.getElementById('fNeed').textContent = need.toFixed(0) + ' N';
+  document.getElementById('rVal').textContent = (M * g).toFixed(0) + ' N';
+  document.getElementById('fLim').textContent = lim.toFixed(0) + ' N';
+  const bar = document.getElementById('bar');
+  bar.style.width = Math.min(100, ratio * 80) + '%';
+  bar.style.background = ratio > 1 + 1e-9 ? '#e74c3c' : ratio > 0.97 ? '#f39c12' : '#27ae60';
+  document.getElementById('amax').textContent = (MU * g).toFixed(1);
+  const st = document.getElementById('status');
+  if (ratio > 1 + 1e-9) { st.className = 'status bad'; st.textContent = `a (${A.toFixed(1)}) > μg (${(MU * g).toFixed(1)}) → ma > μmg : කුට්ටිය ලිස්සයි ❌`; }
+  else if (Math.abs(ratio - 1) < 1e-9) { st.className = 'status'; st.textContent = 'a = μg → සීමාකාරී අවස්ථාව (ලිස්සීමට ආසන්නයි) ⚠️'; }
+  else { st.className = 'status'; st.textContent = `a (${A.toFixed(1)}) ≤ μg (${(MU * g).toFixed(1)}) → f = ma : කුට්ටිය ලොරිය සමඟම යයි ✅`; }
+}
+function readInputs() {
+  A = +aS.value; MU = +muS.value; M = +mS.value;
+  document.getElementById('aVal').textContent = A.toFixed(1);
+  document.getElementById('muVal').textContent = MU.toFixed(2);
+  document.getElementById('mVal').textContent = M;
+  updatePanel();
+}
+[aS, muS, mS].forEach(el => el.addEventListener('input', readInputs));
+document.getElementById('runBtn').addEventListener('click', () => {
+  if (running) { running = false; document.getElementById('runBtn').textContent = '▶ ධාවනය'; return; }
+  if (t > 0) reset();
+  running = true; document.getElementById('runBtn').textContent = '⏸ නවත්වන්න';
+});
+document.getElementById('resetBtn').addEventListener('click', reset);
+document.getElementById('q231').addEventListener('click', () => { muS.value = 0.3; aS.value = 3; reset(); readInputs(); });
+
+readInputs();
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.04, (now - last) / 1000); last = now;
+  step(dt); drawScene(); drawFBD();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
