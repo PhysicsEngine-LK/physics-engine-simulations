@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>වේදිකාවෙන් තටාකයට (281–289) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 16px; line-height: 1.6; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  select { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; color: #6c5ce7; background: #fff; border-radius: 8px; padding: 6px 8px; cursor: pointer; }
+  .chks { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 4px; }
+  .chk { font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .chk input { accent-color: #6c5ce7; width: 16px; height: 16px; }
+  .scrub { grid-column: 1 / -1; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: linear-gradient(#d6efff, #f4fbff 70%); border: 1px solid #dfe6e9; }
+  .row { display: grid; grid-template-columns: 1.25fr 1fr; gap: 14px; margin-top: 14px; }
+  .panel { border: 1px solid #dfe6e9; border-radius: 10px; padding: 14px; background: #fff; min-width: 0; }
+  .panel h3 { margin: 0 0 8px; font-size: 16px; }
+  .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 15px; padding: 5px 0; border-bottom: 1px dashed #dfe6e9; }
+  .kv b { font-family: 'Courier New', monospace; white-space: nowrap; }
+  .kv.hl b { color: #6c5ce7; }
+  .phase { display: inline-block; border-radius: 6px; padding: 1px 8px; background: #f1efff; color: #6c5ce7; font-family: inherit !important; }
+  .status { margin-top: 10px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 10px 14px; border-radius: 6px; font-weight: 700; font-size: 16px; line-height: 1.5; }
+  .status.bad { border-left-color: #e74c3c; background: #fdedec; color: #c0392b; }
+  .status.warn { border-left-color: #f39c12; background: #fef5e7; color: #b9770e; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .amax { background: #f1efff; border: 2px solid #6c5ce7; border-radius: 10px; padding: 10px 12px; margin-top: 10px; font-weight: 700; text-align: center; font-size: 16px; line-height: 1.6; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .eq { font-family: 'Courier New', monospace; font-weight: 700; background: #fff; border: 1px solid #dfe6e9; border-radius: 6px; padding: 8px 12px; margin: 6px 0; display: block; }
+  .ans svg { display: block; max-width: 340px; width: 100%; margin: 8px 0; background: #fff; border: 1px solid #dfe6e9; border-radius: 8px; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .row { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .side .status { margin-top: 0; }
+    .main > .cvs:first-child { margin-top: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← සියලුම Simulations</a>
+  <div class="qtags"><span class="qtag">2002 A/L</span><span class="qtag">281</span><span class="qtag">282</span><span class="qtag">283</span><span class="qtag">284</span><span class="qtag">285</span><span class="qtag">286</span><span class="qtag">287</span><span class="qtag">288</span><span class="qtag">289</span></div>
+  <h1>වේදිකාව මත දිව ගොස් ජල තටාකයට පනින ශිෂ්‍යයා</h1>
+  <p class="sub">50 kg ශිෂ්‍යයෙක් P වේදිකාවේ C කෙළවරේ නිශ්චලතාවයේ සිට ඒකාකාර ත්වරණයෙන් (භ්‍රමණය නොවී) දිව ගොස්, D කෙළවරින් 5 ms⁻¹ <b>තිරස්</b> ප්‍රවේගයෙන් ඉවත් වී ජල තටාකයට වැටේ. "▶ ධාවනය" ඔබන්න, නැතහොත් කාල ස්ලයිඩරය ඇදලා ඕනෑම මොහොතක නවත්වා බල සහ ප්‍රවේගය බලන්න. v සහ h වෙනස් කරලා, ශිෂ්‍යයා තටාකයට නොවැටී ගොඩබිමට වැටෙන්නේ කවදාද කියා සොයා ගන්න!</p>
+
+  <div class="layout">
+   <aside class="side">
+    <div class="controls">
+      <div><label>D හිදී ප්‍රවේගය v = <span class="v" id="vVal">5.0</span> ms⁻¹</label><input type="range" id="vS" min="2" max="8" step="0.1" value="5"></div>
+      <div><label>වේදිකාවේ උස h = <span class="v" id="hVal">7.2</span> m</label><input type="range" id="hS" min="3" max="12" step="0.1" value="7.2"></div>
+      <div class="scrub"><label>කාලය t = <span class="v" id="tVal">0.00</span> s <span style="font-weight:600;font-size:13px;color:#636e72">(0 – <span id="tMaxVal">3.20</span> s)</span></label><input type="range" id="tS" min="0" max="3.2" step="0.01" value="0"></div>
+      <div class="btns">
+        <button class="solid" id="runBtn">▶ ධාවනය</button>
+        <button id="resetBtn">↺ නැවත</button>
+        <select id="spd" title="ධාවන වේගය"><option value="1">1× වේගය</option><option value="0.5" selected>½× (සෙමින්)</option><option value="0.25">¼× (ඉතා සෙමින්)</option></select>
+      </div>
+      <div class="btns">
+        <button id="q289">⬇ 1.25 m වැටුණු මොහොත (289)</button>
+        <button id="defBtn">ප්‍රශ්නයේ අගයන්</button>
+      </div>
+      <div class="chks">
+        <label class="chk"><input type="checkbox" id="cF" checked>බල පෙන්වන්න</label>
+        <label class="chk"><input type="checkbox" id="cV" checked>ප්‍රවේගය පෙන්වන්න</label>
+        <label class="chk"><input type="checkbox" id="cA">θ (සිරසට) පෙන්වන්න</label>
+        <label class="chk"><input type="checkbox" id="cP">පථය කලින් පෙන්වන්න</label>
+      </div>
+    </div>
+    <div class="status" id="status">–</div>
+   </aside>
+   <div class="main">
+    <div class="cvs"><canvas id="scene" class="scene"></canvas></div>
+    <div class="note">දම් පාට තිත් අතර කාල පරතරය 0.1 s. වේදිකාව මත තිත් අතර දුර ක්‍රමයෙන් වැඩි වේ (ත්වරණය). වාතයේදී තිරස්ව තිත් අතර දුර සමානයි (v<sub>x</sub> නියතයි).</div>
+    <div class="row">
+      <div class="panel">
+        <h3>288 – v<sub>x</sub>–t ප්‍රස්තාරය</h3>
+        <div class="cvs"><canvas id="graph"></canvas></div>
+        <label class="chk" style="margin-top:8px"><input type="checkbox" id="cVy">v<sub>y</sub>–t ද පෙන්වන්න</label>
+      </div>
+      <div class="panel">
+        <h3>මේ මොහොතේ අගයන්</h3>
+        <div class="kv"><span>අවධිය</span><b><span class="phase" id="rPhase">වේදිකාව මත</span></b></div>
+        <div class="kv"><span>කාලය t</span><b id="rT">–</b></div>
+        <div class="kv"><span>C සිට තිරස් දුර</span><b id="rX">–</b></div>
+        <div class="kv"><span>ජලයට ඉහළින් උස y</span><b id="rY">–</b></div>
+        <div class="kv"><span>D මට්ටමේ සිට වැටුණු උස</span><b id="rDrop">–</b></div>
+        <div class="kv hl"><span>තිරස් ප්‍රවේගය v<sub>x</sub></span><b id="rVx">–</b></div>
+        <div class="kv hl"><span>සිරස් ප්‍රවේගය v<sub>y</sub> (පහළට)</span><b id="rVy">–</b></div>
+        <div class="kv hl"><span>ප්‍රවේගයේ විශාලත්වය |V|</span><b id="rV">–</b></div>
+        <div class="kv"><span>V සිරස සමඟ කෝණය θ</span><b id="rTh">–</b></div>
+        <div class="amax" id="derived">–</div>
+      </div>
+    </div>
+   </div>
+  </div>
+
+  <h2>විසඳුම් <span style="font-size:14px;color:#636e72;font-weight:600">(ප්‍රශ්නයේ අගයන්: m = 50 kg, CD = 5 m, v = 5 ms⁻¹, h = 7.2 m, g = 10 ms⁻²)</span></h2>
+  <details>
+    <summary><span class="qtag">281</span>වේදිකාව මත ත්වරණය</summary>
+    <div class="ans">
+      C සිට D දක්වා (s = 5 m) නිශ්චලතාවයේ සිට (u = 0) ඒකාකාර ත්වරණයෙන් v = 5 ms⁻¹ දක්වා:
+      <span class="eq">v² = u² + 2as</span>
+      <span class="eq">5² = 0 + 2 × a × 5  →  a = 25 / 10 = 2.5 ms⁻²</span>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">282</span>C සිට D දක්වා ගතවන කාලය</summary>
+    <div class="ans">
+      <span class="eq">v = u + at  →  5 = 0 + 2.5 × t  →  t = 2 s</span>
+      (පරීක්ෂාව: s = ½(u + v)t = ½ × 5 × 2 = 5 m ✓)
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">283</span>ශිෂ්‍යයාට ඉදිරියට බලය ලැබෙන්නේ කොහොමද?</summary>
+    <div class="ans">
+      ශිෂ්‍යයා ඉදිරියට ත්වරණය වීමට නම් ඔහු මත ඉදිරියට <b>බාහිර</b> තිරස් බලයක් ක්‍රියා කළ යුතුයි (F = ma).<br>
+      • ඔහු තම පාදවලින් වේදිකාව <b>පිටුපසට</b> තල්ලු කරයි (පාදය සහ වේදිකාව අතර ඝර්ෂණය හරහා).<br>
+      • නිව්ටන්ගේ <b>3 වන නියමය</b> අනුව, වේදිකාව ඊට සමාන හා ප්‍රතිවිරුද්ධ බලයක් ඔහුගේ පාද මත <b>ඉදිරියට</b> යොදයි.<br>
+      • පාදය වේදිකාව මත නොලිස්සන නිසා මෙය <b>ස්ථිතික ඝර්ෂණ</b> බලයකි. එහි විශාලත්වය:
+      <span class="eq">f = ma = 50 × 2.5 = 125 N  (ඉදිරියට)</span>
+      (ඝර්ෂණය නැතිනම් – උදා: අයිස් මත – ඔහුට ඉදිරියට ත්වරණය වීමට බැහැ!)
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">284</span>දුවන අතරතුර ශිෂ්‍යයා මත බල</summary>
+    <div class="ans">
+      • <b>W = mg = 50 × 10 = 500 N</b> – බර, සිරස්ව පහළට (ගුරුත්ව කේන්ද්‍රයෙන්)<br>
+      • <b>R = 500 N</b> – වේදිකාවෙන් අභිලම්බ ප්‍රතික්‍රියාව, සිරස්ව ඉහළට (පාද මත). සිරස් ත්වරණයක් නැති නිසා R = W.<br>
+      • <b>f = 125 N</b> – ස්ථිතික ඝර්ෂණය, තිරස්ව <b>ඉදිරියට</b> (පාද මත)<br>
+      <span class="eq">සිරස්ව: R − W = 0  →  R = 500 N</span>
+      <span class="eq">තිරස්ව: f = ma = 125 N</span>
+      "බල පෙන්වන්න" සක්‍රිය කර t &lt; 2 s මොහොතක නවත්වා බලන්න.
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">285</span>D සිට ජලයට වැටීමට කාලය</summary>
+    <div class="ans">
+      D හිදී ප්‍රවේගය තිරස් නිසා ආරම්භක සිරස් ප්‍රවේගය u<sub>y</sub> = 0. සිරස්ව (පහළට ධන):
+      <span class="eq">s = ut + ½at²  →  7.2 = 0 + ½ × 10 × t²</span>
+      <span class="eq">t² = 1.44  →  t = 1.2 s</span>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">286</span>B සිට වැටෙන දුර – ආරක්ෂිතද?</summary>
+    <div class="ans">
+      වාතයේදී තිරස් බලයක් නැති නිසා (වායු ප්‍රතිරෝධය නොසලකා) තිරස් ප්‍රවේගය 5 ms⁻¹ ලෙස නියතව පවතී:
+      <span class="eq">x = v<sub>x</sub> × t = 5 × 1.2 = 6 m</span>
+      6 m &gt; 4.5 m නිසා ශිෂ්‍යයා තටාකයේ කෙළවරෙන් 1.5 m ඔබ්බට ජලයට වැටේ → <b>ආරක්ෂිතයි ✅</b><br>
+      (v අඩු කර බලන්න: v = 3.75 ms⁻¹ ට වඩා අඩු වුවොත් x &lt; 4.5 m – අනාරක්ෂිතයි!)
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">287</span>වාතයේ සිටින විට බල</summary>
+    <div class="ans">
+      වාතයේදී ඔහු කිසිවක් ස්පර්ශ නොකරයි. වායු ප්‍රතිරෝධය නොසලකන නිසා ක්‍රියා කරන <b>එකම බලය බර</b> පමණි:
+      <span class="eq">W = mg = 500 N  (සිරස්ව පහළට)</span>
+      R සහ f දැන් නැත. ඉදිරියට "බලයක්" ද නැත! තිරස් බලයක් නැති නිසා v<sub>x</sub> නියතයි; සිරස්ව g = 10 ms⁻² ත්වරණයක් පහළට.
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">288</span>v<sub>x</sub>–t ප්‍රස්තාරය (C සිට ජලයට වදින තුරු)</summary>
+    <div class="ans">
+      • <b>0 – 2 s:</b> v<sub>x</sub> = 2.5t → (0, 0) සිට (2 s, 5 ms⁻¹) දක්වා සරල රේඛාවක් (අනුක්‍රමණය = a = 2.5 ms⁻²)<br>
+      • <b>2 s – 3.2 s:</b> v<sub>x</sub> = 5 ms⁻¹ නියතයි → t අක්ෂයට සමාන්තර තිරස් රේඛාවක්. (2 + 1.2 = 3.2 s දී ජලයට වදී.)
+      <svg viewBox="0 0 320 175" aria-label="vx-t graph">
+        <line x1="40" y1="140" x2="300" y2="140" stroke="#2c3e50" stroke-width="2"/>
+        <line x1="40" y1="140" x2="40" y2="12" stroke="#2c3e50" stroke-width="2"/>
+        <line x1="180" y1="30" x2="180" y2="140" stroke="#6c5ce7" stroke-dasharray="4 4"/>
+        <line x1="264" y1="30" x2="264" y2="140" stroke="#6c5ce7" stroke-dasharray="4 4"/>
+        <line x1="40" y1="30" x2="180" y2="30" stroke="#b2bec3" stroke-dasharray="4 4"/>
+        <polyline points="40,140 180,30 264,30" fill="none" stroke="#0984e3" stroke-width="3.5"/>
+        <text x="180" y="157" text-anchor="middle" font-size="13" font-weight="700" fill="#6c5ce7">2</text>
+        <text x="264" y="157" text-anchor="middle" font-size="13" font-weight="700" fill="#6c5ce7">3.2</text>
+        <text x="34" y="34" text-anchor="end" font-size="13" font-weight="700" fill="#2c3e50">5</text>
+        <text x="34" y="145" text-anchor="end" font-size="13" font-weight="700" fill="#2c3e50">0</text>
+        <text x="300" y="160" text-anchor="end" font-size="13" font-weight="700" fill="#2c3e50">t / s</text>
+        <text x="46" y="14" font-size="13" font-weight="700" fill="#0984e3">v<tspan font-size="9" dy="4">x</tspan><tspan dy="-4"> / ms⁻¹</tspan></text>
+      </svg>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">289</span>1.25 m වැටුණු පසු ප්‍රවේගය</summary>
+    <div class="ans">
+      සිරස්ව (u<sub>y</sub> = 0, s = 1.25 m):
+      <span class="eq">v<sub>y</sub>² = u<sub>y</sub>² + 2gs = 0 + 2 × 10 × 1.25 = 25  →  v<sub>y</sub> = 5 ms⁻¹ (පහළට)</span>
+      තිරස්ව: <span class="eq">v<sub>x</sub> = 5 ms⁻¹ (නියතයි)</span>
+      <span class="eq">V = √(v<sub>x</sub>² + v<sub>y</sub>²) = √(5² + 5²) = 5√2 ≈ 7.07 ms⁻¹</span>
+      <span class="eq">tan θ = v<sub>x</sub> / v<sub>y</sub> = 5 / 5 = 1  →  θ = 45°</span>
+      ප්‍රවේගය 7.07 ms⁻¹ ක් වන අතර එය සිරස් XY සමඟ <b>45°</b> ක කෝණයක් සාදමින් ඉදිරියට හා පහළට යොමු වේ.<br>
+      (මෙය D ගෙන් 0.5 s පසු, එනම් t = 2.5 s දී සිදු වේ: 1.25 = ½ × 10 × t² → t = 0.5 s.) "⬇ 1.25 m වැටුණු මොහොත" බොත්තම ඔබා බලන්න.
+    </div>
+  </details>
+  <p class="note">සටහන: ශිෂ්‍යයා අංශුවක් ලෙස (භ්‍රමණය නොමැතිව) සලකා ඇත. පථයේ ලක්ෂ්‍යය ලෙස ගෙන ඇත්තේ පාද පිහිටන ස්ථානයයි. වායු ප්‍රතිරෝධය නොසලකා ඇත; g = 10 ms⁻².</p>
+</div>
+
+<script>
+const g = 10, M = 50, L = 5, EDGE = 4.5;   // kg, platform length (m), pool edge from B (m)
+const DEF_V = 5, DEF_H = 7.2;
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth || W;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const Lh = Math.hypot(x2 - x1, y2 - y1); if (Lh < 2) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(14, Lh * 0.55);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+// Draws text; "v_x" is drawn with "x" as a real subscript.
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/); // even = normal text, odd = subscript
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
+}
+// text with a soft white halo so it stays readable over the scene
+function label(ctx, t, x, y, col, size = 14, align = 'left') {
+  ctx.save(); ctx.shadowColor = 'rgba(255,255,255,.95)'; ctx.shadowBlur = 4;
+  text(ctx, t, x, y, col, size, align); text(ctx, t, x, y, col, size, align); ctx.restore();
+}
+const $ = id => document.getElementById(id);
+const vS = $('vS'), hS = $('hS'), tS = $('tS'), runBtn = $('runBtn');
+
+// ---------- physics (analytic, so the scrubber can jump anywhere) ----------
+let V = DEF_V, H = DEF_H, A, T1, TF, T, R;
+let t = 0, playing = false, splashAge = 0;
+function recompute() {
+  A = V * V / (2 * L); T1 = 2 * L / V; TF = Math.sqrt(2 * H / g); T = T1 + TF; R = V * TF;
+}
+// x from B (m, D is x = 0, C is x = -L), y height above water (m), vy downward (m/s)
+function kin(tt) {
+  tt = Math.max(0, Math.min(tt, T));
+  if (tt <= T1) return { t: tt, x: -L + 0.5 * A * tt * tt, y: H, vx: A * tt, vy: 0, phase: 0 };
+  const u = tt - T1;
+  return { t: tt, x: V * u, y: Math.max(0, H - 0.5 * g * u * u), vx: V, vy: g * u, phase: tt >= T - 1e-9 ? 2 : 1 };
+}
+function setT(tt) { t = Math.max(0, Math.min(tt, T)); if (t < T - 1e-9) splashAge = 0; }
+function advance(dt) {           // used by the animation loop (and handy for testing)
+  if (playing) { t += dt * (+$('spd').value); if (t >= T) { t = T; setPlaying(false); } }
+  if (t >= T - 1e-9) splashAge += dt; else splashAge = 0;
+}
+function setPlaying(p) { playing = p; runBtn.textContent = p ? '⏸ නවත්වන්න' : '▶ ධාවනය'; }
+
+// ---------- scene ----------
+const SW = 900, SH = 560, GY = 470, ML = 46;
+const sc = stage($('scene'), SW, SH);
+let S, XMIN;
+function layoutScene() { XMIN = -L - 0.9; S = Math.min((SW - ML - 20) / (Math.max(9.5, R + 2) - XMIN), (GY - 150) / H); }
+const X = xm => ML + (xm - XMIN) * S, Y = ym => GY - ym * S;
+const FS = 0.15, VS = 12; // px per N, px per m/s
+
+function drawGround(c) {
+  const ex = X(EDGE);
+  // deck (hard ground) from left up to pool edge
+  c.fillStyle = '#d9d4c7'; c.fillRect(0, GY, ex, SH - GY);
+  c.fillStyle = '#bdb6a5'; c.fillRect(0, GY, ex, 5);
+  // pool
+  const wg = c.createLinearGradient(0, GY, 0, GY + 62);
+  wg.addColorStop(0, '#74b9ff'); wg.addColorStop(1, '#0984e3');
+  c.fillStyle = wg; c.fillRect(ex, GY, SW - ex, 62);
+  c.fillStyle = '#c8d6e5'; c.fillRect(ex, GY + 62, SW - ex, SH - GY - 62);
+  c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 2; c.beginPath();
+  for (let px = ex; px <= SW; px += 4) c.lineTo(px, GY + 1.5 * Math.sin(px / 9 + performance.now() / 400));
+  c.stroke();
+  c.fillStyle = '#95a5a6'; c.fillRect(ex - 3, GY - 4, 7, 66); // pool wall
+  text(c, 'ජල තටාකය', Math.min(SW - 70, (ex + SW) / 2), GY + 34, '#fff', 15, 'center', 800);
+  // 4.5 m dimension (B → pool edge) on the deck
+  const dy = GY + 24;
+  arrow(c, (X(0) + ex) / 2, dy, X(0) + 2, dy, '#2d3436', 2); arrow(c, (X(0) + ex) / 2, dy, ex - 2, dy, '#2d3436', 2);
+  label(c, `${EDGE} m`, (X(0) + ex) / 2, dy - 11, '#2d3436', 13, 'center');
+  // ruler: distance from B
+  const ry = GY + 74, xEnd = XMIN + (SW - ML) / S;
+  c.fillStyle = 'rgba(255,255,255,.75)'; c.fillRect(X(0) - 14, ry - 8, SW - X(0) + 14, 30);
+  c.strokeStyle = '#2d3436'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(X(0), ry); c.lineTo(SW - 4, ry); c.stroke();
+  for (let m = 0; m <= Math.floor(xEnd); m++) {
+    c.beginPath(); c.moveTo(X(m), ry - 5); c.lineTo(X(m), ry + 5); c.stroke();
+    text(c, m, X(m), ry + 13, '#2d3436', 11, 'center');
+    if (m < Math.floor(xEnd)) { c.beginPath(); c.moveTo(X(m + 0.5), ry - 3); c.lineTo(X(m + 0.5), ry + 3); c.stroke(); }
+  }
+  text(c, 'B සිට දුර (m)', X(0) - 18, ry + 6, '#2d3436', 11, 'right');
+}
+function drawPlatform(c) {
+  const top = Y(H), x0 = X(-1.3), x1 = X(0);
+  // lattice tower under D
+  c.strokeStyle = '#7f8c8d'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(x0, top + 10); c.lineTo(x0, GY); c.moveTo(x1 - 2, top + 10); c.lineTo(x1 - 2, GY); c.stroke();
+  c.lineWidth = 1.5; c.beginPath();
+  const n = Math.max(2, Math.round(H));
+  for (let i = 0; i < n; i++) {
+    const ya = top + 10 + (GY - top - 10) * i / n, yb = top + 10 + (GY - top - 10) * (i + 1) / n;
+    c.moveTo(x0, ya); c.lineTo(x1 - 2, yb); c.moveTo(x1 - 2, ya); c.lineTo(x0, yb); c.moveTo(x0, yb); c.lineTo(x1 - 2, yb);
+  }
+  c.stroke();
+  // platform P
+  c.fillStyle = '#b07d4f'; c.strokeStyle = '#7d5532'; c.lineWidth = 2;
+  c.fillRect(X(-L), top, X(0) - X(-L), 10); c.strokeRect(X(-L), top, X(0) - X(-L), 10);
+  text(c, 'C', X(-L) - 4, top + 5, '#2d3436', 17, 'right', 800);
+  text(c, 'D', X(0) + 6, top - 10, '#2d3436', 17, 'left', 800);
+  // 5 m dimension under the platform
+  const dy = top + 70, mid = (X(-L) + X(0)) / 2;
+  arrow(c, mid, dy, X(-L) + 1, dy, '#6c5ce7', 2); arrow(c, mid, dy, X(0) - 1, dy, '#6c5ce7', 2);
+  label(c, `P : ${L} m`, mid, dy + 14, '#6c5ce7', 13, 'center');
+  // height dimension
+  const hx = X(-3.2);
+  c.strokeStyle = '#2d3436'; c.lineWidth = 1.5; c.setLineDash([]);
+  arrow(c, hx, (top + GY) / 2, hx, top + 11, '#2d3436', 2); arrow(c, hx, (top + GY) / 2, hx, GY - 1, '#2d3436', 2);
+  for (let m = 1; m < H; m++) { c.beginPath(); c.moveTo(hx - 4, Y(m)); c.lineTo(hx + 4, Y(m)); c.stroke(); }
+  label(c, `h = ${H.toFixed(1)} m`, hx + 8, (top + GY) / 2, '#2d3436', 14);
+  // B
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(X(0), GY, 4, 0, 7); c.fill();
+  c.setLineDash([4, 5]); c.strokeStyle = 'rgba(45,52,54,.35)'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(X(0) + 1, top + 10); c.lineTo(X(0) + 1, GY); c.stroke(); c.setLineDash([]);
+  text(c, 'B', X(0) + 7, GY - 10, '#2d3436', 16, 'left', 800);
+}
+function drawRunner(c, px, py, k) {
+  const hip = [px, py - 20], sh = [px, py - 33], head = [px + 1, py - 41];
+  let f1, f2, h1, h2;
+  if (k.phase === 0 && k.t > 0) {
+    const ph = (k.x + L) * Math.PI / 0.8, s = Math.sin(ph), co = Math.cos(ph);
+    f1 = [px + 10 * s, py - 5 * Math.max(0, co)]; f2 = [px - 10 * s, py - 5 * Math.max(0, -co)];
+    h1 = [px - 9 * s, py - 21]; h2 = [px + 9 * s, py - 21];
+  } else if (k.phase === 0) { f1 = [px + 4, py]; f2 = [px - 4, py]; h1 = [px + 5, py - 19]; h2 = [px - 5, py - 19]; }
+  else { f1 = [px + 9, py - 2]; f2 = [px - 7, py - 4]; h1 = [px + 11, py - 45]; h2 = [px - 8, py - 46]; }
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 4; c.lineCap = 'round'; c.lineJoin = 'round';
+  const limb = (a, b, bend) => { const m = [(a[0] + b[0]) / 2 + bend, (a[1] + b[1]) / 2]; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(m[0], m[1]); c.lineTo(b[0], b[1]); c.stroke(); };
+  limb(hip, f2, 4); limb(sh, h2, -3);
+  c.beginPath(); c.moveTo(hip[0], hip[1]); c.lineTo(sh[0], sh[1]); c.stroke();
+  limb(hip, f1, 4); limb(sh, h1, -3);
+  c.fillStyle = '#f5cba7'; c.strokeStyle = '#6c5ce7'; c.lineWidth = 2.5;
+  c.beginPath(); c.arc(head[0], head[1], 6.5, 0, 7); c.fill(); c.stroke();
+}
+function drawTrail(c, upTo, col, r) {
+  c.fillStyle = col;
+  for (let tk = 0; tk <= upTo + 1e-9; tk += 0.1) {
+    const k = kin(tk); c.beginPath(); c.arc(X(k.x), Y(k.y) - (k.phase === 0 ? 3 : 0), r, 0, 7); c.fill();
+  }
+}
+function drawSplash(c, px, age) {
+  const p = Math.min(1, age / 0.7);
+  c.strokeStyle = `rgba(255,255,255,${0.9 - 0.6 * p})`; c.lineWidth = 2;
+  for (let i = 1; i <= 3; i++) { c.beginPath(); c.ellipse(px, GY + 2, 10 * i * (0.4 + p), 3 * i * (0.4 + p), 0, 0, 7); c.stroke(); }
+  c.fillStyle = `rgba(116,185,255,${1 - 0.7 * p})`;
+  for (let i = 0; i < 9; i++) {
+    const ang = -Math.PI / 2 + (i - 4) * 0.28, sp = 70 + 15 * (i % 3);
+    const u = Math.min(age, 0.9), dx = Math.cos(ang) * sp * u, dy = Math.sin(ang) * sp * u + 160 * u * u;
+    if (dy < 4) { c.beginPath(); c.arc(px + dx, GY + dy, 3, 0, 7); c.fill(); }
+  }
+}
+function drawScene() {
+  const c = sc.ctx; c.clearRect(0, 0, SW, SH);
+  // background hills
+  c.fillStyle = '#c8ebc0'; c.beginPath(); c.moveTo(0, GY);
+  for (let px = 0; px <= SW; px += 20) c.lineTo(px, GY - 50 - 16 * Math.sin(px / 110)); c.lineTo(SW, GY); c.fill();
+  drawGround(c); drawPlatform(c);
+  const k = kin(t), safe = R > EDGE + 1e-9;
+  if ($('cP').checked) {   // predicted path (faint, dashed)
+    c.setLineDash([6, 6]); c.strokeStyle = 'rgba(108,92,231,.45)'; c.lineWidth = 2; c.beginPath();
+    for (let tt = T1; tt <= T + 1e-9; tt += 0.02) { const q = kin(tt); c.lineTo(X(q.x), Y(q.y)); }
+    const q = kin(T); c.lineTo(X(q.x), Y(q.y)); c.stroke(); c.setLineDash([]);
+  }
+  drawTrail(c, t, '#6c5ce7', 2.6);
+  let px = X(k.x), py = Y(k.y);
+  // landing
+  if (k.phase === 2) {
+    const lx = X(R);
+    c.strokeStyle = safe ? '#0984e3' : '#d63031'; c.lineWidth = 2; c.beginPath(); c.moveTo(lx, GY + 60); c.lineTo(lx, GY + 82); c.stroke();
+    label(c, `${R.toFixed(2)} m`, lx, GY + 52, safe ? '#0652dd' : '#d63031', 14, 'center');
+    if (safe) {
+      const sink = Math.min(1, splashAge * 1.6) * 34;
+      c.save(); c.beginPath(); c.rect(0, 0, SW, GY); c.clip(); drawRunner(c, px, py + sink, k); c.restore();
+      drawSplash(c, px, splashAge);
+    } else {
+      c.fillStyle = '#d63031'; c.beginPath();
+      for (let i = 0; i < 16; i++) { const r = i % 2 ? 9 : 22, a = i * Math.PI / 8; c.lineTo(px + r * Math.cos(a), GY - 4 + r * Math.sin(a) * 0.7); }
+      c.closePath(); c.fill();
+      drawRunner(c, px, py, k);
+      label(c, 'අනාරක්ෂිතයි! ගොඩබිමට වැටුණි', px, GY - 64, '#d63031', 16, 'center');
+    }
+  } else drawRunner(c, px, py, k);
+
+  const cx = px, cy = py - 24; // centre of mass on screen
+  // forces
+  if ($('cF').checked && k.phase < 2) {
+    const W = M * g, wl = W * FS;
+    if (k.phase === 0) {
+      arrow(c, cx + 2, cy, cx + 2, cy + wl, '#2d3436', 4);
+      label(c, `W = ${W} N`, cx + 9, cy + wl - 6, '#2d3436', 14);
+      arrow(c, cx - 12, py, cx - 12, py - wl, '#00b894', 4);
+      label(c, `R = ${W} N`, cx - 18, py - wl + 4, '#00a383', 14, 'right');
+      if (k.t > 0) {
+        const f = M * A, fl = Math.max(12, f * FS);
+        arrow(c, cx + 1, py - 1, cx + 1 + fl, py - 1, '#e17055', 5);
+        label(c, `f = ${f.toFixed(0)} N`, cx + fl + 8, py - 10, '#d35400', 14);
+      }
+    } else {
+      arrow(c, cx - 22, cy, cx - 22, cy + wl, '#2d3436', 4);
+      label(c, `W = ${W} N`, cx - 28, cy + wl - 4, '#2d3436', 14, 'right');
+      label(c, '(එකම බලය)', cx - 28, cy + wl + 13, '#636e72', 12, 'right');
+    }
+  }
+  // velocity
+  const showAng = $('cA').checked && k.phase === 1;
+  if (showAng) {
+    c.setLineDash([5, 4]); c.strokeStyle = '#636e72'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(cx, cy - 46); c.lineTo(cx, cy + Math.max(70, k.vy * VS + 26)); c.stroke(); c.setLineDash([]);
+    text(c, 'X', cx + 6, cy - 46, '#636e72', 14); text(c, 'Y', cx + 6, cy + Math.max(70, k.vy * VS + 26), '#636e72', 14);
+    // fallen height marker from D level
+    const dl = Y(H), mx = cx - 46;
+    c.setLineDash([3, 4]); c.strokeStyle = '#6c5ce7'; c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(X(0), dl); c.lineTo(cx, dl); c.moveTo(mx - 6, py); c.lineTo(cx - 8, py); c.stroke(); c.setLineDash([]);
+    if (py - dl > 14) { arrow(c, mx, (dl + py) / 2, mx, dl, '#6c5ce7', 1.5); arrow(c, mx, (dl + py) / 2, mx, py, '#6c5ce7', 1.5); }
+    label(c, `${(H - k.y).toFixed(2)} m`, mx - 6, (dl + py) / 2, '#6c5ce7', 13, 'right');
+  }
+  if ($('cV').checked && k.phase < 2 && k.vx > 0.01) {
+    const ex = cx + k.vx * VS, ey = cy + k.vy * VS;
+    if (k.phase === 1) {
+      c.setLineDash([3, 4]); c.strokeStyle = 'rgba(45,52,54,.4)'; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(ex, cy); c.lineTo(ex, ey); c.lineTo(cx, ey); c.stroke(); c.setLineDash([]);
+      arrow(c, cx, cy, ex, cy, '#0984e3', 2.5, [6, 4]);
+      arrow(c, cx, cy, cx, ey, '#e17055', 2.5, [6, 4]);
+      arrow(c, cx, cy, ex, ey, '#27ae60', 4);
+      label(c, `v_x = ${k.vx.toFixed(1)} ms⁻¹`, ex + 6, cy - 12, '#0652dd', 13);
+      label(c, `v_y = ${k.vy.toFixed(1)} ms⁻¹`, cx + 6, ey + 14, '#d35400', 13);
+      label(c, `V = ${Math.hypot(k.vx, k.vy).toFixed(2)} ms⁻¹`, ex + 8, ey + 4, '#1e8449', 14);
+      if (showAng) {
+        const ang = Math.atan2(k.vy, k.vx), r = 30;
+        c.strokeStyle = '#6c5ce7'; c.lineWidth = 2.5; c.beginPath(); c.arc(cx, cy, r, ang, Math.PI / 2); c.stroke();
+        const mid = (ang + Math.PI / 2) / 2, th = Math.atan2(k.vx, k.vy) * 180 / Math.PI;
+        label(c, `θ = ${th.toFixed(1)}°`, cx + (r + 8) * Math.cos(mid), cy + (r + 10) * Math.sin(mid), '#6c5ce7', 15);
+      }
+    } else {
+      arrow(c, cx + 14, cy - 14, ex + 14, cy - 14, '#0984e3', 3.5);
+      label(c, `v_x = ${k.vx.toFixed(2)} ms⁻¹`, cx + 14, cy - 32, '#0652dd', 13);
+    }
+  }
+  // HUD
+  const phTxt = k.phase === 0 ? 'වේදිකාව මත' : k.phase === 1 ? 'වාතයේ' : (safe ? 'ජලයට වැටුණි ✅' : 'ගොඩබිමට වැටුණි ❌');
+  text(c, `t = ${k.t.toFixed(2)} s`, 14, 20, '#2d3436', 17, 'left', 800);
+  text(c, phTxt, 14, 44, k.phase === 2 && !safe ? '#d63031' : '#6c5ce7', 15, 'left', 800);
+  if (!safe) text(c, 'අනාරක්ෂිතයි!', SW - 14, 20, '#d63031', 20, 'right', 800);
+  else text(c, `B සිට ${R.toFixed(2)} m දුරට වැටේ (> ${EDGE} m) ✅`, SW - 14, 20, '#1e8449', 14, 'right', 800);
+}
+
+// ---------- v–t graph ----------
+const GW = 560, GH = 300, gr = stage($('graph'), GW, GH);
+function drawGraph() {
+  const c = gr.ctx; c.clearRect(0, 0, GW, GH);
+  const showVy = $('cVy').checked;
+  const L0 = 54, R0 = GW - 22, T0 = 22, B0 = GH - 46;
+  const tmax = Math.ceil((T + 0.15) * 2) / 2, vtop = showVy ? Math.max(V, g * TF) : V;
+  const vstep = vtop > 10 ? 2 : 1, vmax = Math.ceil((vtop + 0.5) / vstep) * vstep;
+  const gx = tt => L0 + tt / tmax * (R0 - L0), gy = v => B0 - v / vmax * (B0 - T0);
+  // grid
+  c.strokeStyle = '#eef0f3'; c.lineWidth = 1; c.beginPath();
+  for (let tt = 0.5; tt <= tmax + 1e-9; tt += 0.5) { c.moveTo(gx(tt), T0); c.lineTo(gx(tt), B0); }
+  for (let v = vstep; v <= vmax + 1e-9; v += vstep) { c.moveTo(L0, gy(v)); c.lineTo(R0, gy(v)); }
+  c.stroke();
+  // axes
+  arrow(c, L0, B0, R0 + 12, B0, '#2c3e50', 2); arrow(c, L0, B0, L0, T0 - 12, '#2c3e50', 2);
+  for (let tt = 0; tt <= tmax + 1e-9; tt += 1) text(c, tt, gx(tt), B0 + 13, '#2c3e50', 12, 'center');
+  for (let v = 0; v <= vmax + 1e-9; v += vstep) text(c, v, L0 - 7, gy(v), '#2c3e50', 12, 'right');
+  text(c, 't / s', R0 + 8, B0 + 28, '#2c3e50', 13, 'right');
+  text(c, 'v / ms⁻¹', L0 + 6, T0 - 12, '#2c3e50', 13);
+  // key instants
+  [[T1, `${T1.toFixed(1)} s`], [T, `${T.toFixed(1)} s`]].forEach(([tt, s]) => {
+    c.setLineDash([5, 4]); c.strokeStyle = '#6c5ce7'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(gx(tt), T0); c.lineTo(gx(tt), B0); c.stroke(); c.setLineDash([]);
+    text(c, s, gx(tt), B0 + 30, '#6c5ce7', 13, 'center', 800);
+  });
+  text(c, 'වේදිකාව', gx(T1 / 2), T0 + 4, '#a29bfe', 12, 'center');
+  text(c, 'වාතය', gx((T1 + T) / 2), T0 + 4, '#a29bfe', 12, 'center');
+  c.setLineDash([3, 4]); c.strokeStyle = '#b2bec3'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(L0, gy(V)); c.lineTo(gx(T1), gy(V)); c.stroke(); c.setLineDash([]);
+  // curves up to now
+  const curve = (fn, col) => {
+    c.strokeStyle = col; c.lineWidth = 3.5; c.lineJoin = 'round'; c.beginPath();
+    for (let tt = 0; tt < t; tt += 0.01) c.lineTo(gx(tt), gy(fn(kin(tt))));
+    c.lineTo(gx(t), gy(fn(kin(t)))); c.stroke();
+  };
+  if (showVy) curve(k => k.vy, '#e17055');
+  curve(k => k.vx, '#0984e3');
+  // cursor
+  const k = kin(t);
+  c.strokeStyle = 'rgba(45,52,54,.5)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(gx(t), T0); c.lineTo(gx(t), B0); c.stroke();
+  c.fillStyle = '#0984e3'; c.beginPath(); c.arc(gx(t), gy(k.vx), 5, 0, 7); c.fill();
+  if (showVy) { c.fillStyle = '#e17055'; c.beginPath(); c.arc(gx(t), gy(k.vy), 5, 0, 7); c.fill(); }
+  // legend
+  text(c, 'v_x', R0 - 70, T0 + 26, '#0984e3', 15, 'left', 800);
+  if (showVy) text(c, 'v_y', R0 - 30, T0 + 26, '#e17055', 15, 'left', 800);
+}
+
+// ---------- panel ----------
+const fmt = (v, d, u) => v.toFixed(d) + ' ' + u;
+function updatePanel() {
+  const k = kin(t), safe = R > EDGE + 1e-9;
+  $('rPhase').textContent = k.phase === 0 ? 'වේදිකාව මත' : k.phase === 1 ? 'වාතයේ' : (safe ? 'ජලයට වැටුණි' : 'ගොඩබිමට වැටුණි');
+  $('rT').textContent = fmt(k.t, 2, 's');
+  $('rX').textContent = fmt(k.x + L, 2, 'm');
+  $('rY').textContent = fmt(k.y, 2, 'm');
+  $('rDrop').textContent = fmt(H - k.y, 2, 'm');
+  $('rVx').textContent = fmt(k.vx, 2, 'ms⁻¹');
+  $('rVy').textContent = fmt(k.vy, 2, 'ms⁻¹');
+  $('rV').textContent = fmt(Math.hypot(k.vx, k.vy), 2, 'ms⁻¹');
+  $('rTh').textContent = k.phase === 0 ? '90° (තිරස්)' : (Math.atan2(k.vx, k.vy) * 180 / Math.PI).toFixed(1) + '°';
+  $('tVal').textContent = k.t.toFixed(2);
+  tS.value = k.t;
+}
+function updateStatic() {
+  const safe = R > EDGE + 1e-9, eq = Math.abs(R - EDGE) < 1e-9, st = $('status');
+  $('derived').innerHTML = `a = v²/2s = ${A.toFixed(2)} ms⁻² &nbsp;|&nbsp; f = ma = ${(M * A).toFixed(0)} N<br>` +
+    `වේදිකාව මත ${T1.toFixed(2)} s + වාතයේ ${TF.toFixed(2)} s = ${T.toFixed(2)} s`;
+  if (eq) { st.className = 'status warn'; st.innerHTML = `B සිට ${R.toFixed(2)} m → හරියටම තටාකයේ කෙළවරට! ⚠️`; }
+  else if (safe) { st.className = 'status'; st.innerHTML = `B සිට වැටෙන දුර x = v t = ${V.toFixed(1)} × ${TF.toFixed(2)} = <b>${R.toFixed(2)} m</b><br>${R.toFixed(2)} &gt; ${EDGE} → ආරක්ෂිතයි ✅ (ජලයට වැටේ)`; }
+  else { st.className = 'status bad'; st.innerHTML = `B සිට වැටෙන දුර x = v t = ${V.toFixed(1)} × ${TF.toFixed(2)} = <b>${R.toFixed(2)} m</b><br>${R.toFixed(2)} &lt; ${EDGE} → අනාරක්ෂිතයි! ❌ (තටාකයට පෙර ගොඩබිමට වැටේ)`; }
+  $('tMaxVal').textContent = T.toFixed(2);
+  tS.max = T.toFixed(3);
+}
+function readInputs() {
+  V = +vS.value; H = +hS.value;
+  $('vVal').textContent = V.toFixed(1); $('hVal').textContent = H.toFixed(1);
+  recompute(); layoutScene(); setT(t); updateStatic();
+}
+[vS, hS].forEach(el => el.addEventListener('input', readInputs));
+tS.addEventListener('input', () => { setPlaying(false); setT(+tS.value); });
+runBtn.addEventListener('click', () => {
+  if (playing) { setPlaying(false); return; }
+  if (t >= T - 1e-9) setT(0);
+  setPlaying(true);
+});
+$('resetBtn').addEventListener('click', () => { setPlaying(false); setT(0); $('cA').checked = false; });
+$('defBtn').addEventListener('click', () => { vS.value = DEF_V; hS.value = DEF_H; setPlaying(false); readInputs(); setT(0); });
+$('q289').addEventListener('click', () => {
+  setPlaying(false); setT(T1 + Math.sqrt(2 * 1.25 / g));
+  $('cV').checked = true; $('cA').checked = true;
+});
+
+readInputs();
+// exposed for quick testing from the console
+window.sim = { kin, setT, advance, get t() { return t; }, get T() { return T; }, get R() { return R; }, setPlaying };
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.04, (now - last) / 1000); last = now;
+  advance(dt); updatePanel(); drawScene(); drawGraph();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

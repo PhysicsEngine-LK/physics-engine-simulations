@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>අභ්‍යවකාශ ෂටලය (290–300) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 16px; line-height: 1.6; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  .controls .full { grid-column: 1 / -1; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  button.boom { background: #e17055; border-color: #e17055; color: #fff; }
+  button.boom:disabled { opacity: .45; cursor: default; }
+  .spd { display: flex; gap: 6px; align-items: center; font-weight: 700; font-size: 14px; }
+  .spd button { padding: 4px 10px; }
+  .tog { display: flex; align-items: center; gap: 8px; background: #fff; border: 2px solid #6c5ce7; border-radius: 8px; padding: 7px 12px; font-weight: 700; font-size: 15px; cursor: pointer; }
+  .tog input { width: 18px; height: 18px; accent-color: #6c5ce7; }
+  .uline { background: #fff; border-radius: 8px; padding: 8px 12px; font-weight: 700; font-size: 15px; }
+  .uline .v { color: #e17055; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { border: 1px solid #dfe6e9; background: #d6efff; }
+  .row { display: grid; grid-template-columns: 1fr 1.15fr; gap: 14px; margin-top: 14px; }
+  .row2 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 14px; margin-top: 14px; }
+  .panel { border: 1px solid #dfe6e9; border-radius: 10px; padding: 14px; background: #fff; min-width: 0; }
+  .panel h3 { margin: 0 0 8px; font-size: 16px; }
+  .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 15px; padding: 5px 0; border-bottom: 1px dashed #dfe6e9; }
+  .kv b { font-family: 'Courier New', monospace; white-space: nowrap; }
+  .status { margin-top: 10px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 10px 14px; border-radius: 6px; font-weight: 700; font-size: 16px; }
+  .status.bad { border-left-color: #e74c3c; background: #fdedec; color: #c0392b; }
+  .status.info { border-left-color: #6c5ce7; background: #f1efff; color: #2c3e50; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .amax { background: #f1efff; border: 2px solid #6c5ce7; border-radius: 10px; padding: 10px 12px; margin-top: 10px; font-weight: 700; text-align: center; font-size: 16px; line-height: 1.6; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 14px; }
+  .tab { font-size: 15px; padding: 9px 16px; }
+  .tab.on { background: #6c5ce7; color: #fff; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .eq { font-family: 'Courier New', monospace; font-weight: 700; background: #fff; border: 1px solid #dfe6e9; border-radius: 6px; padding: 8px 12px; margin: 6px 0; display: block; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .row, .row2 { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .main > .cvs:first-child { margin-top: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← සියලුම Simulations</a>
+  <div class="qtags"><span class="qtag">290</span><span class="qtag">291</span><span class="qtag">292</span><span class="qtag">293</span><span class="qtag">294</span><span class="qtag">295</span><span class="qtag">296</span><span class="qtag">297</span><span class="qtag">298</span><span class="qtag">299</span><span class="qtag">300</span></div>
+  <h1>අභ්‍යවකාශ ෂටලය: දියත් කිරීම සහ පිපිරුම (2003 A/L)</h1>
+  <p class="sub">ස්කන්ධය 2.0×10<sup>6</sup> kg වූ ෂටලයක් තත්පරයට ඉන්ධන 3.0×10<sup>3</sup> kg දහනය කර, උණු වායුව පහළට විදීමෙන් 3.0×10<sup>7</sup> N තෙරපුමක් (F = μu) ලබා ගනී. පළමු කොටසේ "▶ ධාවනය" ඔබා ෂටලය ඉහළ යන හැටි, ස්කන්ධය අඩු වන විට ත්වරණය වැඩි වන හැටි බලන්න. දෙවන කොටසේ ෂටලය දෙකට පුපුරා යන විට ගම්‍යතාව සංස්ථිතික වන හැටි බලන්න.</p>
+
+  <div class="tabs">
+    <button class="tab on" data-tab="1">1. දියත් කිරීම (290–297)</button>
+    <button class="tab" data-tab="2">2. පිපිරුම (298–300)</button>
+  </div>
+
+  <!-- ================= PART 1 ================= -->
+  <section id="tab1">
+  <div class="layout">
+   <aside class="side">
+    <div class="controls">
+      <div><label>තෙරපුම F = <span class="v" id="fVal">3.0</span>×10<sup>7</sup> N</label><input type="range" id="fS" min="2" max="5" step="0.1" value="3"></div>
+      <div><label>දහන ශීඝ්‍රතාව μ = <span class="v" id="muVal">3.0</span>×10<sup>3</sup> kg s<sup>−1</sup></label><input type="range" id="muS" min="1" max="10" step="0.1" value="3"></div>
+      <div><label>ආරම්භක ස්කන්ධය m<sub>0</sub> = <span class="v" id="m0Val">2.0</span>×10<sup>6</sup> kg</label><input type="range" id="m0S" min="1" max="3" step="0.1" value="2"></div>
+      <div class="full uline">පිටවන වායුවේ වේගය u = F/μ = <span class="v" id="uVal">1.00×10⁴</span> m s<sup>−1</sup></div>
+      <div class="full"><label>කාලය t = <span class="v" id="tVal">0.0</span> s</label><input type="range" id="tS" min="0" max="60" step="0.1" value="0"></div>
+      <div class="btns">
+        <button class="solid" id="play1">▶ ධාවනය</button>
+        <button id="reset1">↺ නැවත</button>
+        <button id="go30">t = 30 s</button>
+        <button id="def1">ප්‍රශ්නයේ අගයන්</button>
+      </div>
+      <div class="btns">
+        <div class="spd">වේගය: <button class="solid" data-s="1">×1</button><button data-s="2">×2</button><button data-s="5">×5</button></div>
+      </div>
+      <div class="btns"><label class="tog"><input type="checkbox" id="atmT"> වායුගෝලය නැත (අභ්‍යවකාශය)</label></div>
+    </div>
+    <div class="panel">
+      <h3>සජීවී අගයන්</h3>
+      <div class="kv"><span>කාලය t</span><b id="r_t">–</b></div>
+      <div class="kv"><span>ස්කන්ධය m = m<sub>0</sub> − μt</span><b id="r_m">–</b></div>
+      <div class="kv"><span>ත්වරණය a = F/m − g</span><b id="r_a">–</b></div>
+      <div class="kv"><span>ප්‍රවේගය v (සැබෑ)</span><b id="r_v">–</b></div>
+      <div class="kv"><span>v (නියත a උපකල්පනය)</span><b id="r_vc">–</b></div>
+      <div class="kv"><span>උස h</span><b id="r_h">–</b></div>
+      <div class="kv"><span>u (ෂටලයට සාපේක්ෂව ↓)</span><b id="r_u">–</b></div>
+      <div class="kv"><span>වායුව, පොළොවට සාපේක්ෂව (u − v) ↓</span><b id="r_g">–</b></div>
+      <div class="status" id="st1">–</div>
+    </div>
+   </aside>
+   <div class="main">
+    <div class="cvs"><canvas id="sc1" class="scene"></canvas></div>
+    <div class="row">
+      <div class="panel">
+        <h3>291 – ෂටලය මත බල</h3>
+        <canvas id="fbd1"></canvas>
+      </div>
+      <div class="panel">
+        <h3>292, 296 – t = 30 s දී සංසන්දනය</h3>
+        <div class="kv"><span>නියත a උපකල්පනය: v = at</span><b id="c_vc">–</b></div>
+        <div class="kv"><span>සැබෑ (m අඩු වේ)</span><b id="c_vr">–</b></div>
+        <div class="kv"><span>294: u − v ↓ (නියත a / සැබෑ)</span><b id="c_g">–</b></div>
+        <div class="kv"><span>a, t = 0 දී</span><b id="c_a0">–</b></div>
+        <div class="kv"><span>a, t = 30 s දී</span><b id="c_a30">–</b></div>
+        <div class="kv"><span>a, t = 60 s දී</span><b id="c_a60">–</b></div>
+        <div class="amax" id="c_box">–</div>
+        <div class="note">F නියතයි, නමුත් ඉන්ධන දැවී යන විට m අඩු වේ. ඒ නිසා F/m වැඩි වී a = F/m − g ක්‍රමයෙන් වැඩි වේ. ඒ නිසා සැබෑ v, "නියත a" අගයට (150 m s<sup>−1</sup>) වඩා ටිකක් වැඩියි.</div>
+        <h3 style="margin-top:14px">295 – වාතය අවශ්‍යද?</h3>
+        <div class="note" style="font-size:14px;color:#2c3e50">"වායුගෝලය නැත" ටික් කර බලන්න. පසුබිම අභ්‍යවකාශය බවට පත් වුණත් a, v, h කිසිවක් වෙනස් නොවේ. ෂටලය වායුව පහළට තල්ලු කරයි; නිව්ටන්ගේ 3 වන නියමය අනුව වායුව ෂටලය ඉහළට තල්ලු කරයි. මේ සඳහා වාතය අවශ්‍ය නැහැ.</div>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="panel">
+        <h3>297 – v–t ප්‍රස්තාරය</h3>
+        <div class="cvs"><canvas id="vt"></canvas></div>
+        <div class="note">දම් පාට = සැබෑ චලිතය (ඉහළට වක්‍ර වේ). තැඹිලි ඉරි = නියත a සරල රේඛාව. ආරම්භයේ දෙකේම අනුක්‍රමණය 5 m s<sup>−2</sup> යි.</div>
+      </div>
+      <div class="panel">
+        <h3>296 – a–t ප්‍රස්තාරය</h3>
+        <canvas id="at"></canvas>
+        <div class="note">v–t ප්‍රස්තාරයේ අනුක්‍රමණය = a. a වැඩි වන නිසා v–t වක්‍රය ක්‍රමයෙන් බෑවුම් වේ.</div>
+      </div>
+    </div>
+   </div>
+  </div>
+  </section>
+
+  <!-- ================= PART 2 ================= -->
+  <section id="tab2" hidden>
+  <div class="layout">
+   <aside class="side">
+    <div class="controls">
+      <div class="full uline">ෂටලය: M = 1.0×10<sup>5</sup> kg, තිරස්ව v = 400 m s<sup>−1</sup></div>
+      <div><label>P කොටසේ ස්කන්ධ භාගය m<sub>P</sub>/M = <span class="v" id="frVal">0.50</span></label><input type="range" id="frS" min="0.1" max="0.9" step="0.05" value="0.5"></div>
+      <div><label>පිපිරුමෙන් පසු Q හි ප්‍රවේගය v<sub>Q</sub> = <span class="v" id="vqVal">0</span> m s<sup>−1</sup></label><input type="range" id="vqS" min="-400" max="800" step="50" value="0"></div>
+      <div><label>පිපිරුම පවතින කාලය Δt = <span class="v" id="dtVal">0.20</span> s</label><input type="range" id="dtS" min="0.05" max="1" step="0.05" value="0.2"></div>
+      <div class="btns">
+        <button class="boom" id="boom">✸ පිපිරුම</button>
+        <button id="reset2">↺ නැවත</button>
+        <button id="def2">ප්‍රශ්නයේ අගයන්</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>298 – ගම්‍යතා සංස්ථිතිය</h3>
+      <div class="kv"><span>m<sub>P</sub> , m<sub>Q</sub></span><b id="r2_m">–</b></div>
+      <div class="kv"><span>v<sub>Q</sub></span><b id="r2_vq">–</b></div>
+      <div class="kv"><span>v<sub>P</sub> = (Mv − m<sub>Q</sub>v<sub>Q</sub>)/m<sub>P</sub></span><b id="r2_vp">–</b></div>
+      <div class="kv"><span>පිපිරුමෙන් පසු කාලය</span><b id="r2_t">–</b></div>
+      <div class="kv"><span>බිම වැදීමට කාලය (h = 10 km)</span><b id="r2_tf">–</b></div>
+      <div class="kv"><span>P යන තිරස් දුර</span><b id="r2_xp">–</b></div>
+      <div class="kv"><span>Q යන තිරස් දුර</span><b id="r2_xq">–</b></div>
+      <div class="note">උස 10 km යනු සජීවීකරණය සඳහා උපකල්පිත අගයකි (ප්‍රශ්නයේ නැත). ෂටලයේ රූපය පරිමාණයට නොවේ. කාලය ×4 වේගයෙන් පෙන්වයි.</div>
+    </div>
+   </aside>
+   <div class="main">
+    <div class="cvs"><canvas id="sc2" class="scene"></canvas></div>
+    <div class="row">
+      <div class="panel">
+        <h3>298 – ගම්‍යතාව පෙර සහ පසු</h3>
+        <canvas id="mom"></canvas>
+        <div class="kv"><span>චාලක ශක්තිය පෙර ½Mv²</span><b id="ke1">–</b></div>
+        <div class="kv"><span>චාලක ශක්තිය පසු</span><b id="ke2">–</b></div>
+        <div class="note">ගම්‍යතාව සංස්ථිතිකයි, නමුත් චාලක ශක්තිය වැඩි වේ. අමතර ශක්තිය පැමිණෙන්නේ පිපිරුමේ රසායනික ශක්තියෙනි.</div>
+      </div>
+      <div class="panel">
+        <h3>300 – පිපිරුමේදී සාමාන්‍ය බලය (F = Δp/Δt)</h3>
+        <div class="kv"><span>Δp<sub>P</sub> = m<sub>P</sub>(v<sub>P</sub> − v)</span><b id="dpP">–</b></div>
+        <div class="kv"><span>P මත බලය F<sub>P</sub></span><b id="fP">–</b></div>
+        <div class="kv"><span>Δp<sub>Q</sub> = m<sub>Q</sub>(v<sub>Q</sub> − v)</span><b id="dpQ">–</b></div>
+        <div class="kv"><span>Q මත බලය F<sub>Q</sub></span><b id="fQ">–</b></div>
+        <div class="status info" id="st2">–</div>
+        <h3 style="margin-top:14px">299 – පිපිරුමෙන් පසු චලිතය</h3>
+        <div class="note" style="font-size:14px;color:#2c3e50">P: ආරම්භක තිරස් ප්‍රවේගයක් ඇති ප්‍රක්ෂිප්තයක් → <b>පරාවලයක්</b>. Q: v<sub>Q</sub> = 0 නම් නිශ්චලතාවයෙන් <b>සිරස්ව පහළට</b> වැටේ. සිරස් චලිතය දෙකටම සමාන නිසා දෙකම එකම මොහොතේ බිම වදී.</div>
+      </div>
+    </div>
+   </div>
+  </div>
+  </section>
+
+  <h2>විසඳුම්</h2>
+  <details>
+    <summary><span class="qtag">290</span>μu හි මාන</summary>
+    <div class="ans">
+      μ = ඉන්ධන දහන ශීඝ්‍රතාව (kg s<sup>−1</sup>), u = වේගය (m s<sup>−1</sup>):
+      <span class="eq">[μ] = M T<sup>−1</sup> ,  [u] = L T<sup>−1</sup></span>
+      <span class="eq">[μu] = M T<sup>−1</sup> × L T<sup>−1</sup> = M L T<sup>−2</sup></span>
+      බලය F = ma → [F] = M × L T<sup>−2</sup> = M L T<sup>−2</sup>. මාන සමාන නිසා μu බලයක් ලෙස (තෙරපුම ලෙස) ගැනීම මානිකව නිවැරදියි. (kg s<sup>−1</sup> × m s<sup>−1</sup> = kg m s<sup>−2</sup> = N)
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">291</span>ආරම්භක ත්වරණය</summary>
+    <div class="ans">
+      දියත් වන මොහොතේ ෂටලය මත: තෙරපුම F ඉහළට, බර mg පහළට. ඉහළ දිශාව ධන ලෙස F = ma යොදමු:
+      <span class="eq">F − mg = ma</span>
+      <span class="eq">3.0×10<sup>7</sup> − 2.0×10<sup>6</sup> × 10 = 2.0×10<sup>6</sup> × a</span>
+      <span class="eq">1.0×10<sup>7</sup> = 2.0×10<sup>6</sup> a   →   a = 5 m s<sup>−2</sup> (ඉහළට)</span>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">292</span>නියත ත්වරණයක් යැයි සලකා 30 s පසු ප්‍රවේගය</summary>
+    <div class="ans">
+      නිශ්චලතාවයෙන් පටන් ගෙන a = 5 m s<sup>−2</sup> නියත යැයි සැලකුවොත්:
+      <span class="eq">v = v<sub>0</sub> + at = 0 + 5 × 30 = 150 m s<sup>−1</sup></span>
+      (සජීවීකරණයේ "t = 30 s" ඔබන්න. සැබෑ අගය ≈ 160 m s<sup>−1</sup> – 296 බලන්න.)
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">293</span>පිටවන වායුවේ වේගය u</summary>
+    <div class="ans">
+      <span class="eq">F = μu   →   u = F/μ</span>
+      <span class="eq">u = 3.0×10<sup>7</sup> / 3.0×10<sup>3</sup> = 1.0×10<sup>4</sup> m s<sup>−1</sup></span>
+      මෙය <b>ෂටලයට සාපේක්ෂව</b>, <b>පහළට</b> ය.
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">294</span>30 s දී වායුවේ ප්‍රවේගය, පොළොවට සාපේක්ෂව</summary>
+    <div class="ans">
+      ඉහළ ධන ලෙස ගනිමු. වායුව ෂටලයට සාපේක්ෂව −1.0×10<sup>4</sup> m s<sup>−1</sup>, ෂටලය පොළොවට සාපේක්ෂව +150 m s<sup>−1</sup>:
+      <span class="eq">v<sub>වායුව,E</sub> = v<sub>වායුව,ෂටලය</sub> + v<sub>ෂටලය,E</sub></span>
+      <span class="eq">= −1.0×10<sup>4</sup> + 150 = −9850 m s<sup>−1</sup></span>
+      ∴ වායුව පොළොවට සාපේක්ෂව <b>9850 m s<sup>−1</sup> (9.85×10<sup>3</sup> m s<sup>−1</sup>) පහළට</b> යයි.
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">295</span>"වායුගෝලය නැති නම් ත්වරණය කළ නොහැක" – නිවැරදිද?</summary>
+    <div class="ans">
+      <b>නැහැ, එම ප්‍රකාශය වැරදියි.</b><br>
+      • ෂටලය උණු වායුව පහළට තල්ලු කරයි (වායුව මත පහළට බලයක්).<br>
+      • නිව්ටන්ගේ 3 වන නියමය අනුව, වායුව ෂටලය මත සමාන හා ප්‍රතිවිරුද්ධ බලයක් <b>ඉහළට</b> යොදයි. එය තෙරපුමයි.<br>
+      • මෙම ක්‍රියාව-ප්‍රතික්‍රියාව ෂටලය සහ වායුව අතර පමණයි. පිටත වාතය "තල්ලු කිරීම" අවශ්‍ය නැත.<br>
+      • ගම්‍යතා අනුව: වායුව පහළට ගම්‍යතාව රැගෙන යන විට ෂටලය ඉහළට එතරම්ම ගම්‍යතාව ලබයි.<br>
+      ඇත්තටම වාතය නැති විට වායු ප්‍රතිරෝධයද නැති නිසා රොකට්ටුවකට වඩා හොඳින් ක්‍රියා කළ හැක.
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">296</span>තෙරපුම නියත නම් ත්වරණය නියතද?</summary>
+    <div class="ans">
+      නැහැ. ඉන්ධන දැවී යන විට ස්කන්ධය අඩු වේ:
+      <span class="eq">m = m<sub>0</sub> − μt</span>
+      <span class="eq">a = F/m − g</span>
+      F නියතයි, m අඩු වේ → F/m වැඩි වේ → <b>a වැඩි වේ</b>. උදා:
+      <span class="eq">t = 0  : a = 3.0×10<sup>7</sup>/2.0×10<sup>6</sup> − 10 = 5.0 m s<sup>−2</sup></span>
+      <span class="eq">t = 30 s: m = 1.91×10<sup>6</sup> kg → a = 15.7 − 10 ≈ 5.7 m s<sup>−2</sup></span>
+      ඒ නිසා 292 හි "නියත a" පිළිතුර (150 m s<sup>−1</sup>) සැබෑ ප්‍රවේගයට (≈ 160 m s<sup>−1</sup>) වඩා ටිකක් අඩුයි.
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">297</span>v–t ප්‍රස්තාරයේ හැඩය</summary>
+    <div class="ans">
+      • ප්‍රස්තාරය <b>මූල ලක්ෂ්‍යයෙන්</b> (t = 0, v = 0) ආරම්භ වේ.<br>
+      • ආරම්භක අනුක්‍රමණය = 5 m s<sup>−2</sup>.<br>
+      • අනුක්‍රමණය (= a) ක්‍රමයෙන් වැඩි වන නිසා වක්‍රය <b>ඉහළට නැමේ</b> (අනුක්‍රමණය වැඩි වන වක්‍රයක්). එය නියත a සරල රේඛාවට ඉහළින් පිහිටයි.<br>
+      <span class="note">(දැනුමට පමණක්: සැබෑ සමීකරණය v = u ln(m<sub>0</sub>/m) − gt. t = 30 s දී v = 1.0×10<sup>4</sup> ln(2.0/1.91) − 300 ≈ 160 m s<sup>−1</sup>.)</span>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">298</span>පිපිරුමෙන් පසු P හි ප්‍රවේගය</summary>
+    <div class="ans">
+      පිපිරුමේ බල අභ්‍යන්තර බල නිසා තිරස් ගම්‍යතාව සංස්ථිතිකයි. m<sub>P</sub> = m<sub>Q</sub> = 0.5×10<sup>5</sup> kg, v<sub>Q</sub> = 0:
+      <span class="eq">Mv = m<sub>P</sub>v<sub>P</sub> + m<sub>Q</sub>v<sub>Q</sub></span>
+      <span class="eq">1.0×10<sup>5</sup> × 400 = 0.5×10<sup>5</sup> v<sub>P</sub> + 0.5×10<sup>5</sup> × 0</span>
+      <span class="eq">v<sub>P</sub> = 800 m s<sup>−1</sup> (ඉදිරියට)</span>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">299</span>P සහ Q හි පසු චලිතය</summary>
+    <div class="ans">
+      • <b>P:</b> 800 m s<sup>−1</sup> තිරස් ප්‍රවේගයකින් ගුරුත්වය යටතේ චලනය වේ → තිරස්ව ප්‍රක්ෂේපිත වස්තුවක් ලෙස <b>පරාවලයක්</b> ඔස්සේ යයි (තිරස් ප්‍රවේගය නියතයි, සිරස් ප්‍රවේගය gt ලෙස වැඩි වේ).<br>
+      • <b>Q:</b> පිපිරුමෙන් පසු නිශ්චල නිසා, නිශ්චලතාවයෙන් <b>සිරස්ව පහළට</b> (සරල රේඛාවක්) නිදහසේ වැටේ.<br>
+      • දෙකටම ආරම්භක සිරස් ප්‍රවේගය 0 සහ ත්වරණය g නිසා දෙකම <b>එකම මොහොතේ</b> බිම වදී.
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">300</span>පිපිරුමේදී එක් එක් කොටස මත සාමාන්‍ය බලය (Δt = 0.2 s)</summary>
+    <div class="ans">
+      <span class="eq">F = Δp / Δt</span>
+      <span class="eq">P: Δp = 0.5×10<sup>5</sup> × (800 − 400) = 2.0×10<sup>7</sup> kg m s<sup>−1</sup></span>
+      <span class="eq">F<sub>P</sub> = 2.0×10<sup>7</sup> / 0.2 = 1.0×10<sup>8</sup> N (ඉදිරියට)</span>
+      <span class="eq">Q: Δp = 0.5×10<sup>5</sup> × (0 − 400) = −2.0×10<sup>7</sup> kg m s<sup>−1</sup></span>
+      <span class="eq">F<sub>Q</sub> = 1.0×10<sup>8</sup> N (පසුපසට)</span>
+      බල දෙක සමාන හා ප්‍රතිවිරුද්ධයි – නිව්ටන්ගේ 3 වන නියමය. (ඒ නිසාම මුළු ගම්‍යතාව වෙනස් නොවේ.)
+    </div>
+  </details>
+  <p class="note">සටහන: වායු ප්‍රතිරෝධය නොසලකා ඇත. g = 10 m s<sup>−2</sup> නියත යැයි සලකා ඇත.</p>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const G = 10;
+const SUPD = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '-': '⁻' };
+const sup = n => String(n).replace(/[-0-9]/g, ch => SUPD[ch]);
+function sci(x, d = 1) {
+  if (!isFinite(x)) return '∞';
+  if (Math.abs(x) < 1e-9) return '0';
+  const s = x < 0 ? '−' : ''; x = Math.abs(x);
+  let e = Math.floor(Math.log10(x)), m = x / Math.pow(10, e);
+  if (+m.toFixed(d) >= 10) { m /= 10; e++; }
+  return s + m.toFixed(d) + '×10' + sup(e);
+}
+function num(x, d = 0) { if (Math.abs(x) < 0.5 * Math.pow(10, -d)) x = 0; return x.toFixed(d).replace('-', '−'); }
+
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const w = cv.clientWidth; if (!w) return;
+    const dpr = window.devicePixelRatio || 1;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(15, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+// Draws text; "x_abc" is drawn with "abc" as a real subscript.
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/);
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
+}
+function box(c, x, y, w, h, fill, stroke) {
+  c.beginPath(); c.roundRect ? c.roundRect(x, y, w, h, 8) : c.rect(x, y, w, h);
+  c.fillStyle = fill; c.fill(); if (stroke) { c.strokeStyle = stroke; c.lineWidth = 2; c.stroke(); }
+}
+function niceStep(range, n) { const raw = range / n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p; return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * p; }
+function axes(c, W, H, xmax, ymax, xl, yl) {
+  const L = 62, R = W - 18, T = 22, B = H - 44;
+  const X = x => L + x / xmax * (R - L), Y = y => B - y / ymax * (B - T);
+  const xs = niceStep(xmax, 6), ys = niceStep(ymax, 5);
+  c.lineWidth = 1; c.strokeStyle = '#eef0f3';
+  for (let x = xs; x <= xmax + 1e-9; x += xs) { c.beginPath(); c.moveTo(X(x), T); c.lineTo(X(x), B); c.stroke(); }
+  for (let y = ys; y <= ymax + 1e-9; y += ys) { c.beginPath(); c.moveTo(L, Y(y)); c.lineTo(R, Y(y)); c.stroke(); }
+  c.strokeStyle = '#2d3436'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(L, T - 6); c.lineTo(L, B); c.lineTo(R + 6, B); c.stroke();
+  for (let x = 0; x <= xmax + 1e-9; x += xs) text(c, num(x), X(x), B + 14, '#636e72', 13, 'center', 600);
+  for (let y = 0; y <= ymax + 1e-9; y += ys) text(c, num(y, ys < 1 ? 1 : 0), L - 7, Y(y), '#636e72', 13, 'right', 600);
+  text(c, xl, (L + R) / 2, H - 10, '#2d3436', 14, 'center');
+  c.save(); c.translate(15, (T + B) / 2); c.rotate(-Math.PI / 2); text(c, yl, 0, 0, '#2d3436', 14, 'center'); c.restore();
+  return { X, Y, L, R, T, B };
+}
+function mix(a, b, k) {
+  const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const A = p(a), B = p(b);
+  return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * k)).join(',')})`;
+}
+// seeded random for stars / clouds
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+// ================= PART 1: LAUNCH =================
+const TMAX = 60, S1 = 2, BASE1 = 380, CX1 = 470;
+const P1 = { F: 3e7, mu: 3e3, m0: 2e6, t: 0, running: false, speed: 1, noAtm: false };
+const fS = $('fS'), muS = $('muS'), m0S = $('m0S'), tS = $('tS');
+let curve = [], parts = [], flick = 0;
+const STARS = Array.from({ length: 140 }, () => ({ x: rnd() * 900, y: rnd() * 440, r: rnd() * 1.6 + 0.4 }));
+const CLOUDS = Array.from({ length: 60 }, (_, k) => ({ alt: 110 + 85 * Math.pow(k + 1, 1.5), x: 90 + rnd() * 760, w: 50 + rnd() * 70 }));
+
+function liftT() { return P1.F > P1.m0 * G ? 0 : (P1.m0 - P1.F / G) / P1.mu; }
+// exact state at time t (thrust constant, mass decreasing, no air resistance)
+function stateAt(t) {
+  const { F, mu, m0 } = P1, m = m0 - mu * t, u = F / mu, tL = liftT();
+  if (F <= m0 * G && t <= tL) return { t, m, u, a: 0, v: 0, h: 0, pad: true };
+  const mL = m0 - mu * tL, tau = t - tL, L = Math.log(mL / m);
+  return { t, m, u, a: F / m - G, v: u * L - G * tau, h: u * (tau - (m / mu) * L) - 0.5 * G * tau * tau, pad: false };
+}
+const aC = () => Math.max(0, P1.F / P1.m0 - G);   // constant-acceleration assumption (Q292)
+function recompute() { curve = []; for (let i = 0; i <= 600; i++) curve.push(stateAt(i / 10)); }
+
+function emit(st, dt) {
+  const n = Math.max(1, Math.round(dt * 260 * (0.6 + 0.4 * P1.F / 3e7)));
+  const vis = 260 + st.u / 40;                 // px/s downward relative to the shuttle (visual only)
+  for (let i = 0; i < n; i++) {
+    const nx = [-25, 0, 25][Math.floor(Math.random() * 3)];
+    parts.push({ kind: 'fire', x: CX1 + nx + (Math.random() - 0.5) * 6, alt: st.h - Math.random() * 3,
+      vx: (Math.random() - 0.5) * (P1.noAtm ? 140 : 60), valt: st.v - vis * (0.8 + Math.random() * 0.4) / S1,
+      life: 0, max: 0.28 + Math.random() * 0.18 });
+  }
+  if (parts.length > 900) parts.splice(0, parts.length - 900);
+}
+function toSmoke(p, ground) {
+  p.kind = 'smoke'; p.life = 0; p.max = 2.2 + Math.random() * 1.5;
+  p.valt = ground ? 2 + Math.random() * 3 : (Math.random() - 0.5) * 4;
+  p.vx = ground ? p.vx * 0.7 : (Math.random() - 0.5) * 30;
+}
+function updParts(dts) {
+  for (const p of parts) {
+    p.life += dts; p.x += p.vx * dts; p.alt += p.valt * dts;
+    if (p.kind === 'smoke') p.vx *= (1 - 0.6 * dts);
+    if (p.alt < 0) {
+      p.alt = 0;
+      if (p.kind === 'fire') { p.vx = (p.x < CX1 ? -1 : 1) * (150 + Math.random() * 220); p.valt = 0; if (!P1.noAtm) toSmoke(p, true); }
+    }
+    if (p.kind === 'fire' && p.life > p.max) { if (!P1.noAtm && Math.random() < 0.5) toSmoke(p, false); else p.dead = true; }
+    else if (p.kind === 'smoke' && p.life > p.max) p.dead = true;
+  }
+  parts = parts.filter(p => !p.dead);
+}
+function step1(dt) {
+  if (!P1.running) return;
+  const dts = dt * P1.speed;
+  P1.t = Math.min(TMAX, P1.t + dts);
+  const st = stateAt(P1.t);
+  emit(st, dt); updParts(dts); flick += dt;
+  if (P1.t >= TMAX) { P1.running = false; playLbl(); }
+  tS.value = P1.t;
+}
+
+// ---------- drawing helpers ----------
+function drawShuttle(c, cx, yb, k = 1) {
+  c.save(); c.translate(cx, yb); c.scale(k, k); c.lineWidth = 1.5; c.lineJoin = 'round';
+  // external tank
+  c.fillStyle = '#e67e22'; c.strokeStyle = '#b9601a';
+  c.beginPath(); c.moveTo(-15, -16); c.lineTo(-15, -128); c.quadraticCurveTo(-14, -146, 0, -152); c.quadraticCurveTo(14, -146, 15, -128); c.lineTo(15, -16); c.closePath(); c.fill(); c.stroke();
+  // boosters
+  for (const s of [-1, 1]) {
+    const x = s * 25;
+    c.fillStyle = '#f5f6fa'; c.strokeStyle = '#95a5a6';
+    c.beginPath(); c.moveTo(x - 6, -10); c.lineTo(x - 6, -116); c.lineTo(x, -134); c.lineTo(x + 6, -116); c.lineTo(x + 6, -10); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#b2bec3'; c.fillRect(x - 6, -40, 12, 3); c.fillRect(x - 6, -92, 12, 3);
+    c.fillStyle = '#2d3436'; c.beginPath(); c.moveTo(x - 5, -10); c.lineTo(x - 8, 0); c.lineTo(x + 8, 0); c.lineTo(x + 5, -10); c.closePath(); c.fill();
+  }
+  // orbiter
+  c.fillStyle = '#ffffff'; c.strokeStyle = '#7f8c8d';
+  c.beginPath(); c.moveTo(-9, -72); c.lineTo(-40, -26); c.lineTo(-40, -18); c.lineTo(40, -18); c.lineTo(40, -26); c.lineTo(9, -72); c.closePath(); c.fill(); c.stroke();
+  c.strokeStyle = '#2d3436'; c.lineWidth = 2.5;
+  c.beginPath(); c.moveTo(-9, -72); c.lineTo(-40, -26); c.moveTo(9, -72); c.lineTo(40, -26); c.stroke();
+  c.lineWidth = 1.5; c.fillStyle = '#ffffff'; c.strokeStyle = '#7f8c8d';
+  c.beginPath(); c.moveTo(-9, -16); c.lineTo(-9, -100); c.quadraticCurveTo(-8, -114, 0, -116); c.quadraticCurveTo(8, -114, 9, -100); c.lineTo(9, -16); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = '#2d3436';
+  c.beginPath(); c.moveTo(-6.5, -107); c.quadraticCurveTo(0, -120, 6.5, -107); c.closePath(); c.fill();
+  c.fillRect(-5, -100, 10, 3);
+  for (const x of [-5, 0, 5]) { c.beginPath(); c.moveTo(x - 2, -16); c.lineTo(x - 3, -9); c.lineTo(x + 3, -9); c.lineTo(x + 2, -16); c.closePath(); c.fill(); }
+  c.restore();
+}
+function flame(c, x, y, w, L) {
+  const g = c.createLinearGradient(x, y, x, y + L);
+  g.addColorStop(0, 'rgba(255,255,230,1)'); g.addColorStop(0.25, 'rgba(255,214,90,.95)');
+  g.addColorStop(0.6, 'rgba(255,120,30,.75)'); g.addColorStop(1, 'rgba(255,80,20,0)');
+  c.fillStyle = g; c.beginPath(); c.moveTo(x - w, y);
+  c.quadraticCurveTo(x - w * 1.5, y + L * 0.4, x, y + L); c.quadraticCurveTo(x + w * 1.5, y + L * 0.4, x + w, y); c.closePath(); c.fill();
+}
+function cloud(c, x, y, w, alpha = 0.85) {
+  c.fillStyle = `rgba(255,255,255,${alpha})`;
+  [[0, 0, .32], [.3, -.12, .3], [.6, 0, .26], [-.3, .04, .22], [.15, .1, .3]].forEach(([dx, dy, r]) => { c.beginPath(); c.arc(x + dx * w, y + dy * w, r * w, 0, 7); c.fill(); });
+}
+
+// ---------- scene 1 ----------
+const sc1 = stage($('sc1'), 900, 440);
+function drawScene1() {
+  const c = sc1.ctx, W = 900, H = 440; c.clearRect(0, 0, W, H);
+  const st = stateAt(P1.t), cam = Math.max(0, st.h - 50);
+  const yA = alt => BASE1 - (alt - cam) * S1;
+  const burning = P1.t > 0 || P1.running;
+  // sky
+  const sky = c.createLinearGradient(0, 0, 0, H);
+  if (P1.noAtm) { sky.addColorStop(0, '#02030a'); sky.addColorStop(1, '#161c3a'); }
+  else { const k = Math.min(1, st.h / 15000); sky.addColorStop(0, mix('#5fb4ff', '#0b1a3a', k)); sky.addColorStop(1, mix('#e3f5ff', '#5b8fd6', k)); }
+  c.fillStyle = sky; c.fillRect(0, 0, W, H);
+  if (P1.noAtm) {
+    const off = (cam * S1 * 0.04) % H;
+    c.fillStyle = '#fff';
+    STARS.forEach(s => { const y = (s.y + off) % H; c.globalAlpha = 0.5 + 0.5 * Math.abs(Math.sin(s.x)); c.beginPath(); c.arc(s.x, y, s.r, 0, 7); c.fill(); });
+    c.globalAlpha = 1;
+  } else {
+    CLOUDS.forEach(cl => { const y = yA(cl.alt); if (y > -60 && y < H + 60) cloud(c, cl.x, y, cl.w); });
+  }
+  // altitude ruler
+  c.fillStyle = P1.noAtm ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.55)'; c.fillRect(0, 0, 66, H);
+  const rc = P1.noAtm ? '#dfe6e9' : '#2d3436';
+  c.strokeStyle = rc; c.lineWidth = 2;
+  for (let alt = Math.floor((cam - 40) / 50) * 50; alt <= cam + BASE1 / S1 + 20; alt += 50) {
+    if (alt < 0) continue;
+    const y = yA(alt), big = alt % 100 === 0;
+    c.beginPath(); c.moveTo(66, y); c.lineTo(big ? 50 : 58, y); c.stroke();
+    if (big) text(c, alt + ' m', 46, y, rc, 12, 'right', 700);
+  }
+  // ground + launch pad
+  const yg = yA(0);
+  if (yg < H + 30) {
+    c.fillStyle = P1.noAtm ? '#7f8c8d' : '#7bc67b'; c.fillRect(0, yg + 18, W, H);
+    c.fillStyle = P1.noAtm ? '#636e72' : '#5e9e5e'; c.fillRect(0, yg + 18, W, 5);
+    c.fillStyle = '#636e72'; c.fillRect(CX1 - 75, yg, 150, 18);
+    c.fillStyle = '#2d3436'; c.fillRect(CX1 - 34, yg, 68, 18);
+    // tower
+    const tx = CX1 - 105; c.strokeStyle = '#c0392b'; c.lineWidth = 2;
+    c.strokeRect(tx, yg - 175, 18, 175);
+    for (let y = yg; y > yg - 175; y -= 18) { c.beginPath(); c.moveTo(tx, y); c.lineTo(tx + 18, y - 18); c.moveTo(tx + 18, y); c.lineTo(tx, y - 18); c.stroke(); }
+    c.beginPath(); c.moveTo(tx + 18, yg - 130); c.lineTo(CX1 - 42, yg - 130); c.stroke();
+  }
+  const yb = yA(st.h);
+  // smoke (behind)
+  parts.forEach(p => { if (p.kind !== 'smoke') return; const r = p.life / p.max, y = yA(p.alt);
+    c.fillStyle = `rgba(225,225,225,${0.55 * (1 - r)})`; c.beginPath(); c.arc(p.x, y, 6 + 24 * r, 0, 7); c.fill(); });
+  // flames
+  if (burning) {
+    const L0 = 70 + 45 * P1.F / 3e7, wf = P1.noAtm ? 1.8 : 1;
+    [[-25, 0, 6], [0, -8, 7], [25, 0, 6]].forEach(([dx, dy, w], i) => flame(c, CX1 + dx, yb + dy, w * wf, L0 * (1 + 0.12 * Math.sin(flick * 40 + i * 2.1))));
+  }
+  parts.forEach(p => { if (p.kind !== 'fire') return; const r = p.life / p.max, y = yA(p.alt);
+    c.fillStyle = `rgba(255,${Math.round(210 - 130 * r)},${Math.round(70 - 60 * r)},${Math.max(0, 1 - r)})`; c.beginPath(); c.arc(p.x, y, 2.5 + 4 * r, 0, 7); c.fill(); });
+  drawShuttle(c, CX1, yb, 1);
+  // Newton 3 annotations
+  const lc = P1.noAtm ? '#fff' : '#2d3436';
+  if (burning) {
+    const ax = CX1 + 62;
+    arrow(c, ax, yb - 30, ax, yb - 105, '#e17055', 5);
+    text(c, 'F : වායුව ෂටලය ඉහළට තල්ලු කරයි', ax + 12, yb - 92, '#e17055', 14);
+    const yd = Math.min(yb + 85, H - 8);
+    arrow(c, ax, yb + 10, ax, yd, '#0984e3', 5);
+    text(c, 'F : ෂටලය වායුව පහළට තල්ලු කරයි', ax + 12, Math.min(yb + 55, H - 30), '#0984e3', 14);
+    text(c, '(නිව්ටන් 3 – වාතය අවශ්‍ය නැත)', ax + 12, Math.min(yb + 75, H - 12), lc, 12, 'left', 600);
+    const yu = Math.min(yb + 40, H - 46);
+    text(c, `u = ${sci(st.u, 2)} m s⁻¹ ↓ (ෂටලයට සාපේක්ෂව)`, CX1 - 48, yu, lc, 13, 'right');
+    text(c, `u − v = ${num(st.u - st.v)} m s⁻¹ ↓ (පොළොවට සාපේක්ෂව)`, CX1 - 48, yu + 20, lc, 13, 'right');
+  }
+  // readout box
+  box(c, 76, 10, 214, 104, 'rgba(255,255,255,.88)', '#6c5ce7');
+  text(c, `t = ${P1.t.toFixed(1)} s`, 88, 28, '#2d3436', 15);
+  text(c, `h = ${num(st.h)} m`, 88, 50, '#2d3436', 15);
+  text(c, `v = ${num(st.v, 1)} m s⁻¹`, 88, 72, '#6c5ce7', 15);
+  text(c, `a = ${num(st.a, 2)} m s⁻²`, 88, 94, '#d35400', 15);
+  // banners
+  if (st.pad && P1.t < TMAX) {
+    box(c, 560, 10, 330, 52, 'rgba(253,237,236,.95)', '#e74c3c');
+    text(c, 'F ≤ mg : තවම ඉහළ නොයයි', 725, 28, '#c0392b', 14, 'center');
+    text(c, 'ඉන්ධන දැවී m අඩු වන තෙක් රැඳේ', 725, 48, '#c0392b', 13, 'center', 600);
+  } else if (P1.noAtm) {
+    box(c, 560, 10, 330, 52, 'rgba(255,255,255,.12)', '#a29bfe');
+    text(c, 'වායුගෝලය නැත (අභ්‍යවකාශය)', 725, 28, '#fff', 15, 'center');
+    text(c, 'a, v එලෙසමයි – තෙරපුම වාතය මත රඳා නැත ✓', 725, 48, '#81ecec', 13, 'center');
+  }
+}
+
+// ---------- force diagram ----------
+const fb1 = stage($('fbd1'), 400, 420);
+function drawFBD1() {
+  const c = fb1.ctx; c.clearRect(0, 0, 400, 420);
+  const st = stateAt(P1.t), s = 90 / 3e7, cx = 120, yb = 320, k = 0.8;
+  const W = st.m * G, F = P1.F, net = st.pad ? 0 : F - W;
+  c.strokeStyle = '#95a5a6'; c.lineWidth = 2; c.beginPath(); c.moveTo(20, yb + 1); c.lineTo(220, yb + 1); c.stroke();
+  drawShuttle(c, cx, yb, k);
+  const top = yb - 152 * k, mid = yb - 62 * k;
+  arrow(c, cx, top - 4, cx, top - 4 - F * s, '#e17055', 6);
+  text(c, `F = ${sci(F)} N`, cx + 14, top - F * s + 8, '#d35400', 15);
+  arrow(c, cx + 2, mid, cx + 2, mid + W * s, '#2d3436', 6);
+  text(c, `W = mg = ${sci(W, 2)} N`, cx + 40, mid + W * s - 6, '#2d3436', 14);
+  if (st.pad) {
+    arrow(c, cx - 50, yb, cx - 50, yb - (W - F) * s, '#00b894', 5);
+    text(c, 'R', cx - 66, yb - (W - F) * s, '#00b894', 16);
+  }
+  // resultant
+  const nx = 320, ny = 250;
+  text(c, 'සම්ප්‍රයුක්ත බලය', nx, 40, '#6c5ce7', 14, 'center');
+  if (net > 0) { arrow(c, nx, ny, nx, ny - net * s, '#6c5ce7', 7); text(c, `${sci(net, 2)} N`, nx, ny + 18, '#6c5ce7', 14, 'center'); }
+  else text(c, '0', nx, ny - 20, '#6c5ce7', 16, 'center');
+  text(c, 'F − mg = ma', nx, 64, '#6c5ce7', 15, 'center');
+  text(c, `m = ${sci(st.m, 3)} kg`, 20, 360, '#2d3436', 14);
+  text(c, `a = (F − mg)/m = ${num(st.a, 2)} m s⁻²`, 20, 384, '#d35400', 15);
+  text(c, 'ඉහළ ↑', 390, 408, '#636e72', 12, 'right', 600);
+}
+
+// ---------- graphs ----------
+const vtS = stage($('vt'), 600, 330), atS = stage($('at'), 400, 330);
+function seriesTo(c, A, key, tEnd, col, lw, dash) {
+  c.strokeStyle = col; c.lineWidth = lw; c.setLineDash(dash || []); c.beginPath();
+  const n = Math.round(tEnd * 10);
+  for (let i = 0; i <= n; i++) { const p = curve[i]; const x = A.X(p.t), y = A.Y(p[key]); i ? c.lineTo(x, y) : c.moveTo(x, y); }
+  c.stroke(); c.setLineDash([]);
+}
+function lineTo(c, A, f, tEnd, col, lw, dash) {
+  c.strokeStyle = col; c.lineWidth = lw; c.setLineDash(dash || []);
+  c.beginPath(); c.moveTo(A.X(0), A.Y(f(0)));
+  for (let t = 0.5; t <= tEnd + 1e-9; t += 0.5) c.lineTo(A.X(t), A.Y(f(t)));
+  c.lineTo(A.X(tEnd), A.Y(f(tEnd))); c.stroke(); c.setLineDash([]);
+}
+function drawVT() {
+  const c = vtS.ctx, W = 600, H = 330; c.clearRect(0, 0, W, H);
+  const vmax = Math.max(curve[600].v, aC() * 60, 10) * 1.08;
+  const A = axes(c, W, H, TMAX, vmax, 't / s', 'v / m s⁻¹');
+  const t = P1.t, a0 = aC();
+  // faint full predictions
+  lineTo(c, A, x => a0 * x, TMAX, 'rgba(225,112,85,.22)', 2, [7, 6]);
+  seriesTo(c, A, 'v', TMAX, 'rgba(108,92,231,.18)', 2);
+  // live
+  lineTo(c, A, x => a0 * x, t, '#e17055', 3, [8, 6]);
+  seriesTo(c, A, 'v', t, '#6c5ce7', 3.5);
+  const st = stateAt(t);
+  c.fillStyle = '#6c5ce7'; c.beginPath(); c.arc(A.X(t), A.Y(st.v), 5, 0, 7); c.fill();
+  // t = 30 s marker
+  c.strokeStyle = '#b2bec3'; c.lineWidth = 1.5; c.setLineDash([4, 4]);
+  c.beginPath(); c.moveTo(A.X(30), A.T); c.lineTo(A.X(30), A.B); c.stroke(); c.setLineDash([]);
+  text(c, 't = 30 s', A.X(30) + 4, A.T + 6, '#636e72', 12, 'left', 700);
+  if (t >= 30) {
+    const vr = stateAt(30).v, vc = a0 * 30;
+    c.fillStyle = '#e17055'; c.beginPath(); c.arc(A.X(30), A.Y(vc), 5, 0, 7); c.fill();
+    c.fillStyle = '#6c5ce7'; c.beginPath(); c.arc(A.X(30), A.Y(vr), 5, 0, 7); c.fill();
+    text(c, `${num(vc)}`, A.X(30) + 8, A.Y(vc) + 10, '#e17055', 14, 'left', 800);
+    text(c, `${num(vr)}`, A.X(30) - 8, A.Y(vr) - 10, '#6c5ce7', 14, 'right', 800);
+  }
+  // legend
+  box(c, A.L + 10, A.T + 4, 214, 50, 'rgba(255,255,255,.92)', '#dfe6e9');
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 3.5; c.beginPath(); c.moveTo(A.L + 20, A.T + 18); c.lineTo(A.L + 46, A.T + 18); c.stroke();
+  text(c, 'සැබෑ (m අඩු වේ)', A.L + 54, A.T + 18, '#2d3436', 13);
+  c.strokeStyle = '#e17055'; c.setLineDash([8, 6]); c.beginPath(); c.moveTo(A.L + 20, A.T + 40); c.lineTo(A.L + 46, A.T + 40); c.stroke(); c.setLineDash([]);
+  text(c, `නියත a = ${num(a0, 1)} m s⁻²`, A.L + 54, A.T + 40, '#2d3436', 13);
+}
+function drawAT() {
+  const c = atS.ctx, W = 400, H = 330; c.clearRect(0, 0, W, H);
+  const amax = Math.max(curve[600].a, aC(), 1) * 1.3;
+  const A = axes(c, W, H, TMAX, amax, 't / s', 'a / m s⁻²');
+  const t = P1.t, a0 = aC();
+  lineTo(c, A, () => a0, TMAX, 'rgba(225,112,85,.25)', 2, [7, 6]);
+  seriesTo(c, A, 'a', TMAX, 'rgba(108,92,231,.18)', 2);
+  lineTo(c, A, () => a0, t, '#e17055', 3, [8, 6]);
+  seriesTo(c, A, 'a', t, '#6c5ce7', 3.5);
+  const st = stateAt(t);
+  c.fillStyle = '#6c5ce7'; c.beginPath(); c.arc(A.X(t), A.Y(st.a), 5, 0, 7); c.fill();
+  text(c, `a = ${num(st.a, 2)}`, Math.min(A.X(t) + 8, W - 90), A.Y(st.a) - 14, '#6c5ce7', 13, 'left', 800);
+}
+
+// ---------- panels ----------
+function playLbl() { $('play1').textContent = P1.running ? '⏸ නවත්වන්න' : '▶ ධාවනය'; }
+function panel1() {
+  const st = stateAt(P1.t);
+  $('tVal').textContent = P1.t.toFixed(1);
+  $('r_t').textContent = P1.t.toFixed(1) + ' s';
+  $('r_m').textContent = sci(st.m, 3) + ' kg';
+  $('r_a').textContent = num(st.a, 2) + ' m s⁻²';
+  $('r_v').textContent = num(st.v, 1) + ' m s⁻¹';
+  $('r_vc').textContent = num(aC() * P1.t, 1) + ' m s⁻¹';
+  $('r_h').textContent = num(st.h) + ' m';
+  $('r_u').textContent = sci(st.u, 2) + ' m s⁻¹';
+  $('r_g').textContent = num(st.u - st.v) + ' m s⁻¹';
+  const s1 = $('st1');
+  if (st.pad) { s1.className = 'status bad'; s1.textContent = 'F ≤ mg : ෂටලය තවම පැඩ් එක මත. ස්කන්ධය අඩු වන තෙක් රැඳේ.'; }
+  else if (P1.noAtm) { s1.className = 'status info'; s1.textContent = 'වාතය නැත, නමුත් a, v වෙනස් නොවේ ✓ (නිව්ටන් 3)'; }
+  else { s1.className = 'status'; s1.textContent = `a = F/m − g = ${num(st.a, 2)} m s⁻² ↑ (m අඩු වන විට a වැඩි වේ)`; }
+}
+function cmp1() {
+  const s30 = stateAt(30), a0 = aC();
+  $('c_vc').textContent = num(a0 * 30, 1) + ' m s⁻¹';
+  $('c_vr').textContent = num(s30.v, 1) + ' m s⁻¹';
+  $('c_g').textContent = `${num(s30.u - a0 * 30)} / ${num(s30.u - s30.v)} m s⁻¹`;
+  $('c_a0').textContent = num(stateAt(0).a, 2) + ' m s⁻²';
+  $('c_a30').textContent = num(s30.a, 2) + ' m s⁻²';
+  $('c_a60').textContent = num(stateAt(60).a, 2) + ' m s⁻²';
+  $('c_box').innerHTML = `t = 30 s : නියත a → <span style="color:#e17055">${num(a0 * 30)}</span> m s<sup>−1</sup>, සැබෑ → <span style="color:#6c5ce7">${num(s30.v)}</span> m s<sup>−1</sup>`;
+}
+function read1() {
+  P1.F = +fS.value * 1e7; P1.mu = +muS.value * 1e3; P1.m0 = +m0S.value * 1e6;
+  $('fVal').textContent = (+fS.value).toFixed(1);
+  $('muVal').textContent = (+muS.value).toFixed(1);
+  $('m0Val').textContent = (+m0S.value).toFixed(1);
+  $('uVal').textContent = sci(P1.F / P1.mu, 2);
+  recompute(); cmp1();
+}
+[fS, muS, m0S].forEach(el => el.addEventListener('input', read1));
+tS.addEventListener('input', () => { P1.t = +tS.value; P1.running = false; parts = []; playLbl(); });
+$('play1').addEventListener('click', () => {
+  if (!P1.running && P1.t >= TMAX) { P1.t = 0; parts = []; }
+  P1.running = !P1.running; playLbl();
+});
+function reset1() { P1.running = false; P1.t = 0; parts = []; tS.value = 0; playLbl(); }
+$('reset1').addEventListener('click', reset1);
+$('go30').addEventListener('click', () => { P1.running = false; P1.t = 30; tS.value = 30; parts = []; playLbl(); });
+$('def1').addEventListener('click', () => { fS.value = 3; muS.value = 3; m0S.value = 2; read1(); reset1(); });
+document.querySelectorAll('.spd button').forEach(b => b.addEventListener('click', () => {
+  P1.speed = +b.dataset.s; document.querySelectorAll('.spd button').forEach(x => x.classList.toggle('solid', x === b));
+}));
+$('atmT').addEventListener('change', e => { P1.noAtm = e.target.checked; parts = parts.filter(p => p.kind === 'fire'); });
+
+// ================= PART 2: EXPLOSION =================
+const M2 = 1e5, V2 = 400, H2 = 1e4, S2 = 0.021, X0 = 90, GY2 = 330, RATE2 = 4, TF = Math.sqrt(2 * H2 / G);
+const P2 = { frac: 0.5, vQ: 0, dt: 0.2, ex: false, tE: 0, scroll: 0, flash: 0 };
+const mP = () => P2.frac * M2, mQ = () => (1 - P2.frac) * M2;
+const vPc = () => (M2 * V2 - mQ() * P2.vQ) / mP();
+const TREES = Array.from({ length: 30 }, (_, k) => ({ x: k * 1600 + rnd() * 600, h: 8 + rnd() * 8, house: rnd() < 0.3 }));
+const CL2 = Array.from({ length: 9 }, (_, k) => ({ x: k * 5200 + rnd() * 2000, alt: 3000 + rnd() * 12000, w: 40 + rnd() * 40 }));
+function step2(dts) { if (!P2.ex) P2.scroll += V2 * dts; else P2.tE = Math.min(TF, P2.tE + dts); }
+function explode() { if (P2.ex) return; P2.ex = true; P2.tE = 0; P2.flash = 1; $('boom').disabled = true; }
+function reset2() { P2.ex = false; P2.tE = 0; P2.flash = 0; $('boom').disabled = false; }
+const X2 = x => X0 + x * S2, Y2 = alt => GY2 - alt * S2;
+
+function drawSide(c, x, y, part, ang = 0) {
+  c.save(); c.translate(x, y); c.rotate(ang);
+  if (part === 'P') c.translate(-20, 0); else if (part === 'Q') c.translate(20, 0);
+  c.lineWidth = 1.5; c.strokeStyle = '#636e72'; c.lineJoin = 'round';
+  if (part !== 'P') {
+    c.fillStyle = '#ecf0f1';
+    c.beginPath(); c.moveTo(-36, -7); c.lineTo(-30, -24); c.lineTo(-20, -24); c.lineTo(-14, -7); c.closePath(); c.fill(); c.stroke();
+    c.fillRect(-38, -7, 38, 14); c.strokeRect(-38, -7, 38, 14);
+    c.fillStyle = '#dfe6e9'; c.beginPath(); c.moveTo(-30, 5); c.lineTo(-2, 5); c.lineTo(-8, 11); c.lineTo(-34, 11); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#2d3436'; c.beginPath(); c.moveTo(-38, -5); c.lineTo(-46, -8); c.lineTo(-46, 8); c.lineTo(-38, 5); c.closePath(); c.fill();
+  }
+  if (part !== 'Q') {
+    c.fillStyle = '#ecf0f1';
+    c.beginPath(); c.moveTo(0, -7); c.lineTo(26, -7); c.quadraticCurveTo(40, -6, 42, 0); c.quadraticCurveTo(40, 6, 26, 7); c.lineTo(0, 7); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#2d3436';
+    c.beginPath(); c.moveTo(34, -5.5); c.quadraticCurveTo(41, -4, 42, 0); c.quadraticCurveTo(41, 4, 34, 5.5); c.closePath(); c.fill();
+    c.fillRect(22, -5, 6, 3);
+  }
+  if (part === 'P' || part === 'Q') {
+    c.strokeStyle = '#e17055'; c.lineWidth = 2; c.beginPath();
+    [[0, -7], [3, -4], [-2, -1], [3, 2], [-1, 5], [0, 7]].forEach(([dx, dy], i) => i ? c.lineTo(dx, dy) : c.moveTo(dx, dy)); c.stroke();
+  }
+  c.restore();
+}
+const sc2 = stage($('sc2'), 900, 360);
+function path(c, vx, tEnd, col, lw, dash) {
+  c.strokeStyle = col; c.lineWidth = lw; c.setLineDash(dash || []); c.beginPath();
+  const n = Math.max(1, Math.ceil(tEnd / 0.25));
+  for (let i = 0; i <= n; i++) { const t = Math.min(tEnd, i * 0.25), x = X2(vx * t), y = Y2(H2 - 0.5 * G * t * t); i ? c.lineTo(x, y) : c.moveTo(x, y); }
+  c.stroke(); c.setLineDash([]);
+}
+function drawScene2() {
+  const c = sc2.ctx, W = 900, H = 360; c.clearRect(0, 0, W, H);
+  const sky = c.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#74b9ff'); sky.addColorStop(1, '#eaf6ff');
+  c.fillStyle = sky; c.fillRect(0, 0, W, H);
+  const wrap = (sx, span) => ((sx % span) + span) % span - 60;
+  CL2.forEach(cl => cloud(c, wrap(X2(cl.x - P2.scroll), 1020), Y2(cl.alt), cl.w, 0.75));
+  // ground
+  c.fillStyle = '#7bc67b'; c.fillRect(0, GY2, W, H - GY2); c.fillStyle = '#5e9e5e'; c.fillRect(0, GY2, W, 4);
+  TREES.forEach(tr => {
+    const sx = wrap(X2(tr.x - P2.scroll), 1020);
+    if (tr.house) { c.fillStyle = '#fab1a0'; c.fillRect(sx - 6, GY2 - 10, 12, 10); c.fillStyle = '#c0392b'; c.beginPath(); c.moveTo(sx - 8, GY2 - 10); c.lineTo(sx, GY2 - 17); c.lineTo(sx + 8, GY2 - 10); c.fill(); }
+    else { c.fillStyle = '#8d6e63'; c.fillRect(sx - 1.5, GY2 - 6, 3, 6); c.fillStyle = '#27ae60'; c.beginPath(); c.arc(sx, GY2 - 6 - tr.h / 2, tr.h / 2, 0, 7); c.fill(); }
+  });
+  // altitude bracket
+  c.strokeStyle = '#2d3436'; c.lineWidth = 1.5; c.setLineDash([4, 4]);
+  c.beginPath(); c.moveTo(24, Y2(H2)); c.lineTo(24, GY2); c.stroke(); c.setLineDash([]);
+  text(c, 'h = 10 km', 30, (Y2(H2) + GY2) / 2 + 40, '#2d3436', 12, 'left', 700);
+  const yE = Y2(H2), vP = vPc(), vQ = P2.vQ, t = P2.tE;
+  if (!P2.ex) {
+    // speed lines
+    c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 2;
+    for (let i = 0; i < 4; i++) { const off = (P2.scroll * S2 * 3 + i * 23) % 80; c.beginPath(); c.moveTo(X0 - 50 - off, yE - 9 + i * 6); c.lineTo(X0 - 30 - off, yE - 9 + i * 6); c.stroke(); }
+    drawSide(c, X0, yE, 'all');
+    arrow(c, X0 + 52, yE, X0 + 52 + V2 * 0.12, yE, '#0984e3', 4);
+    text(c, 'v = 400 m s⁻¹', X0 + 52, yE - 22, '#0984e3', 15);
+    text(c, `p = Mv = ${sci(M2 * V2)} kg m s⁻¹`, X0 + 52, yE + 26, '#6c5ce7', 14);
+    box(c, 520, 18, 360, 48, 'rgba(255,255,255,.9)', '#e17055');
+    text(c, '"✸ පිපිරුම" ඔබන්න', 700, 42, '#e17055', 17, 'center', 800);
+  } else {
+    // predicted paths (faint) + centre of mass
+    path(c, vP, TF, 'rgba(225,112,85,.35)', 2, [6, 6]);
+    path(c, vQ, TF, 'rgba(0,184,148,.4)', 2, [6, 6]);
+    path(c, V2, TF, 'rgba(99,110,114,.35)', 1.5, [2, 5]);
+    // trails
+    path(c, vP, t, '#e17055', 3);
+    path(c, vQ, t, '#00b894', 3);
+    // distance ticks
+    for (let d = 0; d <= 40; d += 5) { const x = X2(d * 1000); c.strokeStyle = '#2d3436'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x, GY2); c.lineTo(x, GY2 + 6); c.stroke(); text(c, d ? d + ' km' : '0', x, GY2 + 16, '#2d3436', 11, 'center', 700); }
+    const alt = H2 - 0.5 * G * t * t, vy = G * t;
+    // centre of mass marker
+    const cmx = X2(V2 * t), cmy = Y2(alt);
+    c.strokeStyle = '#636e72'; c.lineWidth = 2; c.beginPath(); c.moveTo(cmx - 5, cmy - 5); c.lineTo(cmx + 5, cmy + 5); c.moveTo(cmx + 5, cmy - 5); c.lineTo(cmx - 5, cmy + 5); c.stroke();
+    text(c, 'ස්.කේ.', cmx, cmy + 16, '#636e72', 11, 'center', 700);
+    // pieces
+    const px = X2(vP * t), qx = X2(vQ * t), py = Y2(alt);
+    drawSide(c, px, py, 'P', vP > 0 ? Math.atan2(vy, vP) : 0);
+    drawSide(c, qx, py, 'Q', vQ > 0 ? Math.atan2(vy, vQ) : 0);
+    text(c, 'P', px, py - 26, '#e17055', 17, 'center', 800);
+    text(c, 'Q', qx, py - 30, '#00b894', 17, 'center', 800);
+    // velocity components
+    const k = 0.07;
+    if (Math.abs(vP) > 1) arrow(c, px, py, px + vP * k, py, '#0984e3', 3);
+    if (Math.abs(vQ) > 1) arrow(c, qx, py, qx + vQ * k, py, '#0984e3', 3);
+    if (vy > 1) { arrow(c, px, py, px, py + vy * k, '#d63031', 3); arrow(c, qx, py, qx, py + vy * k, '#d63031', 3); }
+    if (px > W - 20) text(c, 'P → (තිරයෙන් ඉවතට)', W - 10, 90, '#e17055', 14, 'right');
+    if (px < 0) text(c, '← P (තිරයෙන් ඉවතට)', 70, 90, '#e17055', 14, 'left');
+    if (t < 4) {
+      text(c, `v_P = ${num(vP)} m s⁻¹`, px + 30, py + 26, '#e17055', 14);
+      text(c, `v_Q = ${num(vQ)} m s⁻¹`, qx - 6, py + 30, '#00b894', 14, 'right');
+    }
+    // flash
+    if (P2.flash > 0) {
+      const r = 10 + 70 * (1 - P2.flash), gr = c.createRadialGradient(X0, yE, 0, X0, yE, r);
+      gr.addColorStop(0, `rgba(255,255,200,${P2.flash})`); gr.addColorStop(0.5, `rgba(255,160,40,${0.8 * P2.flash})`); gr.addColorStop(1, 'rgba(255,80,20,0)');
+      c.fillStyle = gr; c.beginPath(); c.arc(X0, yE, r, 0, 7); c.fill();
+    }
+    box(c, 300, 10, 590, t >= TF ? 70 : 30, 'rgba(255,255,255,.9)', '#6c5ce7');
+    text(c, `පිපිරුමෙන් පසු t = ${t.toFixed(1)} s   (නිල් = තිරස් ප්‍රවේගය, රතු = සිරස් ප්‍රවේගය gt)`, 312, 25, '#2d3436', 13);
+    if (t >= TF) {
+      text(c, `දෙකම t = ${TF.toFixed(1)} s දී එකවර බිම වදී!`, 312, 47, '#6c5ce7', 14, 'left', 800);
+      text(c, `P: ${num(vP * TF / 1000, 1)} km ඉදිරියෙන්  |  Q: ${num(vQ * TF / 1000, 1)} km (පිපිරුම් ස්ථානයට කෙළින්ම පහළින්)`, 312, 67, '#2d3436', 12, 'left', 700);
+    }
+  }
+}
+const momS = stage($('mom'), 400, 270);
+function drawMom() {
+  const c = momS.ctx, W = 400, H = 270; c.clearRect(0, 0, W, H);
+  const vP = vPc(), pT = M2 * V2, pP = mP() * vP, pQ = mQ() * P2.vQ;
+  const rows = [['පෙර: Mv', pT, '#6c5ce7', 1], ['පසු: P', pP, '#e17055', P2.ex ? 1 : 0.45], ['පසු: Q', pQ, '#00b894', P2.ex ? 1 : 0.45], ['පසු: එකතුව', pP + pQ, '#6c5ce7', P2.ex ? 1 : 0.45]];
+  const lo = Math.min(0, pP, pQ), hi = Math.max(pT, pP, pQ), L = 140, R = 388, sc = (R - L) / (hi - lo), x0 = L - lo * sc;
+  text(c, 'ගම්‍යතාව p (kg m s⁻¹), ඉදිරිය ධන', 10, 14, '#2d3436', 13);
+  rows.forEach(([lab, v, col, al], i) => {
+    const y = 48 + i * 56;
+    c.globalAlpha = al;
+    text(c, lab, 10, y - 8, '#2d3436', 14);
+    text(c, sci(v), 10, y + 12, col, 13, 'left', 800);
+    c.fillStyle = col;
+    if (i === 3) { c.strokeStyle = col; c.lineWidth = 3; c.strokeRect(Math.min(x0, x0 + v * sc), y - 11, Math.abs(v * sc), 22); }
+    else c.fillRect(Math.min(x0, x0 + v * sc), y - 11, Math.abs(v * sc), 22);
+    c.globalAlpha = 1;
+  });
+  c.strokeStyle = '#2d3436'; c.lineWidth = 2; c.beginPath(); c.moveTo(x0, 28); c.lineTo(x0, H - 20); c.stroke();
+  text(c, '0', x0, H - 10, '#636e72', 12, 'center');
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 1.5; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(x0 + pT * sc, 30); c.lineTo(x0 + pT * sc, H - 20); c.stroke(); c.setLineDash([]);
+  if (!P2.ex) text(c, '(පිපිරුමෙන් පසු – පූර්ව දසුන)', 10, H - 10, '#636e72', 12, 'left', 600);
+}
+function panel2() {
+  const vP = vPc(), vQ = P2.vQ;
+  $('frVal').textContent = P2.frac.toFixed(2); $('vqVal').textContent = num(vQ); $('dtVal').textContent = P2.dt.toFixed(2);
+  $('r2_m').textContent = `${sci(mP())} , ${sci(mQ())} kg`;
+  $('r2_vq').textContent = num(vQ) + ' m s⁻¹';
+  $('r2_vp').textContent = num(vP) + ' m s⁻¹';
+  $('r2_t').textContent = P2.ex ? P2.tE.toFixed(1) + ' s' : '–';
+  $('r2_tf').textContent = TF.toFixed(1) + ' s';
+  $('r2_xp').textContent = num(vP * TF / 1000, 1) + ' km';
+  $('r2_xq').textContent = num(vQ * TF / 1000, 1) + ' km';
+  $('ke1').textContent = sci(0.5 * M2 * V2 * V2, 2) + ' J';
+  $('ke2').textContent = sci(0.5 * mP() * vP * vP + 0.5 * mQ() * vQ * vQ, 2) + ' J';
+  const dP = mP() * (vP - V2), dQ = mQ() * (vQ - V2), dir = f => Math.abs(f) < 1 ? '' : f > 0 ? ' (ඉදිරියට)' : ' (පසුපසට)';
+  $('dpP').textContent = sci(dP) + ' kg m s⁻¹';
+  $('dpQ').textContent = sci(dQ) + ' kg m s⁻¹';
+  $('fP').textContent = sci(Math.abs(dP / P2.dt)) + ' N' + dir(dP);
+  $('fQ').textContent = sci(Math.abs(dQ / P2.dt)) + ' N' + dir(dQ);
+  $('st2').innerHTML = `F_P = −F_Q : බල සමාන හා ප්‍රතිවිරුද්ධයි (නිව්ටන් 3). Δp_P + Δp_Q = 0 නිසා මුළු ගම්‍යතාව ${sci(M2 * V2)} kg m s⁻¹ ලෙසම පවතී ✓`.replace(/_([PQ])/g, '<sub>$1</sub>');
+}
+function read2() { P2.frac = +$('frS').value; P2.vQ = +$('vqS').value; P2.dt = +$('dtS').value; panel2(); }
+['frS', 'vqS', 'dtS'].forEach(id => $(id).addEventListener('input', read2));
+$('boom').addEventListener('click', explode);
+$('reset2').addEventListener('click', reset2);
+$('def2').addEventListener('click', () => { $('frS').value = 0.5; $('vqS').value = 0; $('dtS').value = 0.2; read2(); reset2(); });
+
+// ================= tabs + loop =================
+let tab = 1;
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
+  tab = +b.dataset.tab;
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+  $('tab1').hidden = tab !== 1; $('tab2').hidden = tab !== 2;
+}));
+function draw1() { panel1(); drawScene1(); drawFBD1(); drawVT(); drawAT(); }
+function draw2() { panel2(); drawScene2(); drawMom(); }
+read1(); read2();
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (tab === 1) { step1(dt); draw1(); }
+  else { step2(dt * RATE2); P2.flash = Math.max(0, P2.flash - dt * 1.5); draw2(); }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

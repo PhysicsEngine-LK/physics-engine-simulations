@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>උකුල් සන්ධිය මත බල (306–312) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  .qt { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 5px; padding: 1px 6px; font-size: 11px; margin-right: 6px; vertical-align: 1px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 16px; line-height: 1.6; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  .modes { display: flex; flex-wrap: wrap; gap: 8px; grid-column: 1 / -1; margin-bottom: 4px; }
+  .modes button { flex: 1 1 160px; }
+  .chk { font-weight: 600 !important; font-size: 14px !important; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .chk input { accent-color: #6c5ce7; width: 17px; height: 17px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: linear-gradient(#f7f5ff, #ffffff 75%); border: 1px solid #dfe6e9; }
+  .row { display: grid; grid-template-columns: 1fr 1.15fr; gap: 14px; margin-top: 14px; }
+  .panel { border: 1px solid #dfe6e9; border-radius: 10px; padding: 14px; background: #fff; }
+  .panel h3 { margin: 0 0 8px; font-size: 16px; }
+  .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 14.5px; padding: 6px 0; border-bottom: 1px dashed #dfe6e9; align-items: baseline; }
+  .kv b { font-family: 'Courier New', monospace; white-space: nowrap; }
+  .kv.hl { background: #f1efff; border-radius: 6px; padding: 6px 6px; }
+  .status { margin-top: 10px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 10px 14px; border-radius: 6px; font-weight: 700; font-size: 15px; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .amax { background: #f1efff; border: 2px solid #6c5ce7; border-radius: 10px; padding: 10px 12px; margin-top: 10px; font-weight: 700; text-align: center; font-size: 17px; }
+  .amax small { display: block; font-size: 13px; color: #636e72; font-weight: 600; margin-top: 3px; }
+  .cmp { margin-top: 12px; }
+  .cmp .lbl { font-size: 13.5px; font-weight: 700; display: flex; justify-content: space-between; margin: 6px 0 3px; }
+  .bar2 { height: 22px; background: #ecf0f1; border-radius: 11px; overflow: hidden; }
+  .bar2 > div { height: 100%; border-radius: 11px; transition: width .15s; }
+  .mt { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .mt th, .mt td { border-bottom: 1px dashed #dfe6e9; padding: 7px 4px; text-align: center; }
+  .mt th { background: #f1efff; font-size: 13px; }
+  .mt td:first-child, .mt th:first-child { text-align: left; }
+  .mt td.num { font-family: 'Courier New', monospace; font-weight: 700; }
+  .mt tr.zero td { color: #95a5a6; }
+  .mt tr.sum td { font-weight: 800; border-top: 2px solid #6c5ce7; border-bottom: none; }
+  .ccw { color: #0984e3; font-weight: 800; }
+  .cw { color: #e17055; font-weight: 800; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .eq { font-family: 'Courier New', monospace; font-weight: 700; background: #fff; border: 1px solid #dfe6e9; border-radius: 6px; padding: 8px 12px; margin: 6px 0; display: block; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .row { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .main > .cvs:first-child { margin-top: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← සියලුම Simulations</a>
+  <div class="qtags"><span class="qtag">306</span><span class="qtag">307</span><span class="qtag">308</span><span class="qtag">309</span><span class="qtag">310</span><span class="qtag">311</span><span class="qtag">312</span></div>
+  <h1>ඇවිදින විට උකුල් සන්ධිය මත ක්‍රියා කරන බල (2014 A/L)</h1>
+  <p class="sub">ඇවිදීමේදී එක් මොහොතක මුළු ශරීර බරම එක් කකුලක් මත රැඳේ. එම කකුලේ නිදහස් වස්තු සටහන (FBD) පහත ඇත. P වටා ඝූර්ණ ගෙන F<sub>S</sub> සොයන හැටි බලන්න. ඉන්පසු <b>"ඇල වීම"</b> ස්ලයිඩරය දකුණට ගෙන යන්න – උකුලේ තුවාලයක් ඇති කෙනෙක් ඒ පැත්තට ඇල වී කොර ගසන විට උකුල් කුහරය මත බලය අඩු වන්නේ ඇයි කියා ඔබටම පෙනේවි.</p>
+
+  <div class="layout">
+   <aside class="side">
+    <div class="controls">
+      <div class="modes">
+        <button class="solid" id="mNormal">සාමාන්‍ය ඇවිදීම (306–310)</button>
+        <button id="mLimp">කොර ගැසීම (311–312)</button>
+      </div>
+      <div><label>ඇල වීම λ = <span class="v" id="lamVal">0.00</span></label><input type="range" id="lamS" min="0" max="1" step="0.01" value="0"></div>
+      <div><label>ශරීර බර W = <span class="v" id="wVal">600</span> N</label><input type="range" id="wS" min="300" max="1000" step="10" value="600"></div>
+      <div class="btns">
+        <label class="chk"><input type="checkbox" id="examChk" checked> විභාග අගයන් (sin72° = 0.9, cos72° = 0.3)</label>
+        <label class="chk"><input type="checkbox" id="compChk"> බල සංරචක පෙන්වන්න</label>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>P සිට තිරස් දුර</h3>
+      <div class="kv"><span>F<sub>S</sub> රේඛාවට d<sub>S</sub></span><b id="dS">8.00 cm</b></div>
+      <div class="kv"><span>W<sub>L</sub> රේඛාවට d<sub>L</sub></span><b id="dL">10.00 cm</b></div>
+      <div class="kv"><span>R රේඛාවට d<sub>R</sub></span><b id="dR">18.00 cm</b></div>
+      <div class="kv"><span>F<sub>M</sub> තිරසට කෝණය α</span><b id="alp">72.0°</b></div>
+      <div class="amax"><span id="bigFs">F<sub>S</sub> ≈ 2.00W = 1200 N</span><small id="bigMode">සාමාන්‍ය ඇවිදීම</small></div>
+    </div>
+   </aside>
+   <div class="main">
+    <div class="cvs"><canvas id="scene" class="scene"></canvas></div>
+    <div class="row">
+      <div class="panel">
+        <h3>306 – 310 – සජීවී ගණනය</h3>
+        <div class="kv"><span><span class="qt">306</span>R = W</span><b id="rR">–</b></div>
+        <div class="kv hl"><span><span class="qt">307</span>F<sub>S</sub> sinθ<sub>S</sub> = (R·d<sub>R</sub> − W<sub>L</sub>·d<sub>L</sub>) / d<sub>S</sub></span><b id="rFsV">–</b></div>
+        <div class="kv"><span><span class="qt">308</span>F<sub>M</sub> = (F<sub>S</sub> sinθ<sub>S</sub> + W<sub>L</sub> − R) / sinα</span><b id="rFM">–</b></div>
+        <div class="kv"><span><span class="qt">309</span>F<sub>S</sub> cosθ<sub>S</sub> = F<sub>M</sub> cosα</span><b id="rFsH">–</b></div>
+        <div class="kv"><span><span class="qt">309</span>θ<sub>S</sub> = tan⁻¹(F<sub>S</sub> sinθ<sub>S</sub> / F<sub>S</sub> cosθ<sub>S</sub>)</span><b id="rTh">–</b></div>
+        <div class="kv hl"><span><span class="qt">310</span>F<sub>S</sub> (විභාගය: sinθ<sub>S</sub> ≈ 1)</span><b id="rFsExam">–</b></div>
+        <div class="kv"><span>F<sub>S</sub> නියම විශාලත්වය = √(V² + H²)</span><b id="rFs">–</b></div>
+        <div class="cmp">
+          <div class="lbl"><span><span class="qt">312</span>උකුල් කුහරය මත බලය</span><span></span></div>
+          <div class="lbl"><span>සාමාන්‍ය ඇවිදීම</span><span id="cN">2.00W</span></div>
+          <div class="bar2"><div style="width:100%;background:#b2bec3"></div></div>
+          <div class="lbl"><span>දැන්</span><span id="cNow">2.00W</span></div>
+          <div class="bar2"><div id="barNow" style="width:100%;background:#6c5ce7"></div></div>
+        </div>
+        <div class="status" id="status">–</div>
+        <div class="note" id="pctNote">–</div>
+      </div>
+      <div class="panel">
+        <h3>307 / 311 – P වටා ඝූර්ණ</h3>
+        <table class="mt">
+          <thead><tr><th>බලය</th><th>P සිට දුර</th><th>ඝූර්ණය (W·cm)</th><th>ඝූර්ණය (N m)</th><th>දිශාව</th></tr></thead>
+          <tbody id="mBody"></tbody>
+        </table>
+        <div class="note">⟲ = වාමාවර්ත, ⟳ = දක්ෂිණාවර්ත (රූපයේ පෙනෙන පරිදි). F<sub>M</sub> P හරහාම ක්‍රියා කරන නිසාත්, F<sub>S</sub> හි තිරස් සංරචකය P හි මට්ටමෙන්ම යන නිසාත් ඒවායේ ඝූර්ණය ශුන්‍යයි. ඒ නිසයි P වටා ඝූර්ණ ගැනීම මෙතරම් පහසු.</div>
+        <div class="kv" style="margin-top:8px"><span>ΣF<sub>y</sub> = F<sub>M</sub> sinα + R − F<sub>S</sub> sinθ<sub>S</sub> − W<sub>L</sub></span><b id="sFy">0</b></div>
+        <div class="kv"><span>ΣF<sub>x</sub> = F<sub>S</sub> cosθ<sub>S</sub> − F<sub>M</sub> cosα</span><b id="sFx">0</b></div>
+        <div class="status" id="eqStatus">කකුල සමතුලිතයි ✅</div>
+      </div>
+    </div>
+   </div>
+  </div>
+
+  <h2>විසඳුම්</h2>
+  <details>
+    <summary><span class="qtag">306</span>R සොයන්න</summary>
+    <div class="ans">
+      මේ මොහොතේ අනෙක් කකුල පොළොවේ නැත. මුළු ශරීරයම සමතුලිතතාවේ ඇති නිසා, මුළු ශරීරය මත ඇති සිරස් බාහිර බල දෙක (පහළට W, ඉහළට R) සමාන විය යුතුය. පොළොව සමඟ ඝර්ෂණය නැති නිසා R සිරස්ය.
+      <span class="eq">R = W</span>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">307</span>P වටා ඝූර්ණ – F<sub>S</sub> sinθ<sub>S</sub></summary>
+    <div class="ans">
+      P වටා ඝූර්ණ ගන්න. F<sub>M</sub> P හරහා ක්‍රියා කරයි. F<sub>S</sub> හි තිරස් සංරචකය (F<sub>S</sub> cosθ<sub>S</sub>) P හි මට්ටමෙන්ම යයි. ඒ දෙකේම ඝූර්ණය ශුන්‍යයි.<br>
+      R ⟳ දිශාවට; F<sub>S</sub> sinθ<sub>S</sub> සහ W<sub>L</sub> ⟲ දිශාවට:
+      <span class="eq">R × 18 = F<sub>S</sub> sinθ<sub>S</sub> × 8 + W<sub>L</sub> × 10</span>
+      <span class="eq">W × 18 = 8 F<sub>S</sub> sinθ<sub>S</sub> + 0.2W × 10</span>
+      <span class="eq">8 F<sub>S</sub> sinθ<sub>S</sub> = 16W  →  F<sub>S</sub> sinθ<sub>S</sub> = 2W</span>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">308</span>සිරස් සමතුලිතතාව – F<sub>M</sub></summary>
+    <div class="ans">
+      කකුල මත සිරස් බල: ඉහළට F<sub>M</sub> sin72° සහ R; පහළට F<sub>S</sub> sinθ<sub>S</sub> සහ W<sub>L</sub>.
+      <span class="eq">F<sub>M</sub> sin72° + R = F<sub>S</sub> sinθ<sub>S</sub> + W<sub>L</sub></span>
+      <span class="eq">0.9 F<sub>M</sub> + W = 2W + 0.2W</span>
+      <span class="eq">0.9 F<sub>M</sub> = 1.2W  →  F<sub>M</sub> = 4W/3 ≈ 1.33W</span>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">309</span>තිරස් සමතුලිතතාව – θ<sub>S</sub></summary>
+    <div class="ans">
+      තිරස් බල දෙක පමණි: F<sub>M</sub> cos72° (මධ්‍ය රේඛාව දෙසට) සහ F<sub>S</sub> cosθ<sub>S</sub> (පිටතට).
+      <span class="eq">F<sub>S</sub> cosθ<sub>S</sub> = F<sub>M</sub> cos72° = (4W/3) × 0.3 = 0.4W</span>
+      <span class="eq">tanθ<sub>S</sub> = F<sub>S</sub> sinθ<sub>S</sub> / F<sub>S</sub> cosθ<sub>S</sub> = 2W / 0.4W = 5</span>
+      <span class="eq">θ<sub>S</sub> = tan⁻¹5 ≈ 79°</span>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">310</span>F<sub>S</sub> හි විශාලත්වය</summary>
+    <div class="ans">
+      θ<sub>S</sub> ≈ 79° නිසා sinθ<sub>S</sub> ≈ 0.98 ≈ 1 ලෙස ගත හැක:
+      <span class="eq">F<sub>S</sub> ≈ F<sub>S</sub> sinθ<sub>S</sub> = 2W</span>
+      W = 600 N නම් F<sub>S</sub> ≈ 1200 N – එනම් ශරීර බර මෙන් දෙගුණයක්! (නියම අගය √(2² + 0.4²) W ≈ 2.04W, ඉතා සුළු වෙනසක් පමණි.)
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">311</span>කොර ගැසීම – F′<sub>S</sub> සෙවීම</summary>
+    <div class="ans">
+      උකුලට තුවාල වූ කෙනා ඒ පැත්තට ඇල වෙයි. එවිට ශරීරයේ ගුරුත්ව කේන්ද්‍රය ආබාධිත උකුල දෙසට විතැන් වේ, F<sub>M</sub> සිරස් වේ (P හරහා ඉහළට). අලුත් දුර: F′<sub>S</sub> → 7 cm, W<sub>L</sub> → 6.25 cm, R → 10 cm.<br>
+      P වටා ඝූර්ණ:
+      <span class="eq">R × 10 = F′<sub>S</sub> × 7 + W<sub>L</sub> × 6.25</span>
+      <span class="eq">10W = 7 F′<sub>S</sub> + 0.2W × 6.25 = 7 F′<sub>S</sub> + 1.25W</span>
+      <span class="eq">7 F′<sub>S</sub> = 8.75W  →  F′<sub>S</sub> = 1.25W</span>
+      (F<sub>M</sub> සිරස් නිසා තිරස් බලයක් නැත. එබැවින් F′<sub>S</sub>ද සිරස්ය.) මූලික අදහස: R හි ක්‍රියා රේඛාව P ට ළං වන නිසා (18 → 10 cm) R හි ඝූර්ණය අඩු වෙයි. ඒ නිසා එය සංතුලනය කිරීමට අවශ්‍ය F′<sub>S</sub>ද අඩු වෙයි.
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">312</span>ප්‍රතිශත අඩු වීම</summary>
+    <div class="ans">
+      <span class="eq">අඩු වීම = (F<sub>S</sub> − F′<sub>S</sub>) / F<sub>S</sub> × 100%</span>
+      <span class="eq">= (2W − 1.25W) / 2W × 100% = 37.5%</span>
+      "කොර ගැසීම" බොත්තම ඔබා උකුල් බලය 2W සිට 1.25W දක්වා අඩු වන හැටි බලන්න. තුවාලය මත බර අඩු කරන්න ශරීරය ස්වභාවිකවම මෙසේ ඇල වෙනවා.
+    </div>
+  </details>
+  <p class="note">සටහන: රූප සරල කළ ඒවා (anatomical චිත්‍ර නොවේ). තිරස් දුර සහ බල ඊතල පරිමාණයට ඇඳ ඇත; සිරස් දුර පරිමාණයට නොවේ. ස්ලයිඩරයේ අතරමැද අගයන්හිදී දුර සහ α රේඛීයව වෙනස් වන සේ සලකා ඇත (විභාගයේ දී ඇත්තේ λ = 0 සහ λ = 1 අවස්ථා දෙක පමණි).</p>
+</div>
+
+<script>
+const FS = 75;          // px per W (force scale)
+const KX = 14;          // px per cm (horizontal distance scale)
+const SCW = 960, SCH = 640;
+function stage(cv, W, H, onfit) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+    if (onfit) onfit();
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(15, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+// Draws text; "x_abc" is drawn with "abc" as a real subscript.
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/); // even = normal text, odd = subscript
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
+}
+// white backing box behind a label so it stays readable over lines
+function label(ctx, t, x, y, col, size = 15, align = 'left') {
+  ctx.font = `700 ${size}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
+  const w = ctx.measureText(t.replace(/_/g, '')).width + 8;
+  const x0 = align === 'center' ? x - w / 2 : align === 'right' ? x - w + 4 : x - 4;
+  ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillRect(x0, y - size * 0.75, w, size * 1.55);
+  text(ctx, t, x, y, col, size, align);
+}
+function dimLine(ctx, xa, xb, y, col, lab) {
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(xa, y); ctx.lineTo(xb, y); ctx.stroke();
+  [[xa, 1], [xb, -1]].forEach(([x, s]) => {
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 8 * s, y - 4); ctx.lineTo(x + 8 * s, y + 4); ctx.closePath(); ctx.fill();
+  });
+  label(ctx, lab, (xa + xb) / 2, y - 1, col, 13, 'center');
+}
+
+// ---------- physics ----------
+const D2R = Math.PI / 180;
+let LAM = 0, WN = 600, EXAM = true, COMP = false;
+function compute(lam) {
+  const dR = 18 - 8 * lam, dL = 10 - 3.75 * lam, dS = 8 - lam, aDeg = 72 + 18 * lam, a = aDeg * D2R;
+  let sa = Math.sin(a), ca = Math.cos(a);
+  if (EXAM) { sa += (0.9 - Math.sin(72 * D2R)) * (1 - lam); ca += (0.3 - Math.cos(72 * D2R)) * (1 - lam); }
+  if (Math.abs(ca) < 1e-12) ca = 0;
+  const WL = 0.2, R = 1;                          // in units of W
+  const FsV = (R * dR - WL * dL) / dS;            // moments about P
+  const FM = (FsV + WL - R) / sa;                 // vertical balance
+  const FsH = FM * ca;                            // horizontal balance
+  const th = Math.atan2(FsV, FsH);
+  const Fs = Math.hypot(FsV, FsH);
+  return { dR, dL, dS, aDeg, a, sa, ca, WL, R, FsV, FM, FsH, th, Fs };
+}
+
+// ---------- drawing ----------
+let READY = false;
+const sc = stage(document.getElementById('scene'), SCW, SCH, () => { if (READY) draw(); });
+const GROUND = 540, FG = 478; // FBD ground; figure is drawn with ground at FG then shifted down
+
+function drawFigure(c, P) {
+  c.save(); c.translate(0, GROUND - FG);
+  const lam = LAM, phi = lam * 13 * D2R;
+  const Hs = { x: 182, y: 288 };                 // support (injured) hip
+  const rot = (x, y) => ({ x: Hs.x + (x - Hs.x) * Math.cos(phi) - (y - Hs.y) * Math.sin(phi), y: Hs.y + (x - Hs.x) * Math.sin(phi) + (y - Hs.y) * Math.cos(phi) });
+  // ground
+  c.strokeStyle = '#95a5a6'; c.lineWidth = 2; c.beginPath(); c.moveTo(14, FG); c.lineTo(292, FG); c.stroke();
+  c.strokeStyle = '#ced6e0'; c.lineWidth = 1.5;
+  for (let x = 20; x < 292; x += 14) { c.beginPath(); c.moveTo(x, FG); c.lineTo(x - 9, FG + 9); c.stroke(); }
+  // swing leg (unrotated, hanging from the rotated other hip)
+  const Ho = rot(122, 288);
+  c.strokeStyle = '#b2bec3'; c.lineCap = 'round'; c.lineJoin = 'round';
+  c.lineWidth = 26; c.beginPath(); c.moveTo(Ho.x, Ho.y); c.lineTo(Ho.x - 10, Ho.y + 92); c.lineTo(Ho.x - 2, Ho.y + 160); c.stroke();
+  c.fillStyle = '#95a5a6'; c.beginPath(); c.ellipse(Ho.x - 2, Ho.y + 172, 17, 8, 0, 0, 7); c.fill();
+  // support leg (highlighted)
+  const foot = { x: 168, y: FG };
+  c.strokeStyle = 'rgba(108,92,231,.25)'; c.lineWidth = 40;
+  c.beginPath(); c.moveTo(Hs.x, Hs.y); c.lineTo(174, 385); c.lineTo(foot.x, foot.y - 14); c.stroke();
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 28;
+  c.beginPath(); c.moveTo(Hs.x, Hs.y); c.lineTo(174, 385); c.lineTo(foot.x, foot.y - 14); c.stroke();
+  c.fillStyle = '#4b3fc4'; c.beginPath(); c.ellipse(foot.x - 2, foot.y - 7, 20, 8, 0, 0, 7); c.fill();
+  // upper body (rotated about the support hip)
+  c.save(); c.translate(Hs.x, Hs.y); c.rotate(phi); c.translate(-Hs.x, -Hs.y);
+  // arms
+  c.strokeStyle = '#f5cba7'; c.lineWidth = 14;
+  c.beginPath(); c.moveTo(112, 146); c.lineTo(98, 200); c.lineTo(96, 262); c.stroke();
+  c.beginPath(); c.moveTo(188, 146); c.lineTo(202, 200); c.lineTo(204, 262); c.stroke();
+  // torso
+  c.fillStyle = '#a29bfe'; c.strokeStyle = '#6c5ce7'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(108, 138); c.lineTo(192, 138); c.lineTo(186, 262); c.lineTo(114, 262); c.closePath(); c.fill(); c.stroke();
+  // pelvis
+  c.fillStyle = '#636e72';
+  c.beginPath(); c.moveTo(112, 260); c.lineTo(188, 260); c.lineTo(196, 296); c.lineTo(104, 296); c.closePath(); c.fill();
+  // neck + head
+  c.fillStyle = '#f5cba7'; c.fillRect(141, 112, 18, 30);
+  c.beginPath(); c.arc(150, 92, 27, 0, 7); c.fill();
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(150, 86, 28, Math.PI * 1.05, Math.PI * 1.95); c.fill();
+  c.beginPath(); c.arc(141, 96, 2.6, 0, 7); c.arc(159, 96, 2.6, 0, 7); c.fill();
+  c.strokeStyle = '#2d3436'; c.lineWidth = 2; c.beginPath(); c.arc(150, 102, 8, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke();
+  c.restore();
+  // injured hip glow
+  if (lam > 0.02) {
+    const gr = c.createRadialGradient(Hs.x, Hs.y, 2, Hs.x, Hs.y, 26);
+    gr.addColorStop(0, `rgba(214,48,49,${0.85 * lam})`); gr.addColorStop(1, 'rgba(214,48,49,0)');
+    c.fillStyle = gr; c.beginPath(); c.arc(Hs.x, Hs.y, 26, 0, 7); c.fill();
+    if (lam > 0.3) label(c, 'ආබාධිත උකුල', 214, 268, '#d63031', 13);
+  }
+  // centre of gravity, W and R
+  const G = rot(150 + 0, 236);
+  c.setLineDash([5, 5]); c.strokeStyle = '#636e72'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(G.x, G.y); c.lineTo(G.x, FG); c.stroke(); c.setLineDash([]);
+  arrow(c, G.x, G.y, G.x, G.y + 62, '#2d3436', 4);
+  c.fillStyle = '#fff'; c.strokeStyle = '#2d3436'; c.lineWidth = 2; c.beginPath(); c.arc(G.x, G.y, 6, 0, 7); c.fill(); c.stroke();
+  label(c, 'G', G.x - 12, G.y - 4, '#2d3436', 14, 'right');
+  label(c, 'W', G.x - 8, G.y + 56, '#2d3436', 15, 'right');
+  arrow(c, foot.x + 26, FG, foot.x + 26, FG - 62, '#00b894', 4);
+  label(c, 'R = W', foot.x + 34, FG - 52, '#00b894', 14);
+  // captions
+  text(c, 'මුළු බරම දම් පාට කකුල මත', 152, 508, '#4b3fc4', 14, 'center');
+  const mode = P.lamTxt;
+  text(c, mode, 152, 534, lam > 0.5 ? '#d63031' : '#2d3436', 15, 'center', 800);
+  text(c, '← මධ්‍ය රේඛාව', 20, 22 - (GROUND - FG), '#636e72', 12, 'left', 600);
+  // link arrow to FBD
+  arrow(c, 236, 400, 296, 400, '#6c5ce7', 3, [6, 4]);
+  text(c, 'FBD', 266, 386, '#6c5ce7', 13, 'center', 800);
+  c.restore();
+  // divider
+  c.setLineDash([4, 6]); c.strokeStyle = '#d6d2ff'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(305, 10); c.lineTo(305, SCH - 10); c.stroke(); c.setLineDash([]);
+}
+
+function drawFBD(c, P) {
+  const xP = 820, yP = 205, r = 21;
+  const xS = xP - P.dS * KX, xL = xP - P.dL * KX, xR = xP - P.dR * KX;
+  const ank = { x: xR + 2, y: GROUND - 18 };
+  const T = { x: xP - 16, y: yP + 18 };
+  const K = { x: T.x + 0.42 * (ank.x - T.x), y: T.y + 0.52 * (ank.y - T.y) };
+  // leg's centre of gravity: the point on the leg (T→K→ankle) whose x = xL
+  const onSeg = (A, B) => (xL <= A.x && xL >= B.x) ? A.y + (B.y - A.y) * (A.x - xL) / Math.max(1e-6, A.x - B.x) : null;
+  let yG = onSeg(T, K); if (yG === null) yG = onSeg(K, ank); if (yG === null) yG = K.y;
+  text(c, 'කකුලේ නිදහස් වස්තු සටහන', 322, 24, '#2d3436', 16, 'left', 800);
+  text(c, '← ශරීරයේ මධ්‍ය රේඛාව දෙසට', 322, 48, '#636e72', 13, 'left', 600);
+  // force scale legend
+  const lx = 330, ly = 600;
+  text(c, 'බල පරිමාණය:', lx, ly - 16, '#636e72', 12, 'left', 600);
+  c.strokeStyle = '#2d3436'; c.lineWidth = 3; c.beginPath(); c.moveTo(lx, ly); c.lineTo(lx + FS, ly); c.stroke();
+  c.lineWidth = 2; c.beginPath(); c.moveTo(lx, ly - 6); c.lineTo(lx, ly + 6); c.moveTo(lx + FS, ly - 6); c.lineTo(lx + FS, ly + 6); c.stroke();
+  text(c, '= 1 W', lx + FS + 8, ly, '#636e72', 12, 'left', 600);
+
+  // P-level reference line
+  c.setLineDash([6, 5]); c.strokeStyle = '#b2bec3'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(xS - 60, yP); c.lineTo(xP + 40, yP); c.stroke();
+  // lines of action (vertical) down to the dimension lines
+  const dimY = [566, 591, 616];
+  [[xP, yP + 8, dimY[2] + 6, '#636e72'], [xS, yP + r, dimY[0] + 6, '#d63031'], [xL, yG + 6, dimY[1] + 6, '#2d3436'], [xR, GROUND, dimY[2] + 6, '#00b894']]
+    .forEach(([x, y1, y2, col]) => { c.strokeStyle = col; c.globalAlpha = 0.45; c.lineWidth = 1.3; c.beginPath(); c.moveTo(x, y1); c.lineTo(x, y2); c.stroke(); c.globalAlpha = 1; });
+  c.setLineDash([]);
+
+  // leg silhouette
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  c.strokeStyle = 'rgba(108,92,231,.16)'; c.lineWidth = 46;
+  c.beginPath(); c.moveTo(xP - 18, yP + 6); c.lineTo(K.x, K.y); c.lineTo(ank.x, ank.y); c.stroke();
+  // bones: outline then fill
+  const bone = (pts, w) => {
+    [['#b9a37a', w + 4], ['#f6e8c6', w]].forEach(([col, lw]) => {
+      c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(pts[0].x, pts[0].y);
+      pts.slice(1).forEach(p => c.lineTo(p.x, p.y)); c.stroke();
+    });
+  };
+  bone([{ x: xS, y: yP }, { x: xP - 16, y: yP + 12 }], 16);          // neck
+  bone([T, K], 16);                                                    // femur shaft
+  bone([K, ank], 13);                                                  // tibia
+  [['#b9a37a', 15], ['#f6e8c6', 13]].forEach(([col, rr]) => { c.fillStyle = col; c.beginPath(); c.arc(xP - 12, yP + 4, rr, 0, 7); c.fill(); }); // greater trochanter
+  [['#b9a37a', 12], ['#f6e8c6', 10]].forEach(([col, rr]) => { c.fillStyle = col; c.beginPath(); c.arc(K.x, K.y, rr, 0, 7); c.fill(); });         // knee
+  c.fillStyle = '#b9a37a'; c.beginPath(); c.arc(xS, yP, r + 2, 0, 7); c.fill();
+  c.fillStyle = '#f6e8c6'; c.beginPath(); c.arc(xS, yP, r, 0, 7); c.fill();                                                                       // femoral head
+  c.fillStyle = 'rgba(75,63,196,.75)'; c.beginPath(); c.ellipse(xR, GROUND - 8, 26, 9, 0, 0, 7); c.fill();                                          // foot
+  // hip socket cup (not part of the FBD)
+  c.setLineDash([4, 4]); c.strokeStyle = '#95a5a6'; c.lineWidth = 3;
+  c.beginPath(); c.arc(xS, yP, r + 8, Math.PI * 1.08, Math.PI * 1.92); c.stroke(); c.setLineDash([]);
+  label(c, 'S', xS + r + 10, yP - 24, '#636e72', 14);
+  // ground under the foot
+  c.strokeStyle = '#95a5a6'; c.lineWidth = 2; c.beginPath(); c.moveTo(xR - 70, GROUND); c.lineTo(xR + 70, GROUND); c.stroke();
+  c.strokeStyle = '#ced6e0'; c.lineWidth = 1.5;
+  for (let x = xR - 64; x < xR + 70; x += 12) { c.beginPath(); c.moveTo(x, GROUND); c.lineTo(x - 8, GROUND + 8); c.stroke(); }
+
+  // dimension lines
+  dimLine(c, xS, xP, dimY[0], '#d63031', `d_S = ${fmtCm(P.dS)}`);
+  dimLine(c, xL, xP, dimY[1], '#2d3436', `d_L = ${fmtCm(P.dL)}`);
+  dimLine(c, xR, xP, dimY[2], '#00b894', `d_R = ${fmtCm(P.dR)}`);
+
+  const N = v => Math.round(v * WN) + ' N';
+  // ----- F_S (acts on the femoral head, down and outward) -----
+  const ux = Math.cos(P.th), uy = Math.sin(P.th), Ls = P.Fs * FS;
+  const tip = { x: xS - r * ux, y: yP - r * uy }, tail = { x: tip.x - Ls * ux, y: tip.y - Ls * uy };
+  const pr = LAM > 0.005 ? "'" : '';
+  if (COMP && P.FsH > 0.005) {
+    arrow(c, xS, yP - r - P.FsV * FS, xS, yP - r, 'rgba(214,48,49,.55)', 2.5, [6, 4]);
+    label(c, `F_S sinθ_S = ${P.FsV.toFixed(2)}W`, xS - 34, yP - r - P.FsV * FS * 0.4, '#d63031', 12, 'right');
+    arrow(c, xS - r - P.FsH * FS, yP, xS - r, yP, 'rgba(214,48,49,.55)', 2.5, [6, 4]);
+    label(c, `F_S cosθ_S = ${P.FsH.toFixed(2)}W`, xS - r - 6, yP + 18, '#d63031', 12, 'right');
+  }
+  arrow(c, tail.x, tail.y, tip.x, tip.y, '#d63031', 5);
+  // θ_S arc (between horizontal and the F_S line, on the up-left side)
+  if (P.th < Math.PI / 2 - 0.004) {
+    c.strokeStyle = '#d63031'; c.lineWidth = 1.8; c.beginPath(); c.arc(xS, yP, 44, -Math.PI, -Math.PI + P.th); c.stroke();
+    label(c, `θ_S = ${(P.th / D2R).toFixed(1)}°`, xS - 50, yP - 18, '#d63031', 13, 'right');
+  } else label(c, 'θ_S = 90° (සිරස්)', xS - 30, yP - 18, '#d63031', 13, 'right');
+  label(c, `F${pr}_S = ${P.Fs.toFixed(2)}W (${N(P.Fs)})`, tail.x + 10, tail.y + 2, '#d63031', 15, 'left');
+
+  // ----- F_M (at P, up and toward midline) -----
+  const ang = P.a; const Lm = P.FM * FS;
+  const mx = xP - Lm * Math.cos(ang), my = yP - Lm * Math.sin(ang);
+  if (COMP && P.FM * P.ca > 0.005) {
+    arrow(c, xP, yP, xP, yP - P.FM * P.sa * FS, 'rgba(232,67,147,.55)', 2.5, [6, 4]);
+    label(c, `F_M sinα = ${(P.FM * P.sa).toFixed(2)}W`, xP + 10, yP - P.FM * P.sa * FS + 6, '#e84393', 12);
+    arrow(c, xP, yP, xP - P.FM * P.ca * FS, yP, 'rgba(232,67,147,.55)', 2.5, [6, 4]);
+  }
+  arrow(c, xP, yP, mx, my, '#e84393', 5);
+  if (P.aDeg < 89.95) {
+    c.strokeStyle = '#e84393'; c.lineWidth = 1.8; c.beginPath(); c.arc(xP, yP, 30, -Math.PI, -Math.PI + ang); c.stroke();
+    label(c, `α = ${P.aDeg.toFixed(0)}°`, xP - 36, yP - 14, '#e84393', 13, 'right');
+  } else label(c, 'α = 90°', xP - 12, yP - 34, '#e84393', 13, 'right');
+  label(c, `F_M = ${P.FM.toFixed(2)}W (${N(P.FM)})`, mx + 8, my - 14, '#e84393', 15, 'left');
+  // P marker
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(xP, yP, 5.5, 0, 7); c.fill();
+  label(c, 'P', xP + 12, yP + 2, '#2d3436', 17);
+
+  // ----- W_L (leg weight) -----
+  arrow(c, xL, yG, xL, yG + P.WL * FS + 4, '#2d3436', 4);
+  c.fillStyle = '#fff'; c.strokeStyle = '#2d3436'; c.lineWidth = 2; c.beginPath(); c.arc(xL, yG, 5, 0, 7); c.fill(); c.stroke();
+  label(c, `W_L = 0.2W (${N(0.2)})`, xL - 14, yG + 4, '#2d3436', 14, 'right');
+
+  // ----- R (ground reaction at the foot) -----
+  arrow(c, xR, GROUND, xR, GROUND - P.R * FS, '#00b894', 5);
+  label(c, `R = W (${N(1)})`, xR - 14, GROUND - P.R * FS + 10, '#00b894', 15, 'right');
+  text(c, 'සිරස් දුර පරිමාණයට නොවේ', 950, SCH - 10, '#95a5a6', 11, 'right', 600);
+}
+function fmtCm(v) { return (Math.abs(v - Math.round(v)) < 0.005 ? v.toFixed(0) : v.toFixed(2)) + ' cm'; }
+
+let CUR = compute(0);
+function lamText() { return LAM < 0.005 ? 'සාමාන්‍ය ඇවිදීම' : LAM > 0.995 ? 'කොර ගැසීම (සම්පූර්ණයෙන් ඇල වී)' : `ඇල වෙමින්… (λ = ${LAM.toFixed(2)})`; }
+function draw() {
+  const c = sc.ctx; c.clearRect(0, 0, SCW, SCH);
+  const P = Object.assign({}, CUR, { lamTxt: lamText() });
+  drawFigure(c, P); drawFBD(c, P);
+}
+
+// ---------- panel ----------
+const $ = id => document.getElementById(id);
+const fw = v => v.toFixed(2) + 'W';
+const fn = v => Math.round(v * WN) + ' N';
+function update() {
+  LAM = +$('lamS').value; WN = +$('wS').value; EXAM = $('examChk').checked; COMP = $('compChk').checked;
+  const P = CUR = compute(LAM), P0 = compute(0);
+  $('lamVal').textContent = LAM.toFixed(2); $('wVal').textContent = WN;
+  $('dS').textContent = P.dS.toFixed(2) + ' cm'; $('dL').textContent = P.dL.toFixed(2) + ' cm'; $('dR').textContent = P.dR.toFixed(2) + ' cm';
+  $('alp').textContent = P.aDeg.toFixed(1) + '°';
+  $('mNormal').className = LAM < 0.005 ? 'solid' : ''; $('mLimp').className = LAM > 0.995 ? 'solid' : '';
+  const prime = LAM > 0.005 ? '′' : '';
+  $('bigFs').innerHTML = `F${prime}<sub>S</sub> ≈ ${fw(P.FsV)} = ${fn(P.FsV)}`;
+  $('bigMode').textContent = lamText();
+  $('rR').textContent = `${fw(1)} (${fn(1)})`;
+  $('rFsV').textContent = `${fw(P.FsV)} (${fn(P.FsV)})`;
+  $('rFM').textContent = `${fw(P.FM)} (${fn(P.FM)})`;
+  $('rFsH').textContent = `${fw(P.FsH)} (${fn(P.FsH)})`;
+  $('rTh').textContent = (P.th / D2R).toFixed(1) + '°' + (P.FsH > 1e-9 ? `  (tan = ${(P.FsV / P.FsH).toFixed(2)})` : '  (සිරස්)');
+  $('rFsExam').textContent = `${fw(P.FsV)} (${fn(P.FsV)})`;
+  $('rFs').textContent = `${fw(P.Fs)} (${fn(P.Fs)})`;
+  // comparison (exam value: F_S ≈ F_S sinθ_S)
+  const ratio = P.FsV / P0.FsV, pct = (1 - ratio) * 100, pctExact = (1 - P.Fs / P0.Fs) * 100;
+  $('cN').textContent = `${fw(P0.FsV)} (${fn(P0.FsV)})`;
+  $('cNow').textContent = `${fw(P.FsV)} (${fn(P.FsV)})`;
+  $('barNow').style.width = (ratio * 100).toFixed(1) + '%';
+  const st = $('status');
+  if (pct < 0.05) st.textContent = 'සාමාන්‍ය ඇවිදීම: උකුල් බලය ≈ 2W – ශරීර බර මෙන් දෙගුණයක්!';
+  else st.textContent = `අඩු වීම = (${P0.FsV.toFixed(2)}W − ${P.FsV.toFixed(2)}W) / ${P0.FsV.toFixed(2)}W × 100 = ${pct.toFixed(1)} %` + (LAM > 0.995 ? ' 🎯' : '');
+  $('pctNote').innerHTML = `විභාගය වගේම මෙහි F<sub>S</sub> ≈ F<sub>S</sub> sinθ<sub>S</sub> ලෙස සලකා ඇත. නියම විශාලත්ව (√) භාවිත කළොත් අඩු වීම ${pctExact.toFixed(1)} % (${P0.Fs.toFixed(2)}W → ${P.Fs.toFixed(2)}W) – ඉතා සුළු වෙනසක්.`;
+  // moments table (W·cm), ccw positive as seen on screen
+  const toNm = m => (m * WN / 100).toFixed(1);
+  const rows = [
+    ['F<sub>M</sub>', 'P හරහා', 0, ''],
+    ['F<sub>S</sub> cosθ<sub>S</sub> (තිරස්)', 'P මට්ටමෙන්', 0, ''],
+    ['F<sub>S</sub> sinθ<sub>S</sub>', fmtCm(P.dS), P.FsV * P.dS, 'ccw'],
+    ['W<sub>L</sub> = 0.2W', fmtCm(P.dL), P.WL * P.dL, 'ccw'],
+    ['R = W', fmtCm(P.dR), P.R * P.dR, 'cw'],
+  ];
+  let ccw = 0, cw = 0;
+  $('mBody').innerHTML = rows.map(([f, d, m, s]) => {
+    if (s === 'ccw') ccw += m; if (s === 'cw') cw += m;
+    const sense = s === 'ccw' ? '<span class="ccw">⟲</span>' : s === 'cw' ? '<span class="cw">⟳</span>' : '–';
+    return `<tr class="${m === 0 ? 'zero' : ''}"><td>${f}</td><td>${d}</td><td class="num">${m.toFixed(2)}W</td><td class="num">${toNm(m)}</td><td>${sense}</td></tr>`;
+  }).join('') +
+    `<tr class="sum"><td colspan="2">Σ⟲ − Σ⟳</td><td class="num">${(ccw - cw).toFixed(2)}W</td><td class="num">${Math.abs(toNm(ccw - cw)) < 0.05 ? '0.0' : toNm(ccw - cw)}</td><td>${Math.abs(ccw - cw) < 1e-9 ? '✅' : '❌'}</td></tr>` +
+    `<tr><td colspan="5" style="text-align:left;font-size:13px;color:#636e72">⟲ එකතුව = ${ccw.toFixed(2)}W·cm &nbsp; | &nbsp; ⟳ එකතුව = ${cw.toFixed(2)}W·cm</td></tr>`;
+  const Fy = P.FM * P.sa + P.R - P.FsV - P.WL, Fx = P.FsH - P.FM * P.ca;
+  $('sFy').textContent = (Math.abs(Fy) < 1e-9 ? 0 : Fy).toFixed(2) + 'W';
+  $('sFx').textContent = (Math.abs(Fx) < 1e-9 ? 0 : Fx).toFixed(2) + 'W';
+  draw();
+}
+
+// mode buttons animate the lean slider
+let animTok = 0;
+function animateTo(target) {
+  const tok = ++animTok, start = +$('lamS').value, t0 = performance.now();
+  function f(now) {
+    if (tok !== animTok) return;
+    const p = Math.min(1, (now - t0) / 800), e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+    $('lamS').value = (start + (target - start) * e).toFixed(3);
+    if (p >= 1) $('lamS').value = target;
+    update();
+    if (p < 1) requestAnimationFrame(f);
+  }
+  requestAnimationFrame(f);
+}
+$('mNormal').addEventListener('click', () => animateTo(0));
+$('mLimp').addEventListener('click', () => animateTo(1));
+$('lamS').addEventListener('input', () => { animTok++; update(); });
+['wS', 'examChk', 'compChk'].forEach(id => $(id).addEventListener('input', update));
+$('examChk').addEventListener('change', update); $('compChk').addEventListener('change', update);
+READY = true;
+update();
+</script>
+</body>
+</html>

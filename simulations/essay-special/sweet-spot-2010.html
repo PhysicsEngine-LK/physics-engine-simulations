@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>දණ්ඩ සහ රැකට්ටුවේ Sweet Spot (2010: 313–315) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 16px; line-height: 1.6; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tab { font-size: 15px; padding: 9px 16px; }
+  .tab.on { background: #6c5ce7; color: #fff; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  .controls .chk { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .controls .chk input { width: 18px; height: 18px; accent-color: #6c5ce7; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  button.tab.on:hover { background: #5b4bd5; }
+  .ctlnote { grid-column: 1 / -1; font-size: 13px; color: #636e72; line-height: 1.5; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: #f7fbff; border: 1px solid #dfe6e9; }
+  .scene2 { background: linear-gradient(#eef6ff, #fbfdff 75%); border: 1px solid #dfe6e9; }
+  .row { display: grid; grid-template-columns: 1fr 1.15fr; gap: 14px; margin-top: 14px; }
+  .panel { border: 1px solid #dfe6e9; border-radius: 10px; padding: 14px; background: #fff; }
+  .panel h3 { margin: 0 0 8px; font-size: 16px; }
+  .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 15px; padding: 5px 0; border-bottom: 1px dashed #dfe6e9; }
+  .kv b { font-family: 'Courier New', monospace; white-space: nowrap; }
+  .status { margin-top: 10px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 10px 14px; border-radius: 6px; font-weight: 700; font-size: 15px; line-height: 1.55; }
+  .status.bad { border-left-color: #e74c3c; background: #fdedec; color: #c0392b; }
+  .status.warn { border-left-color: #e17055; background: #fff3ee; color: #c0532f; }
+  .status.info { border-left-color: #6c5ce7; background: #f1efff; color: #4834d4; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .big { background: #f1efff; border: 2px solid #6c5ce7; border-radius: 10px; padding: 10px 12px; margin-top: 10px; font-weight: 700; text-align: center; font-size: 17px; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .eq { font-family: 'Courier New', monospace; font-weight: 700; background: #fff; border: 1px solid #dfe6e9; border-radius: 6px; padding: 8px 12px; margin: 6px 0; display: block; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .row { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .main > .cvs:first-child { margin-top: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← සියලුම Simulations</a>
+  <div class="qtags"><span class="qtag">313</span><span class="qtag">314</span><span class="qtag">315</span><span class="qtag" style="background:#636e72">2010 A/L</span></div>
+  <h1>දණ්ඩකට බෝලයක් වැදීම සහ ටෙනිස් රැකට්ටුවේ "Sweet Spot" එක</h1>
+  <p class="sub">ඝර්ෂණ රහිත තිරස් තලයක් මත ඇති ඒකාකාර දණ්ඩක් (ස්කන්ධය M, දිග L) වෙත m ස්කන්ධයක් ඇති බෝලයක් v වේගයෙන් ලම්බකව පැමිණ, G සිට x දුරකින් වැදී එම වේගයෙන්ම ආපසු පනී. දණ්ඩේ චලිතය = <b>G හි රේඛීය චලිතය + G වටා භ්‍රමණය</b>. ① කොටසෙන් එය බලන්න, ඉන්පසු ② කොටසේදී එම අදහසින්ම ටෙනිස් රැකට්ටුවක අත්ලට බලයක් නොදැනෙන "sweet spot" (x<sub>s</sub>) එක සොයා ගනිමු.</p>
+
+  <div class="tabs">
+    <button class="tab on" data-tab="p1">① දණ්ඩ – රේඛීය + භ්‍රමණ චලිතය (313–314)</button>
+    <button class="tab" data-tab="p2">② ටෙනිස් රැකට්ටුව – Sweet spot (315)</button>
+  </div>
+
+  <!-- ================= PART 1 ================= -->
+  <section id="p1">
+   <div class="layout">
+    <aside class="side">
+      <div class="controls">
+        <div><label>වදින ලක්ෂ්‍යය x = <span class="v" id="x1Val">0.30</span> L</label><input type="range" id="x1S" min="-0.5" max="0.5" step="0.01" value="0.3"></div>
+        <div><label>ස්කන්ධ අනුපාතය m/M = <span class="v" id="k1Val">0.15</span></label><input type="range" id="k1S" min="0.05" max="0.4" step="0.01" value="0.15"></div>
+        <div><label>බෝලයේ වේගය v = <span class="v" id="v1Val">3.0</span> ms⁻¹</label><input type="range" id="v1S" min="1" max="5" step="0.5" value="3"></div>
+        <div style="grid-column:1/-1"><label class="chk"><input type="checkbox" id="lin1"> රේඛීය චලිතය පමණක් (314)</label></div>
+        <div class="btns">
+          <button class="solid" id="go1">▶ ගැටීම</button>
+          <button id="reset1">↺ නැවත</button>
+          <button id="x0btn">x = 0</button>
+          <button id="x6btn">x = L/6</button>
+          <button id="x2btn">x = L/2</button>
+        </div>
+        <div class="ctlnote">x ධන = G සිට B දෙසට, x සෘණ = A දෙසට. M = 1 kg, L = 1 m ලෙස ගෙන ඇත → I = ML²/12 = 0.083 kg m².</div>
+      </div>
+    </aside>
+    <div class="main">
+      <div class="cvs"><canvas id="scene1" class="scene"></canvas></div>
+      <div class="row">
+        <div class="panel">
+          <h3>ගැටුමට මොහොතකට පසු දණ්ඩේ ලක්ෂ්‍යවල ප්‍රවේග</h3>
+          <canvas id="vel1"></canvas>
+          <div class="note">v = V − ωy &nbsp;(y = G සිට වැදුණු පැත්තට විරුද්ධ පැත්තට දුර). රේඛීය ව්‍යාප්තියකි – y = I/(Mx) හිදී v = 0.</div>
+        </div>
+        <div class="panel">
+          <h3>313 – 314: ගම්‍යතාව, ආවේගය සහ චලිතය</h3>
+          <div class="kv"><span>313 – ගැටීමට පෙර බෝලයේ ගම්‍යතාව p = mv</span><b id="r1p">–</b></div>
+          <div class="kv"><span>ගැටීමෙන් පසු බෝලයේ ගම්‍යතාව = −mv</span><b id="r1p2">–</b></div>
+          <div class="kv"><span>දණ්ඩට ලැබෙන ආවේගය J = 2mv</span><b id="r1J">–</b></div>
+          <div class="kv"><span>314 – G හි ප්‍රවේගය V = 2mv/M</span><b id="r1V">–</b></div>
+          <div class="kv"><span>කෝණික ප්‍රවේගය ω = Jx/I</span><b id="r1w">–</b></div>
+          <div class="kv"><span>v = 0 ලක්ෂ්‍යය: G සිට I/(Mx)</span><b id="r1s0">–</b></div>
+          <div class="status" id="status1">–</div>
+          <div class="big">mv = m(−v) + MV &nbsp;→&nbsp; V = 2mv/M</div>
+          <div class="note">දම් පාට තිත් ඉර = v = 0 ලක්ෂ්‍යයේ (P) පථය. ආරම්භයේදී එය මොහොතකට නතර වී ඇති නිසා පථයේ තියුණු හැරීමක් පෙනේ.<br>සටහන: "එම වේගයෙන්ම ආපසු පැනීම" ප්‍රශ්නයේ සරල කිරීමකි – m ≪ M විට එය හොඳ ආසන්නයකි.</div>
+        </div>
+      </div>
+    </div>
+   </div>
+  </section>
+
+  <!-- ================= PART 2 ================= -->
+  <section id="p2" hidden>
+   <div class="layout">
+    <aside class="side">
+      <div class="controls">
+        <div><label>පන්දුව වදින ලක්ෂ්‍යය x = <span class="v" id="x2Val">0.270</span> m</label><input type="range" id="x2S" min="0.07" max="0.36" step="0.001" value="0.27"></div>
+        <div><label>G සිට අත්ලට දුර d = <span class="v" id="d2Val">0.25</span> m</label><input type="range" id="d2S" min="0.16" max="0.26" step="0.01" value="0.25"></div>
+        <div class="btns">
+          <button class="solid" id="go2">▶ ගැටීම</button>
+          <button id="reset2">↺ නැවත</button>
+        </div>
+        <div class="btns">
+          <button id="qi">(i) x &gt; x<sub>s</sub></button>
+          <button id="qii">(ii) x &lt; x<sub>s</sub></button>
+          <button id="qs">x = x<sub>s</sub> ✓</button>
+        </div>
+        <div class="ctlnote">රැකට්ටුව: M<sub>r</sub> = 0.35 kg, දිග 0.68 m, I<sub>r</sub> = 0.0135 kg m² (G හරහා). පන්දුව: m = 57 g, v = 20 ms⁻¹ (එම වේගයෙන්ම ආපසු).</div>
+      </div>
+    </aside>
+    <div class="main">
+      <div class="cvs"><canvas id="scene2" class="scene2"></canvas></div>
+      <div class="row">
+        <div class="panel">
+          <h3>අතේ ලක්ෂ්‍යයේ ප්‍රවේගය u – x ප්‍රස්තාරය</h3>
+          <canvas id="graph2"></canvas>
+          <div class="note">සරල රේඛාවකි. එය x අක්ෂය කපන ලක්ෂ්‍යය = x<sub>s</sub>. d වෙනස් කළ විට x<sub>s</sub> ද වෙනස් වන බව බලන්න.</div>
+        </div>
+        <div class="panel">
+          <h3>315 – අත්ලට බලය කුමන දිශාවටද?</h3>
+          <div class="kv"><span>Sweet spot x<sub>s</sub> = I/(Md)</span><b id="r2xs">–</b></div>
+          <div class="kv"><span>ආවේගය J = 2mv</span><b id="r2J">–</b></div>
+          <div class="kv"><span>G හි ප්‍රවේගය V = J/M</span><b id="r2V">–</b></div>
+          <div class="kv"><span>කෝණික ප්‍රවේගය ω = Jx/I</span><b id="r2w">–</b></div>
+          <div class="kv"><span>අතේ ලක්ෂ්‍යය u = J(1/M − xd/I)</span><b id="r2u">–</b></div>
+          <div class="status" id="status2">–</div>
+          <div class="big">u = V − ωd = 0 &nbsp;→&nbsp; x<sub>s</sub> = I/(Md)</div>
+          <div class="note">අත නැතිනම් මිට යාමට තැත් කරන දිශාවටම අත්ල මත බලය ඇති වේ (අත එය නවත්වන නිසා). Sweet spot එකේදී මිට මොහොතකට නිශ්චලයි – අතට "කම්පනය" (sting) අවමයි.</div>
+        </div>
+      </div>
+    </div>
+   </div>
+  </section>
+
+  <h2>විසඳුම්</h2>
+  <details>
+    <summary><span class="qtag">313</span>ගැටීමට පෙර බෝලයේ ගම්‍යතාව</summary>
+    <div class="ans">
+      ගම්‍යතාව = ස්කන්ධය × ප්‍රවේගය. බෝලය දණ්ඩට ලම්බකව, දණ්ඩ දෙසට v වේගයෙන් පැමිණේ (භ්‍රමණයක් නැත):
+      <span class="eq">p = mv   (දණ්ඩ දෙසට, දණ්ඩට ලම්බකව)</span>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">314</span>රේඛීය චලිතය පමණක් සලකා V සෙවීම</summary>
+    <div class="ans">
+      තලය ඝර්ෂණ රහිත නිසා (බෝලය + දණ්ඩ) පද්ධතිය මත තිරස් බාහිර බලයක් නැත → <b>රේඛීය ගම්‍යතාව සංස්ථිතියි</b>. බෝලය පැමිණි දිශාව (v) ධන ලෙස ගනිමු. බෝලය එම වේගයෙන්ම ආපසු යන නිසා එහි පසු ප්‍රවේගය −v:
+      <span class="eq">mv = m(−v) + MV</span>
+      <span class="eq">MV = 2mv   →   V = 2mv/M</span>
+      දණ්ඩට ලැබෙන ආවේගය (= දණ්ඩේ ගම්‍යතා වෙනස):
+      <span class="eq">J = MV = 2mv</span>
+      (බෝලයේ ගම්‍යතා වෙනස = −mv − mv = −2mv – සමාන හා ප්‍රතිවිරුද්ධයි.) V, x මත රඳා නොපවතී – x බලපාන්නේ භ්‍රමණයට පමණි. සිම් එකේ "රේඛීය චලිතය පමණක්" ටික් කර බලන්න.
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">315</span>(e) Sweet spot – අත්ලට බලය (i) x &gt; x<sub>s</sub>, (ii) x &lt; x<sub>s</sub></summary>
+    <div class="ans">
+      <b>භ්‍රමණය:</b> G වටා ආවේගයේ ඝූර්ණය = කෝණික ගම්‍යතා වෙනස:
+      <span class="eq">Jx = Iω   →   ω = Jx/I</span>
+      <b>අතේ ලක්ෂ්‍යය:</b> G ට විරුද්ධ පැත්තේ G සිට d දුරින් ඇති ලක්ෂ්‍යය (මිට අල්ලා ඇති අත) රේඛීය චලිතය නිසා V වේගයෙන් ඉදිරියටත්, භ්‍රමණය නිසා ωd වේගයෙන් ආපස්සටත් යාමට තැත් කරයි:
+      <span class="eq">u = V − ωd = J/M − Jxd/I = J(1/M − xd/I)</span>
+      u = 0 නම් මිට චලනය වීමට තැත් නොකරයි → අත්ල මත බලයක් ඇති නොවේ:
+      <span class="eq">1/M = xd/I   →   x = I/(Md) = x<sub>s</sub></span>
+      <b>(i) x &gt; x<sub>s</sub>:</b> xd/I &gt; 1/M නිසා u &lt; 0. මිට, පන්දුව පැමිණි දෙසට (v ට විරුද්ධව) යාමට තැත් කරයි. අත එය නවත්වන නිසා අත්ල මත බලය <b>v ට විරුද්ධ දිශාවට (←)</b>.
+      <span class="eq">x &gt; x<sub>s</sub>  →  u &lt; 0  →  අත්ලට බලය ← (v ට විරුද්ධව)</span>
+      <b>(ii) x &lt; x<sub>s</sub>:</b> xd/I &lt; 1/M නිසා u &gt; 0. මිට v දිශාවටම යාමට තැත් කරයි → අත්ල මත බලය <b>v දිශාවට (→)</b>.
+      <span class="eq">x &lt; x<sub>s</sub>  →  u &gt; 0  →  අත්ලට බලය → (v දිශාවට)</span>
+      <b>උදාහරණය (සිම් එකේ අගයන්):</b> M = 0.35 kg, I = 0.0135 kg m², d = 0.25 m:
+      <span class="eq">x<sub>s</sub> = 0.0135 / (0.35 × 0.25) ≈ 0.154 m</span>
+      ඒකාකාර දණ්ඩක් අගින් (d = L/2) අල්ලා ඇත්නම්: x<sub>s</sub> = (ML²/12)/(M·L/2) = <b>L/6</b>. ① කොටසේ "x = L/6" ඔබා බලන්න – v = 0 ලක්ෂ්‍යය හරියටම A කෙළවරට වැටේ!
+    </div>
+  </details>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+var ready = false;
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    if (!w) return;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+    if (ready) redraw(); // resizing clears the canvas – draw again at once
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function head(ctx, x, y, ang, h, col) {
+  ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x, y);
+  ctx.lineTo(x - h * Math.cos(ang - 0.42), y - h * Math.sin(ang - 0.42));
+  ctx.lineTo(x - h * Math.cos(ang + 0.42), y - h * Math.sin(ang + 0.42)); ctx.closePath(); ctx.fill();
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(10 + lw * 1.6, L * 0.6);
+  ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  head(ctx, x2, y2, a, h, col);
+}
+// Draws text; "x_abc" is drawn with "abc" as a real subscript.
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/); // even = normal text, odd = subscript
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
+}
+function dimV(c, x, y1, y2, label, col) {
+  c.strokeStyle = col; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(x - 6, y1); c.lineTo(x + 6, y1); c.moveTo(x - 6, y2); c.lineTo(x + 6, y2); c.stroke();
+  if (Math.abs(y2 - y1) > 16) { arrow(c, x, (y1 + y2) / 2, x, y1, col, 1.5); arrow(c, x, (y1 + y2) / 2, x, y2, col, 1.5); }
+  text(c, label, x + 9, (y1 + y2) / 2, col, 15);
+}
+function curved(c, x, y, r, cw, col) {
+  const a0 = -Math.PI / 2 - 0.95, a1 = -Math.PI / 2 + 0.95;
+  c.strokeStyle = col; c.lineWidth = 3; c.beginPath(); c.arc(x, y, r, a0, a1); c.stroke();
+  const ae = cw ? a1 : a0, ex = x + r * Math.cos(ae), ey = y + r * Math.sin(ae);
+  head(c, ex + 4 * Math.cos(cw ? ae + Math.PI / 2 : ae - Math.PI / 2), ey + 4 * Math.sin(cw ? ae + Math.PI / 2 : ae - Math.PI / 2), cw ? ae + Math.PI / 2 : ae - Math.PI / 2, 13, col);
+}
+function rr(c, x, y, w, h, r) {
+  c.beginPath(); c.moveTo(x + r, y); c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r);
+  c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h); c.lineTo(x + r, y + h);
+  c.quadraticCurveTo(x, y + h, x, y + h - r); c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y); c.closePath();
+}
+const f2 = (v, n = 2) => (Math.abs(v) < 0.5 * Math.pow(10, -n) ? 0 : v).toFixed(n).replace('-', '−');
+
+// ======================= PART 1: rod on frictionless surface =======================
+const L1 = 1, M1 = 1, I1 = M1 * L1 * L1 / 12, RW = 0.045, BR = 0.05, S1 = 250, G1X = 290, G1Y = 228, SLOW = 0.5;
+const sc1 = stage($('scene1'), 900, 456), vc1 = stage($('vel1'), 420, 380);
+let X1 = 0.3, K1 = 0.15, V1 = 3, LIN = false, s1;
+
+function d1() {
+  const m = K1 * M1, J = 2 * m * V1, V = J / M1, wTrue = J * X1 / I1, w = LIN ? 0 : wTrue;
+  const hasP = !LIN && Math.abs(X1) > 1e-6;
+  const s0 = hasP ? -I1 / (M1 * X1) : null; // signed position along rod (+ toward B)
+  return { m, J, V, w, wTrue, s0, onRod: hasP && Math.abs(s0) <= L1 / 2 + 1e-9 };
+}
+function reset1() {
+  s1 = { run: false, done: false, t: 0, ta: 0, hit: false, bx: -1.0, X: 0, th: 0, trail: [], ptrail: [], nextT: 0 };
+  $('go1').textContent = '▶ ගැටීම';
+}
+function step1(dt) { // dt in simulated seconds
+  if (!s1.run) return;
+  const d = d1(), cX = -RW / 2 - BR;
+  s1.t += dt;
+  if (!s1.hit) {
+    s1.bx += V1 * dt;
+    if (s1.bx >= cX) {
+      const over = (s1.bx - cX) / V1;
+      s1.hit = true; s1.bx = cX - V1 * over; s1.X = d.V * over; s1.th = d.w * over; s1.ta = over; s1.nextT = 0;
+    }
+  } else {
+    s1.bx -= V1 * dt; s1.X += d.V * dt; s1.th += d.w * dt; s1.ta += dt;
+  }
+  if (s1.hit) {
+    if (s1.ta >= s1.nextT) { s1.trail.push({ X: s1.X, th: s1.th }); s1.nextT += 0.15; }
+    if (d.onRod) s1.ptrail.push([s1.X + d.s0 * Math.sin(s1.th), d.s0 * Math.cos(s1.th)]);
+    if (G1X + s1.X * S1 > 900 + L1 * S1 / 2 + 20 || s1.ta > 9) { s1.run = false; s1.done = true; $('go1').textContent = '▶ ගැටීම'; }
+  }
+}
+function rodPath(c, X, th) {
+  c.save(); c.translate(G1X + X * S1, G1Y); c.rotate(th);
+  c.beginPath(); c.rect(-RW * S1 / 2, -L1 * S1 / 2, RW * S1, L1 * S1); c.restore();
+}
+function drawScene1() {
+  const c = sc1.ctx, W = 900, H = 456, d = d1();
+  c.clearRect(0, 0, W, H);
+  c.strokeStyle = 'rgba(108,92,231,.07)'; c.lineWidth = 1; c.beginPath();
+  for (let x = 0; x <= W; x += 30) { c.moveTo(x, 0); c.lineTo(x, H); }
+  for (let y = 0; y <= H; y += 30) { c.moveTo(0, y); c.lineTo(W, y); }
+  c.stroke();
+  text(c, 'ඉහළ සිට දසුන – ඝර්ෂණ රහිත තිරස් තලය', 14, 18, '#636e72', 14);
+  text(c, `t = ${s1.t.toFixed(2)} s  (මන්දගාමී ×${SLOW})`, W - 14, 18, '#636e72', 14, 'right');
+
+  if (s1.hit) { rodPath(c, 0, 0); c.setLineDash([5, 5]); c.strokeStyle = '#b2bec3'; c.lineWidth = 1.5; c.stroke(); c.setLineDash([]); }
+  s1.trail.forEach(g => { rodPath(c, g.X, g.th); c.fillStyle = 'rgba(108,92,231,.08)'; c.fill(); c.strokeStyle = 'rgba(108,92,231,.2)'; c.lineWidth = 1; c.stroke(); });
+  if (s1.ptrail.length > 1) {
+    c.strokeStyle = '#8e44ad'; c.setLineDash([2, 4]); c.lineWidth = 2; c.beginPath();
+    s1.ptrail.forEach(([x, y], i) => { const sx = G1X + x * S1, sy = G1Y - y * S1; i ? c.lineTo(sx, sy) : c.moveTo(sx, sy); });
+    c.stroke(); c.setLineDash([]);
+  }
+  // rod
+  rodPath(c, s1.X, s1.th); c.fillStyle = '#a29bfe'; c.fill(); c.strokeStyle = '#6c5ce7'; c.lineWidth = 2; c.stroke();
+  const pt = s => [G1X + (s1.X + s * Math.sin(s1.th)) * S1, G1Y - s * Math.cos(s1.th) * S1];
+  const [gx, gy] = pt(0), [bxL, byL] = pt(L1 / 2 + 0.06), [axL, ayL] = pt(-L1 / 2 - 0.06);
+  c.fillStyle = '#fff'; c.strokeStyle = '#2d3436'; c.lineWidth = 2; c.beginPath(); c.arc(gx, gy, 5, 0, 7); c.fill(); c.stroke();
+  text(c, 'B', bxL, byL, '#2d3436', 17, 'center', 800);
+  text(c, 'A', axL, ayL, '#2d3436', 17, 'center', 800);
+  if (!s1.hit) text(c, 'G', gx - 14, gy, '#2d3436', 16, 'right', 800);
+  if (d.onRod) {
+    const [px, py] = pt(d.s0);
+    c.fillStyle = '#8e44ad'; c.beginPath(); c.arc(px, py, 6, 0, 7); c.fill();
+    if (!s1.hit) text(c, 'P (v = 0)', px - 14, py, '#8e44ad', 14, 'right');
+  }
+  // dimension x (before the hit)
+  const yx = G1Y - X1 * S1;
+  if (!s1.hit) {
+    c.setLineDash([4, 4]); c.strokeStyle = '#95a5a6'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(G1X, G1Y); c.lineTo(G1X + 70, G1Y); c.moveTo(G1X, yx); c.lineTo(G1X + 70, yx); c.stroke(); c.setLineDash([]);
+    if (Math.abs(X1) > 0.005) dimV(c, G1X + 60, G1Y, yx, `x = ${f2(X1)} m`, '#d63031');
+    else text(c, 'x = 0 (G හරහා)', G1X + 20, G1Y - 16, '#d63031', 14);
+  }
+  // ball
+  const bxs = G1X + s1.bx * S1, br = BR * S1;
+  if (bxs > -30) {
+    c.fillStyle = '#fdcb6e'; c.strokeStyle = '#e17055'; c.lineWidth = 2;
+    c.beginPath(); c.arc(bxs, yx, br, 0, 7); c.fill(); c.stroke();
+    text(c, 'm', bxs, yx, '#2d3436', 12, 'center', 800);
+    const al = 22 + V1 * 13;
+    if (!s1.hit) { arrow(c, bxs - br - al - 4, yx, bxs - br - 4, yx, '#e17055', 4); text(c, `v = ${V1.toFixed(1)} ms⁻¹`, bxs - br - al / 2 - 4, yx - 18, '#e17055', 14, 'center'); }
+    else { arrow(c, bxs - br - 4, yx, bxs - br - al - 4, yx, '#e17055', 4); text(c, 'v (ආපසු)', bxs - br - al / 2 - 4, yx - 18, '#e17055', 14, 'center'); }
+  }
+  if (s1.hit) {
+    const L = 25 + d.V * 35;
+    arrow(c, gx, gy, gx + L, gy, '#0984e3', 4);
+    text(c, `V = ${d.V.toFixed(2)} ms⁻¹`, gx + L + 6, gy, '#0984e3', 15);
+    if (Math.abs(d.w) > 1e-6) { curved(c, gx, gy, 34, d.w > 0, '#00b894'); text(c, 'ω', gx, gy - 50, '#00b894', 17, 'center', 800); }
+  }
+  if (!s1.run && !s1.hit) text(c, '▶ "ගැටීම" ඔබන්න', W - 14, H - 18, '#6c5ce7', 15, 'right');
+  if (s1.done) text(c, 'දණ්ඩ: G ඉදිරියට + G වටා භ්‍රමණය. (ළා දම් = පෙර පිහිටීම්)', W - 14, H - 18, '#6c5ce7', 14, 'right');
+}
+function drawVel1() {
+  const c = vc1.ctx, d = d1(), ax = 170, yOf = s => 190 - s * 300;
+  c.clearRect(0, 0, 420, 380);
+  c.fillStyle = '#a29bfe'; c.strokeStyle = '#6c5ce7'; c.lineWidth = 2;
+  c.fillRect(ax - 6, 40, 12, 300); c.strokeRect(ax - 6, 40, 12, 300);
+  text(c, 'B', ax, 24, '#2d3436', 16, 'center', 800); text(c, 'A', ax, 358, '#2d3436', 16, 'center', 800);
+  c.fillStyle = '#fff'; c.strokeStyle = '#2d3436'; c.beginPath(); c.arc(ax, 190, 4.5, 0, 7); c.fill(); c.stroke();
+  const ss = []; for (let i = 0; i <= 8; i++) ss.push(-0.5 + i * 0.125);
+  const vals = ss.map(s => d.V + d.w * s);
+  const maxP = Math.max(1e-3, ...vals), maxN = Math.max(1e-3, ...vals.map(v => -v));
+  const sc = Math.min(165 / maxP, 125 / maxN);
+  // tip line
+  c.setLineDash([5, 4]); c.strokeStyle = '#74b9ff'; c.lineWidth = 1.5; c.beginPath();
+  c.moveTo(ax + vals[0] * sc, yOf(-0.5)); c.lineTo(ax + vals[8] * sc, yOf(0.5)); c.stroke(); c.setLineDash([]);
+  ss.forEach((s, i) => { const L = vals[i] * sc; if (Math.abs(L) > 3) arrow(c, ax, yOf(s), ax + L, yOf(s), s === 0 ? '#0984e3' : '#0984e3cc', s === 0 ? 4 : 2.5); });
+  text(c, `v_B = ${f2(vals[8])}`, ax + vals[8] * sc, yOf(0.5) - 14, '#0984e3', 13, vals[8] >= 0 ? 'right' : 'left');
+  text(c, `v_A = ${f2(vals[0])}`, ax + vals[0] * sc, yOf(-0.5) + 14, '#0984e3', 13, vals[0] >= 0 ? 'right' : 'left');
+  text(c, `V = ${f2(d.V)}`, ax + d.V * sc + 8, 190 + 1, '#0984e3', 13);
+  // impulse J at x
+  const yj = yOf(X1);
+  arrow(c, ax - 64, yj, ax - 9, yj, '#d63031', 4); text(c, 'J', ax - 70, yj, '#d63031', 16, 'right', 800);
+  if (d.onRod) {
+    const y = yOf(d.s0);
+    c.fillStyle = '#8e44ad'; c.beginPath(); c.arc(ax, y, 7, 0, 7); c.fill();
+    text(c, 'P: v = 0', ax + 14, y - 9, '#8e44ad', 14);
+    text(c, `G සිට ${f2(Math.abs(d.s0))} m`, ax + 14, y + 9, '#8e44ad', 12);
+  } else if (LIN) text(c, 'රේඛීය පමණයි – සියල්ල V', 410, 372, '#636e72', 13, 'right');
+  else if (Math.abs(X1) < 1e-6) text(c, 'x = 0 → ω = 0, සියල්ල V', 410, 372, '#636e72', 13, 'right');
+  else text(c, `v = 0 ලක්ෂ්‍යය දණ්ඩෙන් පිටත (${f2(Math.abs(d.s0))} m)`, 410, 372, '#8e44ad', 13, 'right');
+}
+function update1() {
+  const d = d1();
+  $('r1p').textContent = (d.m * V1).toFixed(3) + ' kg ms⁻¹';
+  $('r1p2').textContent = f2(-d.m * V1, 3) + ' kg ms⁻¹';
+  $('r1J').textContent = d.J.toFixed(3) + ' N s';
+  $('r1V').textContent = d.V.toFixed(2) + ' ms⁻¹';
+  $('r1w').textContent = LIN ? '(නොසලකයි)' : f2(d.wTrue) + ' rad s⁻¹';
+  const st = $('status1');
+  if (LIN) { $('r1s0').textContent = '–'; st.className = 'status info'; st.textContent = `රේඛීය චලිතය පමණක්: දණ්ඩේ සෑම ලක්ෂ්‍යයක්ම V = 2mv/M = ${d.V.toFixed(2)} ms⁻¹ වේගයෙන් එකම දිශාවට යයි (314). x ට බලපෑමක් නැත.`; return; }
+  if (Math.abs(X1) < 1e-6) { $('r1s0').textContent = '∞'; st.className = 'status'; st.textContent = 'x = 0: ආවේගය G හරහා ක්‍රියා කරන නිසා භ්‍රමණයක් නැත (ω = 0). දණ්ඩ කෙලින්ම ඉදිරියට යයි.'; return; }
+  $('r1s0').textContent = f2(Math.abs(d.s0)) + ' m';
+  const side = X1 > 0 ? 'A' : 'B';
+  if (d.onRod) { st.className = 'status'; st.textContent = `v = 0 ලක්ෂ්‍යය P දණ්ඩ මතයි – G ට විරුද්ධ පැත්තේ (${side} දෙසට) G සිට ${f2(Math.abs(d.s0))} m. ගැටුමෙන් පසු ක්ෂණයේ දණ්ඩ P වටා කරකැවෙයි.`; }
+  else { st.className = 'status warn'; st.textContent = `v = 0 ලක්ෂ්‍යය දණ්ඩෙන් පිටතයි (G සිට ${f2(Math.abs(d.s0))} m > L/2) – |x| < L/6 නිසා. දණ්ඩේ සියලුම ලක්ෂ්‍ය ඉදිරියටම යයි.`; }
+}
+function read1() {
+  X1 = +$('x1S').value; K1 = +$('k1S').value; V1 = +$('v1S').value; LIN = $('lin1').checked;
+  $('x1Val').textContent = f2(X1); $('k1Val').textContent = K1.toFixed(2); $('v1Val').textContent = V1.toFixed(1);
+  reset1(); update1(); if (ready) redraw();
+}
+['x1S', 'k1S', 'v1S', 'lin1'].forEach(id => $(id).addEventListener('input', read1));
+$('lin1').addEventListener('change', read1);
+$('go1').addEventListener('click', () => {
+  if (s1.run) { s1.run = false; $('go1').textContent = '▶ ඉදිරියට'; return; }
+  if (s1.done) reset1();
+  s1.run = true; $('go1').textContent = '⏸ නවත්වන්න';
+});
+$('reset1').addEventListener('click', reset1);
+const setX1 = v => { $('x1S').value = v; read1(); if (v === 1 / 6) { X1 = 1 / 6; $('x1Val').textContent = '0.17 (L/6)'; update1(); } };
+$('x0btn').addEventListener('click', () => setX1(0));
+$('x6btn').addEventListener('click', () => setX1(1 / 6));
+$('x2btn').addEventListener('click', () => setX1(0.5));
+
+// ======================= PART 2: tennis racket sweet spot =======================
+const MR = 0.35, IR = 0.0135, MB = 0.057, VB = 20, JB = 2 * MB * VB;
+const S2 = 600, A2X = 300, G2Y = 268, BUTT = 0.30, HC = 0.22, HA = 0.16, HB = 0.125, TG_END = 0.012, BALL_PX = 650;
+const sc2 = stage($('scene2'), 900, 500), gc2 = stage($('graph2'), 420, 300);
+let X2 = 0.27, D2 = 0.25, s2;
+
+function d2() {
+  const xs = IR / (MR * D2), V = JB / MR, w = JB * X2 / IR, u = JB * (1 / MR - X2 * D2 / IR);
+  const st = Math.abs(X2 - xs) < 0.0025 ? 'eq' : X2 > xs ? 'gt' : 'lt';
+  return { xs, V, w, u, st };
+}
+function reset2() { s2 = { phase: 'idle', bx: -0.47, tg: 0, ghosts: [], nextG: TG_END / 4 }; $('go2').textContent = '▶ ගැටීම'; }
+function step2(dt) { // dt in real seconds
+  if (s2.phase === 'in') {
+    s2.bx += BALL_PX / S2 * dt;
+    if (s2.bx >= -0.012) { s2.bx = -0.012; s2.phase = 'out'; }
+  } else if (s2.phase === 'out') {
+    s2.bx -= BALL_PX / S2 * dt;
+    if (s2.tg < TG_END) {
+      s2.tg = Math.min(TG_END, s2.tg + dt * TG_END / 1.6);
+      while (s2.tg >= s2.nextG - 1e-12 && s2.nextG <= TG_END + 1e-12) { s2.ghosts.push(s2.nextG); s2.nextG += TG_END / 4; }
+    } else if (s2.bx < -0.6) { s2.phase = 'done'; $('go2').textContent = '▶ ගැටීම'; }
+  }
+}
+function drawRacket(c, gx, gy, th, alpha, full) {
+  const P = s => -s * S2, rx = HB * S2, ry = HA * S2, hy = P(HC);
+  const xe = HB * S2 * Math.sqrt(1 - Math.pow((0.09 - HC) / HA, 2));
+  c.save(); c.translate(gx, gy); c.rotate(th); c.globalAlpha = alpha;
+  // handle + grip
+  c.fillStyle = '#2d3436'; c.fillRect(-10, P(-0.06), 20, (BUTT - 0.06) * S2);
+  c.fillRect(-13, P(-BUTT) - 8, 26, 10);
+  if (full) { c.strokeStyle = '#636e72'; c.lineWidth = 2; c.beginPath(); for (let y = P(-0.06) + 6; y < P(-BUTT) - 8; y += 12) { c.moveTo(-10, y + 6); c.lineTo(10, y); } c.stroke(); }
+  // throat
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 6; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-9, P(-0.06)); c.lineTo(-xe, P(0.09)); c.moveTo(9, P(-0.06)); c.lineTo(xe, P(0.09)); c.stroke();
+  // strings
+  c.save(); c.beginPath(); c.ellipse(0, hy, rx, ry, 0, 0, Math.PI * 2); c.clip();
+  c.fillStyle = 'rgba(223,230,233,.35)'; c.fill();
+  c.strokeStyle = '#b2bec3'; c.lineWidth = 1; c.beginPath();
+  for (let x = -rx; x <= rx; x += 11) { c.moveTo(x, hy - ry); c.lineTo(x, hy + ry); }
+  for (let y = hy - ry; y <= hy + ry; y += 11) { c.moveTo(-rx, y); c.lineTo(rx, y); }
+  c.stroke(); c.restore();
+  c.beginPath(); c.ellipse(0, hy, rx, ry, 0, 0, Math.PI * 2); c.lineWidth = 8; c.strokeStyle = '#6c5ce7'; c.stroke();
+  c.lineWidth = 5; c.beginPath(); c.moveTo(-xe, P(0.09)); c.quadraticCurveTo(0, P(0.075), xe, P(0.09)); c.stroke();
+  if (full) {
+    c.fillStyle = '#fff'; c.strokeStyle = '#2d3436'; c.lineWidth = 2; c.beginPath(); c.arc(0, 0, 6, 0, 7); c.fill(); c.stroke();
+    c.beginPath(); c.moveTo(-6, 0); c.lineTo(6, 0); c.moveTo(0, -6); c.lineTo(0, 6); c.stroke();
+  }
+  c.restore();
+}
+function drawHand(c, x, y) {
+  c.fillStyle = '#f6c8a0'; c.strokeStyle = '#c98b5e'; c.lineWidth = 2;
+  rr(c, x - 24, y - 21, 46, 42, 10); c.fill(); c.stroke();
+  c.beginPath(); for (let i = 1; i <= 3; i++) { c.moveTo(x - 24, y - 21 + i * 10.5); c.lineTo(x + 6, y - 21 + i * 10.5); } c.stroke();
+  c.beginPath(); c.ellipse(x + 15, y - 13, 10, 6, -0.5, 0, 7); c.fill(); c.stroke();
+}
+function drawScene2() {
+  const c = sc2.ctx, W = 900, H = 500, d = d2();
+  c.clearRect(0, 0, W, H);
+  text(c, 'පැත්තෙන් දසුන – රැකට්ටුව අල්ලාගෙන (Figure 2)', 14, 18, '#636e72', 14);
+  const yx = G2Y - X2 * S2, ys = G2Y - d.xs * S2, yh = G2Y + D2 * S2;
+  // ghosts (free motion tendency, if the hand were not there)
+  if (s2.phase !== 'idle' && s2.tg > 0) {
+    [...s2.ghosts, s2.tg].forEach(t => drawRacket(c, A2X + d.V * t * S2, G2Y, d.w * t, 0.14, false));
+    text(c, 'ළා රැකට්ටු = අත නොතිබුණා නම්', 14, 42, '#6c5ce7', 13);
+    text(c, 'යන ආකාරය (ඉතා මන්දගාමීව)', 14, 60, '#6c5ce7', 13);
+  }
+  drawRacket(c, A2X, G2Y, 0, 1, true);
+  text(c, 'G', A2X - 16, G2Y, '#2d3436', 16, 'right', 800);
+  drawHand(c, A2X, yh);
+  // reference lines + dimensions
+  c.setLineDash([4, 4]); c.strokeStyle = '#95a5a6'; c.lineWidth = 1; c.beginPath();
+  c.moveTo(A2X + 8, G2Y); c.lineTo(A2X + 165, G2Y); c.moveTo(A2X + 26, yh); c.lineTo(A2X + 118, yh);
+  c.moveTo(A2X + 20, yx); c.lineTo(A2X + 165, yx); c.moveTo(A2X + 20, ys); c.lineTo(A2X + 130, ys); c.stroke(); c.setLineDash([]);
+  dimV(c, A2X + 110, G2Y, ys, 'x_s', '#00b894');
+  dimV(c, A2X + 150, G2Y, yx, 'x', '#d63031');
+  dimV(c, A2X + 110, G2Y, yh, 'd', '#2d3436');
+  // sweet spot ring
+  c.setLineDash([4, 3]); c.strokeStyle = '#00b894'; c.lineWidth = 3; c.beginPath(); c.arc(A2X, ys, 13, 0, 7); c.stroke(); c.setLineDash([]);
+  // hit point mark
+  c.strokeStyle = '#d63031'; c.lineWidth = 3; c.beginPath(); c.moveTo(A2X - 6, yx - 6); c.lineTo(A2X + 6, yx + 6); c.moveTo(A2X + 6, yx - 6); c.lineTo(A2X - 6, yx + 6); c.stroke();
+  // ball path + ball
+  c.setLineDash([3, 6]); c.strokeStyle = '#c0d860'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, yx); c.lineTo(A2X - 20, yx); c.stroke(); c.setLineDash([]);
+  const bxs = A2X + s2.bx * S2;
+  if (bxs > -25) {
+    c.fillStyle = '#d4ec4a'; c.strokeStyle = '#9bb026'; c.lineWidth = 2; c.beginPath(); c.arc(bxs, yx, 18, 0, 7); c.fill(); c.stroke();
+    c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); c.arc(bxs - 18, yx, 13, -0.9, 0.9); c.stroke(); c.beginPath(); c.arc(bxs + 18, yx, 13, Math.PI - 0.9, Math.PI + 0.9); c.stroke();
+    if (s2.phase === 'idle' || s2.phase === 'in') { arrow(c, bxs - 95, yx, bxs - 24, yx, '#9bb026', 4); text(c, 'v', bxs - 60, yx - 16, '#7f9418', 17, 'center', 800); }
+    else { arrow(c, bxs - 24, yx, bxs - 95, yx, '#9bb026', 4); text(c, 'v (ආපසු)', bxs - 60, yx - 16, '#7f9418', 14, 'center'); }
+  }
+  if (s2.phase === 'out' && s2.bx > -0.2) { c.strokeStyle = '#d63031'; c.lineWidth = 2; for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; c.beginPath(); c.moveTo(A2X + 10 * Math.cos(a), yx + 10 * Math.sin(a)); c.lineTo(A2X + 20 * Math.cos(a), yx + 20 * Math.sin(a)); c.stroke(); } }
+  // force on the palm
+  const ya = yh + 36;
+  if (d.st === 'gt') {
+    arrow(c, A2X - 20, ya, A2X - 175, ya, '#d63031', 9);
+    text(c, 'අත්ලට බලය ←', A2X - 30, ya + 26, '#d63031', 16, 'right', 800);
+    text(c, 'x > x_s', A2X - 180, ya - 22, '#d63031', 15);
+  } else if (d.st === 'lt') {
+    arrow(c, A2X + 20, ya, A2X + 175, ya, '#e17055', 9);
+    text(c, 'අත්ලට බලය →', A2X + 30, ya + 26, '#e17055', 16, 'left', 800);
+    text(c, 'x < x_s', A2X + 180, ya - 22, '#e17055', 15, 'right');
+  } else {
+    c.strokeStyle = '#27ae60'; c.lineWidth = 4; c.beginPath(); c.arc(A2X, yh, 34, 0, 7); c.stroke();
+    text(c, 'බලයක් නැත ✓', A2X - 42, yh + 6, '#27ae60', 19, 'right', 800);
+    text(c, 'Sweet spot!', A2X - 42, yh + 30, '#27ae60', 14, 'right');
+  }
+  text(c, 'අත', A2X + 30, yh - 14, '#a0663a', 14);
+  // velocity profile right after impact
+  const PX = 655, sc = 7, yOf = s => G2Y - s * S2;
+  text(c, 'ගැටුමට මොහොතකට පසු ප්‍රවේග', PX - 20, 40, '#0984e3', 14);
+  text(c, '(අත නොතිබුණා නම්)', PX - 20, 58, '#0984e3', 12, 'left', 600);
+  c.strokeStyle = '#636e72'; c.lineWidth = 2; c.beginPath(); c.moveTo(PX, yOf(0.38)); c.lineTo(PX, yOf(-BUTT)); c.stroke();
+  const vOf = s => d.V + d.w * s;
+  c.setLineDash([5, 4]); c.strokeStyle = '#74b9ff'; c.lineWidth = 1.5; c.beginPath();
+  c.moveTo(PX + vOf(0.38) * sc, yOf(0.38)); c.lineTo(PX + vOf(-BUTT) * sc, yOf(-BUTT)); c.stroke(); c.setLineDash([]);
+  for (let s = -0.28; s <= 0.38; s += 0.085) { const L = vOf(s) * sc; if (Math.abs(L) > 3) arrow(c, PX, yOf(s), PX + L, yOf(s), 'rgba(9,132,227,.55)', 2); }
+  arrow(c, PX, G2Y, PX + d.V * sc, G2Y, '#6c5ce7', 3); text(c, 'G', PX - 10, G2Y, '#6c5ce7', 14, 'right', 800);
+  text(c, `V = ${d.V.toFixed(1)}`, PX + d.V * sc + 6, G2Y + 1, '#6c5ce7', 12);
+  const uL = d.u * sc;
+  c.fillStyle = '#0984e3'; c.beginPath(); c.arc(PX, yh, 4, 0, 7); c.fill();
+  if (Math.abs(uL) > 3) arrow(c, PX, yh, PX + uL, yh, '#0984e3', 5);
+  text(c, 'අත', PX - 10, yh, '#a0663a', 13, 'right');
+  text(c, `u = ${d.st === 'eq' ? '≈ 0' : f2(d.u, 1)} ms⁻¹`, PX + Math.max(uL, 0) + 10, yh + 18, '#0984e3', 14);
+  const s0 = Math.abs(d.w) > 1e-9 ? -d.V / d.w : null;
+  if (s0 !== null && s0 > -BUTT - 0.001) {
+    c.fillStyle = '#8e44ad'; c.beginPath(); c.arc(PX, yOf(s0), 5, 0, 7); c.fill();
+    text(c, 'v = 0', PX - 10, yOf(s0) - (d.st === 'eq' ? 16 : 0), '#8e44ad', 12, 'right');
+  }
+  text(c, 'රැකට්ටුවේ ලක්ෂ්‍ය', PX, yOf(-BUTT) + 16, '#636e72', 12, 'center', 600);
+  if (s2.phase === 'idle') text(c, '▶ "ගැටීම" ඔබන්න', W - 14, 18, '#6c5ce7', 15, 'right');
+}
+function drawGraph2() {
+  const c = gc2.ctx, d = d2(), x0 = 52, x1 = 405, y0 = 22, y1 = 258, uMax = 8, uMin = -12;
+  const gx = x => x0 + x / 0.4 * (x1 - x0), gy = u => y0 + (uMax - u) / (uMax - uMin) * (y1 - y0);
+  const uOf = x => JB * (1 / MR - x * D2 / IR);
+  c.clearRect(0, 0, 420, 300);
+  const xsP = gx(Math.min(0.4, d.xs));
+  c.fillStyle = 'rgba(225,112,85,.08)'; c.fillRect(x0, y0, xsP - x0, y1 - y0);
+  c.fillStyle = 'rgba(214,48,49,.08)'; c.fillRect(xsP, y0, x1 - xsP, y1 - y0);
+  c.strokeStyle = '#dfe6e9'; c.lineWidth = 1; c.beginPath();
+  for (let u = uMin; u <= uMax; u += 4) { c.moveTo(x0, gy(u)); c.lineTo(x1, gy(u)); text(c, u.toString().replace('-', '−'), x0 - 6, gy(u), '#636e72', 11, 'right', 600); }
+  for (let x = 0; x <= 0.4001; x += 0.1) { c.moveTo(gx(x), y0); c.lineTo(gx(x), y1); text(c, x.toFixed(1), gx(x), y1 + 12, '#636e72', 11, 'center', 600); }
+  c.stroke();
+  c.strokeStyle = '#2d3436'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x0, gy(0)); c.lineTo(x1, gy(0)); c.moveTo(x0, y0); c.lineTo(x0, y1); c.stroke();
+  c.save(); c.beginPath(); c.rect(x0, y0, x1 - x0, y1 - y0); c.clip();
+  c.strokeStyle = '#0984e3'; c.lineWidth = 3; c.beginPath(); c.moveTo(gx(0), gy(uOf(0))); c.lineTo(gx(0.4), gy(uOf(0.4))); c.stroke(); c.restore();
+  c.setLineDash([5, 4]); c.strokeStyle = '#00b894'; c.lineWidth = 2; c.beginPath(); c.moveTo(xsP, y0); c.lineTo(xsP, y1); c.stroke(); c.setLineDash([]);
+  text(c, `x_s = ${d.xs.toFixed(3)} m`, xsP + 6, y0 + 34, '#00b894', 13);
+  text(c, 'u > 0 → බලය →', x0 + 6, y0 + 12, '#c0532f', 12);
+  text(c, 'u < 0 → බලය ←', x1 - 6, y1 - 12, '#c0392b', 12, 'right');
+  text(c, 'u / ms⁻¹', 6, 10, '#2d3436', 12, 'left');
+  text(c, 'x / m', x1, y1 + 30, '#2d3436', 12, 'right');
+  const col = d.st === 'eq' ? '#27ae60' : d.st === 'gt' ? '#d63031' : '#e17055';
+  c.fillStyle = col; c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); c.arc(gx(X2), gy(d.st === 'eq' ? 0 : d.u), 7, 0, 7); c.fill(); c.stroke();
+}
+function update2() {
+  const d = d2();
+  $('r2xs').textContent = d.xs.toFixed(3) + ' m';
+  $('r2J').textContent = JB.toFixed(2) + ' N s';
+  $('r2V').textContent = d.V.toFixed(2) + ' ms⁻¹';
+  $('r2w').textContent = d.w.toFixed(1) + ' rad s⁻¹';
+  $('r2u').textContent = (d.st === 'eq' ? '≈ 0' : f2(d.u)) + ' ms⁻¹';
+  const st = $('status2');
+  if (d.st === 'gt') { st.className = 'status bad'; st.innerHTML = '(i) x &gt; x<sub>s</sub> → u &lt; 0 : මිට, පන්දුව පැමිණි දෙසට (v ට විරුද්ධව) යාමට තැත් කරයි → <u>අත්ලට බලය ← (v ට විරුද්ධව)</u>. අතට කම්පනයක් දැනේ.'; }
+  else if (d.st === 'lt') { st.className = 'status warn'; st.innerHTML = '(ii) x &lt; x<sub>s</sub> → u &gt; 0 : මිට v දිශාවටම යාමට තැත් කරයි → <u>අත්ලට බලය → (v දිශාවට)</u>.'; }
+  else { st.className = 'status'; st.innerHTML = 'x = x<sub>s</sub> → u = 0 : මිට නිශ්චලයි → අත්ලට බලයක් නැත ✓ – මෙය sweet spot එකයි!'; }
+}
+function read2(fromSlider = true) {
+  if (fromSlider) X2 = +$('x2S').value;
+  D2 = +$('d2S').value;
+  $('x2Val').textContent = X2.toFixed(3); $('d2Val').textContent = D2.toFixed(2);
+  reset2(); update2(); if (ready) redraw();
+}
+$('x2S').addEventListener('input', () => read2(true));
+$('d2S').addEventListener('input', () => read2(false));
+const setX2 = v => { X2 = Math.max(0.07, Math.min(0.36, v)); $('x2S').value = X2; read2(false); };
+$('qi').addEventListener('click', () => setX2(IR / (MR * D2) + 0.1));
+$('qii').addEventListener('click', () => setX2(IR / (MR * D2) - 0.07));
+$('qs').addEventListener('click', () => setX2(IR / (MR * D2)));
+$('go2').addEventListener('click', () => {
+  if (s2.phase === 'in' || s2.phase === 'out') return;
+  reset2(); s2.phase = 'in'; $('go2').textContent = '… ගැටෙමින්';
+});
+$('reset2').addEventListener('click', reset2);
+
+// ======================= tabs + loop =======================
+let tab = 'p1';
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
+  tab = b.dataset.tab;
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+  $('p1').hidden = tab !== 'p1'; $('p2').hidden = tab !== 'p2';
+  redraw();
+}));
+
+function redraw() {
+  if (tab === 'p1') { drawScene1(); drawVel1(); } else { drawScene2(); drawGraph2(); }
+}
+reset1(); read1(); reset2(); read2(true);
+ready = true; redraw();
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.04, (now - last) / 1000); last = now;
+  if (tab === 'p1') step1(dt * SLOW); else step2(dt);
+  redraw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

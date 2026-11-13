@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>කිමිදුම් පුවරුව සහ පිම්ම (2008: 301–305) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; align-items: center; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  .qtag.year { background: #fff; color: #6c5ce7; border: 2px solid #6c5ce7; padding: 1px 8px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 16px; line-height: 1.6; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: linear-gradient(#d6efff, #f4fbff 70%); border: 1px solid #dfe6e9; }
+  .row { display: grid; grid-template-columns: 1fr 1.15fr; gap: 14px; margin-top: 14px; }
+  .panel { border: 1px solid #dfe6e9; border-radius: 10px; padding: 14px; background: #fff; }
+  .panel h3 { margin: 0 0 8px; font-size: 16px; }
+  .graph { background: #fff; border: 1px solid #dfe6e9; }
+  .kv { display: flex; justify-content: space-between; font-size: 15px; padding: 5px 0; border-bottom: 1px dashed #dfe6e9; }
+  .kv b { font-family: 'Courier New', monospace; }
+  .kv.ke b { color: #d35400; } .kv.pe b { color: #0984e3; } .kv.te b { color: #6c5ce7; }
+  .status { margin-top: 10px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 10px 14px; border-radius: 6px; font-weight: 700; font-size: 16px; }
+  .status.warn { border-left-color: #f39c12; background: #fef5e7; color: #b9770e; }
+  .status.info { border-left-color: #0984e3; background: #eaf4fd; color: #1f618d; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  h2.part { border-bottom: 2px solid #e0e7ff; padding-bottom: 6px; margin-top: 30px; }
+  h2.part:first-of-type { margin-top: 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .eq { font-family: 'Courier New', monospace; font-weight: 700; background: #fff; border: 1px solid #dfe6e9; border-radius: 6px; padding: 8px 12px; margin: 6px 0; display: block; }
+  .eqhead { font-weight: 700; margin-top: 10px; font-size: 15px; }
+  .eqhead:first-of-type { margin-top: 0; }
+  .eqwhy { font-size: 13px; color: #636e72; line-height: 1.5; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .row { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .main > .cvs:first-child { margin-top: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← සියලුම Simulations</a>
+  <div class="qtags"><span class="qtag year">2008 A/L</span><span class="qtag">301</span><span class="qtag">302</span><span class="qtag">303</span><span class="qtag">304</span><span class="qtag">305</span></div>
+  <h1>කිමිදුම් පුවරුව සහ කිමිදුම්කරුගේ පිම්ම</h1>
+  <p class="sub">50 kg කිමිදුම්කරුවෙක් 4 m දිග, ස්කන්ධය නොසලකා හැරිය හැකි තිරස් පුවරුවක C කෙළවරේ සිටගෙන සිටී. පුවරුව A සහ B හි (1 m පරතරයකින්) දුනු දෙකකට සවි කර ඇත. ඉන්පසු ඔහු පනී: ගුරුත්ව කේන්ද්‍රය G ජල පෘෂ්ඨයේ සිට 4 m උසකින් ආරම්භ වී, 2 s කින් තිත් පථය සම්පූර්ණ කර Y හිදී ජලයට ඇතුළු වේ (XY = 2 m). වායු ප්‍රතිරෝධය නොසලකන්න, g = 10 ms⁻².</p>
+
+  <!-- ================= PART 1 ================= -->
+  <h2 class="part">1 කොටස – පුවරුවේ සමතුලිතතාව <span class="qtag">301</span></h2>
+  <div class="layout">
+   <aside class="side">
+    <div class="controls">
+      <div><label>කිමිදුම්කරුගේ පිහිටීම (A සිට) x = <span class="v" id="xVal">4.0</span> m</label><input type="range" id="xS" min="0" max="4" step="0.1" value="4"></div>
+      <div><label>කිමිදුම්කරුගේ ස්කන්ධය m = <span class="v" id="mVal">50</span> kg</label><input type="range" id="mS" min="20" max="100" step="1" value="50"></div>
+      <div class="btns">
+        <button class="solid" id="p1Q">ප්‍රශ්නයේ අගයන් (C, 50 kg)</button>
+        <button id="p1Mid">A–B අතර (x = 0.5 m)</button>
+        <button id="p1B">B මත (x = 1 m)</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>පුවරුව මත බල</h3>
+      <div class="kv"><span>බර W = mg</span><b id="wOut">–</b></div>
+      <div class="kv"><span>A හි දුන්න, F<sub>A</sub></span><b id="faOut">–</b></div>
+      <div class="kv"><span>B හි දුන්න, F<sub>B</sub></span><b id="fbOut">–</b></div>
+      <div class="status" id="p1Status">–</div>
+    </div>
+   </aside>
+   <div class="main">
+    <div class="cvs"><canvas id="board" class="scene"></canvas></div>
+    <div class="panel" style="margin-top:14px">
+      <h3>සූර්ණ සමීකරණ (සජීවී)</h3>
+      <div id="momEq"></div>
+      <p class="note">ඉඟිය: නොදන්නා බලයක් ක්‍රියා කරන ලක්ෂ්‍යය වටා සූර්ණ ගත්තොත් එම බලය සමීකරණයෙන් ඉවත් වේ. ඒ නිසයි F<sub>A</sub> සෙවීමට B වටාත්, F<sub>B</sub> සෙවීමට A වටාත් සූර්ණ ගන්නේ. කිමිදුම්කරු A–B අතරට ගෙනැවිත් F<sub>A</sub> හි දිශාව මාරු වන හැටි බලන්න!</p>
+    </div>
+   </div>
+  </div>
+
+  <!-- ================= PART 2 ================= -->
+  <h2 class="part">2 කොටස – පිම්ම (ප්‍රක්ෂිප්ත චලිතය) <span class="qtag">302</span><span class="qtag">303</span><span class="qtag">304</span><span class="qtag">305</span></h2>
+  <div class="layout">
+   <aside class="side">
+    <div class="controls">
+      <div><label>තිරස් ආරම්භක ප්‍රවේගය u<sub>x</sub> = <span class="v" id="uxVal">1.0</span> ms⁻¹</label><input type="range" id="uxS" min="0" max="3" step="0.1" value="1"></div>
+      <div><label>සිරස් ආරම්භක ප්‍රවේගය u<sub>y</sub> = <span class="v" id="uyVal">8.0</span> ms⁻¹</label><input type="range" id="uyS" min="0" max="12" step="0.1" value="8"></div>
+      <div><label>කාලය t = <span class="v" id="tVal">0.00</span> s</label><input type="range" id="tS" min="0" max="2" step="0.01" value="0"></div>
+      <div class="btns">
+        <button class="solid" id="playBtn">▶ ධාවනය</button>
+        <button id="resetBtn">↺ නැවත</button>
+        <button id="speedBtn">වේගය 1×</button>
+        <button id="topBtn">ඉහළම ලක්ෂ්‍යය</button>
+        <button id="p2Q">ප්‍රශ්නයේ අගයන්</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>සජීවී අගයන් (m = 50 kg)</h3>
+      <div class="kv"><span>කාලය t</span><b id="oT">–</b></div>
+      <div class="kv"><span>තිරස් දුර x (X සිට)</span><b id="oX">–</b></div>
+      <div class="kv"><span>ජලයට ඉහළින් උස y</span><b id="oY">–</b></div>
+      <div class="kv"><span>v<sub>x</sub></span><b id="oVx">–</b></div>
+      <div class="kv"><span>v<sub>y</sub> (ඉහළට +)</span><b id="oVy">–</b></div>
+      <div class="kv ke"><span>චාලක ශක්තිය KE = ½mv²</span><b id="oKE">–</b></div>
+      <div class="kv pe"><span>විභව ශක්තිය PE = mgy</span><b id="oPE">–</b></div>
+      <div class="kv te"><span>මුළු ශක්තිය E = KE + PE</span><b id="oE">–</b></div>
+      <div class="status info" id="p2Status">–</div>
+    </div>
+   </aside>
+   <div class="main">
+    <div class="cvs"><canvas id="dive" class="scene"></canvas></div>
+    <div class="cvs" style="margin-top:14px"><canvas id="graph" class="graph"></canvas></div>
+    <p class="note">තිත් රේඛාව = සම්පූර්ණ පථය. රතු ඊතලය v<sub>x</sub> (නියතයි), කොළ ඊතලය v<sub>y</sub> (ඉහළම ලක්ෂ්‍යයේදී ශුන්‍ය වේ). KE සහ PE එකිනෙකට හුවමාරු වුවත් ඒවායේ එකතුව (දම් පාට තීරුව) කිසිසේත් වෙනස් නොවන බව බලන්න – වායු ප්‍රතිරෝධයක් නැති නිසා යාන්ත්‍රික ශක්තිය සංස්ථිතියි.</p>
+   </div>
+  </div>
+
+  <h2>විසඳුම්</h2>
+  <details>
+    <summary><span class="qtag">301</span>A සහ B හි දුනු මගින් පුවරුව මත යෙදෙන බල</summary>
+    <div class="ans">
+      පුවරුවේ ස්කන්ධය නොසලකා හරින නිසා ඒ මත ඇත්තේ බල තුනක් පමණි: C හිදී කිමිදුම්කරුගේ බර, A හි දුන්නේ බලය F<sub>A</sub>, B හි දුන්නේ බලය F<sub>B</sub>.
+      <span class="eq">W = mg = 50 × 10 = 500 N  (C හිදී, පහළට)</span>
+      <b>B වටා සූර්ණ</b> (F<sub>B</sub> හි සූර්ණය ශුන්‍යයි):
+      <span class="eq">F<sub>A</sub> × 1 = 500 × 3   →   F<sub>A</sub> = 1500 N</span>
+      W මගින් B වටා <b>දක්ෂිණාවර්ත</b> සූර්ණයක් ලැබේ. එය තුලනය කිරීමට F<sub>A</sub> මගින් <b>වාමාවර්ත</b> සූර්ණයක් දිය යුතුයි – එනම් A හිදී F<sub>A</sub> <b>පහළට</b> ක්‍රියා කරයි. ඒ කියන්නේ A හි දුන්න <b>ඇදී</b> ඇති අතර (ආතතිය) පුවරුව පහළට අදියි.<br>
+      <b>A වටා සූර්ණ</b> (F<sub>A</sub> හි සූර්ණය ශුන්‍යයි):
+      <span class="eq">F<sub>B</sub> × 1 = 500 × 4   →   F<sub>B</sub> = 2000 N  (ඉහළට)</span>
+      B හි දුන්න <b>සම්පීඩිතයි</b> – එය පුවරුව ඉහළට තල්ලු කරයි.<br>
+      <b>පරීක්ෂාව</b> (සිරස් බල සමතුලිතයි):
+      <span class="eq">ඉහළට = පහළට :  F<sub>B</sub> = F<sub>A</sub> + W  →  2000 = 1500 + 500 ✓</span>
+      (1 කොටසේ x ස්ලයිඩරය A–B අතරට ගෙන ගියොත් F<sub>A</sub> ද ඉහළට හැරෙන බව දැකිය හැකියි.)
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">302</span>ආරම්භක ප්‍රවේගයේ තිරස් හා සිරස් සංරචක</summary>
+    <div class="ans">
+      <b>තිරස්ව:</b> වායු ප්‍රතිරෝධය නැති නිසා තිරස් බලයක් නැත → තිරස් ප්‍රවේගය නියතයි.
+      <span class="eq">u<sub>x</sub> = XY / t = 2 / 2 = 1 ms⁻¹</span>
+      <b>සිරස්ව</b> (ඉහළට ධන ලෙස): G ආරම්භ වන්නේ ජලයට 4 m ඉහළින් නිසා, ජලයට ඇතුළු වන විට සිරස් විස්ථාපනය s = −4 m, a = −10 ms⁻², t = 2 s.
+      <span class="eq">s = ut + ½at²</span>
+      <span class="eq">−4 = u<sub>y</sub>(2) + ½(−10)(2)²  →  −4 = 2u<sub>y</sub> − 20</span>
+      <span class="eq">u<sub>y</sub> = 8 ms⁻¹  (ඉහළට)</span>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">303</span>ජල පෘෂ්ඨයේ සිට G ළඟා වන උපරිම උස</summary>
+    <div class="ans">
+      ඉහළම ලක්ෂ්‍යයේදී සිරස් ප්‍රවේගය v<sub>y</sub> = 0. ආරම්භක ලක්ෂ්‍යයට ඉහළින් නැගීම h නම්:
+      <span class="eq">v² = u² + 2as  →  0 = 8² + 2(−10)h</span>
+      <span class="eq">h = 64 / 20 = 3.2 m</span>
+      <span class="eq">H = 4 + 3.2 = 7.2 m  (ජල පෘෂ්ඨයේ සිට)</span>
+      එතැනට යාමට ගතවන කාලය t = u<sub>y</sub>/g = 8/10 = 0.8 s. ("ඉහළම ලක්ෂ්‍යය" බොත්තම ඔබා බලන්න.)
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">304</span>ඉහළම ලක්ෂ්‍යයේදී චාලක ශක්තිය</summary>
+    <div class="ans">
+      ඉහළම ලක්ෂ්‍යයේදී v<sub>y</sub> = 0 වුවත් තිරස් ප්‍රවේගය u<sub>x</sub> = 1 ms⁻¹ තවමත් පවතී. එනිසා KE <b>ශුන්‍ය නොවේ</b> (මෙතැන බොහෝ දෙනා වරදිනවා!).
+      <span class="eq">KE = ½mv² = ½ × 50 × 1² = 25 J</span>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">305</span>ඉහළම ලක්ෂ්‍යයේදී විභව ශක්තිය (ජල පෘෂ්ඨයට සාපේක්ෂව)</summary>
+    <div class="ans">
+      <span class="eq">PE = mgH = 50 × 10 × 7.2 = 3600 J</span>
+      <b>ශක්ති සංස්ථිතිය මගින් පරීක්ෂාව:</b>
+      <span class="eq">ආරම්භයේදී: KE = ½ × 50 × (1² + 8²) = 1625 J,  PE = 50 × 10 × 4 = 2000 J</span>
+      <span class="eq">E = 1625 + 2000 = 3625 J</span>
+      <span class="eq">ඉහළම ලක්ෂ්‍යයේදී: E = 25 + 3600 = 3625 J ✓</span>
+      මුළු යාන්ත්‍රික ශක්තිය නියතව පවතී – 2 කොටසේ දම් පාට තීරුව එය පෙන්වයි.
+    </div>
+  </details>
+  <p class="note">සටහන: පුවරුවේ ඇලවීම (දුනුවල දිග වෙනස් වීම) පැහැදිලිව පෙනෙන ලෙස ටිකක් විශාල කර ඇඳ ඇත. ප්‍රශ්නයේදී පුවරුව තිරස් ලෙසම සලකනු ලැබේ.</p>
+</div>
+
+<script>
+const g = 10;
+const $ = id => document.getElementById(id);
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth || W;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(15, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+// double-headed dimension arrow with label
+function dim(ctx, x1, y1, x2, y2, label, col = '#2d3436', size = 14, off = [0, -12]) {
+  arrow(ctx, (x1 + x2) / 2, (y1 + y2) / 2, x1, y1, col, 1.5);
+  arrow(ctx, (x1 + x2) / 2, (y1 + y2) / 2, x2, y2, col, 1.5);
+  text(ctx, label, (x1 + x2) / 2 + off[0], (y1 + y2) / 2 + off[1], col, size, 'center');
+}
+// Draws text; "x_abc" is drawn with "abc" as a real subscript.
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/); // even = normal text, odd = subscript
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
+}
+function coil(c, x, yTop, yBot, col, turns = 8, w = 13) {
+  const lead = 9, L = yBot - yTop, seg = (L - 2 * lead) / (turns * 2);
+  c.strokeStyle = col; c.lineWidth = 3; c.lineJoin = 'round'; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(x, yBot); c.lineTo(x, yBot - lead);
+  for (let i = 0; i < turns * 2; i++) c.lineTo(x + (i % 2 ? -w : w), yBot - lead - seg * (i + 0.5));
+  c.lineTo(x, yTop + lead); c.lineTo(x, yTop); c.stroke();
+}
+function hatch(c, x, y, w, h) {
+  c.fillStyle = '#b2bec3'; c.fillRect(x, y, w, h);
+  c.strokeStyle = 'rgba(99,110,114,.45)'; c.lineWidth = 1.5;
+  c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip();
+  c.beginPath(); for (let i = -h; i < w; i += 12) { c.moveTo(x + i, y + h); c.lineTo(x + i + h, y); } c.stroke();
+  c.restore();
+  c.strokeStyle = '#636e72'; c.lineWidth = 2; c.beginPath(); c.moveTo(x, y); c.lineTo(x + w, y); c.stroke();
+}
+function person(c, x, yF, s = 1) { // standing stick figure, feet at (x, yF)
+  c.strokeStyle = '#2d3436'; c.lineWidth = 4 * s; c.lineCap = 'round'; c.lineJoin = 'round';
+  const hip = yF - 42 * s, sh = yF - 76 * s;
+  c.beginPath();
+  c.moveTo(x - 9 * s, yF); c.lineTo(x, hip); c.lineTo(x + 9 * s, yF);
+  c.moveTo(x, hip); c.lineTo(x, sh);
+  c.moveTo(x - 16 * s, sh - 20 * s); c.lineTo(x, sh + 4 * s); c.lineTo(x + 16 * s, sh - 20 * s);
+  c.stroke();
+  c.fillStyle = '#fdcb6e'; c.strokeStyle = '#2d3436'; c.lineWidth = 2.5 * s;
+  c.beginPath(); c.arc(x, sh - 13 * s, 11 * s, 0, 7); c.fill(); c.stroke();
+  c.fillStyle = '#0984e3'; c.fillRect(x - 6 * s, hip - 6 * s, 12 * s, 10 * s); // swimsuit
+  return { gx: x, gy: hip - 8 * s };
+}
+function gMark(c, x, y, r = 7) {
+  c.fillStyle = '#fff'; c.strokeStyle = '#d63031'; c.lineWidth = 2;
+  c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.stroke();
+  c.fillStyle = '#d63031';
+  c.beginPath(); c.moveTo(x, y); c.arc(x, y, r, -Math.PI / 2, 0); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(x, y); c.arc(x, y, r, Math.PI / 2, Math.PI); c.closePath(); c.fill();
+}
+
+/* ====================== PART 1: board equilibrium ====================== */
+const bd = stage($('board'), 900, 430);
+const P1 = { x: 4, m: 50 };
+const AX = 150, PXM = 150, BASE = 380, Y0 = 250, TH = 12, DEF = 0.0018, FK = 0.055;
+// forces on the board, upward positive. Moments about B: RA = W(1 − x); about A: RB = W x.
+function boardForces(x = P1.x, m = P1.m) { const W = m * g; return { W, RA: W * (1 - x), RB: W * x }; }
+const fmtN = v => Math.round(Math.abs(v)) + ' N';
+
+function drawBoard() {
+  const c = bd.ctx; c.clearRect(0, 0, 900, 430);
+  const { W, RA, RB } = boardForces();
+  const yA = Y0 + RA * DEF, yB = Y0 + RB * DEF;          // spring compression lowers the board
+  const yAt = xm => yA + (yB - yA) * xm, sx = xm => AX + xm * PXM;
+
+  // pool water on the right, deck under the springs
+  const wg = c.createLinearGradient(0, 350, 0, 430); wg.addColorStop(0, '#74b9ff'); wg.addColorStop(1, '#0984e3');
+  c.fillStyle = wg; c.fillRect(340, 352, 560, 78);
+  c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 2;
+  for (let i = 0; i < 6; i++) { const xx = 380 + i * 90; c.beginPath(); c.moveTo(xx, 365); c.quadraticCurveTo(xx + 15, 359, xx + 30, 365); c.stroke(); }
+  hatch(c, 40, BASE, 300, 50);
+
+  // unloaded (natural) board position
+  c.setLineDash([6, 6]); c.strokeStyle = '#a4b0be'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(sx(0) - 10, Y0); c.lineTo(sx(4) + 10, Y0); c.stroke(); c.setLineDash([]);
+  text(c, 'භාරයක් නැති විට', sx(4) + 12, Y0 - 13, '#a4b0be', 12);
+
+  // springs
+  const colOf = R => R < -0.5 ? '#d63031' : R > 0.5 ? '#00b894' : '#636e72';
+  coil(c, sx(0), yAt(0) + TH, BASE, colOf(RA));
+  coil(c, sx(1), yAt(1) + TH, BASE, colOf(RB));
+  const sLab = R => R < -0.5 ? 'ඇදී ඇත (ආතතිය)' : R > 0.5 ? 'සම්පීඩිතයි' : 'ස්වභාවික දිග';
+  text(c, sLab(RA), sx(0) + 20, 368, colOf(RA), 13, 'left');
+  text(c, sLab(RB), sx(1) + 22, 350, colOf(RB), 13, 'left');
+
+  // board
+  c.fillStyle = '#d4a373'; c.strokeStyle = '#8d5a2b'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(sx(0), yAt(0)); c.lineTo(sx(4), yAt(4)); c.lineTo(sx(4), yAt(4) + TH); c.lineTo(sx(0), yAt(0) + TH); c.closePath(); c.fill(); c.stroke();
+  [[0, 'A'], [1, 'B'], [4, 'C']].forEach(([xm, L]) => {
+    c.fillStyle = '#2d3436'; c.beginPath(); c.arc(sx(xm), yAt(xm) + TH / 2, 3.5, 0, 7); c.fill();
+  });
+  text(c, 'A', sx(0) - 14, yAt(0) + 6, '#2d3436', 18, 'right', 800);
+  text(c, 'B', sx(1) - 12, yAt(1) - 14, '#2d3436', 18, 'right', 800);
+  text(c, 'C', sx(4) + 12, yAt(4) + 6, '#2d3436', 18, 'left', 800);
+
+  // dimensions
+  dim(c, sx(0), 30, sx(1), 30, '1 m', '#636e72', 14, [0, -12]);
+  dim(c, sx(1), 30, sx(4), 30, '3 m', '#636e72', 14, [0, -12]);
+  c.strokeStyle = '#dfe6e9'; c.lineWidth = 1;
+  c.beginPath(); [0, 1, 4].forEach(xm => { c.moveTo(sx(xm), 20); c.lineTo(sx(xm), 40); }); c.stroke();
+  if (P1.x > 0.05) dim(c, sx(0), 62, sx(P1.x), 62, `x = ${P1.x.toFixed(1)} m`, '#6c5ce7', 14, [0, -12]);
+
+  // diver
+  const dx = sx(P1.x), dy = yAt(P1.x);
+  const G = person(c, dx, dy, 1.25);
+  gMark(c, G.gx, G.gy, 6);
+  text(c, `${P1.m} kg`, dx + 22, dy - 122, '#2d3436', 14, 'left');
+
+  // force arrows (on the board)
+  const near = xs => Math.abs(P1.x - xs) < 0.3;
+  function springArrow(R, xm, name) {
+    if (Math.abs(R) < 0.5) { text(c, `${name} = 0`, sx(xm) + (xm ? 20 : -20), yAt(xm) - 22, '#636e72', 15, xm ? 'left' : 'right'); return; }
+    const L = Math.min(R > 0 ? 175 : 140, Math.max(16, Math.abs(R) * FK));
+    if (R > 0) { // upward, from the top of the board
+      const ax = sx(xm) + (near(xm) ? -30 : 0), y0 = yAt(xm) - 1;
+      arrow(c, ax, y0, ax, y0 - L, '#00b894', 5);
+      text(c, `${name} = ${fmtN(R)} ↑`, ax + (xm ? 10 : -10), y0 - L + 4, '#00896b', 15, xm ? 'left' : 'right', 800);
+    } else {     // downward, beside the spring
+      const ax = sx(xm) - 26, y0 = yAt(xm) + TH;
+      arrow(c, ax, y0, ax, y0 + L, '#d63031', 5);
+      text(c, `${name} = ${fmtN(R)} ↓`, ax - 10, y0 + L / 2, '#c0392b', 15, 'right', 800);
+    }
+  }
+  springArrow(RA, 0, 'F_A');
+  springArrow(RB, 1, 'F_B');
+  const wl = Math.max(18, W * FK), wy0 = dy + TH;
+  arrow(c, dx, wy0, dx, wy0 + wl, '#2d3436', 5);
+  text(c, `W = ${W} N`, dx, wy0 + wl + 12, '#2d3436', 15, 'center', 800);
+}
+
+function p1Update() {
+  P1.x = +$('xS').value; P1.m = +$('mS').value;
+  $('xVal').textContent = P1.x.toFixed(1); $('mVal').textContent = P1.m;
+  const { W, RA, RB } = boardForces(), x = P1.x;
+  const dir = R => Math.abs(R) < 0.5 ? '' : R > 0 ? ' ↑ ඉහළට' : ' ↓ පහළට';
+  $('wOut').textContent = W + ' N ↓';
+  $('faOut').textContent = fmtN(RA) + dir(RA);
+  $('fbOut').textContent = fmtN(RB) + dir(RB);
+  const st = $('p1Status');
+  if (RA < -0.5) { st.className = 'status'; st.innerHTML = 'කිමිදුම්කරු B ට එපිටින් → A හි දුන්න <u>ඇදී</u> පුවරුව පහළට අදියි, B හි දුන්න සම්පීඩිතව ඉහළට තල්ලු කරයි.'; }
+  else if (RA > 0.5) { st.className = 'status warn'; st.innerHTML = 'කිමිදුම්කරු A–B අතර → දැන් දුනු <u>දෙකම</u> සම්පීඩිතයි, F<sub>A</sub> ද ඉහළට!'; }
+  else { st.className = 'status info'; st.innerHTML = 'කිමිදුම්කරු හරියටම B මත → සම්පූර්ණ බර B දරයි, F<sub>A</sub> = 0.'; }
+
+  const r = v => Math.round(Math.abs(v));
+  let h = '<div class="eqhead">① B වටා සූර්ණ (F<sub>B</sub> ඉවත් වේ) → F<sub>A</sub></div>';
+  if (x > 1 + 1e-9) {
+    h += `<span class="eq">F<sub>A</sub> × 1 = W × (x − 1)</span><span class="eq">F<sub>A</sub> × 1 = ${W} × ${(x - 1).toFixed(1)}  →  F<sub>A</sub> = ${r(RA)} N  ↓ (පහළට)</span>`;
+    h += '<div class="eqwhy">W මගින් B වටා දක්ෂිණාවර්ත සූර්ණයක් → F<sub>A</sub> වාමාවර්ත විය යුතුයි → A හිදී පහළට.</div>';
+  } else if (x < 1 - 1e-9) {
+    h += `<span class="eq">F<sub>A</sub> × 1 = W × (1 − x)</span><span class="eq">F<sub>A</sub> × 1 = ${W} × ${(1 - x).toFixed(1)}  →  F<sub>A</sub> = ${r(RA)} N  ↑ (ඉහළට)</span>`;
+    h += '<div class="eqwhy">දැන් W, B ට වම් පසින් → B වටා වාමාවර්ත සූර්ණයක් → F<sub>A</sub> දක්ෂිණාවර්ත විය යුතුයි → A හිදී ඉහළට.</div>';
+  } else {
+    h += `<span class="eq">F<sub>A</sub> × 1 = W × 0  →  F<sub>A</sub> = 0</span>`;
+  }
+  h += '<div class="eqhead">② A වටා සූර්ණ (F<sub>A</sub> ඉවත් වේ) → F<sub>B</sub></div>';
+  h += `<span class="eq">F<sub>B</sub> × 1 = W × x = ${W} × ${x.toFixed(1)}  →  F<sub>B</sub> = ${r(RB)} N  ↑ (ඉහළට)</span>`;
+  h += '<div class="eqhead">③ පරීක්ෂාව: සිරස් බල සමතුලිතයි</div>';
+  if (RA < -0.5) h += `<span class="eq">F<sub>B</sub> = F<sub>A</sub> + W  →  ${r(RB)} = ${r(RA)} + ${W} ✓</span>`;
+  else h += `<span class="eq">F<sub>A</sub> + F<sub>B</sub> = W  →  ${r(RA)} + ${r(RB)} = ${W} ✓</span>`;
+  $('momEq').innerHTML = h;
+}
+['xS', 'mS'].forEach(id => $(id).addEventListener('input', p1Update));
+const setP1 = (x, m) => { $('xS').value = x; if (m) $('mS').value = m; p1Update(); };
+$('p1Q').addEventListener('click', () => setP1(4, 50));
+$('p1Mid').addEventListener('click', () => setP1(0.5));
+$('p1B').addEventListener('click', () => setP1(1));
+
+/* ====================== PART 2: the dive ====================== */
+const dv = stage($('dive'), 900, 480), gr = stage($('graph'), 900, 250);
+const M2 = 50, Y0D = 4, BOARD_TOP = 3.0, DECK = 1.6, POOL_EDGE = -2.5;
+let ux = 1, uy = 8, T = 2, td = 0, playing = false, speed = 1;
+let V = {};
+const SX = x => V.ox + x * V.sc, SY = y => V.WY - y * V.sc;
+
+function flightTime() { return (uy + Math.sqrt(uy * uy + 2 * g * Y0D)) / g; }
+function stateAt(t) {
+  const vx = ux, vy = uy - g * t, x = ux * t, y = Y0D + uy * t - 0.5 * g * t * t;
+  const KE = 0.5 * M2 * (vx * vx + vy * vy), PE = M2 * g * y;
+  return { t, x, y, vx, vy, KE, PE, E: KE + PE };
+}
+function recompute() {
+  T = flightTime();
+  const H = Y0D + uy * uy / (2 * g), R = ux * T, tTop = uy / g;
+  const xmin = -4.6, xmax = Math.max(R, 2) + 1.3, ymax = Math.max(H, Y0D) + 1.1, WY = 422, AW = 600;
+  const sc = Math.min((WY - 22) / ymax, (AW - 30) / (xmax - xmin), 75);
+  V = { sc, WY, ox: (AW - (xmax - xmin) * sc) / 2 - xmin * sc, H, R, tTop, xmax };
+  $('tS').max = T.toFixed(3);
+  if (td > T) td = T;
+}
+function readU() {
+  ux = +$('uxS').value; uy = +$('uyS').value;
+  $('uxVal').textContent = ux.toFixed(1); $('uyVal').textContent = uy.toFixed(1);
+  recompute(); syncT();
+}
+function syncT() {
+  $('tS').value = td; $('tVal').textContent = td.toFixed(2);
+  const s = stateAt(td);
+  $('oT').textContent = td.toFixed(2) + ' s';
+  $('oX').textContent = s.x.toFixed(2) + ' m';
+  $('oY').textContent = Math.max(0, s.y).toFixed(2) + ' m';
+  $('oVx').textContent = s.vx.toFixed(2) + ' ms⁻¹';
+  $('oVy').textContent = (Math.abs(s.vy) < 0.005 ? '0.00' : s.vy.toFixed(2)) + ' ms⁻¹';
+  $('oKE').textContent = s.KE.toFixed(0) + ' J';
+  $('oPE').textContent = s.PE.toFixed(0) + ' J';
+  $('oE').textContent = s.E.toFixed(0) + ' J';
+  const st = $('p2Status');
+  if (td >= T - 1e-6) { st.className = 'status'; st.innerHTML = `G, Y හිදී ජලයට ඇතුළු විය 🌊 (t = ${T.toFixed(2)} s, XY = ${(ux * T).toFixed(2)} m)`; }
+  else if (Math.abs(s.vy) < 0.05) { st.className = 'status warn'; st.innerHTML = `ඉහළම ලක්ෂ්‍යය! v<sub>y</sub> = 0, නමුත් v<sub>x</sub> = ${ux.toFixed(1)} ms⁻¹ නිසා KE = ${s.KE.toFixed(0)} J (ශුන්‍ය නොවේ)`; }
+  else if (s.vy > 0) { st.className = 'status info'; st.innerHTML = 'ඉහළට යමින් – KE → PE බවට හැරේ'; }
+  else { st.className = 'status info'; st.innerHTML = 'පහළට වැටෙමින් – PE → KE බවට හැරේ'; }
+}
+function setPlaying(p) { playing = p; $('playBtn').textContent = p ? '⏸ නවත්වන්න' : '▶ ධාවනය'; }
+function diveStep(dt) {
+  if (!playing) return;
+  td = Math.min(T, td + dt * speed);
+  if (td >= T) setPlaying(false);
+  syncT();
+}
+function setTime(t) { td = Math.max(0, Math.min(T, t)); syncT(); }
+
+$('uxS').addEventListener('input', readU);
+$('uyS').addEventListener('input', readU);
+$('tS').addEventListener('input', () => { setPlaying(false); setTime(+$('tS').value); });
+$('playBtn').addEventListener('click', () => {
+  if (playing) { setPlaying(false); return; }
+  if (td >= T - 1e-6) setTime(0);
+  setPlaying(true);
+});
+$('resetBtn').addEventListener('click', () => { setPlaying(false); setTime(0); });
+$('speedBtn').addEventListener('click', () => {
+  speed = speed === 1 ? 0.5 : speed === 0.5 ? 0.25 : 1;
+  $('speedBtn').textContent = `වේගය ${speed === 1 ? '1' : speed === 0.5 ? '½' : '¼'}×`;
+});
+$('topBtn').addEventListener('click', () => { setPlaying(false); setTime(uy / g); });
+$('p2Q').addEventListener('click', () => { setPlaying(false); $('uxS').value = 1; $('uyS').value = 8; td = 0; readU(); });
+
+function drawDive() {
+  const c = dv.ctx; c.clearRect(0, 0, 900, 480);
+  const s = stateAt(td), sc = V.sc, WY = V.WY;
+  // water
+  const wg = c.createLinearGradient(0, WY, 0, 480); wg.addColorStop(0, '#74b9ff'); wg.addColorStop(1, '#0652dd');
+  c.fillStyle = wg; c.fillRect(SX(POOL_EDGE), WY, 610 - SX(POOL_EDGE), 480 - WY);
+  c.strokeStyle = '#0984e3'; c.lineWidth = 2; c.beginPath(); c.moveTo(SX(POOL_EDGE), WY); c.lineTo(610, WY); c.stroke();
+  // deck + springs + board (true scale: A at −4 m, B at −3 m, C at 0)
+  hatch(c, 0, SY(DECK), SX(POOL_EDGE), 480 - SY(DECK));
+  const bt = Math.max(6, 0.14 * sc);
+  coil(c, SX(-4), SY(BOARD_TOP) + bt, SY(DECK), '#d63031', 5, Math.max(5, 0.12 * sc));
+  coil(c, SX(-3), SY(BOARD_TOP) + bt, SY(DECK), '#00b894', 5, Math.max(5, 0.12 * sc));
+  c.fillStyle = '#d4a373'; c.strokeStyle = '#8d5a2b'; c.lineWidth = 2;
+  c.fillRect(SX(-4), SY(BOARD_TOP), 4 * sc, bt); c.strokeRect(SX(-4), SY(BOARD_TOP), 4 * sc, bt);
+  text(c, 'A', SX(-4), SY(BOARD_TOP) - 12, '#2d3436', 14, 'center', 800);
+  text(c, 'B', SX(-3), SY(BOARD_TOP) - 12, '#2d3436', 14, 'center', 800);
+  text(c, 'C', SX(0) + 12, SY(BOARD_TOP) + bt / 2, '#2d3436', 14, 'left', 800);
+
+  // start level and vertical 4 m
+  c.setLineDash([4, 5]); c.strokeStyle = '#636e72'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(SX(0), SY(Y0D)); c.lineTo(SX(0), WY); c.stroke();
+  c.beginPath(); c.moveTo(SX(0), SY(Y0D)); c.lineTo(SX(Math.max(V.xmax - 0.3, 2)), SY(Y0D)); c.stroke();
+  c.setLineDash([]);
+  dim(c, SX(-0.55), SY(Y0D), SX(-0.55), WY, '4 m', '#2d3436', 14, [-18, 0]);
+
+  // max height
+  const xTop = ux * V.tTop;
+  if (uy > 0.05) {
+    c.setLineDash([8, 5]); c.strokeStyle = '#e17055'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(SX(-0.9), SY(V.H)); c.lineTo(SX(xTop + 0.9), SY(V.H)); c.stroke(); c.setLineDash([]);
+    text(c, `H = ${V.H.toFixed(2)} m`, SX(-1.0), SY(V.H), '#d35400', 15, 'right', 800);
+    const hx = SX(xTop + 0.7);
+    if (SY(Y0D) - SY(V.H) > 22) {
+      dim(c, hx, SY(V.H), hx, SY(Y0D), '', '#d35400');
+      text(c, `h = ${(V.H - Y0D).toFixed(2)} m`, hx + 8, (SY(V.H) + SY(Y0D)) / 2, '#d35400', 13, 'left');
+    }
+  }
+
+  // full dotted path
+  c.fillStyle = '#6c5ce7';
+  for (let t = 0; t <= T + 1e-9; t += T / 60) { const p = stateAt(t); c.beginPath(); c.arc(SX(p.x), SY(p.y), 2.2, 0, 7); c.fill(); }
+  // trail so far
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 3; c.beginPath();
+  for (let i = 0; i <= 80; i++) { const p = stateAt(td * i / 80); i ? c.lineTo(SX(p.x), SY(p.y)) : c.moveTo(SX(p.x), SY(p.y)); }
+  c.stroke();
+  if (uy > 0.05) { c.fillStyle = '#e17055'; c.beginPath(); c.arc(SX(xTop), SY(V.H), 5, 0, 7); c.fill(); }
+
+  // X, Y and XY dimension
+  const R = ux * T;
+  c.fillStyle = '#2d3436';
+  [[0, 'X'], [R, 'Y']].forEach(([xm, L]) => { c.beginPath(); c.arc(SX(xm), WY, 4.5, 0, 7); c.fill(); });
+  text(c, 'X', SX(0) - 10, WY + 14, '#fff', 16, 'right', 800);
+  text(c, 'Y', SX(R) + 10, WY + 14, '#fff', 16, 'left', 800);
+  if (R > 0.05) dim(c, SX(0), WY + 38, SX(R), WY + 38, `XY = ${R.toFixed(2)} m`, '#fff', 14, [0, -12]);
+
+  // splash
+  if (td >= T - 1e-6) {
+    c.strokeStyle = '#dff3ff'; c.lineWidth = 3;
+    for (let k = -3; k <= 3; k++) { c.beginPath(); c.moveTo(SX(R), WY); c.quadraticCurveTo(SX(R) + k * 9, WY - 34 + Math.abs(k) * 5, SX(R) + k * 14, WY - 4); c.stroke(); }
+  }
+
+  // diver body oriented along velocity, G at the hip
+  const gx = SX(s.x), gy = SY(Math.max(0, s.y)), ang = Math.atan2(-s.vy, s.vx || 1e-6);
+  if (td < T - 1e-6) {
+    const ca = Math.cos(ang), sa = Math.sin(ang), Ls = Math.max(18, 0.85 * sc), Lt = Math.max(14, 0.6 * sc);
+    c.strokeStyle = '#2d3436'; c.lineWidth = 5; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(gx - ca * Ls, gy - sa * Ls); c.lineTo(gx + ca * Lt, gy + sa * Lt); c.stroke();
+    c.lineWidth = 3; c.beginPath(); c.moveTo(gx + ca * Lt * 0.8, gy + sa * Lt * 0.8); c.lineTo(gx + ca * (Lt + 22), gy + sa * (Lt + 22)); c.stroke();
+    c.fillStyle = '#fdcb6e'; c.strokeStyle = '#2d3436'; c.lineWidth = 2;
+    c.beginPath(); c.arc(gx + ca * (Lt + 8), gy + sa * (Lt + 8), 7, 0, 7); c.fill(); c.stroke();
+  }
+  gMark(c, gx, gy, 7);
+  text(c, 'G', gx - 12, gy - 12, '#d63031', 15, 'right', 800);
+
+  // velocity arrows
+  if (td < T - 1e-6) {
+    const VS = 11;
+    if (Math.abs(s.vx) > 0.01) { arrow(c, gx, gy, gx + s.vx * VS, gy, '#d63031', 3); text(c, 'v_x', gx + s.vx * VS + 6, gy + 12, '#d63031', 14); }
+    if (Math.abs(s.vy) > 0.05) { arrow(c, gx, gy, gx, gy - s.vy * VS, '#00b894', 3); text(c, 'v_y', gx + 8, gy - s.vy * VS, '#00896b', 14); }
+  }
+  text(c, `t = ${td.toFixed(2)} s`, 14, 22, '#2d3436', 16);
+
+  // energy bars (right side)
+  const E0 = stateAt(0).E, bx0 = 630, base = 410, BH = 300;
+  c.fillStyle = 'rgba(255,255,255,.85)'; c.strokeStyle = '#dfe6e9'; c.lineWidth = 1;
+  c.beginPath(); c.roundRect ? c.roundRect(bx0 - 10, 30, 270, 440, 10) : c.rect(bx0 - 10, 30, 270, 440); c.fill(); c.stroke();
+  text(c, 'ශක්තිය (J)', bx0 + 125, 50, '#2d3436', 16, 'center', 800);
+  c.strokeStyle = '#b2bec3'; c.beginPath(); c.moveTo(bx0 + 10, base); c.lineTo(bx0 + 240, base); c.stroke();
+  [['KE', s.KE, '#e17055', 'චාලක'], ['PE', Math.max(0, s.PE), '#0984e3', 'විභව'], ['E', s.E, '#6c5ce7', 'මුළු']].forEach(([lab, val, col, si], i) => {
+    const x = bx0 + 22 + i * 75, h = val / E0 * BH;
+    c.fillStyle = col; c.fillRect(x, base - h, 52, h);
+    text(c, val.toFixed(0), x + 26, base - h - 12, col, 14, 'center', 800);
+    text(c, lab, x + 26, base + 16, col, 15, 'center', 800);
+    text(c, si, x + 26, base + 36, '#636e72', 12, 'center', 600);
+  });
+  c.setLineDash([5, 4]); c.strokeStyle = '#6c5ce7'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(bx0 + 10, base - BH); c.lineTo(bx0 + 240, base - BH); c.stroke(); c.setLineDash([]);
+}
+
+function niceStep(range) {
+  const rough = range / 5, p = Math.pow(10, Math.floor(Math.log10(rough))), n = rough / p;
+  return (n < 1.5 ? 1 : n < 3.5 ? 2 : n < 7.5 ? 5 : 10) * p;
+}
+function plot(c, ox, oy, w, h, o) {
+  const X = t => ox + t / T * w, Y = v => oy + h - (v - o.vmin) / (o.vmax - o.vmin) * h;
+  c.strokeStyle = '#ecf0f1'; c.lineWidth = 1;
+  const st = niceStep(o.vmax - o.vmin);
+  for (let v = Math.ceil(o.vmin / st) * st; v <= o.vmax + 1e-9; v += st) {
+    c.beginPath(); c.moveTo(ox, Y(v)); c.lineTo(ox + w, Y(v)); c.stroke();
+    text(c, String(+v.toFixed(2)).replace('-', '−'), ox - 6, Y(v), '#636e72', 12, 'right', 600);
+  }
+  for (let t = 0; t <= T + 1e-9; t += 0.5) {
+    c.beginPath(); c.moveTo(X(t), oy); c.lineTo(X(t), oy + h); c.stroke();
+    text(c, t.toFixed(1), X(t), oy + h + 12, '#636e72', 12, 'center', 600);
+  }
+  c.strokeStyle = '#2d3436'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(ox, oy); c.lineTo(ox, oy + h); c.stroke();
+  const z = Y(Math.max(o.vmin, Math.min(o.vmax, 0)));
+  c.beginPath(); c.moveTo(ox, z); c.lineTo(ox + w, z); c.stroke();
+  text(c, 't / s', ox + w, oy + h + 26, '#636e72', 12, 'right');
+  text(c, o.title, ox + 4, oy - 12, o.col, 15, 'left', 800);
+  // top-point marker
+  if (uy > 0.05) { c.setLineDash([4, 4]); c.strokeStyle = '#e17055'; c.beginPath(); c.moveTo(X(V.tTop), oy); c.lineTo(X(V.tTop), oy + h); c.stroke(); c.setLineDash([]); }
+  c.strokeStyle = o.col; c.lineWidth = 2.5; c.beginPath();
+  for (let i = 0; i <= 100; i++) { const t = T * i / 100; i ? c.lineTo(X(t), Y(o.f(t))) : c.moveTo(X(t), Y(o.f(t))); }
+  c.stroke();
+  c.fillStyle = o.col; c.beginPath(); c.arc(X(td), Y(o.f(td)), 6, 0, 7); c.fill();
+}
+function drawGraph() {
+  const c = gr.ctx; c.clearRect(0, 0, 900, 250);
+  const ystep = niceStep(V.H);
+  plot(c, 55, 32, 365, 170, { vmin: 0, vmax: Math.ceil(V.H / ystep) * ystep, f: t => Math.max(0, stateAt(t).y), col: '#6c5ce7', title: 'y – t  (ජලයට ඉහළින් උස, m)' });
+  const vlo = uy - g * T;
+  plot(c, 515, 32, 365, 170, { vmin: Math.floor(vlo / 2) * 2, vmax: Math.max(2, Math.ceil(uy / 2) * 2), f: t => stateAt(t).vy, col: '#00b894', title: 'v_y – t  (ms⁻¹, අනුක්‍රමණය = −g)' });
+}
+
+/* ====================== start ====================== */
+p1Update();
+readU();
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.04, (now - last) / 1000); last = now;
+  diveStep(dt);
+  drawBoard(); drawDive(); drawGraph();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
