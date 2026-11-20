@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>වංගු මාර්ග: තිරස් සහ ආනත වංගු (Q335–345) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 14px; line-height: 1.6; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+  .tabs button { font-size: 16px; padding: 9px 18px; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  .controls select { font: inherit; font-weight: 700; font-size: 15px; border: 2px solid #6c5ce7; border-radius: 8px; padding: 6px 8px; margin: 6px 0 4px; width: 100%; background: #fff; color: #2c3e50; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  input[type=range]:disabled { opacity: .4; cursor: not-allowed; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  .chk { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .chk input { width: 18px; height: 18px; accent-color: #6c5ce7; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: linear-gradient(#f0f7ff, #fff); border: 1px solid #dfe6e9; }
+  .graph { background: #fff; border: 1px solid #dfe6e9; }
+  .cvs + .cvs, .cvs + .cap { margin-top: 12px; }
+  .cap { font-weight: 800; font-size: 15px; margin: 12px 0 6px; color: #2c3e50; }
+  .status { margin-top: 14px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 12px 16px; border-radius: 6px; font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; gap: 10px 26px; justify-content: space-between; }
+  .status.limit { border-left-color: #f39c12; background: #fef5e7; }
+  .status.move { border-left-color: #e74c3c; background: #fdedec; }
+  .status small { display: block; font-size: 13px; color: #636e72; font-weight: 600; }
+  .massnote { display: inline-block; margin-top: 4px; font-size: 13px; font-weight: 700; color: #6c5ce7; background: #fff; border: 1px dashed #a29bfe; border-radius: 6px; padding: 3px 8px; transition: background .3s, transform .3s; }
+  .massnote.flash { background: #ffeaa7; transform: scale(1.06); }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .eq { font-family: 'Cambria', 'Times New Roman', serif; font-weight: 700; font-size: 17px; background: #fff; border: 1px solid #dfe6e9; border-radius: 6px; padding: 8px 12px; margin: 6px 0; display: block; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* derivation boxes: one step per line */
+  .dbox { background: #fbfaff; border: 1px solid #d6d2ff; border-left: 6px solid #6c5ce7; border-radius: 10px; padding: 12px 16px; margin: 12px 0; overflow-x: auto; }
+  .dbox .dh { font-weight: 800; font-size: 16px; color: #6c5ce7; margin-bottom: 6px; }
+  .dbox .l { padding: 5px 0 5px 6px; line-height: 1.6; font-size: 15px; }
+  .dbox .l.m { padding-left: 34px; font-family: 'Cambria', 'Times New Roman', serif; font-size: 19px; white-space: nowrap; }
+  .dbox .l.m .si { font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; font-size: 15px; }
+  .fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 4px; line-height: 1.25; }
+  .fr > span:first-child { border-bottom: 1.6px solid currentColor; padding: 0 4px 2px; }
+  .fr > span:last-child { padding: 2px 4px 0; }
+  .sq { white-space: nowrap; }
+  .sq > span { border-top: 1.6px solid currentColor; padding: 2px 3px 0; margin-left: 1px; display: inline-block; }
+  .tg { color: #6c5ce7; font-weight: 700; margin-left: 22px; font-family: 'Segoe UI', sans-serif; font-size: 15px; }
+  .res { display: inline-block; border: 2px solid #6c5ce7; border-radius: 8px; padding: 4px 10px; background: #fff; }
+  .extra { background: #fdcb6e; color: #2d3436; }
+  .rail { margin-top: 18px; border: 2px dashed #a29bfe; border-radius: 12px; padding: 14px; background: #fcfbff; }
+  .rail h3 { margin: 0 0 10px; font-size: 18px; }
+  .rail .controls { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls, .rail .controls { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } .status { font-size: 14px; } .dbox .l.m { font-size: 17px; padding-left: 14px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .side .status { margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 15px; }
+    .side .status > div:first-child { grid-column: 1 / -1; }
+    .main > .cvs:first-child { margin-top: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">Q335–345 · වෘත්ත චලිතය</span></div>
+  <h1>වංගු මාර්ග: තිරස් වංගුව සහ ආනත වංගුව</h1>
+  <p class="sub">වංගුවක් වටා යන මෝටර් රථයකට කේන්ද්‍රය දෙසට <b>mv²/r</b> බලයක් අවශ්‍යයි. තිරස් වංගුවේ එය සපයන්නේ ටයර හා මාර්ගය අතර ඝර්ෂණයයි. ආනත වංගුවේ ප්‍රතික්‍රියාව (R) ද ඇල වී කේන්ද්‍රය දෙසට උදව් කරයි. වේගය වෙනස් කර බලන්න — රථය ලිස්සන්නේ කවදාද?</p>
+
+  <div class="tabs">
+    <button id="tabA" class="solid">🛣️ A. තිරස් වංගුව</button>
+    <button id="tabB">⛰️ B. ආනත වංගුව</button>
+  </div>
+
+  <!-- ================= TAB A ================= -->
+  <section id="paneA">
+    <div class="layout">
+     <aside class="side">
+      <div class="controls">
+        <div><label>අරය r = <span class="v" id="rAVal">60</span> m</label><input type="range" id="rAS" min="20" max="150" step="1" value="60"></div>
+        <div><label>වේගය v = <span class="v" id="vAVal">15.0</span> m s⁻¹</label><input type="range" id="vAS" min="0" max="45" step="0.5" value="15"></div>
+        <div><label>මාර්ග තත්ත්වය (μ)</label>
+          <select id="muSel">
+            <option value="dry">වියළි — μ = 0.8</option>
+            <option value="wet">තෙත් — μ = 0.4</option>
+            <option value="ice">අයිස් — μ = 0.1</option>
+            <option value="custom">අභිමත (custom)</option>
+          </select></div>
+        <div id="muCRow"><label>μ = <span class="v" id="muCVal">0.60</span></label><input type="range" id="muCS" min="0.05" max="1" step="0.05" value="0.6"></div>
+        <div style="grid-column:1/-1"><label>ස්කන්ධය m = <span class="v" id="mAVal">1000</span> kg</label><input type="range" id="mAS" min="500" max="2000" step="50" value="1000">
+          <span class="massnote" id="massNote">⚖️ ස්කන්ධය කැපී යයි — v<sub>max</sub> වෙනස් නොවේ</span></div>
+        <div class="btns">
+          <button class="solid" id="btnAVmax">v = v<sub>max</sub></button>
+          <button id="btnAReset">↺ රථය නැවත මාර්ගයට</button>
+          <span class="note" style="margin:0">g = 10 m s⁻²</span>
+        </div>
+      </div>
+      <div class="status" id="statusA">
+        <div><small>තත්ත්වය</small><span id="stA">–</span></div>
+        <div><small>වේගය v</small><span id="stAV">–</span></div>
+        <div><small>v<sub>max</sub> = √(μrg)</small><span id="stAVmax">–</span></div>
+        <div><small>අවශ්‍ය F = mv²/r</small><span id="stAF">–</span></div>
+        <div><small>f<sub>max</sub> = μmg</small><span id="stAFmax">–</span></div>
+      </div>
+     </aside>
+     <div class="main">
+      <div class="cvs"><canvas id="cvA" class="scene"></canvas></div>
+     </div>
+    </div>
+
+    <div class="dbox">
+      <div class="dh">ආරක්ෂිතව හැරවිය හැකි උපරිම වේගය</div>
+      <div class="l">අවශ්‍ය F<sub>c</sub> ≤ උපරිම ඝර්ෂණය (f<sub>max</sub>):</div>
+      <div class="l m"><span class="fr"><span>mv²</span><span>r</span></span> ≤ μmg</div>
+      <div class="l">මෙහිදී දෙපසින්ම ස්කන්ධය (m) කැපී යයි:</div>
+      <div class="l m"><span class="fr"><span>v²</span><span>r</span></span> ≤ μg</div>
+      <div class="l m">v² ≤ μrg</div>
+      <div class="l m"><span class="res">v<sub>max</sub> = <span class="sq">√<span>μrg</span></span></span></div>
+      <div class="note">v &gt; v<sub>max</sub> වූ විට ඝර්ෂණයට කේන්ද්‍රාභිසාරී බලය සැපයිය නොහැක — රථය වෘත්තයෙන් ඉවත්ව, <b>ස්පර්ශකයට ආසන්න මාර්ගයක</b> පිටතට ලිස්සා යයි (අරයක් දිගේ කෙලින්ම පිටතට නොවේ).</div>
+    </div>
+
+    <h2>විසඳුම් (උදාහරණ)</h2>
+    <details>
+      <summary><span class="qtag">උදා. A</span>r = 50 m වංගුවක උපරිම වේගය — වියළි / තෙත් / අයිස්</summary>
+      <div class="ans">
+        v<sub>max</sub> = √(μrg) භාවිතයෙන්:
+        <span class="eq">වියළි (μ = 0.8): v<sub>max</sub> = √(0.8 × 50 × 10) = √400 = 20 m s⁻¹ (72 km h⁻¹)</span>
+        <span class="eq">තෙත් (μ = 0.4): v<sub>max</sub> = √(0.4 × 50 × 10) = √200 ≈ 14.1 m s⁻¹</span>
+        <span class="eq">අයිස් (μ = 0.1): v<sub>max</sub> = √(0.1 × 50 × 10) = √50 ≈ 7.1 m s⁻¹</span>
+        වැසි දිනයක වේගය අඩු කළ යුත්තේ ඒ නිසයි! ලොරියකටත් කාරයකටත් v<sub>max</sub> සමානයි — ස්කන්ධය කැපී යයි.
+        <div class="btns" style="margin-top:6px"><button data-preset="A1">▶ සිමියුලේෂනයේ බලන්න</button></div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= TAB B ================= -->
+  <section id="paneB" style="display:none">
+    <div class="layout">
+     <aside class="side">
+      <div class="controls">
+        <div><label>ආනතිය θ = <span class="v" id="thVal">20.0</span>°</label><input type="range" id="thS" min="0" max="45" step="0.5" value="20"></div>
+        <div><label>අරය r = <span class="v" id="rBVal">120</span> m</label><input type="range" id="rBS" min="20" max="400" step="5" value="120"></div>
+        <div><label>වේගය v = <span class="v" id="vBVal">20.0</span> m s⁻¹</label><input type="range" id="vBS" min="0" max="70" step="0.5" value="20"></div>
+        <div><label>μ = <span class="v" id="muBVal">0.30</span></label><input type="range" id="muBS" min="0" max="1" step="0.05" value="0.3"></div>
+        <div class="btns">
+          <label class="chk"><input type="checkbox" id="iceChk"> 🧊 අයිස් (සුමට, μ = 0)</label>
+          <span class="note" style="margin:0">m = 1000 kg, g = 10 m s⁻²</span>
+        </div>
+        <div class="btns">
+          <button class="solid" id="btnIdeal">v = v<sub>ideal</sub></button>
+          <button id="btnVmin">v = v<sub>min</sub></button>
+          <button id="btnVmax">v = v<sub>max</sub></button>
+          <button id="btn37">tan θ = 0.75 (≈37°)</button>
+        </div>
+      </div>
+      <div class="status" id="statusB">
+        <div><small>තත්ත්වය</small><span id="stB">–</span></div>
+        <div><small>v<sub>ideal</sub> = √(rg tanθ)</small><span id="stVi">–</span></div>
+        <div><small>v<sub>min</sub></small><span id="stVmin">–</span></div>
+        <div><small>v<sub>max</sub></small><span id="stVmax">–</span></div>
+        <div><small>ප්‍රතික්‍රියාව R</small><span id="stR">–</span></div>
+        <div><small>අවශ්‍ය ඝර්ෂණය f</small><span id="stFB">–</span></div>
+        <div><small>සීමාකාරී μR</small><span id="stMuR">–</span></div>
+      </div>
+     </aside>
+     <div class="main">
+      <div class="cvs"><canvas id="cvB" class="scene"></canvas></div>
+      <div class="cap">ආරක්ෂිත වේග පරාසය (කොළ පාට කලාපය)</div>
+      <div class="cvs"><canvas id="cvS" class="graph"></canvas></div>
+     </div>
+    </div>
+
+    <div class="rail">
+      <h3>🚆 දුම්රිය මාර්ගය — පිට රේල් පීල්ල ඔසවා තැබීම</h3>
+      <div class="controls">
+        <div><label>අරය r = <span class="v" id="rRVal">400</span> m</label><input type="range" id="rRS" min="200" max="1500" step="10" value="400"></div>
+        <div><label>වේගය v = <span class="v" id="vRVal">20.0</span> m s⁻¹</label><input type="range" id="vRS" min="5" max="30" step="0.5" value="20"></div>
+        <div><label>පීලි පරතරය d = <span class="v" id="dRVal">1.50</span> m</label><input type="range" id="dRS" min="1" max="1.7" step="0.05" value="1.5"></div>
+        <div class="btns"><button id="btnRailEx">උදාහරණය: r = 400 m, v = 20 m s⁻¹</button></div>
+      </div>
+      <div class="cvs"><canvas id="cvR" class="graph"></canvas></div>
+      <div class="status" id="statusR">
+        <div><small>tan θ = v²/(rg)</small><span id="rTan">–</span></div>
+        <div><small>θ</small><span id="rTh">–</span></div>
+        <div><small>h = d sinθ</small><span id="rH">–</span></div>
+        <div><small>h ≈ d tanθ (θ කුඩා)</small><span id="rH2">–</span></div>
+      </div>
+      <p class="note">පරිපූර්ණ වේගයේදී (v² = rg tanθ) රෝදවල දාර (flanges) රේල් පීලි මත පැත්තට තෙරපෙන්නේ නැත — පීලි ගෙවී යාම අඩුයි. θ කුඩා නිසා sinθ ≈ tanθ.</p>
+    </div>
+
+    <div class="dbox">
+      <div class="dh">1) ඝර්ෂණය රහිත විට</div>
+      <div class="l">• සිරස් සමතුලිතතාවය (↑):</div>
+      <div class="l m">R cosθ = mg <span class="tg">—— (1)</span></div>
+      <div class="l">• තිරස් දිශාවට (වෘත්තයේ කේන්ද්‍රය දෙසට කේන්ද්‍රාභිසාරී බලය):</div>
+      <div class="l m">R sinθ = <span class="fr"><span>mv²</span><span>r</span></span> <span class="tg">—— (2)</span></div>
+      <div class="l">සමීකරණ (2), සමීකරණ (1) න් බෙදීමෙන්:</div>
+      <div class="l m"><span class="fr"><span>R sinθ</span><span>R cosθ</span></span> = <span class="fr"><span><span class="fr"><span>mv²</span><span>r</span></span></span><span>mg</span></span></div>
+      <div class="l m">tanθ = <span class="fr"><span>v²</span><span>rg</span></span></div>
+      <div class="l m">v² = rg tanθ</div>
+      <div class="l m"><span class="res">v = <span class="sq">√<span>rg tanθ</span></span></span></div>
+    </div>
+
+    <div class="dbox">
+      <div class="dh">2) ඝර්ෂණය සහිත විට — උපරිම වේගය v<sub>max</sub></div>
+      <div class="l">වේගය වැඩි වූ විට රථය බෑවුම දිගේ ඉහළට (පිටතට) ලිස්සීමට තැත් කරයි. එබැවින් සීමාකාරී ඝර්ෂණය f = μR <b>බෑවුම දිගේ පහළට</b> ක්‍රියා කරයි.</div>
+      <div class="l">• සිරස් සමතුලිතතාවය (↑):</div>
+      <div class="l m">R cosθ = mg + f sinθ</div>
+      <div class="l m">R cosθ − f sinθ = mg</div>
+      <div class="l">f = μR ආදේශ කිරීමෙන්:</div>
+      <div class="l m">R(cosθ − μ sinθ) = mg <span class="tg">—— (1)</span></div>
+      <div class="l">• තිරස් දිශාවට (කේන්ද්‍රය දෙසට):</div>
+      <div class="l m">R sinθ + f cosθ = <span class="fr"><span>mv<sub>max</sub>²</span><span>r</span></span></div>
+      <div class="l m">R(sinθ + μ cosθ) = <span class="fr"><span>mv<sub>max</sub>²</span><span>r</span></span> <span class="tg">—— (2)</span></div>
+      <div class="l">(2) ÷ (1):</div>
+      <div class="l m"><span class="fr"><span>sinθ + μ cosθ</span><span>cosθ − μ sinθ</span></span> = <span class="fr"><span>v<sub>max</sub>²</span><span>rg</span></span></div>
+      <div class="l">ලවය හා හරය cosθ න් බෙදීමෙන්:</div>
+      <div class="l m"><span class="fr"><span>tanθ + μ</span><span>1 − μ tanθ</span></span> = <span class="fr"><span>v<sub>max</sub>²</span><span>rg</span></span></div>
+      <div class="l m"><span class="res">v<sub>max</sub> = <span class="sq">√<span>rg <span class="fr"><span>tanθ + μ</span><span>1 − μ tanθ</span></span></span></span></span></div>
+      <div class="note">μ tanθ ≥ 1 නම් හරය ≤ 0 — එවිට ඉහළ වේග සීමාවක් නැත (v<sub>max</sub> = ∞).<br>ස්කන්ධය කැපී යන බැවින් උපරිම වේගය ස්කන්ධය මත රඳා නොපවතී.</div>
+    </div>
+
+    <details>
+      <summary><span class="qtag extra">අමතර</span>3) ඝර්ෂණය සහිත විට — අවම වේගය v<sub>min</sub></summary>
+      <div class="dbox" style="margin:4px 12px 12px">
+        <div class="l">වේගය අඩු වූ විට රථය බෑවුම දිගේ පහළට (ඇතුළට) ලිස්සීමට තැත් කරයි. එබැවින් f = μR <b>බෑවුම දිගේ ඉහළට</b> ක්‍රියා කරයි — ලකුණු මාරු වේ.</div>
+        <div class="l">• සිරස් සමතුලිතතාවය (↑):</div>
+        <div class="l m">R cosθ + f sinθ = mg</div>
+        <div class="l m">R(cosθ + μ sinθ) = mg <span class="tg">—— (1)</span></div>
+        <div class="l">• තිරස් දිශාවට (කේන්ද්‍රය දෙසට):</div>
+        <div class="l m">R sinθ − f cosθ = <span class="fr"><span>mv<sub>min</sub>²</span><span>r</span></span></div>
+        <div class="l m">R(sinθ − μ cosθ) = <span class="fr"><span>mv<sub>min</sub>²</span><span>r</span></span> <span class="tg">—— (2)</span></div>
+        <div class="l">(2) ÷ (1), ලවය හා හරය cosθ න් බෙදීමෙන්:</div>
+        <div class="l m"><span class="fr"><span>tanθ − μ</span><span>1 + μ tanθ</span></span> = <span class="fr"><span>v<sub>min</sub>²</span><span>rg</span></span></div>
+        <div class="l m"><span class="res">v<sub>min</sub> = <span class="sq">√<span>rg <span class="fr"><span>tanθ − μ</span><span>1 + μ tanθ</span></span></span></span></span></div>
+        <div class="note">μ ≥ tanθ නම් v<sub>min</sub> = 0 — රථයට නිශ්චලව වුවද නොලිස්සා සිටිය හැක.</div>
+      </div>
+    </details>
+
+    <div class="dbox" style="border-left-color:#74b9ff">
+      <div class="dh" style="color:#0984e3">🧊 අයිස් සහිත (සුමට, μ = 0) ආනත වංගුවක්</div>
+      <div class="l">ආරක්ෂිත වන්නේ <b>එක් වේගයක් පමණි</b>: v = √(rg tanθ).</div>
+      <div class="l">ඊට වඩා <b>අඩු</b> නම් → රථය බෑවුම දිගේ <b>පහළට (ඇතුළට)</b> ලිස්සයි.</div>
+      <div class="l">ඊට වඩා <b>වැඩි</b> නම් → රථය බෑවුම දිගේ <b>ඉහළට (පිටතට)</b> ලිස්සයි.</div>
+    </div>
+
+    <h2>විසඳුම් (පන්තියේ ගැටලු)</h2>
+    <details>
+      <summary><span class="qtag">උදා. 1</span>r = 120 m, v = 30 m s⁻¹ — ඝර්ෂණය නැතිව යාමට θ කීයද?</summary>
+      <div class="ans">
+        <span class="eq">tanθ = v²/(rg) = 30² / (120 × 10) = 900 / 1200 = 0.75</span>
+        <span class="eq">θ = tan⁻¹(0.75) ≈ 37°</span>
+        <div class="btns"><button data-preset="B1">▶ සිමියුලේෂනයේ බලන්න</button></div>
+      </div>
+    </details>
+    <details>
+      <summary><span class="qtag">උදා. 2</span>එම වංගුවේම (37°) 1000 kg රථයක් 15 m s⁻¹ න් — f හා R</summary>
+      <div class="ans">
+        sin37° = 0.6, cos37° = 0.8 ලෙස ගනිමු. v = 15 &lt; 30 (v<sub>ideal</sub>) නිසා රථය පහළට ලිස්සීමට තැත් කරයි → f <b>බෑවුම දිගේ ඉහළට</b>.<br>
+        mv²/r = 1000 × 15² / 120 = 1875 N
+        <span class="eq">තිරස්: R sinθ − f cosθ = 1875 → 0.6R − 0.8f = 1875 —— (1)</span>
+        <span class="eq">සිරස්: R cosθ + f sinθ = mg → 0.8R + 0.6f = 10000 —— (2)</span>
+        (1) × 0.6 + (2) × 0.8:
+        <span class="eq">R = 1125 + 8000 = 9125 N</span>
+        (2) × 0.6 − (1) × 0.8:
+        <span class="eq">f = 6000 − 1500 = 4500 N (බෑවුම දිගේ ඉහළට)</span>
+        <div class="btns"><button data-preset="B2">▶ සිමියුලේෂනයේ බලන්න</button></div>
+      </div>
+    </details>
+    <details>
+      <summary><span class="qtag">උදා. 3</span>අයිස් සහිත 37° වංගුව (r = 120 m)</summary>
+      <div class="ans">
+        μ = 0 නිසා ඝර්ෂණය නැත. R cosθ = mg හා R sinθ = mv²/r පමණි:
+        <span class="eq">v = √(rg tanθ) = √(120 × 10 × 0.75) = √900 = 30 m s⁻¹</span>
+        එබැවින් <b>30 m s⁻¹ පමණි</b> — අඩු නම් ඇතුළට (පහළට), වැඩි නම් පිටතට (ඉහළට) ලිස්සයි.
+        <div class="btns"><button data-preset="B3">▶ සිමියුලේෂනයේ බලන්න</button></div>
+      </div>
+    </details>
+    <details>
+      <summary><span class="qtag">උදා. 4</span>දුම්රිය මාර්ගය: r = 400 m, v = 20 m s⁻¹, d = 1.5 m — h කීයද?</summary>
+      <div class="ans">
+        <span class="eq">tanθ = v²/(rg) = 400 / 4000 = 0.1</span>
+        <span class="eq">h = d sinθ ≈ d tanθ = 1.5 × 0.1 = 0.15 m</span>
+        <div class="btns"><button data-preset="R1">▶ සිමියුලේෂනයේ බලන්න</button></div>
+      </div>
+    </details>
+  </section>
+</div>
+
+<script>
+// ===================== physics core (no DOM) =====================
+const g = 10;
+const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
+const MU_PRESETS = { dry: 0.8, wet: 0.4, ice: 0.1 };
+const S = {
+  tab: 'A',
+  // Tab A — flat curve
+  rA: 60, vA: 15, muPreset: 'dry', muCustom: 0.6, mA: 1000,
+  // Tab B — banked curve (th in degrees)
+  th: 20, rB: 120, vB: 20, muB: 0.3, ice: false, mB: 1000,
+  // railway sub-panel
+  rR: 400, vR: 20, dR: 1.5,
+};
+function muA() { return S.muPreset === 'custom' ? S.muCustom : MU_PRESETS[S.muPreset]; }
+
+function computeA() {
+  const mu = muA(), m = S.mA, v = S.vA, r = S.rA;
+  const Fneed = m * v * v / r, fmax = mu * m * g, vMax = Math.sqrt(mu * r * g);
+  return { mu, Fneed, fmax, vMax, skid: Fneed > fmax * (1 + 1e-9) };
+}
+
+// Banked curve. f > 0 means friction DOWN the slope:
+//   R sinθ + f cosθ = mv²/r ;  R cosθ − f sinθ = mg
+//   → R = m(g cosθ + (v²/r) sinθ) ,  f = m((v²/r) cosθ − g sinθ)
+function computeB() {
+  const th = rad(S.th), s = Math.sin(th), c = Math.cos(th), t = Math.tan(th);
+  const mu = S.ice ? 0 : S.muB, r = S.rB, v = S.vB, m = S.mB, a = v * v / r;
+  const vIdeal = Math.sqrt(r * g * t);
+  const vMin = mu >= t - 1e-12 ? 0 : Math.sqrt(r * g * (t - mu) / (1 + mu * t));
+  const vMax = mu * t >= 1 - 1e-12 ? Infinity : Math.sqrt(r * g * (t + mu) / (1 - mu * t));
+  const R = m * (g * c + a * s);
+  const fs = m * (a * c - g * s);
+  const eps = 1e-6 * m * g;
+  const fDir = Math.abs(fs) <= eps ? 'none' : fs > 0 ? 'down' : 'up';
+  const slides = Math.abs(fs) > mu * R + eps;
+  return { vIdeal, vMin, vMax, R, f: Math.abs(fs), fSigned: fs, fDir, slides,
+           slideDir: slides ? (fs > 0 ? 'up' : 'down') : null, mu, fLimit: mu * R, need: m * a };
+}
+function computeR() {
+  const tn = S.vR * S.vR / (S.rR * g), th = Math.atan(tn);
+  return { tan: tn, th, h: S.dR * Math.sin(th), hApprox: S.dR * tn };
+}
+
+// ---- animation state ----
+const carA = { ang: Math.PI / 2, skid: false, x: 0, y: 0, vx: 0, vy: 0, t: 0, trail: [] };
+let slipB = 0, slipHold = 0, distB = 0;
+function resetCarA() { carA.skid = false; carA.trail = []; carA.t = 0; }
+
+function stepA(dt) {
+  const A = computeA(), r = S.rA, v = S.vA;
+  if (!carA.skid) {
+    carA.ang += v / r * dt;
+    if (carA.ang > 2 * Math.PI) carA.ang -= 2 * Math.PI;
+    if (A.skid && v > 0) {
+      const a = carA.ang;
+      Object.assign(carA, { skid: true, x: r * Math.cos(a), y: r * Math.sin(a), vx: -v * Math.sin(a), vy: v * Math.cos(a), t: 0, trail: [] });
+      carA.trail.push([carA.x, carA.y]);
+    }
+  } else {
+    // skidding: only kinetic friction (≈0.75 μ m g) pulls towards the centre → path bends less than the road → drifts outward, near the tangent
+    const d = Math.hypot(carA.x, carA.y) || 1, ak = 0.75 * A.mu * g;
+    carA.vx -= ak * carA.x / d * dt; carA.vy -= ak * carA.y / d * dt;
+    const sp = Math.hypot(carA.vx, carA.vy) || 1;
+    carA.vx *= v / sp; carA.vy *= v / sp;
+    carA.x += carA.vx * dt; carA.y += carA.vy * dt; carA.t += dt;
+    if (carA.trail.length < 600) carA.trail.push([carA.x, carA.y]);
+    if (d > 2.1 * r || carA.t > 6 || v <= 0) { carA.skid = false; carA.t = 0; }
+  }
+}
+function stepB(dt) {
+  const B = computeB();
+  distB += S.vB * dt;
+  if (B.slides) {
+    if (Math.abs(slipB) < 170) { slipB += (B.slideDir === 'up' ? 1 : -1) * 70 * dt; slipHold = 0; }
+    else { slipHold += dt; if (slipHold > 0.8) { slipB = 0; slipHold = 0; } }
+  } else { slipB *= Math.max(0, 1 - 6 * dt); slipHold = 0; }
+}
+function step(dt) {
+  while (dt > 1e-9) { const h = Math.min(dt, 0.02); stepA(h); stepB(h); dt -= h; }
+}
+
+// ===================== drawing =====================
+const $ = id => document.getElementById(id);
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    if (!w) return;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(14, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+// Draws text; "x_abc" is drawn with "abc" as a real subscript.
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Iskoola Pota','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/);
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
+}
+const fN = x => Math.round(x).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const f1 = x => x.toFixed(1);
+const fV = x => x === Infinity ? '∞' : x.toFixed(1);
+
+// top-down car; local +x = forward
+function carTop(c, x, y, ang, col, L = 34, W = 18) {
+  c.save(); c.translate(x, y); c.rotate(ang);
+  c.fillStyle = '#2d3436';
+  [[-L / 2 + 4, -W / 2 - 3], [L / 2 - 12, -W / 2 - 3], [-L / 2 + 4, W / 2 - 1], [L / 2 - 12, W / 2 - 1]].forEach(([wx, wy]) => c.fillRect(wx, wy, 8, 4));
+  c.fillStyle = col; c.strokeStyle = '#4834d4'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(-L / 2, -W / 2, L, W, 4); c.fill(); c.stroke();
+  c.fillStyle = '#dfe6e9'; c.fillRect(L / 2 - 13, -W / 2 + 3, 5, W - 6);
+  c.restore();
+}
+
+// ---------- Tab A canvas ----------
+let cA, cB, cS, cR;
+function drawA() {
+  const c = cA.ctx, W = 900, H = 470; c.clearRect(0, 0, W, H);
+  const A = computeA(), r = S.rA;
+  // --- left: top-down road ---
+  c.save(); c.beginPath(); c.roundRect(10, 10, 495, 450, 10); c.clip();
+  c.fillStyle = '#e3f4e1'; c.fillRect(10, 10, 495, 450);
+  const Rp = 175 * Math.sqrt(r / 150), k = Rp / r, cx = 258, cy = 240, RW = 30;
+  const scr = (x, y) => [cx + x * k, cy - y * k];
+  c.strokeStyle = '#636e72'; c.lineWidth = RW; c.beginPath(); c.arc(cx, cy, Rp, 0, 7); c.stroke();
+  c.strokeStyle = '#fff'; c.lineWidth = 2;
+  [Rp - RW / 2, Rp + RW / 2].forEach(rr => { c.beginPath(); c.arc(cx, cy, rr, 0, 7); c.stroke(); });
+  c.strokeStyle = '#ffeaa7'; c.setLineDash([10, 10]); c.beginPath(); c.arc(cx, cy, Rp, 0, 7); c.stroke(); c.setLineDash([]);
+  // centre + radius
+  const ra = carA.ang, onX = cx + Rp * Math.cos(ra), onY = cy - Rp * Math.sin(ra);
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 1.5; c.setLineDash([5, 5]);
+  c.beginPath(); c.moveTo(cx, cy); c.lineTo(onX, onY); c.stroke(); c.setLineDash([]);
+  c.fillStyle = '#6c5ce7'; c.beginPath(); c.arc(cx, cy, 5, 0, 7); c.fill();
+  text(c, 'O (කේන්ද්‍රය)', cx, cy + 18, '#6c5ce7', 14, 'center');
+  text(c, `r = ${r} m`, (cx + onX) / 2 + 8 * Math.sin(ra), (cy + onY) / 2 + 8 * Math.cos(ra) - 10, '#6c5ce7', 14, 'center', 800);
+  // skid marks
+  if (carA.trail.length > 1) {
+    c.strokeStyle = 'rgba(45,52,54,.55)'; c.lineWidth = 4; c.beginPath();
+    carA.trail.forEach(([x, y], i) => { const [X, Y] = scr(x, y); i ? c.lineTo(X, Y) : c.moveTo(X, Y); });
+    c.stroke();
+  }
+  // car + arrows
+  let X, Y, head;
+  if (!carA.skid) { [X, Y] = [onX, onY]; head = Math.atan2(-Math.cos(ra), -Math.sin(ra)); }
+  else { [X, Y] = scr(carA.x, carA.y); head = Math.atan2(-carA.vy, carA.vx); }
+  const toC = Math.atan2(cy - Y, cx - X), dC = Math.hypot(cx - X, cy - Y);
+  const fNow = carA.skid ? 0.75 * A.fmax : Math.min(A.Fneed, A.fmax);
+  const Lf = Math.min(dC - 10, 120, fNow * 300 / 20000);
+  if (S.vA > 0) arrow(c, X, Y, X + Math.cos(head) * (24 + S.vA * 1.8), Y + Math.sin(head) * (24 + S.vA * 1.8), '#0984e3', 4);
+  if (Lf > 4) arrow(c, X, Y, X + Math.cos(toC) * Lf, Y + Math.sin(toC) * Lf, '#e17055', 5);
+  carTop(c, X, Y, head, A.skid ? '#fab1a0' : '#a29bfe');
+  // status badge
+  if (A.skid) text(c, 'ලිස්සා යයි! 💨', 258, 38, '#d63031', 28, 'center', 800);
+  else text(c, 'ආරක්ෂිතයි ✅', 258, 36, '#27ae60', 20, 'center', 800);
+  text(c, '→ v (ප්‍රවේගය)', 22, 428, '#0984e3', 13, 'left');
+  text(c, '→ f (ඝර්ෂණය, කේන්ද්‍රය දෙසට)', 22, 448, '#d35400', 13, 'left');
+  text(c, 'ඉහළ සිට දසුන', 495, 448, '#95a5a6', 13, 'right', 600);
+  c.restore();
+
+  // --- right: bars ---
+  const base = 400, Hb = 290, FS = 20000, hs = Hb / FS, b1 = 585, b2 = 735, bw = 110;
+  text(c, 'බල සංසන්දනය', 712, 34, '#2c3e50', 18, 'center', 800);
+  text(c, `m = ${S.mA} kg,  μ = ${A.mu.toFixed(2)}`, 712, 60, '#636e72', 14, 'center', 600);
+  for (let F = 0; F <= FS; F += 5000) {
+    const y = base - F * hs;
+    c.strokeStyle = '#ecf0f1'; c.lineWidth = 1; c.beginPath(); c.moveTo(565, y); c.lineTo(880, y); c.stroke();
+    text(c, F / 1000 + 'k', 558, y, '#95a5a6', 12, 'right', 600);
+  }
+  const bar = (x, F, col) => {
+    const h = Math.min(F, FS) * hs;
+    c.fillStyle = col; c.fillRect(x, base - h, bw, h);
+    if (F > FS) { // broken top
+      c.fillStyle = '#fff'; c.beginPath(); c.moveTo(x - 2, base - h + 14); c.lineTo(x + bw / 3, base - h + 6); c.lineTo(x + 2 * bw / 3, base - h + 16); c.lineTo(x + bw + 2, base - h + 8); c.lineTo(x + bw + 2, base - h + 12); c.lineTo(x + 2 * bw / 3, base - h + 20); c.lineTo(x + bw / 3, base - h + 10); c.lineTo(x - 2, base - h + 18); c.closePath(); c.fill();
+    }
+    text(c, fN(F) + ' N' + (F > FS ? ' ▲' : ''), x + bw / 2, base - h - 14, col, 15, 'center', 800);
+  };
+  bar(b1, A.Fneed, A.skid ? '#e74c3c' : '#6c5ce7');
+  bar(b2, A.fmax, '#00b894');
+  const yf = base - Math.min(A.fmax, FS) * hs;
+  c.strokeStyle = '#00b894'; c.lineWidth = 2; c.setLineDash([6, 5]); c.beginPath(); c.moveTo(570, yf); c.lineTo(880, yf); c.stroke(); c.setLineDash([]);
+  c.strokeStyle = '#2d3436'; c.lineWidth = 2; c.beginPath(); c.moveTo(565, base); c.lineTo(880, base); c.stroke();
+  text(c, 'අවශ්‍ය F_c', b1 + bw / 2, base + 20, A.skid ? '#d63031' : '#6c5ce7', 15, 'center', 800);
+  text(c, '= mv²/r', b1 + bw / 2, base + 42, '#636e72', 14, 'center', 700);
+  text(c, 'උපරිම ඝර්ෂණය', b2 + bw / 2, base + 20, '#00a383', 15, 'center', 800);
+  text(c, 'f_max = μmg', b2 + bw / 2, base + 42, '#636e72', 14, 'center', 700);
+  text(c, A.skid ? 'අවශ්‍ය > ලබාගත හැකි ✗' : 'අවශ්‍ය ≤ ලබාගත හැකි ✓', 712, 86, A.skid ? '#d63031' : '#27ae60', 15, 'center', 800);
+}
+
+// ---------- Tab B canvas (cross-section + inset) ----------
+function drawB() {
+  const c = cB.ctx, W = 900, H = 480; c.clearRect(0, 0, W, H);
+  const B = computeB(), th = rad(S.th), s = Math.sin(th), co = Math.cos(th);
+  const u = [co, -s], n = [-s, -co];               // up-slope (towards outside) and surface normal
+  const pt = (p, v, d) => [p[0] + v[0] * d, p[1] + v[1] * d];
+  const P0 = [340, 290], P = pt(P0, u, slipB);
+  // embankment + road surface
+  const A1 = pt(P0, u, -360), A2 = pt(P0, u, 270);
+  c.fillStyle = '#d7ccc8'; c.beginPath(); c.moveTo(A1[0], A1[1]); c.lineTo(A2[0], A2[1]); c.lineTo(A2[0], H); c.lineTo(A1[0], H); c.closePath(); c.fill();
+  c.strokeStyle = '#636e72'; c.lineWidth = 10; c.lineCap = 'butt'; c.beginPath(); c.moveTo(A1[0], A1[1]); c.lineTo(A2[0], A2[1]); c.stroke();
+  text(c, 'පිට දාරය', A2[0] - 4, A2[1] - 20, '#636e72', 13, 'right', 700);
+  // θ marker lower on the slope
+  const Q = pt(P0, u, -225);
+  if (S.th > 0.4) {
+    c.strokeStyle = '#95a5a6'; c.lineWidth = 1.5; c.setLineDash([5, 5]); c.beginPath(); c.moveTo(Q[0], Q[1]); c.lineTo(Q[0] + 120, Q[1]); c.stroke(); c.setLineDash([]);
+    c.strokeStyle = '#6c5ce7'; c.lineWidth = 2; c.beginPath(); c.arc(Q[0], Q[1], 62, -th, 0); c.stroke();
+    text(c, 'θ = ' + S.th.toFixed(1) + '°', Q[0] + 70, Q[1] - 10 - S.th * 0.5, '#6c5ce7', 15, 'left', 800);
+  }
+  // centre direction
+  arrow(c, 250, 52, 26, 52, '#6c5ce7', 4);
+  text(c, 'කේන්ද්‍රය දෙසට (O)', 30, 26, '#6c5ce7', 16, 'left', 800);
+  // car (rear view)
+  const col = B.slides ? '#fab1a0' : '#a29bfe', stroke = B.slides ? '#e17055' : '#6c5ce7';
+  c.save(); c.translate(P[0], P[1]); c.rotate(-th);
+  c.fillStyle = '#2d3436'; c.fillRect(-60, -32, 22, 32); c.fillRect(38, -32, 22, 32);
+  c.fillStyle = col; c.strokeStyle = stroke; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(-44, -72); c.lineTo(-32, -104); c.lineTo(32, -104); c.lineTo(44, -72); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = '#dfe6e9'; c.beginPath(); c.moveTo(-36, -76); c.lineTo(-27, -98); c.lineTo(27, -98); c.lineTo(36, -76); c.closePath(); c.fill();
+  c.fillStyle = col; c.beginPath(); c.roundRect(-66, -74, 132, 46, 8); c.fill(); c.stroke();
+  c.fillStyle = '#d63031'; c.fillRect(-60, -64, 14, 9); c.fillRect(46, -64, 14, 9);
+  c.fillStyle = '#fff'; c.fillRect(-17, -52, 34, 12); c.strokeStyle = '#636e72'; c.lineWidth = 1; c.strokeRect(-17, -52, 34, 12);
+  c.restore();
+  // forces (common scale, longest ≤ 190 px)
+  const m = S.mB, mg = m * g, G = pt(P, n, 56);
+  const k = Math.min(100 / mg, 190 / Math.max(B.R, B.f, mg));
+  arrow(c, G[0], G[1], G[0], G[1] + mg * k, '#2d3436', 4);
+  text(c, 'mg', G[0] + 10, G[1] + mg * k - 6, '#2d3436', 16, 'left', 800);
+  if (S.th > 0.4) {
+    arrow(c, G[0], G[1], G[0], G[1] - B.R * co * k, '#00a383', 3, [6, 5]);
+    text(c, 'R cosθ', G[0] + 8, G[1] - B.R * co * k + 4, '#00a383', 14, 'left', 700);
+    arrow(c, G[0], G[1], G[0] - B.R * s * k, G[1], '#00a383', 3, [6, 5]);
+    text(c, 'R sinθ', G[0] - B.R * s * k, G[1] + 18, '#00a383', 14, 'center', 700);
+  }
+  const RE = pt(G, n, B.R * k);
+  arrow(c, G[0], G[1], RE[0], RE[1], '#00b894', 5);
+  text(c, 'R', RE[0] - 14, RE[1] - 6, '#00b894', 19, 'right', 800);
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(G[0], G[1], 4, 0, 7); c.fill();
+  // friction at the tyres, along the slope
+  if (B.fDir === 'none') {
+    text(c, 'f = 0', P[0], P[1] + 26, '#d35400', 16, 'center', 800);
+  } else {
+    const dv = B.fDir === 'down' ? [-u[0], -u[1]] : u;
+    const F0 = pt(pt(P, dv, 62), n, 3);
+    const shown = B.slides ? B.fLimit : B.f;
+    if (B.slides) {
+      const Fe = pt(F0, dv, Math.max(B.f * k, 8));
+      arrow(c, F0[0], F0[1], Fe[0], Fe[1], '#e17055', 3, [5, 5]);
+      text(c, 'අවශ්‍ය f = ' + fN(B.f) + ' N', Fe[0] + (dv[0] > 0 ? 8 : -8), Fe[1] - 18, '#e17055', 13, dv[0] > 0 ? 'left' : 'right', 700);
+    }
+    if (shown * k > 2) {
+      const Fe = pt(F0, dv, shown * k);
+      arrow(c, F0[0], F0[1], Fe[0], Fe[1], '#d35400', 6);
+      text(c, (B.slides ? 'μR = ' : 'f = ') + fN(shown) + ' N', Fe[0] + (dv[0] > 0 ? 6 : -6), Fe[1] + 20, '#d35400', 15, dv[0] > 0 ? 'left' : 'right', 800);
+    }
+  }
+  // badge
+  let t1, t2, bc;
+  if (B.slides) { bc = '#d63031'; t1 = 'ලිස්සයි!'; t2 = B.slideDir === 'up' ? '↗ පිටතට (බෑවුම දිගේ ඉහළට)' : '↙ ඇතුළට (බෑවුම දිගේ පහළට)'; }
+  else { bc = '#27ae60'; t1 = 'ආරක්ෂිතයි ✅'; t2 = B.fDir === 'none' ? 'පරිපූර්ණ වේගය — f අවශ්‍ය නැත' : B.fDir === 'up' ? 'f බෑවුම දිගේ ඉහළට (v < v_ideal)' : 'f බෑවුම දිගේ පහළට (v > v_ideal)'; }
+  text(c, t1, 885, 282, bc, 24, 'right', 800);
+  text(c, t2, 885, 310, bc, 14, 'right', 700);
+  text(c, '⊗ v : රථය තිරයට ඇතුළට යයි (පසුපස දසුන)', 885, 338, '#636e72', 13, 'right', 600);
+  text(c, 'බල ඊතල එකම පරිමාණයට', 885, 360, '#95a5a6', 12, 'right', 600);
+  drawInset(c, B);
+}
+function drawInset(c, B) {
+  const bx = 640, by = 12, bw = 248, bh = 236;
+  c.save();
+  c.fillStyle = '#e3f4e1'; c.strokeStyle = '#a29bfe'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(bx, by, bw, bh, 10); c.fill(); c.stroke(); c.clip();
+  const Ox = bx + 30, Oy = by + bh / 2 + 4, Rp = 180;
+  c.strokeStyle = '#636e72'; c.lineWidth = 28; c.beginPath(); c.arc(Ox, Oy, Rp, -1.1, 1.1); c.stroke();
+  c.strokeStyle = '#ffeaa7'; c.lineWidth = 2; c.setLineDash([10, 10]); c.lineDashOffset = -((distB * 4) % 20);
+  c.beginPath(); c.arc(Ox, Oy, Rp, -1.1, 1.1); c.stroke(); c.setLineDash([]); c.lineDashOffset = 0;
+  const carX = Ox + Rp + slipB * 0.08;
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 1.5; c.setLineDash([5, 5]); c.beginPath(); c.moveTo(Ox, Oy); c.lineTo(carX, Oy); c.stroke(); c.setLineDash([]);
+  c.fillStyle = '#6c5ce7'; c.beginPath(); c.arc(Ox, Oy, 5, 0, 7); c.fill();
+  text(c, 'O', Ox - 2, Oy + 16, '#6c5ce7', 15, 'center', 800);
+  text(c, 'r', (Ox + carX) / 2, Oy - 12, '#6c5ce7', 15, 'center', 800);
+  carTop(c, carX, Oy, -Math.PI / 2, B.slides ? '#fab1a0' : '#a29bfe', 30, 16);
+  arrow(c, carX, Oy + 86, carX, Oy + 34, '#95a5a6', 2);
+  text(c, 'දසුන', carX - 8, Oy + 98, '#95a5a6', 12, 'right', 700);
+  text(c, 'ඉහළ සිට', bx + bw - 10, by + 16, '#2c3e50', 13, 'right', 800);
+  c.restore();
+}
+
+// ---------- speed range line ----------
+function drawS() {
+  const c = cS.ctx, W = 900, H = 180; c.clearRect(0, 0, W, H);
+  const B = computeB(), VA = 70, x0 = 60, x1 = 860, y = 96;
+  const X = v => x0 + Math.min(v, VA) / VA * (x1 - x0);
+  // unsafe/safe bands
+  c.fillStyle = 'rgba(231,76,60,.13)'; c.fillRect(x0, y - 16, x1 - x0, 32);
+  const xa = X(B.vMin), xb = X(B.vMax);
+  c.fillStyle = 'rgba(39,174,96,.35)'; c.fillRect(xa, y - 16, Math.max(xb - xa, 0), 32);
+  if (B.vMax - B.vMin < 0.3) { c.fillStyle = '#27ae60'; c.fillRect(xa - 3, y - 18, 6, 36); }
+  c.strokeStyle = '#2d3436'; c.lineWidth = 2; c.beginPath(); c.moveTo(x0, y + 16); c.lineTo(x1, y + 16); c.stroke();
+  for (let v = 0; v <= VA; v += 10) { c.beginPath(); c.moveTo(X(v), y + 16); c.lineTo(X(v), y + 22); c.stroke(); text(c, v, X(v), y + 32, '#95a5a6', 12, 'center', 600); }
+  text(c, 'm s⁻¹', x1 + 4, y + 32, '#95a5a6', 12, 'left', 600);
+  if (B.vMax > VA) text(c, B.vMax === Infinity ? '→ ∞' : '→', x1 + 4, y, '#27ae60', 16, 'left', 800);
+  // marks
+  const mark = (v, colr) => { if (v > VA) return; c.strokeStyle = colr; c.lineWidth = 3; c.beginPath(); c.moveTo(X(v), y - 22); c.lineTo(X(v), y + 16); c.stroke(); };
+  mark(B.vMin, '#0984e3'); mark(B.vMax, '#d63031'); mark(B.vIdeal, '#6c5ce7');
+  const lab = (t, v, row, colr) => {
+    const x = X(v); const al = x < 160 ? 'left' : x > 760 ? 'right' : 'center';
+    text(c, t, x, row, colr, 14, al, 800);
+  };
+  lab(`v_ideal = ${f1(B.vIdeal)}`, B.vIdeal, y - 32, '#6c5ce7');
+  lab(`v_min = ${f1(B.vMin)}`, B.vMin, y + 52, '#0984e3');
+  lab(`v_max = ${fV(B.vMax)}`, Math.min(B.vMax, VA), y + 72, '#d63031');
+  // current v
+  const xv = X(S.vB), cv = B.slides ? '#d63031' : '#27ae60';
+  c.fillStyle = cv; c.beginPath(); c.moveTo(xv, y - 18); c.lineTo(xv - 9, y - 54); c.lineTo(xv + 9, y - 54); c.closePath(); c.fill();
+  c.strokeStyle = cv; c.lineWidth = 2; c.beginPath(); c.moveTo(xv, y - 18); c.lineTo(xv, y + 16); c.stroke();
+  text(c, `v = ${f1(S.vB)}` + (B.slides ? ' ✗' : ' ✓'), xv, 22, cv, 15, xv < 120 ? 'left' : xv > 800 ? 'right' : 'center', 800);
+}
+
+// ---------- railway ----------
+function drawR() {
+  const c = cR.ctx, W = 900, H = 270; c.clearRect(0, 0, W, H);
+  const Rr = computeR(), th = Rr.th, s = Math.sin(th), co = Math.cos(th);
+  const sc = 300, I = [190, 228], O = [I[0] + S.dR * sc * co, I[1] - S.dR * sc * s];
+  c.fillStyle = '#b2bec3'; c.beginPath(); c.moveTo(I[0] - 90, H); c.lineTo(I[0] - 60, I[1] + 22); c.lineTo(O[0] + 60, O[1] + 22); c.lineTo(O[0] + 90, H); c.closePath(); c.fill();
+  c.strokeStyle = '#8e6e53'; c.lineWidth = 16; c.lineCap = 'butt';
+  c.beginPath(); c.moveTo(I[0] - 40 * co, I[1] + 40 * s + 12); c.lineTo(O[0] + 40 * co, O[1] - 40 * s + 12); c.stroke();
+  const rail = p => { c.save(); c.translate(p[0], p[1]); c.rotate(-th); c.fillStyle = '#2d3436'; c.fillRect(-12, -2, 24, 6); c.fillRect(-4, -18, 8, 18); c.fillRect(-9, -26, 18, 9); c.restore(); };
+  rail(I); rail(O);
+  text(c, 'ඇතුළු පීල්ල', I[0], I[1] + 36, '#2c3e50', 13, 'center', 700);
+  text(c, 'පිට පීල්ල', O[0], O[1] + 36, '#2c3e50', 13, 'center', 700);
+  // horizontal reference + h
+  c.strokeStyle = '#95a5a6'; c.lineWidth = 1.5; c.setLineDash([5, 5]); c.beginPath(); c.moveTo(I[0], I[1]); c.lineTo(O[0] + 50, I[1]); c.stroke(); c.setLineDash([]);
+  const hx = O[0] + 44;
+  if (I[1] - O[1] > 6) { arrow(c, hx, I[1], hx, O[1], '#d63031', 2); arrow(c, hx, O[1], hx, I[1], '#d63031', 2); }
+  c.strokeStyle = '#d63031'; c.lineWidth = 1; c.beginPath(); c.moveTo(O[0] + 8, O[1]); c.lineTo(hx + 8, O[1]); c.stroke();
+  text(c, `h = ${Rr.h.toFixed(3)} m`, hx + 10, (I[1] + O[1]) / 2, '#d63031', 15, 'left', 800);
+  const M = [(I[0] + O[0]) / 2, (I[1] + O[1]) / 2];
+  text(c, `d = ${S.dR.toFixed(2)} m`, M[0] - 30 * s, M[1] - 40 * co, '#2c3e50', 15, 'center', 800);
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 2; c.beginPath(); c.arc(I[0], I[1], 70, -th, 0); c.stroke();
+  text(c, `θ = ${deg(th).toFixed(1)}°`, I[0] + 78, I[1] - 12, '#6c5ce7', 14, 'left', 800);
+  arrow(c, 170, 40, 24, 40, '#6c5ce7', 3);
+  text(c, 'කේන්ද්‍රය දෙසට', 24, 18, '#6c5ce7', 14, 'left', 800);
+  text(c, 'පසුපස සිට හරස්කඩ (θ පරිමාණයට)', 885, 18, '#95a5a6', 12, 'right', 600);
+}
+
+// ===================== UI =====================
+function show(id, t) { const e = $(id); if (e) e.textContent = t; }
+function syncUI() {
+  const setv = (id, v) => { const e = $(id); if (e) e.value = v; };
+  setv('rAS', S.rA); setv('vAS', S.vA); setv('muSel', S.muPreset); setv('muCS', S.muCustom); setv('mAS', S.mA);
+  setv('thS', S.th); setv('rBS', S.rB); setv('vBS', S.vB); setv('muBS', S.muB);
+  setv('rRS', S.rR); setv('vRS', S.vR); setv('dRS', S.dR);
+  $('iceChk').checked = S.ice; $('muBS').disabled = S.ice;
+  $('muCRow').style.display = S.muPreset === 'custom' ? '' : 'none';
+  show('rAVal', S.rA); show('vAVal', f1(S.vA)); show('muCVal', S.muCustom.toFixed(2)); show('mAVal', S.mA);
+  show('thVal', S.th.toFixed(1)); show('rBVal', S.rB); show('vBVal', f1(S.vB)); show('muBVal', (S.ice ? 0 : S.muB).toFixed(2));
+  show('rRVal', S.rR); show('vRVal', f1(S.vR)); show('dRVal', S.dR.toFixed(2));
+}
+function updateStatus() {
+  if (S.tab === 'A') {
+    const A = computeA();
+    show('stA', A.skid ? 'ලිස්සා යයි! 💨 (v > vₘₐₓ)' : 'ආරක්ෂිතයි ✅ (v ≤ vₘₐₓ)');
+    show('stAV', `${f1(S.vA)} m s⁻¹ (${Math.round(S.vA * 3.6)} km h⁻¹)`);
+    show('stAVmax', `${f1(A.vMax)} m s⁻¹`);
+    show('stAF', `${fN(A.Fneed)} N`); show('stAFmax', `${fN(A.fmax)} N`);
+    $('statusA').className = 'status' + (A.skid ? ' move' : A.Fneed > 0.9 * A.fmax ? ' limit' : '');
+  } else {
+    const B = computeB();
+    show('stB', B.slides ? (B.slideDir === 'up' ? 'ලිස්සයි! ↗ පිටතට (ඉහළට)' : 'ලිස්සයි! ↙ ඇතුළට (පහළට)') : 'ආරක්ෂිතයි ✅');
+    show('stVi', `${f1(B.vIdeal)} m s⁻¹`); show('stVmin', `${f1(B.vMin)} m s⁻¹`); show('stVmax', B.vMax === Infinity ? '∞ (සීමාවක් නැත)' : `${f1(B.vMax)} m s⁻¹`);
+    show('stR', `${fN(B.R)} N`);
+    show('stFB', B.fDir === 'none' ? '0 N (අවශ්‍ය නැත)' : `${fN(B.f)} N ${B.fDir === 'up' ? '↗ ඉහළට' : '↙ පහළට'}`);
+    show('stMuR', `${fN(B.fLimit)} N`);
+    $('statusB').className = 'status' + (B.slides ? ' move' : (B.fLimit > 0 && B.f > 0.9 * B.fLimit) ? ' limit' : '');
+    const Rr = computeR();
+    show('rTan', Rr.tan.toFixed(3)); show('rTh', deg(Rr.th).toFixed(2) + '°'); show('rH', Rr.h.toFixed(3) + ' m'); show('rH2', Rr.hApprox.toFixed(3) + ' m');
+  }
+}
+function setTab(t) {
+  S.tab = t === 'B' ? 'B' : 'A';
+  $('paneA').style.display = S.tab === 'A' ? '' : 'none';
+  $('paneB').style.display = S.tab === 'B' ? '' : 'none';
+  $('tabA').className = S.tab === 'A' ? 'solid' : '';
+  $('tabB').className = S.tab === 'B' ? 'solid' : '';
+  return S.tab;
+}
+const ALIAS = { theta: 'th', thetaDeg: 'th', mu: null, r: null, v: null, m: null };
+function set(p, val) {
+  if (p === 'tab') return setTab(val);
+  if (p in ALIAS) p = ALIAS[p] || (p + S.tab);           // r/v/m/mu → current tab's key
+  if (p === 'tanTheta') S.th = deg(Math.atan(+val));
+  else if (p === 'muA') {
+    const hit = Object.keys(MU_PRESETS).find(key => Math.abs(MU_PRESETS[key] - val) < 1e-9);
+    if (hit) S.muPreset = hit; else { S.muPreset = 'custom'; S.muCustom = +val; }
+  }
+  else if (p === 'muPreset') S.muPreset = val;
+  else if (p === 'ice') S.ice = !!val;
+  else if (p in S) S[p] = +val;
+  else throw new Error('unknown param ' + p);
+  syncUI();
+  return S;
+}
+function compute() { return Object.assign(computeB(), { flat: computeA(), rail: computeR() }); }
+
+function wire() {
+  const bind = (id, key, after) => $(id).addEventListener('input', e => { S[key] = +e.target.value; syncUI(); if (after) after(); });
+  bind('rAS', 'rA'); bind('vAS', 'vA'); bind('muCS', 'muCustom');
+  bind('mAS', 'mA', () => { const nEl = $('massNote'); nEl.classList.add('flash'); clearTimeout(wire.t); wire.t = setTimeout(() => nEl.classList.remove('flash'), 700); });
+  $('muSel').addEventListener('change', e => { S.muPreset = e.target.value; syncUI(); });
+  bind('thS', 'th'); bind('rBS', 'rB'); bind('vBS', 'vB'); bind('muBS', 'muB');
+  bind('rRS', 'rR'); bind('vRS', 'vR'); bind('dRS', 'dR');
+  $('iceChk').addEventListener('change', e => { S.ice = e.target.checked; syncUI(); });
+  $('tabA').addEventListener('click', () => setTab('A'));
+  $('tabB').addEventListener('click', () => setTab('B'));
+  $('btnAVmax').addEventListener('click', () => { S.vA = Math.round(computeA().vMax * 2) / 2; syncUI(); });
+  $('btnAReset').addEventListener('click', resetCarA);
+  $('btnIdeal').addEventListener('click', () => { S.vB = computeB().vIdeal; syncUI(); });
+  $('btnVmin').addEventListener('click', () => { S.vB = computeB().vMin; syncUI(); });
+  $('btnVmax').addEventListener('click', () => { const vm = computeB().vMax; S.vB = Math.min(vm, 70); syncUI(); });
+  $('btn37').addEventListener('click', () => set('tanTheta', 0.75));
+  $('btnRailEx').addEventListener('click', () => { Object.assign(S, { rR: 400, vR: 20, dR: 1.5 }); syncUI(); });
+  const presets = {
+    A1: () => { setTab('A'); Object.assign(S, { rA: 50, vA: 20, muPreset: 'dry', mA: 1000 }); resetCarA(); },
+    B1: () => { setTab('B'); Object.assign(S, { rB: 120, vB: 30, ice: false, mB: 1000 }); S.th = deg(Math.atan(0.75)); },
+    B2: () => { setTab('B'); Object.assign(S, { rB: 120, vB: 15, ice: false, muB: 1, mB: 1000 }); S.th = deg(Math.atan(0.75)); },
+    B3: () => { setTab('B'); Object.assign(S, { rB: 120, vB: 30, ice: true, mB: 1000 }); S.th = deg(Math.atan(0.75)); },
+    R1: () => { setTab('B'); Object.assign(S, { rR: 400, vR: 20, dR: 1.5 }); },
+  };
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => { presets[b.dataset.preset](); syncUI(); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
+}
+
+cA = stage($('cvA'), 900, 470);
+cB = stage($('cvB'), 900, 480);
+cS = stage($('cvS'), 900, 180);
+cR = stage($('cvR'), 900, 270);
+wire(); syncUI();
+
+window.sim = { step, state: S, setTab, set, compute, computeA, computeB, computeR, carA };
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  step(dt);
+  if (S.tab === 'A') drawA(); else { drawB(); drawS(); drawR(); }
+  updateStatus();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

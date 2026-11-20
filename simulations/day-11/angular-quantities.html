@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>කෝණික රාශි: θ, ω, α සහ T, f (Q319–326) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 14px; line-height: 1.6; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  .controls select, .controls input[type=number] { font: inherit; font-weight: 700; font-size: 15px; border: 2px solid #6c5ce7; border-radius: 8px; padding: 6px 8px; margin: 6px 0 4px; width: 100%; background: #fff; color: #2c3e50; }
+  .controls input[type=number] { width: 120px; margin-left: 6px; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .chk { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .chk input { width: 18px; height: 18px; accent-color: #6c5ce7; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: linear-gradient(#f0f7ff, #fff); border: 1px solid #dfe6e9; }
+  .graph { background: #fff; border: 1px solid #dfe6e9; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .cvs + .cvs { margin-top: 12px; }
+  .status { margin-top: 14px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 12px 16px; border-radius: 6px; font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; gap: 10px 26px; justify-content: space-between; }
+  .status small { display: block; font-size: 13px; color: #636e72; font-weight: 600; }
+  .warn { font-size: 13px; font-weight: 700; color: #d35400; background: #fef5e7; border: 1px dashed #f39c12; border-radius: 6px; padding: 4px 8px; margin-top: 4px; display: none; }
+  h2 { font-size: 19px; margin: 26px 0 10px; }
+  .pnum { display: inline-block; background: #6c5ce7; color: #fff; border-radius: 50%; width: 28px; height: 28px; text-align: center; line-height: 28px; margin-right: 6px; font-size: 16px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .dbox { background: #fbfaff; border: 1px solid #d6d2ff; border-left: 6px solid #6c5ce7; border-radius: 10px; padding: 12px 16px; margin: 12px 0; overflow-x: auto; }
+  .dbox .dh { font-weight: 800; font-size: 16px; color: #6c5ce7; margin-bottom: 6px; }
+  .dbox .l { padding: 5px 0 5px 6px; line-height: 1.6; font-size: 15px; }
+  .dbox .l.m { padding-left: 34px; font-family: 'Cambria', 'Times New Roman', serif; font-size: 19px; white-space: nowrap; }
+  .dbox .l.m .si { font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; font-size: 15px; }
+  .fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 4px; line-height: 1.25; }
+  .fr > span:first-child { border-bottom: 1.6px solid currentColor; padding: 0 4px 2px; }
+  .fr > span:last-child { padding: 2px 4px 0; }
+  .tg { color: #6c5ce7; font-weight: 700; margin-left: 22px; font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; font-size: 15px; }
+  .res { display: inline-block; border: 2px solid #6c5ce7; border-radius: 8px; padding: 4px 10px; background: #fff; }
+  .gold { border-left-color: #f39c12; background: #fffaf0; border-color: #fdcb6e; }
+  .gold .dh { color: #e17055; }
+  .rd { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 10px 0 12px; }
+  .rd > div, .cb { background: #f1efff; border: 2px solid #d6d2ff; border-radius: 10px; padding: 8px 10px; text-align: center; }
+  .rd small, .cb small { display: block; font-size: 12px; color: #636e72; font-weight: 700; }
+  .rd b, .cb b { font-size: 19px; color: #2c3e50; font-family: 'Cambria', 'Times New Roman', serif; }
+  .rd .eqs { font-size: 12px; color: #6c5ce7; font-weight: 800; }
+  table.dt { width: 100%; border-collapse: collapse; font-size: 15px; margin: 8px 0; }
+  table.dt th, table.dt td { border: 1px solid #dfe6e9; padding: 6px 8px; text-align: center; white-space: nowrap; }
+  table.dt th { background: #e0e7ff; }
+  table.dt td.same { background: #f1efff; color: #6c5ce7; font-weight: 800; }
+  table.dt td.diff { background: #fff8e6; font-weight: 800; }
+  .tblw { overflow-x: auto; }
+  .hl { background: linear-gradient(90deg, #f1efff, #fff8e6); border: 2px solid #a29bfe; border-radius: 10px; padding: 10px 14px; font-weight: 800; font-size: 16px; text-align: center; margin: 8px 0; }
+  .conv { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0; }
+  .conv .cb { flex: 1 1 120px; }
+  .conv .ca { font-weight: 800; color: #6c5ce7; font-size: 14px; white-space: nowrap; }
+  .lap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
+  .lap .cb b { font-size: 21px; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } .status { font-size: 14px; } .dbox .l.m { font-size: 17px; padding-left: 14px; } .rd { grid-template-columns: repeat(2, 1fr); } .lap { grid-template-columns: repeat(2, 1fr); } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .side .status { margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">Q319–326 · වෘත්ත චලිතය</span></div>
+  <h1>කෝණික රාශි: θ, ω, α සහ T, f</h1>
+  <p class="sub">රෝදය කැරකෙන විට රතු රේඛාව සහ තිත් තුනම <b>එකම කෝණයකින්</b> හැරෙනවා — නමුත් පිටත තිත යන දුර හා වේගය වැඩියි. රෝදය කරකවා බලන්න: θ, ω, α සියල්ලටම එකයි, s, v, a වෙනස්!</p>
+
+  <div class="layout">
+   <aside class="side">
+    <div class="controls">
+      <div><label>රෝදයේ අරය R = <span class="v" id="RVal">0.50</span> m</label><input type="range" id="RS" min="0.05" max="1" step="0.01" value="0.5"></div>
+      <div><label>ආරම්භක ω₀ = <span class="v" id="rpmVal">30</span> rpm</label><input type="range" id="rpmS" min="0" max="600" step="1" value="30">
+        <div class="note" style="margin:0">හරියටම: <input type="number" id="rpmN" min="0" max="10000" step="any" value="30"> rpm <span id="w0Val"></span></div></div>
+      <div><label>කෝණික ත්වරණය α = <span class="v" id="alVal">0.0</span> rad s⁻²</label><input type="range" id="alS" min="-10" max="10" step="0.1" value="0">
+        <div class="warn" id="alNote">α &lt; 0: ω ක්‍රමයෙන් අඩු වේ. ω = 0 වූ විට රෝදය <b>නවතී</b> (ආපසු නොකැරකේ — ω ≥ 0).</div></div>
+      <div><label>වේග සාධකය (කාලය)</label>
+        <select id="spSel">
+          <option value="0.01">× 1/100 (මන්දගාමී 🐢)</option>
+          <option value="0.1">× 1/10 (මන්දගාමී)</option>
+          <option value="0.5">× 1/2</option>
+          <option value="1" selected>× 1 (සැබෑ කාලය)</option>
+          <option value="2">× 2</option>
+          <option value="5">× 5</option>
+          <option value="10">× 10 ⏩</option>
+          <option value="100">× 100 ⏩</option>
+          <option value="1000">× 10³ ⏩</option>
+          <option value="10000">× 10⁴ ⏩</option>
+        </select></div>
+      <div class="btns">
+        <button class="solid" id="btnPlay">▶ ධාවනය</button>
+        <button id="btnReset">↺ යළි අරඹන්න</button>
+        <button id="btnRad">📐 1 rad</button>
+      </div>
+      <div class="btns">
+        <button id="btnRel">🚀 මුදා හරින්න</button>
+        <label class="chk"><input type="checkbox" id="rollChk"> 🛞 පෙරළෙන රෝදය</label>
+      </div>
+      <div class="btns" style="font-size:13px;color:#636e72">ගැටලු:
+        <button data-preset="Q319a">Q319</button><button data-preset="Q320">Q320</button><button data-preset="Q321">Q321</button><button data-preset="Q322">Q322</button>
+        <button data-preset="Q323">Q323</button><button data-preset="Q324">Q324</button><button data-preset="Q325">Q325</button><button data-preset="Q326">Q326</button>
+      </div>
+    </div>
+    <div class="status" id="status">
+      <div><small>කාලය t</small><span id="stT">–</span></div>
+      <div><small>θ</small><span id="stTh">–</span></div>
+      <div><small>ω</small><span id="stW">–</span></div>
+      <div><small>α</small><span id="stA">–</span></div>
+    </div>
+   </aside>
+   <div class="main">
+    <div class="cvs"><canvas id="cvS" class="scene"></canvas></div>
+   </div>
+  </div>
+
+  <!-- ================= PANEL 1 ================= -->
+  <h2><span class="pnum">1</span>කෝණික චලිතයට අදාළ රාශීන් — θ, ω, α</h2>
+  <div class="rd">
+    <div><small>θ (රේඩියන)</small><b id="rdRad">0</b><div class="eqs">rad</div></div>
+    <div><small>θ (අංශක)</small><b id="rdDeg">0</b><div class="eqs">°</div></div>
+    <div><small>θ (වට)</small><b id="rdTurn">0</b><div class="eqs">වට</div></div>
+    <div><small>ω (කෝණික ප්‍රවේගය)</small><b id="rdW">0</b><div class="eqs">rad s⁻¹</div></div>
+    <div><small>α (කෝණික ත්වරණය)</small><b id="rdA">0</b><div class="eqs">rad s⁻²</div></div>
+  </div>
+  <div class="cvs"><canvas id="cvG" class="graph"></canvas></div>
+  <div class="dbox">
+    <div class="dh">අර්ථ දැක්වීම්</div>
+    <div class="l">• <b>කෝණික විස්ථාපනය θ</b> — කේන්ද්‍රයේ දී අරය හැරුණු කෝණය (ඒකකය rad).</div>
+    <div class="l m">θ = <span class="fr"><span>s</span><span>r</span></span> <span class="tg">චාප දිග ÷ අරය</span></div>
+    <div class="l">• <b>කෝණික ප්‍රවේගය ω</b> — තත්පරයකට හැරෙන කෝණය.</div>
+    <div class="l m">ω = <span class="fr"><span>Δθ</span><span>Δt</span></span> <span class="tg">(rad s⁻¹)</span></div>
+    <div class="l">• <b>කෝණික ත්වරණය α</b> — තත්පරයකට ω වෙනස් වන ප්‍රමාණය.</div>
+    <div class="l m">α = <span class="fr"><span>Δω</span><span>Δt</span></span> <span class="tg">(rad s⁻²)</span></div>
+    <div class="l">α නියත නම් (රේඛීය සමීකරණ වගේමයි):</div>
+    <div class="l m">ω = ω₀ + αt</div>
+    <div class="l m">θ = ω₀t + ½αt²</div>
+    <div class="note">α = 0 → ω–t ප්‍රස්තාරය තිරස්, θ–t සරල රේඛාවක්. α &gt; 0 → ω–t ආනත, θ–t වක්‍රයක්. "📐 1 rad" ඔබා බලන්න: චාප දිග අරයට සමාන වූ විට කෝණය 1 rad (≈ 57.3°).</div>
+  </div>
+
+  <!-- ================= PANEL 2 ================= -->
+  <h2><span class="pnum">2</span>රේඛීය හා කෝණික චලිත යා කිරීම — s = rθ, v = rω, a = rα</h2>
+  <div class="tblw"><table class="dt" id="tbl"></table></div>
+  <div class="hl">θ, ω, α සියල්ලටම එකයි — s, v, a වෙනස් (r ට අනුලෝමව)</div>
+  <div class="status" id="rollStat" style="display:none">
+    <div><small>පෙරළුණු දුර s = Rθ</small><span id="rlS">–</span></div>
+    <div><small>වට ගණන = s ÷ 2πR</small><span id="rlN">–</span></div>
+    <div><small>θ</small><span id="rlTh">–</span></div>
+  </div>
+  <div class="dbox">
+    <div class="dh">රේඛීය ↔ කෝණික</div>
+    <div class="l m">s = rθ <span class="tg">චාප දිග</span></div>
+    <div class="l m">v = rω <span class="tg">ස්පර්ශක (රේඛීය) වේගය</span></div>
+    <div class="l m">a<sub>t</sub> = rα <span class="tg">ස්පර්ශක ත්වරණය</span></div>
+    <div class="l m">a<sub>c</sub> = rω² <span class="tg">කේන්ද්‍රාභිසාරී ත්වරණය (සම්පූර්ණත්වය සඳහා)</span></div>
+    <div class="note">⚠️ θ රේඩියන වලින්ම තිබිය යුතුයි. <b>v</b> යනු තිත මුදා හැරියොත් එය <b>ස්පර්ශකය දිගේ</b> ඉවතට යන වේගයයි — "🚀 මුදා හරින්න" ඔබා බලන්න. "🛞 පෙරළෙන රෝදය" දී රෝදය නොලිස්සා පෙරළෙන විට පොළොවේ ඇඳෙන තීරුවේ දිග = Rθ.</div>
+  </div>
+
+  <!-- ================= PANEL 3 ================= -->
+  <h2><span class="pnum">3</span>කාලය මනින රාශීන් — T, f, rps සහ rpm</h2>
+  <div class="lap">
+    <div class="cb"><small>සම්පූර්ණ වට</small><b id="lpN">0</b></div>
+    <div class="cb"><small>⏱️ කාලය t</small><b id="lpT">0</b></div>
+    <div class="cb"><small>මැනූ T (අවසන් වටය)</small><b id="lpP">–</b></div>
+    <div class="cb"><small>f = 1/T</small><b id="lpF">–</b></div>
+  </div>
+  <div class="note" id="lpNote" style="margin-top:0">T = එක් වටයකට ගතවන කාලය (ආවර්ත කාලය). f = තත්පරයකට වට ගණන (සංඛ්‍යාතය, Hz).</div>
+  <div class="conv">
+    <div class="cb"><small>rpm (වට/මිනිත්තු)</small><b id="cvRpm">–</b></div>
+    <div class="ca">÷ 60 →</div>
+    <div class="cb"><small>rps = f (Hz)</small><b id="cvF">–</b></div>
+    <div class="ca">× 2π →</div>
+    <div class="cb"><small>ω (rad s⁻¹)</small><b id="cvW">–</b></div>
+    <div class="ca">T = 1/f →</div>
+    <div class="cb"><small>T (s)</small><b id="cvT">–</b></div>
+  </div>
+  <div class="dbox gold">
+    <div class="dh">🔥 රන් සමීකරණය</div>
+    <div class="l m">1 වටය = 2π rad</div>
+    <div class="l m">ω = 2π × (rps)</div>
+    <div class="l m"><span class="res">ω = 2πf = <span class="fr"><span>2π</span><span>T</span></span></span></div>
+    <div class="l m">rpm → rps : ÷ 60</div>
+    <div class="note">සම්මත ඒකකය Hz (= s⁻¹ = rps). rpm ලැබුණොත් පළමුව 60 න් බෙදන්න.</div>
+  </div>
+
+  <!-- ================= SOLUTIONS ================= -->
+  <h2>විසඳුම් (පන්තියේ ගැටලු)</h2>
+  <details>
+    <summary><span class="qtag">Q319</span>72° සහ වට 1.5 → rad ; π/6 rad → අංශක</summary>
+    <div class="dbox" style="margin:4px 12px 12px">
+      <div class="l">(i) 72° රේඩියන වලට:</div>
+      <div class="l m">180° = π rad</div>
+      <div class="l m">72° = 72 × <span class="fr"><span>π</span><span>180</span></span> rad</div>
+      <div class="l m">72° = <span class="fr"><span>2π</span><span>5</span></span> rad</div>
+      <div class="l m"><span class="res">72° ≈ 1.26 rad</span></div>
+      <div class="l">(ii) වට 1.5:</div>
+      <div class="l m">1 වටය = 2π rad</div>
+      <div class="l m">1.5 වට = 1.5 × 2π rad</div>
+      <div class="l m"><span class="res">1.5 වට = 3π rad ≈ 9.42 rad</span></div>
+      <div class="l">(iii) π/6 rad අංශක වලට:</div>
+      <div class="l m">π rad = 180°</div>
+      <div class="l m"><span class="fr"><span>π</span><span>6</span></span> rad = <span class="fr"><span>180°</span><span>6</span></span></div>
+      <div class="l m"><span class="res"><span class="fr"><span>π</span><span>6</span></span> rad = 30°</span></div>
+      <div class="btns"><button data-preset="Q319a">▶ 72° දක්වා කරකවන්න</button><button data-preset="Q319b">▶ වට 1.5 දක්වා</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q320</span>12 cm මිනිත්තු කටුව — මිනිත්තු 20 කදී θ සහ තුඩ යන චාප දිග</summary>
+    <div class="dbox" style="margin:4px 12px 12px">
+      <div class="l">මිනිත්තු 60 කදී එක් වටයක් (2π rad):</div>
+      <div class="l m">60 min → 2π rad</div>
+      <div class="l m">20 min → 2π × <span class="fr"><span>20</span><span>60</span></span> rad</div>
+      <div class="l m"><span class="res">θ = <span class="fr"><span>2π</span><span>3</span></span> rad</span></div>
+      <div class="l">චාප දිග (r = 0.12 m):</div>
+      <div class="l m">s = rθ</div>
+      <div class="l m">s = 0.12 × <span class="fr"><span>2π</span><span>3</span></span></div>
+      <div class="l m">s = 0.08π m</div>
+      <div class="l m"><span class="res">s ≈ 0.251 m</span> <span class="tg">(π = 3.14 → 0.2512 m)</span></div>
+      <div class="btns"><button data-preset="Q320">▶ සිමියුලේෂනයේ බලන්න (× 100)</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q321</span>r = 0.25 m රෝදයක් 100 m පෙරළේ — θ සහ වට ගණන</summary>
+    <div class="dbox" style="margin:4px 12px 12px">
+      <div class="l">නොලිස්සා පෙරළෙන විට පොළොවේ දුර = රෝදයේ චාප දිග:</div>
+      <div class="l m">s = rθ</div>
+      <div class="l m">θ = <span class="fr"><span>s</span><span>r</span></span></div>
+      <div class="l m">θ = <span class="fr"><span>100</span><span>0.25</span></span></div>
+      <div class="l m"><span class="res">θ = 400 rad</span></div>
+      <div class="l">වට ගණන:</div>
+      <div class="l m">n = <span class="fr"><span>θ</span><span>2π</span></span></div>
+      <div class="l m">n = <span class="fr"><span>400</span><span>2 × 3.14</span></span></div>
+      <div class="l m"><span class="res">n ≈ 63.7 වට</span> <span class="tg">(π = 3.14 → 63.69)</span></div>
+      <div class="btns"><button data-preset="Q321">▶ පෙරළෙන රෝදයෙන් බලන්න</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q322</span>සිලිං පංකාව 90 rpm — f, T, ω</summary>
+    <div class="dbox" style="margin:4px 12px 12px">
+      <div class="l m">90 rpm = මිනිත්තුවට වට 90</div>
+      <div class="l m">f = <span class="fr"><span>90</span><span>60</span></span></div>
+      <div class="l m"><span class="res">f = 1.5 Hz</span></div>
+      <div class="l m">T = <span class="fr"><span>1</span><span>f</span></span></div>
+      <div class="l m">T = <span class="fr"><span>1</span><span>1.5</span></span></div>
+      <div class="l m"><span class="res">T ≈ 0.667 s</span></div>
+      <div class="l m">ω = 2πf</div>
+      <div class="l m">ω = 2π × 1.5</div>
+      <div class="l m"><span class="res">ω = 3π rad s⁻¹ ≈ 9.42 rad s⁻¹</span></div>
+      <div class="btns"><button data-preset="Q322">▶ සිමියුලේෂනයේ බලන්න</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q323</span>ඔරලෝසුවේ පැය කටුව සහ පෘථිවිය — ω සහ අනුපාතය</summary>
+    <div class="dbox" style="margin:4px 12px 12px">
+      <div class="l">පැය කටුව — පැය 12 කට එක් වටයක්:</div>
+      <div class="l m">T = 12 × 3600 s</div>
+      <div class="l m">T = 43200 s</div>
+      <div class="l m">ω = <span class="fr"><span>2π</span><span>T</span></span></div>
+      <div class="l m">ω = <span class="fr"><span>2π</span><span>43200</span></span></div>
+      <div class="l m"><span class="res">ω<sub>h</sub> = <span class="fr"><span>π</span><span>21600</span></span> rad s⁻¹ ≈ 1.45 × 10⁻⁴ rad s⁻¹</span></div>
+      <div class="l">පෘථිවිය — පැය 24 කට එක් වටයක්:</div>
+      <div class="l m">T = 24 × 3600 s</div>
+      <div class="l m">T = 86400 s</div>
+      <div class="l m">ω = <span class="fr"><span>2π</span><span>86400</span></span></div>
+      <div class="l m"><span class="res">ω<sub>E</sub> = <span class="fr"><span>π</span><span>43200</span></span> rad s⁻¹ ≈ 7.27 × 10⁻⁵ rad s⁻¹</span></div>
+      <div class="l">අනුපාතය:</div>
+      <div class="l m"><span class="fr"><span>ω<sub>h</sub></span><span>ω<sub>E</sub></span></span> = <span class="fr"><span>π/21600</span><span>π/43200</span></span></div>
+      <div class="l m"><span class="fr"><span>ω<sub>h</sub></span><span>ω<sub>E</sub></span></span> = <span class="fr"><span>43200</span><span>21600</span></span></div>
+      <div class="l m"><span class="res">ω<sub>h</sub> : ω<sub>E</sub> = 2 : 1</span></div>
+      <div class="note">සිමියුලේෂනය × 10⁴ ගුණයකින් වේගවත් කර ඇත — නැත්නම් චලනය පෙනෙන්නේවත් නැහැ! (නිවැරදිව පෘථිවිය 23 h 56 min ට වටයක් යයි; A/L දී 24 h ගනී.)</div>
+      <div class="btns"><button data-preset="Q323">▶ සිමියුලේෂනයේ බලන්න (× 10⁴)</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q324</span>එන්ජිම 3000 rpm — f, ω, T</summary>
+    <div class="dbox" style="margin:4px 12px 12px">
+      <div class="l m">f = <span class="fr"><span>3000</span><span>60</span></span></div>
+      <div class="l m"><span class="res">f = 50 rps = 50 Hz</span></div>
+      <div class="l m">ω = 2πf</div>
+      <div class="l m">ω = 2π × 50</div>
+      <div class="l m"><span class="res">ω = 100π rad s⁻¹ ≈ 314 rad s⁻¹</span></div>
+      <div class="l m">T = <span class="fr"><span>1</span><span>f</span></span></div>
+      <div class="l m">T = <span class="fr"><span>1</span><span>50</span></span></div>
+      <div class="l m"><span class="res">T = 0.02 s</span></div>
+      <div class="btns"><button data-preset="Q324">▶ මන්දගාමීව බලන්න (× 1/100)</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q325</span>r = 0.35 m බයිසිකල් රෝදය 300 rpm — ω සහ නිම්නයේ වේගය</summary>
+    <div class="dbox" style="margin:4px 12px 12px">
+      <div class="l m">f = <span class="fr"><span>300</span><span>60</span></span></div>
+      <div class="l m">f = 5 Hz</div>
+      <div class="l m">ω = 2πf</div>
+      <div class="l m">ω = 2π × 5</div>
+      <div class="l m"><span class="res">ω = 10π rad s⁻¹ ≈ 31.4 rad s⁻¹</span></div>
+      <div class="l m">v = rω</div>
+      <div class="l m">v = 0.35 × 10π</div>
+      <div class="l m">v = 3.5π</div>
+      <div class="l m"><span class="res">v ≈ 11 m s⁻¹</span></div>
+      <div class="note">රෝදයේ මඩ කැටයක් ගැලවුණොත් එය 11 m s⁻¹ කින් ස්පර්ශකය දිගේ විසි වේ — "🚀 මුදා හරින්න" ඔබන්න.</div>
+      <div class="btns"><button data-preset="Q325">▶ සිමියුලේෂනයේ බලන්න (× 1/10)</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q326</span>r = 0.1 m ඇඹරුම් රෝදය — නිශ්චලතාවයේ සිට 4 s දී 20 rad s⁻¹</summary>
+    <div class="dbox" style="margin:4px 12px 12px">
+      <div class="l">α සෙවීම:</div>
+      <div class="l m">ω = ω₀ + αt</div>
+      <div class="l m">20 = 0 + α × 4</div>
+      <div class="l m"><span class="res">α = 5 rad s⁻²</span></div>
+      <div class="l">හැරුණු කෝණය:</div>
+      <div class="l m">θ = ω₀t + ½αt²</div>
+      <div class="l m">θ = 0 + ½ × 5 × 4²</div>
+      <div class="l m"><span class="res">θ = 40 rad</span></div>
+      <div class="l m">n = <span class="fr"><span>40</span><span>2π</span></span></div>
+      <div class="l m"><span class="res">n ≈ 6.37 වට</span></div>
+      <div class="l">නිම්නයේ ස්පර්ශක ත්වරණය:</div>
+      <div class="l m">a<sub>t</sub> = rα</div>
+      <div class="l m">a<sub>t</sub> = 0.1 × 5</div>
+      <div class="l m"><span class="res">a<sub>t</sub> = 0.5 m s⁻²</span></div>
+      <div class="l">4 s අවසානයේ නිම්නයේ වේගය:</div>
+      <div class="l m">v = rω</div>
+      <div class="l m">v = 0.1 × 20</div>
+      <div class="l m"><span class="res">v = 2 m s⁻¹</span></div>
+      <div class="btns"><button data-preset="Q326">▶ සිමියුලේෂනයේ බලන්න</button></div>
+    </div>
+  </details>
+</div>
+
+<script>
+// ===================== physics core (no DOM) =====================
+const TAU = 2 * Math.PI;
+const DOT_FR = [1 / 3, 2 / 3, 1];                 // r1 < r2 < r3 (= R, on the rim)
+const DOT_COL = ['#0984e3', '#00b894', '#e17055'];
+const RED = '#d63031';
+const DEFAULTS = { R: 0.5, rpm0: 30, alpha: 0, speed: 1, rolling: false, showRad: false, compare: null, label: '', stopT: Infinity, stopTheta: Infinity };
+const S = Object.assign({
+  playing: false, t: 0, theta: 0, omega: 0, clamped: false,
+  laps: 0, lapTimes: [0], hist: [], flight: null, preset: null,
+}, DEFAULTS);
+
+const omega0 = () => S.rpm0 * TAU / 60;
+const radii = () => DOT_FR.map(f => f * S.R);
+const effAlpha = () => (S.alpha < 0 && S.omega <= 0) ? 0 : S.alpha;
+
+// smallest tau >= 0 with w*tau + 0.5*a*tau^2 = D ; Infinity if never (no sentinel values!)
+function timeToReach(D, w, a) {
+  if (!(D > 0)) return 0;
+  if (Math.abs(a) < 1e-15) return w > 0 ? D / w : Infinity;
+  const disc = w * w + 2 * a * D;
+  if (disc < 0) return Infinity;
+  const den = w + Math.sqrt(disc);
+  return den > 0 ? 2 * D / den : Infinity;
+}
+
+function reset() {
+  S.t = 0; S.theta = 0; S.omega = omega0(); S.clamped = false;
+  S.laps = 0; S.lapTimes = [0]; S.hist = [[0, 0, S.omega]]; S.flight = null;
+  return S;
+}
+
+// advance physics time dt (seconds of the real motion, i.e. already multiplied by the speed factor)
+function evolve(dt) {
+  let guard = 0;
+  while (dt > 0 && guard++ < 20) {
+    let a = S.alpha;
+    if (S.omega <= 0 && a < 0) { S.omega = 0; a = 0; if (S.alpha < 0) S.clamped = true; }
+    let seg = dt, ev = null, byTheta = false;
+    if (S.stopT - S.t <= seg) { seg = Math.max(0, S.stopT - S.t); ev = 'stop'; }
+    if (a < 0) { const tz = -S.omega / a; if (tz < seg) { seg = tz; ev = 'zero'; } }
+    if (isFinite(S.stopTheta)) { const tt = timeToReach(S.stopTheta - S.theta, S.omega, a); if (tt <= seg) { seg = tt; ev = 'stop'; byTheta = true; } }
+    // lap crossings inside this segment
+    const thEnd = S.theta + S.omega * seg + 0.5 * a * seg * seg;
+    const nEnd = Math.floor(thEnd / TAU + 1e-12);
+    if (nEnd - S.laps > 50) S.laps = nEnd - 2;      // too many to list: only time the last two
+    for (let k = S.laps + 1; k <= nEnd; k++) {
+      const tl = timeToReach(k * TAU - S.theta, S.omega, a);
+      if (!isFinite(tl) || tl > seg + 1e-12) break;
+      S.lapTimes.push(S.t + tl); S.laps = k;
+      if (S.lapTimes.length > 40) S.lapTimes.shift();
+    }
+    S.theta = byTheta ? S.stopTheta : thEnd;
+    S.omega = Math.max(0, S.omega + a * seg);
+    S.t += seg; dt -= seg;
+    if (ev === 'zero') { S.omega = 0; S.clamped = true; }
+    if (ev === 'stop') { S.playing = false; break; }
+  }
+}
+
+function step(dt) {                 // dt = real (screen) seconds; physics runs speed x faster
+  const h = dt * S.speed;
+  const t0 = S.t;
+  evolve(h);
+  if (S.flight) S.flight.t += h;
+  if (S.t > t0) {
+    S.hist.push([S.t, S.theta, S.omega]);
+    if (S.hist.length > 900) S.hist = S.hist.filter((p, i) => i % 2 === 0 || i === S.hist.length - 1);
+  }
+  return S;
+}
+
+function release() {
+  if (S.rolling) return null;
+  if (S.flight) { S.flight = null; return null; }          // second press re-attaches the dot
+  const r = S.R, th = S.theta, w = S.omega;
+  // screen frame, y down, clockwise rotation: pos = r(cos th, sin th), velocity = r w (-sin th, cos th)
+  S.flight = { x0: r * Math.cos(th), y0: r * Math.sin(th), vx: -r * w * Math.sin(th), vy: r * w * Math.cos(th), v: r * w, th0: th, t: 0 };
+  return S.flight;
+}
+function flightPos() {
+  const F = S.flight; if (!F) return null;
+  return [F.x0 + F.vx * F.t, F.y0 + F.vy * F.t];
+}
+function setRolling(b) { S.rolling = !!b; if (S.rolling) S.flight = null; syncUI(); return S.rolling; }
+
+const ALIAS = { rpm: 'rpm0', omega0rpm: 'rpm0', a: 'alpha', r: 'R' };
+function set(p, val) {
+  p = ALIAS[p] || p;
+  if (p === 'omega0') { S.rpm0 = +val * 60 / TAU; reset(); }
+  else if (p === 'rpm0' || p === 'alpha') { S[p] = +val; reset(); }
+  else if (p === 'R' || p === 'speed') S[p] = +val;
+  else if (p === 'rolling') setRolling(val);
+  else if (p === 'showRad') S.showRad = !!val;
+  else if (p === 'playing') S.playing = !!val;
+  else throw new Error('unknown param ' + p);
+  syncUI();
+  return S;
+}
+
+const PRESETS = {
+  Q319a: { R: 0.5, rpm0: 12, stopT: 1, label: 'Q319: 72° = 2π/5 rad' },
+  Q319b: { R: 0.5, rpm0: 12, stopT: 7.5, label: 'Q319: වට 1.5 = 3π rad' },
+  Q320: { R: 0.12, rpm0: 1 / 60, speed: 100, stopT: 1200, label: 'Q320: මිනිත්තු කටුව (r = 12 cm)' },
+  Q321: { R: 0.25, rpm0: 120, speed: 5, stopTheta: 400, rolling: true, label: 'Q321: r = 0.25 m රෝදය, 100 m' },
+  Q322: { R: 0.6, rpm0: 90, label: 'Q322: සිලිං පංකාව 90 rpm' },
+  Q323: { R: 0.1, rpm0: 1 / 720, speed: 10000, compare: { label: 'පෘථිවිය', omega: TAU / 86400 }, label: 'Q323: පැය කටුව (× 10⁴)' },
+  Q324: { R: 0.15, rpm0: 3000, speed: 0.01, label: 'Q324: එන්ජිම 3000 rpm (× 1/100)' },
+  Q325: { R: 0.35, rpm0: 300, speed: 0.1, label: 'Q325: බයිසිකල් රෝදය 300 rpm' },
+  Q326: { R: 0.1, rpm0: 0, alpha: 5, stopT: 4, label: 'Q326: ඇඹරුම් රෝදය, α = 5 rad s⁻²' },
+};
+function preset(q) {
+  const P = PRESETS[q]; if (!P) throw new Error('unknown preset ' + q);
+  Object.assign(S, DEFAULTS, P, { preset: q });
+  reset(); S.playing = true; syncUI();
+  return S;
+}
+
+function readout() {
+  const w = S.omega, a = effAlpha(), th = S.theta;
+  const lt = S.lapTimes, n = lt.length;
+  const Tm = n >= 2 ? lt[n - 1] - lt[n - 2] : null;
+  return {
+    t: S.t, theta: th, deg: th * 180 / Math.PI, turns: th / TAU, omega: w, alpha: S.alpha, alphaEff: a, clamped: S.clamped,
+    rpm: w * 60 / TAU, rps: w / TAU, f: w / TAU, T: w > 0 ? TAU / w : Infinity,
+    dots: radii().map(r => ({ r, theta: th, omega: w, alpha: a, s: r * th, v: r * w, at: r * a, ac: r * w * w,
+      pos: [r * Math.cos(th), r * Math.sin(th)], vel: [-r * w * Math.sin(th), r * w * Math.cos(th)] })),
+    laps: S.laps, Tmeasured: Tm, fMeasured: Tm ? 1 / Tm : null,
+    rolling: S.rolling, distance: S.R * th, rollTurns: (S.R * th) / (TAU * S.R),
+    flight: S.flight ? { v: S.flight.v, vel: [S.flight.vx, S.flight.vy], start: [S.flight.x0, S.flight.y0], pos: flightPos() } : null,
+  };
+}
+
+// ===================== formatting =====================
+const SUPS = { '-': '⁻', '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
+function fmt(x, sig = 3) {
+  if (x === Infinity) return '∞';
+  if (x === null || x === undefined || !isFinite(x)) return '–';
+  if (Math.abs(x) < 1e-12) return '0';
+  const ax = Math.abs(x);
+  if (ax >= 1e6 || ax < 1e-3) {
+    let e = Math.floor(Math.log10(ax)), m = x / Math.pow(10, e);
+    let ms = m.toFixed(sig - 1);
+    if (Math.abs(+ms) >= 10) { e++; ms = (x / Math.pow(10, e)).toFixed(sig - 1); }
+    return ms + ' × 10' + String(e).split('').map(ch => SUPS[ch]).join('');
+  }
+  return String(Number(x.toPrecision(sig)));
+}
+
+// ===================== drawing =====================
+const $ = id => document.getElementById(id);
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    if (!w) return;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (!(L >= 2)) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(14, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+// "x_abc" draws "abc" as a subscript
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Iskoola Pota','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/);
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
+}
+function speedTag() {
+  const s = S.speed;
+  if (s === 1) return '';
+  if (s > 1) return '⏩ × ' + (s >= 1000 ? '10' + String(Math.round(Math.log10(s))).split('').map(c => SUPS[c]).join('') : s) + ' වේගවත් කර ඇත';
+  return '🐢 × 1/' + Math.round(1 / s) + ' මන්දගාමී කර ඇත';
+}
+
+let cS, cG;
+function drawWheel(c, cx, cy, Rp, rolling) {
+  const th = S.theta, k = Rp / S.R, rs = radii();
+  // body
+  c.fillStyle = '#fbfaff'; c.beginPath(); c.arc(cx, cy, Rp, 0, TAU); c.fill();
+  // theta sector (normal mode)
+  if (!rolling && th > 0) {
+    const full = Math.floor(th / TAU), rem = th - full * TAU;
+    if (full > 0) { c.fillStyle = 'rgba(108,92,231,0.10)'; c.beginPath(); c.arc(cx, cy, Rp - 6, 0, TAU); c.fill(); }
+    if (rem > 1e-6) { c.fillStyle = 'rgba(108,92,231,0.22)'; c.beginPath(); c.moveTo(cx, cy); c.arc(cx, cy, Rp - 6, 0, rem); c.closePath(); c.fill(); }
+  }
+  // spokes (rotate with wheel)
+  c.strokeStyle = '#dfe6e9'; c.lineWidth = 3;
+  for (let i = 1; i < 6; i++) { const a = th + i * TAU / 6; c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Rp * Math.cos(a), cy + Rp * Math.sin(a)); c.stroke(); }
+  // tyre
+  c.strokeStyle = '#2d3436'; c.lineWidth = 9; c.beginPath(); c.arc(cx, cy, Rp + 4, 0, TAU); c.stroke();
+  if (rolling && th > 0) {        // rim part that has already touched the ground
+    c.strokeStyle = '#fdcb6e'; c.lineWidth = 7; c.beginPath(); c.arc(cx, cy, Rp + 4, Math.PI / 2, Math.PI / 2 + Math.min(th, TAU)); c.stroke();
+  }
+  if (!rolling) {
+    // fixed start line (dashed)
+    c.strokeStyle = '#95a5a6'; c.lineWidth = 2; c.setLineDash([6, 6]);
+    c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Rp + 30, cy); c.stroke(); c.setLineDash([]);
+    text(c, 'θ = 0', cx + Rp + 34, cy, '#95a5a6', 13, 'left', 700);
+    // arc length s for each dot
+    rs.forEach((r, i) => {
+      if (th <= 0) return;
+      c.strokeStyle = DOT_COL[i]; c.lineWidth = 5; c.globalAlpha = 0.75;
+      c.beginPath(); c.arc(cx, cy, r * k, 0, Math.min(th, TAU)); c.stroke(); c.globalAlpha = 1;
+    });
+  }
+  // red reference line
+  c.strokeStyle = RED; c.lineWidth = 5; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Rp * Math.cos(th), cy + Rp * Math.sin(th)); c.stroke();
+  // hub
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(cx, cy, 7, 0, TAU); c.fill();
+  // dots + tangent velocity arrows
+  const ct = Math.cos(th), st = Math.sin(th), w = S.omega;
+  rs.forEach((r, i) => {
+    if (i === 2 && S.flight) return;
+    const px = cx + r * k * ct, py = cy + r * k * st;
+    if (w > 0) {
+      const L = 120 * DOT_FR[i];
+      arrow(c, px, py, px - L * st, py + L * ct, DOT_COL[i], 3);
+      text(c, `v_${i + 1} = ${fmt(r * w)}`, px - (L + 14) * st, py + (L + 14) * ct, DOT_COL[i], 13, 'center', 800);
+    }
+    c.fillStyle = DOT_COL[i]; c.strokeStyle = '#fff'; c.lineWidth = 2;
+    c.beginPath(); c.arc(px, py, 9, 0, TAU); c.fill(); c.stroke();
+    text(c, `r_${i + 1}`, px + 14 * st, py - 14 * ct, DOT_COL[i], 14, 'center', 800);
+  });
+}
+
+function drawScene() {
+  const c = cS.ctx, W = 900, H = 470; c.clearRect(0, 0, W, H);
+  const th = S.theta;
+  if (!S.rolling) {
+    const cx = 300, cy = 240, Rp = 180, k = Rp / S.R;
+    drawWheel(c, cx, cy, Rp, false);
+    // theta label
+    if (th > 0) {
+      const mid = Math.min(th, TAU) / 2;
+      text(c, `θ = ${fmt(th)} rad`, cx + 70 * Math.cos(mid), cy + 70 * Math.sin(mid), '#6c5ce7', 15, 'center', 800);
+      if (th >= TAU) text(c, `(+ වට ${Math.floor(th / TAU)})`, cx, cy + 26, '#6c5ce7', 13, 'center', 700);
+    }
+    // 1 rad highlight: arc length = R
+    if (S.showRad) {
+      c.strokeStyle = '#f39c12'; c.lineWidth = 3;
+      c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Rp * Math.cos(1), cy + Rp * Math.sin(1)); c.stroke();
+      c.strokeStyle = '#f39c12'; c.lineWidth = 6; c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Rp, cy); c.stroke();
+      text(c, 'r', cx + Rp / 2, cy - 12, '#e67e22', 17, 'center', 800);
+      c.strokeStyle = '#e67e22'; c.lineWidth = 10; c.globalAlpha = 0.85;
+      c.beginPath(); c.arc(cx, cy, Rp + 4, 0, 1); c.stroke(); c.globalAlpha = 1;
+      c.strokeStyle = '#e67e22'; c.lineWidth = 2; c.beginPath(); c.arc(cx, cy, 40, 0, 1); c.stroke();
+      text(c, '1 rad', cx + 58 * Math.cos(0.5), cy + 58 * Math.sin(0.5), '#e67e22', 14, 'center', 800);
+      const lx = cx + (Rp + 30) * Math.cos(0.5), ly = cy + (Rp + 30) * Math.sin(0.5);
+      c.fillStyle = 'rgba(255,255,255,0.9)'; c.fillRect(lx - 4, ly - 14, 250, 28);
+      text(c, 'චාප දිග = අරය → 1 rad (≈ 57.3°)', lx, ly, '#e67e22', 15, 'left', 800);
+    }
+    // released dot flies along the tangent
+    if (S.flight) {
+      const F = S.flight, P = flightPos();
+      const sx = cx + F.x0 * k, sy = cy + F.y0 * k, ux = F.v > 0 ? F.vx / F.v : 0, uy = F.v > 0 ? F.vy / F.v : 0;
+      c.strokeStyle = '#e17055'; c.lineWidth = 2; c.setLineDash([7, 6]);
+      c.beginPath(); c.moveTo(sx - ux * 60, sy - uy * 60); c.lineTo(sx + ux * 1400, sy + uy * 1400); c.stroke(); c.setLineDash([]);
+      c.fillStyle = 'rgba(225,112,85,0.25)'; c.beginPath(); c.arc(sx, sy, 9, 0, TAU); c.fill();
+      const px = cx + P[0] * k, py = cy + P[1] * k;
+      if (px > -40 && px < W + 40 && py > -40 && py < H + 40) {
+        if (F.v > 0) arrow(c, px, py, px + ux * 70, py + uy * 70, '#e17055', 3);
+        c.fillStyle = '#e17055'; c.beginPath(); c.arc(px, py, 9, 0, TAU); c.fill();
+      }
+      c.fillStyle = 'rgba(255,255,255,0.92)'; c.fillRect(560, 395, 330, 62);
+      text(c, `🚀 මුදා හැරියා: v = rω = ${fmt(F.v)} m s⁻¹`, 570, 412, '#e17055', 15, 'left', 800);
+      text(c, 'ස්පර්ශකය දිගේ සරල රේඛාවක යයි', 570, 438, '#636e72', 13, 'left', 700);
+    }
+    // compare disc (Earth for Q323)
+    if (S.compare) {
+      const ex = 780, ey = 300, er = 55, ea = S.compare.omega * S.t;
+      c.fillStyle = '#74b9ff'; c.beginPath(); c.arc(ex, ey, er, 0, TAU); c.fill();
+      c.fillStyle = '#55efc4'; c.beginPath(); c.arc(ex - 12, ey - 8, 20, 0, TAU); c.fill();
+      c.strokeStyle = RED; c.lineWidth = 4; c.beginPath(); c.moveTo(ex, ey); c.lineTo(ex + er * Math.cos(ea), ey + er * Math.sin(ea)); c.stroke();
+      text(c, S.compare.label + ': ω = π/43200', ex, ey + er + 18, '#0984e3', 13, 'center', 800);
+      text(c, `වට ${fmt(ea / TAU)}`, ex, ey - er - 14, '#0984e3', 13, 'center', 700);
+      text(c, `පැය කටුව: වට ${fmt(th / TAU)}`, ex, ey - er - 34, RED, 13, 'center', 800);
+    }
+  } else {
+    // rolling without slipping
+    const gy = 425, Rp = 120, k = Rp / S.R, x0 = 160;
+    const Xc = x0 + S.R * th * k, cam = Math.max(0, Xc - 560), cx = Xc - cam, cy = gy - Rp - 8;
+    c.fillStyle = '#e3f4e1'; c.fillRect(0, gy, W, H - gy);
+    c.strokeStyle = '#636e72'; c.lineWidth = 3; c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); c.stroke();
+    // distance ticks
+    const sp = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100].find(v => v * k >= 70) || 100;
+    const m0 = (cam - x0) / k, m1 = (cam + W - x0) / k;
+    for (let i = Math.ceil(m0 / sp); i <= Math.floor(m1 / sp); i++) {
+      const x = x0 + i * sp * k - cam;
+      c.strokeStyle = '#95a5a6'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x, gy); c.lineTo(x, gy + 10); c.stroke();
+      text(c, `${+(i * sp).toFixed(2)} m`, x, gy + 24, '#636e72', 12, 'center', 600);
+    }
+    // painted strip of length s = R theta
+    const sx = x0 - cam;
+    c.fillStyle = '#fdcb6e'; c.fillRect(Math.max(-10, sx), gy - 4, cx - Math.max(-10, sx), 8);
+    if (sx > -20) { c.fillStyle = RED; c.fillRect(sx - 2, gy - 50, 4, 50); c.beginPath(); c.moveTo(sx + 2, gy - 50); c.lineTo(sx + 26, gy - 42); c.lineTo(sx + 2, gy - 34); c.fill(); text(c, 'ආරම්භය', sx, gy - 60, RED, 12, 'center', 700); }
+    drawWheel(c, cx, cy, Rp, true);
+    c.fillStyle = 'rgba(255,255,255,0.92)'; c.fillRect(20, 14, 380, 86);
+    text(c, `පෙරළුණු දුර s = Rθ = ${fmt(S.R * th, 4)} m`, 30, 34, '#e17055', 16, 'left', 800);
+    text(c, `θ = ${fmt(th, 4)} rad`, 30, 60, '#6c5ce7', 15, 'left', 800);
+    text(c, `වට ගණන = s ÷ 2πR = ${fmt(th / TAU, 4)}`, 30, 84, '#2c3e50', 15, 'left', 800);
+  }
+  // header tags
+  if (S.label) text(c, S.label, 890, 22, '#6c5ce7', 15, 'right', 800);
+  const tag = speedTag(); if (tag) text(c, tag, 890, 46, '#e67e22', 14, 'right', 800);
+  if (S.clamped) text(c, 'ω = 0 — රෝදය නැවතුණි (α < 0, ආපසු නොකැරකේ)', 890, 70, '#d35400', 14, 'right', 800);
+  text(c, `R = ${S.R.toFixed(2)} m`, 890, H - 18, '#636e72', 13, 'right', 700);
+}
+
+function plot(c, X, Y, w, h, idx, col, title, unit) {
+  c.fillStyle = '#fff'; c.fillRect(X, Y, w, h);
+  const L = X + 52, B = Y + h - 30, T = Y + 26, Rr = X + w - 12;
+  const H = S.hist, tmax = Math.max(S.t, 1e-9);
+  let ymax = 0; H.forEach(p => { if (p[idx] > ymax) ymax = p[idx]; });
+  ymax = ymax > 0 ? ymax * 1.12 : 1;
+  c.strokeStyle = '#2c3e50'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(L, T - 6); c.lineTo(L, B); c.lineTo(Rr, B); c.stroke();
+  text(c, title, L + 6, Y + 12, col, 14, 'left', 800);
+  text(c, 't (s)', Rr, B + 18, '#636e72', 12, 'right', 700);
+  text(c, fmt(ymax / 1.12) + ' ' + unit, L - 4, T + 2, '#636e72', 11, 'right', 600);
+  text(c, '0', L - 4, B, '#636e72', 11, 'right', 600);
+  text(c, fmt(S.t), Rr - 30, B + 18, '#636e72', 11, 'center', 600);
+  if (H.length < 2) return;
+  c.strokeStyle = col; c.lineWidth = 3; c.beginPath();
+  H.forEach((p, i) => {
+    const x = L + (p[0] / tmax) * (Rr - L), y = B - (p[idx] / ymax) * (B - T);
+    if (i) c.lineTo(x, y); else c.moveTo(x, y);
+  });
+  c.stroke();
+}
+function drawGraphs() {
+  const c = cG.ctx; c.clearRect(0, 0, 900, 220);
+  plot(c, 5, 5, 440, 210, 1, '#6c5ce7', 'θ – t', 'rad');
+  plot(c, 455, 5, 440, 210, 2, RED, 'ω – t', 'rad s⁻¹');
+}
+
+// ===================== UI =====================
+function show(id, t) { const e = $(id); if (e) e.textContent = t; }
+function syncUI() {
+  const setv = (id, v) => { const e = $(id); if (e) e.value = v; };
+  setv('RS', S.R); setv('rpmS', Math.min(600, S.rpm0)); setv('rpmN', +S.rpm0.toPrecision(6)); setv('alS', S.alpha); setv('spSel', String(S.speed));
+  show('RVal', S.R.toFixed(2)); show('rpmVal', fmt(S.rpm0, 4)); show('alVal', S.alpha.toFixed(1));
+  show('w0Val', `(ω₀ = ${fmt(omega0(), 4)} rad s⁻¹)`);
+  const n = $('alNote'); if (n) n.style.display = S.alpha < 0 ? 'block' : 'none';
+  const rc = $('rollChk'); if (rc) rc.checked = S.rolling;
+  const br = $('btnRel'); if (br) { br.disabled = S.rolling; br.textContent = S.flight ? '🔗 නැවත සවි කරන්න' : '🚀 මුදා හරින්න'; }
+  const bd = $('btnRad'); if (bd) bd.className = S.showRad ? 'solid' : '';
+  const bp = $('btnPlay'); if (bp) { bp.textContent = S.playing ? '⏸ නවතන්න' : '▶ ධාවනය'; }
+  const rs = $('rollStat'); if (rs) rs.style.display = S.rolling ? '' : 'none';
+}
+let tblTick = 0;
+function updateReadouts() {
+  const o = readout();
+  show('stT', fmt(o.t, 4) + ' s'); show('stTh', fmt(o.theta, 4) + ' rad'); show('stW', fmt(o.omega, 4) + ' rad s⁻¹'); show('stA', fmt(o.alphaEff, 3) + ' rad s⁻²');
+  show('rdRad', fmt(o.theta, 4)); show('rdDeg', fmt(o.deg, 4)); show('rdTurn', fmt(o.turns, 4)); show('rdW', fmt(o.omega, 4)); show('rdA', fmt(o.alphaEff, 3));
+  show('lpN', o.laps); show('lpT', fmt(o.t, 4) + ' s');
+  show('lpP', o.Tmeasured ? fmt(o.Tmeasured, 4) + ' s' : '–'); show('lpF', o.fMeasured ? fmt(o.fMeasured, 4) + ' Hz' : '–');
+  show('lpNote', o.alphaEff !== 0 ? 'α ≠ 0 නිසා එක් එක් වටයේ T වෙනස් වේ (ω වෙනස් වන නිසා). α = 0 විට T නියතයි.' : 'T = එක් වටයකට ගතවන කාලය (ආවර්ත කාලය). f = තත්පරයකට වට ගණන (සංඛ්‍යාතය, Hz).');
+  show('cvRpm', fmt(o.rpm, 4)); show('cvF', fmt(o.f, 4)); show('cvW', fmt(o.omega, 4)); show('cvT', fmt(o.T, 4));
+  show('rlS', fmt(o.distance, 4) + ' m'); show('rlN', fmt(o.rollTurns, 4)); show('rlTh', fmt(o.theta, 4) + ' rad');
+  if (tblTick++ % 6) return;
+  const tb = $('tbl'); if (!tb) return;
+  let h = '<tr><th>තිත</th><th>r (m)</th><th>θ (rad)</th><th>ω (rad s⁻¹)</th><th>α (rad s⁻²)</th><th>s = rθ (m)</th><th>v = rω (m s⁻¹)</th><th>a<sub>t</sub> = rα (m s⁻²)</th><th>a<sub>c</sub> = rω² (m s⁻²)</th></tr>';
+  o.dots.forEach((d, i) => {
+    h += `<tr><td style="color:${DOT_COL[i]};font-weight:800">● r${'₁₂₃'[i]}</td><td>${fmt(d.r, 3)}</td><td class="same">${fmt(d.theta, 4)}</td><td class="same">${fmt(d.omega, 4)}</td><td class="same">${fmt(d.alpha, 3)}</td><td class="diff">${fmt(d.s, 4)}</td><td class="diff">${fmt(d.v, 4)}</td><td class="diff">${fmt(d.at, 3)}</td><td>${fmt(d.ac, 3)}</td></tr>`;
+  });
+  tb.innerHTML = h;
+}
+
+function play() {
+  if (!S.playing) {
+    if (S.t >= S.stopT - 1e-12) S.stopT = Infinity;
+    if (S.theta >= S.stopTheta - 1e-9) S.stopTheta = Infinity;
+    S.playing = true;
+  } else S.playing = false;
+  syncUI();
+}
+function wire() {
+  $('RS').addEventListener('input', e => { S.R = +e.target.value; syncUI(); });
+  $('rpmS').addEventListener('input', e => { S.rpm0 = +e.target.value; S.stopT = S.stopTheta = Infinity; reset(); syncUI(); });
+  $('rpmN').addEventListener('change', e => { const v = Math.max(0, Math.min(10000, +e.target.value || 0)); S.rpm0 = v; S.stopT = S.stopTheta = Infinity; reset(); syncUI(); });
+  $('alS').addEventListener('input', e => { S.alpha = +e.target.value; S.stopT = S.stopTheta = Infinity; reset(); syncUI(); });
+  $('spSel').addEventListener('change', e => { S.speed = +e.target.value; syncUI(); });
+  $('btnPlay').addEventListener('click', play);
+  $('btnReset').addEventListener('click', () => { reset(); syncUI(); });
+  $('btnRad').addEventListener('click', () => { S.showRad = !S.showRad; syncUI(); });
+  $('btnRel').addEventListener('click', () => { release(); syncUI(); });
+  $('rollChk').addEventListener('change', e => setRolling(e.target.checked));
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => { preset(b.dataset.preset); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
+}
+
+cS = stage($('cvS'), 900, 470);
+cG = stage($('cvG'), 900, 220);
+reset(); wire(); syncUI();
+
+window.sim = { step, state: S, set, preset, release, setRolling, reset: () => { reset(); syncUI(); return S; }, readout, play, PRESETS, timeToReach };
+
+let last = performance.now(), wasPlaying = S.playing;
+function loop(now) {
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  if (S.playing) step(dt);
+  else if (S.flight) S.flight.t += dt * S.speed;     // let a released dot finish flying while paused
+  if (wasPlaying !== S.playing) { wasPlaying = S.playing; syncUI(); }
+  drawScene(); drawGraphs(); updateReadouts();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

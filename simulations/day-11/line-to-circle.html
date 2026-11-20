@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>සරල රේඛාවකින් වෘත්තයකට (316–318) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Noto Sans Sinhala', 'Iskoola Pota', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  .qtag.lite { background: #e0e7ff; color: #6c5ce7; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 16px; line-height: 1.6; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr; gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 2px; cursor: pointer; }
+  .ticks { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: #636e72; padding: 0 2px; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  button.kick { border-color: #d63031; color: #d63031; }
+  button.kick:hover { background: #fdecec; }
+  .chk { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: radial-gradient(circle at 50% 50%, #fbfaff, #eef1ff); border: 1px solid #dfe6e9; }
+  .status { margin-top: 14px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 12px 16px; border-radius: 6px; font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; gap: 10px 26px; justify-content: space-between; }
+  .status.free { border-left-color: #f39c12; background: #fef5e7; }
+  .status small { display: block; font-size: 13px; color: #636e72; font-weight: 600; }
+  .status .tiny { display: block; font-size: 12px; color: #636e72; font-weight: 600; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  details.hot { border-color: #fab1a0; background: #fff8f5; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .eq { font-family: 'Courier New', monospace; font-weight: 700; background: #fff; border: 1px solid #dfe6e9; border-radius: 6px; padding: 8px 12px; margin: 6px 0; display: block; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .wrap { padding: 14px; } h1 { font-size: 19px; } .status { font-size: 14px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { margin-bottom: 12px; }
+    .side .status { margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 15px; }
+    .side .status > div:first-child { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">Q316–318 · වෘත්ත චලිතය</span><span class="qtag lite">01 · සරල රේඛාවකින් වෘත්තයකට</span></div>
+  <h1>සරල රේඛාවකින් වෘත්තයකට 🎾</h1>
+  <p class="sub">අභ්‍යවකාශයේ ටෙනිස් බෝලයක් නියත ප්‍රවේගයෙන් සරල රේඛාවක යයි (නිව්ටන් I). එහි චලිතයට <b>හරියටම 90°</b> ක් ලෙස හදිසි තල්ලුවක් දුන්නොත් <b>දිශාව</b> වෙනස් වේ, <b>වේගය</b> නොවේ. සමාන කාල පරතරවලින් නැවත නැවත තල්ලු කළොත් → බහුඅස්‍රයක්. පරතරය කෙටි කරන්න කරන්න → <b>වෘත්තයක්!</b> N ස්ලයිඩරය 4 සිට ∞ දක්වා ගෙන යන්න.</p>
+
+  <div class="layout">
+   <aside class="side">
+    <div class="controls">
+      <div>
+        <label>වටයකට තල්ලු ගණන N = <span class="v" id="nVal">4</span></label>
+        <input type="range" id="nS" min="0" max="6" step="1" value="0">
+        <div class="ticks"><span>4</span><span>6</span><span>8</span><span>12</span><span>16</span><span>32</span><span>∞</span></div>
+      </div>
+      <div class="btns">
+        <button class="solid" id="autoBtn">▶ ස්වයංක්‍රීය තල්ලු (නැවත)</button>
+        <button class="kick" id="kickBtn">👊 90° තල්ලුව</button>
+        <button id="relBtn">✋ බලය ඉවත් කරන්න</button>
+        <button id="pauseBtn">⏸ විරාමය</button>
+        <button id="resetBtn">↺ මුල සිට</button>
+        <label class="chk"><input type="checkbox" id="circChk" checked> ඉලක්ක වෘත්තය</label>
+        <label class="chk"><input type="checkbox" id="slowChk"> සෙමින් (×0.4)</label>
+      </div>
+      <div class="note" style="margin:0">තල්ලුව සෑම විටම v ට ලම්බයි; එක තල්ලුවකින් v හැරෙන්නේ <b>360°/N</b> කින් (N = ∞ විට අතින් තල්ලුවකට 10°). v = 4 m s⁻¹, r = 4 m.</div>
+    </div>
+    <div class="status" id="status">
+      <div><small>තත්ත්වය</small><span id="stState">–</span></div>
+      <div><small>වේගය |v|</small><span id="stSpeed">4.00</span> m s⁻¹<span class="tiny">නියතයි ✅</span></div>
+      <div><small>v හි දිශාව</small><span id="stDir">0.0</span>°<span class="tiny">වෙනස් වේ 🔄</span></div>
+      <div><small>ත්වරණය</small><span id="stAcc">≠ 0</span><span class="tiny" id="stAccSub">–</span></div>
+      <div><small>තල්ලුවකට හැරීම</small><span id="stTurn">90</span>°<span class="tiny" id="stCount">තල්ලු: 0</span></div>
+    </div>
+   </aside>
+   <div class="main">
+    <div class="cvs"><canvas id="scene" class="scene"></canvas></div>
+   </div>
+  </div>
+
+  <h2>පැහැදිලි කිරීම්</h2>
+  <details>
+    <summary><span class="qtag">a</span>⚡ වේගය වෙනස් නොවන්නේ ඇයි?</summary>
+    <div class="ans">
+      තල්ලුව (බලය) සෑම විටම බෝලයේ චලිත දිශාවට <b>ලම්බයි</b>. ලම්බ බලයකින් චලිත දිශාවට කාර්යයක් සිදු නොවේ:
+      <span class="eq">W = F s cos 90° = 0</span>
+      කාර්යය ශුන්‍ය නම් චාලක ශක්තිය (½mv²) වෙනස් නොවේ → <b>වේගය |v| නියතයි</b>. වෙනස් වන්නේ <b>දිශාව</b> පමණයි 😊<br>
+      නමුත් ප්‍රවේගය දෛශිකයක්. දිශාව පමණක් වෙනස් වුණත් ප්‍රවේගය වෙනස් වෙලා → <b>ත්වරණය ≠ 0</b>.
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">b</span>🔷 බහුඅස්‍රය වෘත්තයක් වන්නේ කොහොමද?</summary>
+    <div class="ans">
+      එක වටයක් යන්න බෝලය මුළු 360° ක් හැරිය යුතුයි. N වතාවක් සමානව තල්ලු කළොත් එක තල්ලුවකින් හැරෙන කෝණය:
+      <span class="eq">Δθ = 360° / N</span>
+      • N = 4 → <b>90°</b> → සමචතුරස්‍රය (සටහනේ "90° තල්ලුව" මෙයයි)<br>
+      • N = 8 → 45° → අෂ්ටාස්‍රය<br>
+      • N = 32 → 11.25° → දැනටමත් වෘත්තයක් වගේ!<br>
+      N වැඩි වන විට තල්ලු අතර කාලය කෙටි වේ, එක් හැරීමක් කුඩා වේ, කොන් නැති වී යයි. N → ∞ (අඛණ්ඩ බලය) විට මාර්ගය <b>වෘත්තයක්</b>. පෙර N වල හැඩ මැකී නොයන නිසා ඒවා වෘත්තයට ළං වන හැටි බලන්න.
+      <span class="eq">සාමාන්‍ය a = Δv / Δt = (v²/r)·cos(180°/N)  →  v²/r</span>
+      <p class="note">සියුම් කරුණක්: N කුඩා විට (උදා. N = 4) එක තල්ලුව ලොකුයි; එය හරියටම යොමු වන්නේ <b>කේන්ද්‍රය</b> දෙසටයි (පෙර සහ පසු ප්‍රවේගවල මැදට ලම්බව). තල්ලු කුඩා වන විට එය v ට හරියටම 90° ක් වේ.</p>
+    </div>
+  </details>
+  <details class="hot">
+    <summary><span class="qtag">🔥</span>NOTE: වෘත්ත චලිතය යනු කුමක්ද?</summary>
+    <div class="ans">
+      වෘත්ත චලිතය කියන්නේ අමුතු දෙයක් නොවේ. එය නිව්ටන්ගේ පළමු නියමය (සරල රේඛාවේ යාම) <b>නොකඩවා බාධා කිරීමක්</b> පමණයි.<br>
+      සෑම මොහොතකම <b>ප්‍රවේගයට ලම්බව</b>, සෑම විටම <b>කේන්ද්‍රය දෙසට</b> ක්‍රියා කරන බලයක් (ත්වරණයක්) තිබේ නම් → වෘත්ත චලිතය.<br>
+      එම බලය = <b>කේන්ද්‍රාභිසාරී බලය</b> (centripetal force):
+      <span class="eq">a = v²/r      F = mv²/r      (කේන්ද්‍රය දෙසට)</span>
+      එය අලුත් වර්ගයේ බලයක් නොවේ. තන්තුවක ආතතිය, ගුරුත්වය, සර්ෂණය වැනි ඕනෑම බලයකට මේ "කේන්ද්‍රය දෙසට" රාජකාරිය කළ හැක.
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">d</span>✋ බලය ඉවත් කළොත්?</summary>
+    <div class="ans">
+      බලය නැති වූ මොහොතේම ත්වරණය = 0. නිව්ටන්ගේ පළමු නියමය අනුව බෝලය එම මොහොතේ තිබූ ප්‍රවේගයෙන්ම, එනම් <b>ස්පර්ශකය දිගේ</b>, සරල රේඛාවක යයි. කේන්ද්‍රයෙන් ඉවතට (අරය දිගේ) පියාඹා යන්නේ නැත! "බලය ඉවත් කරන්න" ඔබා බලන්න.
+    </div>
+  </details>
+</div>
+
+<script>
+// ---------- helpers (same as day-8 sims) ----------
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(14, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  ctx.font = `${weight} ${size}px 'Segoe UI','Noto Sans Sinhala','Iskoola Pota',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle'; ctx.textAlign = align; ctx.fillText(String(t), x, y);
+}
+
+// ---------- physics ----------
+// Canvas units (px). Screen y points DOWN; the ball goes round anticlockwise on screen.
+const W = 900, H = 520, PXM = 40;            // 40 px = 1 m
+const CX = 450, CY = 260, R = 160, V = 160;   // centre, radius 4 m, speed 4 m/s
+const LEAD = 410;                             // straight-line run-in before the first kick (after reset)
+const NS = [4, 6, 8, 12, 16, 32, Infinity];
+const COL = { 4: '#e84393', 6: '#f39c12', 8: '#00b894', 12: '#0abde3', 16: '#8e44ad', 32: '#6c5ce7', Infinity: '#2d3436' };
+const nName = n => isFinite(n) ? String(n) : '∞';
+const fmt = x => String(+x.toFixed(2));
+const turnAngle = n => 2 * Math.PI / (isFinite(n) ? n : 36);  // rad per kick (manual kick in ∞ mode: 10°)
+const side = n => 2 * R * Math.tan(Math.PI / n);               // side of polygon circumscribing the circle
+
+const S = { N: 4, ghosts: new Map(), time: 0, paused: false };
+
+function startAt(lead) {
+  // ball on the tangent line at the bottom of the circle, heading right (+x)
+  Object.assign(S, {
+    x: CX - lead, y: CY + R, vx: V, vy: 0,
+    s: -lead,                                     // distance travelled, 0 = tangent point
+    nextKick: isFinite(S.N) ? side(S.N) / 2 : 0,  // first vertex is half a side from the tangent point
+    mode: 'auto', pureAuto: true, kicks: [], trail: [[CX - lead, CY + R]],
+    kickCount: 0, parked: false, lastKickT: -9
+  });
+}
+function archive() { if (S.pureAuto && S.s > 0 && S.trail.length > 2) S.ghosts.set(S.N, S.trail.slice()); }
+function pushTrail(force) {
+  const p = S.trail[S.trail.length - 1];
+  if (force || !p || Math.hypot(S.x - p[0], S.y - p[1]) > 2.5) {
+    S.trail.push([S.x, S.y]); if (S.trail.length > 3000) S.trail.shift();
+  }
+}
+// turn the velocity anticlockwise (on screen) by th, speed unchanged
+function applyTurn(th) {
+  const c = Math.cos(th), s = Math.sin(th);
+  const vx = S.vx * c + S.vy * s, vy = -S.vx * s + S.vy * c;
+  S.kicks.push({ x: S.x, y: S.y, dx: vx - S.vx, dy: vy - S.vy });
+  if (S.kicks.length > 40) S.kicks.shift();
+  S.vx = vx; S.vy = vy; S.kickCount++; S.lastKickT = S.time;
+  pushTrail(true);
+}
+function move(t) { S.x += S.vx * t; S.y += S.vy * t; }
+function orbit(t) { // exact rotation about the centre (continuous force)
+  const th = V / R * t, c = Math.cos(th), s = Math.sin(th);
+  const dx = S.x - CX, dy = S.y - CY;
+  S.x = CX + dx * c + dy * s; S.y = CY - dx * s + dy * c;
+  const vx = S.vx * c + S.vy * s, vy = -S.vx * s + S.vy * c; S.vx = vx; S.vy = vy;
+}
+function step(dt) {
+  S.time += dt;
+  if (S.parked) return;
+  let rem = dt, guard = 0;
+  while (rem > 1e-12 && guard++ < 100000) {
+    if (S.mode === 'auto' && !isFinite(S.N) && S.s >= 0) {
+      const h = Math.min(rem, 0.02); orbit(h); S.s += V * h; rem -= h; pushTrail(); continue;
+    }
+    const target = S.mode === 'auto' ? S.nextKick : Infinity;
+    const need = (target - S.s) / V;
+    if (need > rem) { move(rem); S.s += V * rem; rem = 0; }
+    else {
+      move(need); S.s = target; rem -= need;
+      if (isFinite(S.N)) { applyTurn(turnAngle(S.N)); S.nextKick += side(S.N); }
+    }
+  }
+  pushTrail();
+  if (S.mode !== 'auto' && (S.x < -40 || S.x > W + 40 || S.y < -40 || S.y > H + 40)) S.parked = true;
+}
+function kick() {
+  if (S.parked) return;
+  S.mode = 'manual'; S.pureAuto = false;
+  applyTurn(turnAngle(S.N));
+}
+function release() { if (S.mode !== 'free') { S.mode = 'free'; S.pureAuto = false; pushTrail(true); } }
+function restart() { archive(); startAt(0); }
+function setN(n) {
+  if (n === 0 || n === 'circle' || n === '∞') n = Infinity;
+  n = +n; if (!NS.includes(n)) return;
+  archive(); S.N = n; startAt(0); syncN();
+}
+function reset() { S.N = 4; S.ghosts = new Map(); S.time = 0; startAt(LEAD); syncN(); }
+
+// ---------- UI ----------
+const $ = id => document.getElementById(id);
+const nS = $('nS');
+function syncN() {
+  if (nS) nS.value = NS.indexOf(S.N);
+  if ($('nVal')) $('nVal').textContent = isFinite(S.N) ? S.N : '∞  (අඛණ්ඩ — වෘත්තය)';
+}
+nS.addEventListener('input', () => setN(NS[+nS.value]));
+$('autoBtn').addEventListener('click', () => { restart(); setPaused(false); });
+$('kickBtn').addEventListener('click', kick);
+$('relBtn').addEventListener('click', release);
+$('resetBtn').addEventListener('click', () => { reset(); setPaused(false); });
+function setPaused(p) { S.paused = p; $('pauseBtn').textContent = p ? '▶ ධාවනය' : '⏸ විරාමය'; }
+$('pauseBtn').addEventListener('click', () => setPaused(!S.paused));
+
+// ---------- drawing ----------
+const sc = stage($('scene'), W, H);
+function polyline(c, pts, col, lw, alpha) {
+  if (pts.length < 2) return;
+  c.globalAlpha = alpha; c.strokeStyle = col; c.lineWidth = lw; c.lineJoin = 'round'; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]);
+  c.stroke(); c.globalAlpha = 1;
+}
+function drawScene() {
+  const c = sc.ctx; c.clearRect(0, 0, W, H);
+  const inLead = S.mode === 'auto' && S.s < 0;
+  // target circle + centre
+  if ($('circChk').checked) {
+    c.strokeStyle = '#b2bec3'; c.lineWidth = 1.5; c.setLineDash([6, 6]);
+    c.beginPath(); c.arc(CX, CY, R, 0, 2 * Math.PI); c.stroke(); c.setLineDash([]);
+  }
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(CX, CY, 4, 0, 7); c.fill();
+  text(c, 'O (කේන්ද්‍රය)', CX + 8, CY + 14, '#636e72', 13, 'left', 600);
+
+  // faint traces of earlier N
+  for (const [n, pts] of S.ghosts) if (!(n === S.N && S.pureAuto)) polyline(c, pts, COL[n], 2.5, 0.35);
+  // current path
+  polyline(c, S.trail, S.pureAuto ? COL[S.N] : '#6c5ce7', 3.5, 1);
+
+  // kick (force) arrows: faint marks at earlier kicks, bold flash at the latest
+  const flash = Math.max(0, 1 - (S.time - S.lastKickT) / 0.9);
+  const showK = isFinite(S.N) ? S.N : 12;
+  S.kicks.slice(-showK).forEach((k, i, arr) => {
+    const L = Math.hypot(k.dx, k.dy); if (L < 1e-9) return;
+    const ux = k.dx / L, uy = k.dy / L;
+    if (i === arr.length - 1 && flash > 0) {
+      const len = 20 + 55 * L / V;
+      c.globalAlpha = 0.35 + 0.65 * flash;
+      if (S.pureAuto) { c.strokeStyle = '#fab1a0'; c.lineWidth = 1.5; c.setLineDash([4, 5]); c.beginPath(); c.moveTo(k.x, k.y); c.lineTo(CX, CY); c.stroke(); c.setLineDash([]); }
+      arrow(c, k.x, k.y, k.x + ux * len, k.y + uy * len, '#d63031', 5);
+      text(c, 'F (තල්ලුව)', k.x + ux * (len + 20), k.y + uy * (len + 20), '#d63031', 15, 'center', 800);
+      c.globalAlpha = 1;
+    } else {
+      c.globalAlpha = 0.4; arrow(c, k.x, k.y, k.x + ux * 26, k.y + uy * 26, '#d63031', 2.5); c.globalAlpha = 1;
+    }
+  });
+  // continuous force: constant arrow to the centre
+  if (S.mode === 'auto' && !isFinite(S.N) && S.s >= 0) {
+    const dx = CX - S.x, dy = CY - S.y, L = Math.hypot(dx, dy);
+    arrow(c, S.x, S.y, S.x + dx / L * 75, S.y + dy / L * 75, '#d63031', 5);
+    text(c, 'F = mv²/r', S.x + dx / L * 105, S.y + dy / L * 105, '#d63031', 15, 'center', 800);
+  }
+  // free flight: show the tangent line ahead
+  if (S.mode === 'free') {
+    const sp = Math.hypot(S.vx, S.vy);
+    c.strokeStyle = '#f39c12'; c.lineWidth = 2; c.setLineDash([8, 6]);
+    c.beginPath(); c.moveTo(S.x, S.y); c.lineTo(S.x + S.vx / sp * 1200, S.y + S.vy / sp * 1200); c.stroke(); c.setLineDash([]);
+  }
+  // velocity arrow
+  const sp = Math.hypot(S.vx, S.vy), vux = S.vx / sp, vuy = S.vy / sp;
+  arrow(c, S.x, S.y, S.x + vux * 80, S.y + vuy * 80, '#0984e3', 5);
+  text(c, 'v', S.x + vux * 96, S.y + vuy * 96, '#0984e3', 18, 'center', 800);
+  // tennis ball
+  c.fillStyle = '#d4e157'; c.strokeStyle = '#9e9d24'; c.lineWidth = 2;
+  c.beginPath(); c.arc(S.x, S.y, 12, 0, 7); c.fill(); c.stroke();
+  c.strokeStyle = '#fff'; c.lineWidth = 2;
+  c.beginPath(); c.arc(S.x - 13, S.y, 10, -0.9, 0.9); c.stroke();
+  c.beginPath(); c.arc(S.x + 13, S.y, 10, Math.PI - 0.9, Math.PI + 0.9); c.stroke();
+
+  // mode badge
+  const badge = inLead ? ['තවම බලයක් නැත → සරල රේඛාව (නිව්ටන් I)', '#636e72']
+    : S.mode === 'auto' ? (isFinite(S.N) ? [`N = ${S.N} තල්ලු/වටය → බහුඅස්‍රය`, COL[S.N]] : ['අඛණ්ඩ බලය → වෘත්තය', '#2d3436'])
+    : S.mode === 'manual' ? ['අතින් තල්ලු 👊', '#6c5ce7']
+    : ['බලය ඉවත් කළා → ස්පර්ශකය දිගේ සරල රේඛාව', '#e67e22'];
+  text(c, badge[0], 18, 24, badge[1], 18, 'left', 800);
+  if (S.mode === 'auto' && isFinite(S.N)) text(c, `එක් තල්ලුවකින් හැරීම = 360°/${S.N} = ${fmt(360 / S.N)}°`, 18, 50, '#636e72', 14, 'left', 700);
+
+  // direction dial (top right)
+  const DX = 832, DY = 76, DR = 42;
+  c.fillStyle = '#fff'; c.strokeStyle = '#dfe6e9'; c.lineWidth = 2;
+  c.beginPath(); c.arc(DX, DY, DR, 0, 7); c.fill(); c.stroke();
+  c.strokeStyle = '#ecf0f1'; c.lineWidth = 1; c.beginPath(); c.moveTo(DX - DR, DY); c.lineTo(DX + DR, DY); c.moveTo(DX, DY - DR); c.lineTo(DX, DY + DR); c.stroke();
+  arrow(c, DX, DY, DX + vux * (DR - 6), DY + vuy * (DR - 6), '#0984e3', 4);
+  text(c, 'v දිශාව', DX, DY + DR + 14, '#0984e3', 13, 'center', 700);
+  text(c, dirDeg().toFixed(0) + '°', DX, DY + DR + 32, '#2c3e50', 15, 'center', 800);
+
+  // legend (bottom left)
+  let lx = 18; const ly = H - 18;
+  text(c, 'මාර්ග:', lx, ly, '#636e72', 13, 'left', 700); lx += 50;
+  for (const n of NS) {
+    const cur = n === S.N && S.pureAuto;
+    if (!S.ghosts.has(n) && !cur) continue;
+    c.globalAlpha = cur ? 1 : 0.5; c.strokeStyle = COL[n]; c.lineWidth = 4;
+    c.beginPath(); c.moveTo(lx, ly); c.lineTo(lx + 18, ly); c.stroke(); c.globalAlpha = 1;
+    text(c, 'N=' + nName(n), lx + 22, ly, cur ? COL[n] : '#95a5a6', 13, 'left', 800); lx += 70;
+  }
+  text(c, '→ v (නීල)   → F (රතු, කේන්ද්‍රය දෙසට)', W - 18, H - 18, '#95a5a6', 13, 'right', 600);
+  if (S.parked) {
+    c.fillStyle = 'rgba(255,255,255,.85)'; c.fillRect(220, 200, 460, 90);
+    c.strokeStyle = '#f39c12'; c.lineWidth = 2; c.strokeRect(220, 200, 460, 90);
+    text(c, 'බෝලය සරල රේඛාවක පිටතට ගියා! 🚀', W / 2, 232, '#e67e22', 18, 'center', 800);
+    text(c, '"▶ ස්වයංක්‍රීය තල්ලු" හෝ "↺ මුල සිට" ඔබන්න', W / 2, 262, '#636e72', 14, 'center', 700);
+  }
+}
+function dirDeg() { return ((Math.atan2(-S.vy, S.vx) * 180 / Math.PI) % 360 + 360) % 360; }
+
+function updateStatus() {
+  const inLead = S.mode === 'auto' && S.s < 0, forceOn = S.mode === 'auto' && !inLead;
+  const st = S.mode === 'free' ? 'බලය නැත → සරල රේඛාව (නිව්ටන් I)'
+    : S.mode === 'manual' ? 'අතින් තල්ලු 👊'
+    : inLead ? 'තවම බලයක් නැත → සරල රේඛාව'
+    : isFinite(S.N) ? `N = ${S.N} බහුඅස්‍රය 🔷` : 'අඛණ්ඩ බලය → වෘත්තය ⭕';
+  $('stState').textContent = st;
+  $('stSpeed').textContent = (Math.hypot(S.vx, S.vy) / PXM).toFixed(2);
+  $('stDir').textContent = dirDeg().toFixed(1);
+  const v2r = (V / PXM) ** 2 / (R / PXM);
+  let acc = '≠ 0 ✅', sub;
+  if (S.mode === 'free') { acc = '= 0'; sub = 'බලයක් නැත'; }
+  else if (inLead) { acc = '= 0'; sub = 'තවම තල්ලුවක් නැත'; }
+  else if (S.mode === 'manual') sub = 'තල්ලුවේදී පමණක්';
+  else if (isFinite(S.N)) sub = `සාමාන්‍ය Δv/Δt = ${(v2r * Math.cos(Math.PI / S.N)).toFixed(2)} m s⁻² (v²/r = ${v2r.toFixed(2)})`;
+  else sub = `a = v²/r = ${v2r.toFixed(2)} m s⁻² (කේන්ද්‍රය දෙසට)`;
+  $('stAcc').textContent = acc; $('stAccSub').textContent = sub;
+  $('stTurn').textContent = fmt(turnAngle(S.N) * 180 / Math.PI);
+  $('stCount').textContent = 'තල්ලු: ' + S.kickCount;
+  $('status').className = 'status' + (forceOn ? '' : ' free');
+}
+
+window.sim = { step, state: S, setN, kick, release, reset, restart };
+
+reset();
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (!S.paused) step(dt * ($('slowChk').checked ? 0.4 : 1));
+  drawScene(); updateStatus();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>වෘත්ත චලිතය vs භ්‍රමණ චලිතය - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 16px; line-height: 1.6; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  .controls .hint { font-size: 13px; color: #636e72; font-weight: 600; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid, button.on { background: #6c5ce7; color: #fff; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: radial-gradient(circle at 37% 50%, #fbfaff, #eef3ff 70%); border: 1px solid #dfe6e9; cursor: pointer; }
+  .counter { margin-top: 14px; border-left: 6px solid #e17055; background: #fdf0ec; padding: 12px 16px; border-radius: 6px; font-weight: 800; font-size: 16px; line-height: 1.6; }
+  .counter small { display: block; font-size: 13px; color: #636e72; font-weight: 600; }
+  .compare { margin-top: 14px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 12px 16px; border-radius: 6px; font-size: 15px; line-height: 1.7; }
+  .compare b.same { color: #1e8449; }
+  .compare b.diff { color: #c0392b; }
+  .compare .row { margin: 2px 0; }
+  .tblw { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 14px; }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+  th, td { border: 1px solid #dfe6e9; padding: 6px 8px; text-align: center; white-space: nowrap; }
+  th { background: #f1efff; color: #4834d4; }
+  td.same { background: #eafaf1; color: #1e8449; font-weight: 700; }
+  td.diff { background: #fdedec; color: #c0392b; font-weight: 700; }
+  .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: middle; margin-right: 4px; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .eq { font-family: 'Courier New', 'Noto Sans Sinhala', monospace; font-weight: 700; background: #fff; border: 1px solid #dfe6e9; border-radius: 6px; padding: 8px 12px; margin: 6px 0; display: block; }
+  .big { font-weight: 800; color: #6c5ce7; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } .counter { font-size: 14px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .side .counter, .side .compare { margin-top: 0; margin-bottom: 12px; }
+    .main > .cvs:first-child { margin-top: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">වෘත්ත චලිතය vs භ්‍රමණ චලිතය · Day 11</span><span class="qtag">02</span></div>
+  <h1>භ්‍රමණය කියන්නේ ඇත්තටම වෘත්ත චලිත බිලියන ගණනක එකතුවක්!</h1>
+  <p class="sub">පංකාව කැරකෙනවා බලන්න. ඊට පස්සේ "පරමාණු මට්ටමට zoom" slider එක ක්‍රමයෙන් දකුණට ගෙනියන්න — ඝන වස්තුව අංශු (පරමාණු) ජාලයක් බවට පත් වී, සෑම අංශුවක්ම අක්ෂය වටා <b>තමන්ගේම වෘත්තයක</b> යන හැටි පෙනේවි. අංශුවක් මත click / tap කර එහි r, v, a බලන්න.</p>
+
+  <div class="layout">
+   <aside class="side">
+    <div class="controls">
+      <div><label>කෝණික වේගය = <span class="v" id="rpmVal">15</span> rpm <span class="hint">(ω = <span id="wVal">1.57</span> rad s⁻¹)</span></label><input type="range" id="rpmS" min="0" max="60" step="1" value="15"></div>
+      <div><label>පරමාණු මට්ටමට zoom: <span class="v" id="zVal">0</span>%</label><input type="range" id="zoomS" min="0" max="100" step="1" value="0"><span class="hint" id="zStage">ඝන වස්තුව</span></div>
+      <div class="btns">
+        <button class="on" id="fanBtn">🌀 පංකාව</button>
+        <button id="discBtn">⚙️ රෝදය (තැටිය)</button>
+      </div>
+      <div class="btns">
+        <button class="solid" id="playBtn">⏸ නවත්වන්න</button>
+        <button id="resetBtn">↺ මුල සිට</button>
+        <button id="presetBtn">● අංශු 3 (r වෙනස්)</button>
+        <button id="clearBtn">✕ තේරීම් ඉවත් කරන්න</button>
+      </div>
+      <div class="hint" style="grid-column:1/-1">වස්තුව මත ඕනෑම අංශුවක් click / tap කරන්න (උපරිම 4). නැවත click කළොත් ඉවත් වේ.</div>
+    </div>
+    <div class="counter">
+      අංශු ගණන ≈ 10²³ — එක එකකට F = ma යෙදිය නොහැක!
+      <small>මෙහි අඳින ලද්දේ අංශු <span id="nDrawn">0</span> ක් පමණි. සැබෑ පංකා තලයක පරමාණු ≈ 10²³ – 10²⁵ ක් පමණ තිබේ.</small>
+    </div>
+    <div class="compare" id="compare">–</div>
+   </aside>
+   <div class="main">
+    <div class="cvs"><canvas id="scene" class="scene"></canvas></div>
+    <div class="tblw"><table id="tbl"></table></div>
+    <p class="note">අංශුවක ස්කන්ධය m (ඉතා කුඩායි) නිසා F<sub>c</sub> = m × (rω²) ලෙස සංකේතාත්මකව පෙන්වා ඇත. වස්තුවේ අරය R = 0.50 m. ω වෙනස් කරන අතරතුර α ≠ 0 (ස්පර්ශක ත්වරණය a<sub>t</sub> = rα). ඊතල සියල්ල <b>එකම පරිමාණයට</b> ඇඳ ඇත.</p>
+   </div>
+  </div>
+
+  <h2>පැහැදිලි කිරීම්</h2>
+  <details>
+    <summary><span class="qtag">a</span>පරමාණුක නිරීක්ෂණය — "භ්‍රමණය" කියලා වෙනම චලිතයක් නෑ!</summary>
+    <div class="ans">
+      පංකා තලයක් හෝ රෝදයක් දිහා බැලුවම මුළු වස්තුවම එකට <b>කැරකෙනවා</b> වගේ පේනවා. ඒත් zoom කරලා පරමාණු මට්ටමට ගියොත් වෙනම "භ්‍රමණ චලිතයක්" දකින්න නෑ —
+      තියෙන්නේ <b>වෘත්ත චලිතය</b> විතරයි. වස්තුවේ සෑම අංශුවක්ම අක්ෂය වටා, අක්ෂයේ සිට තමන්ගේ දුර <b>r</b> අරය වූ වෘත්තයක් මත යනවා.
+      <span class="eq">භ්‍රමණ චලිතය = Σ (එක් එක් අංශුවේ වෘත්ත චලිතය)</span>
+      Simulation එකේ zoom 100% කළාම පේන ඒක කේන්ද්‍රීය වෘත්ත ගොඩ ඒකයි. අක්ෂය මතම ඇති අංශුවකට (r = 0) චලිතයක් නැහැ.
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">b</span>ප්‍රායෝගික ගැටලුව — අංශු 10²³ ක්!</summary>
+    <div class="ans">
+      එක අංශුවකට නම් වැඩේ ලේසියි — වෘත්ත චලිතයේ සමීකරණ යොදන්න පුළුවන්:
+      <span class="eq">F = ma ,   F<sub>c</sub> = mv²/r = mrω²</span>
+      ඒත් කුඩා පංකා තලයක පවා අංශු <b>10²³</b> කට වඩා තියෙනවා. ඒ හැම එකකටම වෙන වෙනම v, a, F ගණනය කරන්න ගියොත්? තත්පරයට එකක් බැගින් කළත් අවුරුදු ≈ 3 × 10¹⁵ ක් යනවා — විශ්වයේ වයස මෙන් ලක්ෂ ගණන් ගුණයක්! 😅
+      ඒ වගේම එක එක අංශුවේ v සහ a එකිනෙකට වෙනස් (r අනුව වෙනස් වෙනවා).<br>
+      <span class="big">එබැවින් θ, ω, α වැනි කෝණික රාශි භාවිත කරමු.</span>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">c</span>කෝණික රාශි (θ, ω, α) හැම අංශුවටම පොදුයි ඇයි?</summary>
+    <div class="ans">
+      දෘඪ වස්තුවක් කැරකෙද්දී එහි අංශු අතර දුර වෙනස් වෙන්නේ නෑ. ඉතින් එක්තරා කාලයකදී <b>සෑම අංශුවක්ම අක්ෂය වටා එකම කෝණයකින් θ</b> හැරෙනවා
+      (simulation එකේ පාට චාප බලන්න — අරය වෙනස් වුණත් කෝණය එකයි).
+      <span class="eq">θ එකයි  →  ω = dθ/dt එකයි  →  α = dω/dt එකයි</span>
+      වෙනස් වෙන්නේ r පමණයි. රේඛීය රාශි ලැබෙන්නේ r න් ගුණ කිරීමෙන්:
+      <span class="eq">s = rθ ,   v = rω ,   a<sub>t</sub> = rα ,   a<sub>c</sub> = rω²</span>
+      ඒ නිසා අංශු 10²³ ට වෙන වෙනම යන්නේ නැතුව, <b>θ, ω, α</b> තුනෙන් මුළු වස්තුවේම චලිතය විස්තර කරන්න පුළුවන්. ඒ තමයි ඊළඟ කොටස — <b>03: භ්‍රමණ රාශි</b> 👉
+    </div>
+  </details>
+</div>
+
+<script>
+// ---------- helpers (same as other sims) ----------
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth || W;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(13, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+// Draws text; "x_abc" is drawn with "abc" as a real subscript.
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Iskoola Pota','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/);
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
+}
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const TAU = 2 * Math.PI;
+
+// ---------- model ----------
+const R = 0.5;          // body radius (m)
+const GRID = 0.03;      // particle spacing (m) – drawn "atoms"
+const HUB = 0.075;      // fan hub radius (m)
+const ALPHA_MAX = 2.0;  // rad/s² used when the slider changes ω (so α is visible)
+const W = 900, H = 560, CX = 330, CY = 280, S = 440; // canvas, axis position, px per m
+const COLS = ['#e17055', '#0984e3', '#00b894', '#e84393'];
+const PRESET_R = [0.15, 0.30, 0.45];
+
+const state = {
+  body: 'fan', theta: 0, omega: 0, omegaTarget: 0, alpha: 0, rpm: 15,
+  zoom: 0, playing: true, selected: [], particles: [], presets: []
+};
+
+// blade half-width at distance u along the blade (fan), clipped to the circle r ≤ R
+function bladeHalf(u) {
+  if (u < 0.05 || u > R) return -1;
+  const hw = 0.028 + 0.075 * Math.sqrt(Math.max(0, 1 - ((u - 0.29) / 0.23) ** 2));
+  return Math.min(hw, Math.sqrt(Math.max(0, R * R - u * u)));
+}
+function inside(x, y) {
+  const r = Math.hypot(x, y);
+  if (r > R + 1e-9) return false;
+  if (state.body === 'disc') return true;
+  if (r <= HUB) return true;
+  for (let k = 0; k < 3; k++) {
+    const b = -k * TAU / 3, u = x * Math.cos(b) - y * Math.sin(b), w = x * Math.sin(b) + y * Math.cos(b);
+    const hw = bladeHalf(u);
+    if (hw >= 0 && Math.abs(w) <= hw + 1e-9) return true;
+  }
+  return false;
+}
+function build() {
+  const P = [], n = Math.ceil(R / GRID);
+  for (let i = -n; i <= n; i++) for (let j = -n; j <= n; j++) {
+    const x = i * GRID, y = j * GRID;
+    if (inside(x, y)) P.push({ x, y, r: Math.hypot(x, y), phi0: Math.atan2(y, x) });
+  }
+  state.particles = P;
+  // presets: particles on the +x radial line (along blade 0) at r = 0.15, 0.30, 0.45 m
+  state.presets = PRESET_R.map(rr => {
+    let best = 0, bd = 1e9;
+    P.forEach((p, i) => { const d = Math.hypot(p.x - rr, p.y); if (d < bd) { bd = d; best = i; } });
+    return best;
+  });
+  state.selected = state.presets.slice();
+  const nd = document.getElementById('nDrawn'); if (nd) nd.textContent = P.length;
+}
+
+// one physics step: ω relaxes toward the target with |α| ≤ ALPHA_MAX, θ advances
+function step(dt) {
+  const diff = state.omegaTarget - state.omega, maxd = ALPHA_MAX * dt;
+  if (Math.abs(diff) < 1e-9) { state.alpha = 0; state.theta += state.omega * dt; return; }
+  const w0 = state.omega;
+  if (Math.abs(diff) <= maxd) { state.omega = state.omegaTarget; state.alpha = dt > 0 ? diff / dt : 0; }
+  else { state.alpha = Math.sign(diff) * ALPHA_MAX; state.omega += state.alpha * dt; }
+  state.theta += 0.5 * (w0 + state.omega) * dt;
+}
+function setOmega(rpm, ramp = false) {
+  state.rpm = rpm; state.omegaTarget = rpm * TAU / 60;
+  if (!ramp) { state.omega = state.omegaTarget; state.alpha = 0; }
+}
+// every quantity a particle i has right now
+function readout(i) {
+  const p = state.particles[i], r = p.r, w = state.omega, al = state.alpha;
+  return { r, theta: state.theta, omega: w, alpha: al, v: r * w, ac: r * w * w, at: r * al, Fc_per_m: r * w * w };
+}
+function select(i) {
+  const k = state.selected.indexOf(i);
+  if (k >= 0) { state.selected.splice(k, 1); return false; }
+  if (i < 0 || i >= state.particles.length) return false;
+  if (state.selected.length >= 4) state.selected.shift();
+  state.selected.push(i); return true;
+}
+function reset() {
+  state.theta = 0;
+  setOmega(+document.getElementById('rpmS').value || 0);
+  state.selected = state.presets.slice();
+}
+const posOf = p => { const ph = p.phi0 + state.theta; return [CX + p.r * S * Math.cos(ph), CY - p.r * S * Math.sin(ph), ph]; };
+
+// ---------- drawing ----------
+const sc = stage(document.getElementById('scene'), W, H);
+function bodyPath(c) {
+  c.beginPath();
+  if (state.body === 'disc') { c.arc(CX, CY, R * S, 0, TAU); return; }
+  for (let k = 0; k < 3; k++) {
+    const b = state.theta + k * TAU / 3, cb = Math.cos(b), sb = Math.sin(b);
+    const pt = (u, w) => [CX + (u * cb - w * sb) * S, CY - (u * sb + w * cb) * S];
+    const us = []; for (let u = 0.05; u <= R + 1e-9; u += 0.005) us.push(u);
+    us.forEach((u, idx) => { const [x, y] = pt(u, Math.max(0, bladeHalf(u))); idx ? c.lineTo(x, y) : c.moveTo(x, y); });
+    for (let idx = us.length - 1; idx >= 0; idx--) { const [x, y] = pt(us[idx], -Math.max(0, bladeHalf(us[idx]))); c.lineTo(x, y); }
+    c.closePath();
+  }
+  c.moveTo(CX + HUB * S, CY); c.arc(CX, CY, HUB * S, 0, TAU);
+}
+function drawSolid(c, A) {
+  if (A <= 0) return;
+  c.save(); c.globalAlpha = A;
+  if (state.body === 'disc') {
+    const g = c.createRadialGradient(CX, CY, 10, CX, CY, R * S);
+    g.addColorStop(0, '#d6d2ff'); g.addColorStop(1, '#a29bfe');
+    bodyPath(c); c.fillStyle = g; c.fill();
+    c.lineWidth = 10; c.strokeStyle = '#6c5ce7'; c.stroke();
+    // spokes + a marked stripe so the spin is visible
+    for (let k = 0; k < 6; k++) {
+      const b = state.theta + k * TAU / 6;
+      c.strokeStyle = k === 0 ? '#e17055' : 'rgba(72,52,212,.35)'; c.lineWidth = k === 0 ? 7 : 4;
+      c.beginPath(); c.moveTo(CX + 0.06 * S * Math.cos(b), CY - 0.06 * S * Math.sin(b));
+      c.lineTo(CX + (R - 0.02) * S * Math.cos(b), CY - (R - 0.02) * S * Math.sin(b)); c.stroke();
+    }
+  } else {
+    bodyPath(c); c.fillStyle = '#a29bfe'; c.fill('nonzero');
+    c.lineWidth = 3; c.strokeStyle = '#6c5ce7'; c.stroke();
+    c.fillStyle = '#6c5ce7'; c.beginPath(); c.arc(CX, CY, HUB * S, 0, TAU); c.fill();
+  }
+  c.restore();
+}
+function drawScene() {
+  const c = sc.ctx; c.clearRect(0, 0, W, H);
+  const z = state.zoom / 100;
+  const solidA = clamp(1 - z / 0.35), dotA = clamp((z - 0.15) / 0.25), tailA = clamp((z - 0.45) / 0.25), ringA = clamp((z - 0.65) / 0.25);
+  const P = state.particles;
+
+  // outer guide circle
+  c.strokeStyle = '#dfe6e9'; c.lineWidth = 1; c.setLineDash([4, 6]);
+  c.beginPath(); c.arc(CX, CY, R * S, 0, TAU); c.stroke(); c.setLineDash([]);
+
+  // ③ full circular paths of every particle (grouped by radius)
+  if (ringA > 0) {
+    const radii = new Set(P.map(p => Math.round(p.r * S * 2) / 2));
+    c.strokeStyle = `rgba(108,92,231,${0.28 * ringA})`; c.lineWidth = 1;
+    c.beginPath(); radii.forEach(rp => { if (rp > 0) { c.moveTo(CX + rp, CY); c.arc(CX, CY, rp, 0, TAU); } }); c.stroke();
+  }
+  drawSolid(c, solidA);
+  // ③ short "comet" trails – same angle for every particle
+  if (tailA > 0) {
+    const L = Math.min(1.3, 0.25 + Math.abs(state.omega) * 0.2);
+    c.strokeStyle = `rgba(9,132,227,${0.55 * tailA})`; c.lineWidth = 2; c.lineCap = 'round';
+    c.beginPath();
+    P.forEach(p => { if (p.r <= 0) return; const ph = p.phi0 + state.theta, rp = p.r * S;
+      c.moveTo(CX + rp * Math.cos(-ph), CY + rp * Math.sin(-ph)); c.arc(CX, CY, rp, -ph, -ph + L); });
+    c.stroke();
+  }
+  // ② particles
+  if (dotA > 0) {
+    c.fillStyle = `rgba(72,52,212,${0.85 * dotA})`; c.beginPath();
+    P.forEach(p => { const [x, y] = posOf(p); c.moveTo(x + 2.4, y); c.arc(x, y, 2.4, 0, TAU); });
+    c.fill();
+  }
+  // axis
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(CX, CY, 6, 0, TAU); c.fill();
+  c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke();
+
+  // selected particles
+  const sel = state.selected.filter(i => i < P.length);
+  const w = state.omega, rmax = Math.max(1e-6, ...sel.map(i => P[i].r));
+  const kv = Math.min(80, 150 / (rmax * Math.abs(w) || 1e-9));       // px per (m/s), same for all
+  const ka = Math.min(40, 120 / (rmax * w * w || 1e-9));             // px per (m/s²), same for all
+  const thm = ((state.theta % TAU) + TAU) % TAU;
+  sel.forEach((i, k) => {
+    const p = P[i], col = COLS[k % COLS.length], rp = p.r * S, [x, y, ph] = posOf(p);
+    if (p.r > 0) {
+      c.strokeStyle = col; c.lineWidth = 2; c.setLineDash([7, 5]);
+      c.beginPath(); c.arc(CX, CY, rp, 0, TAU); c.stroke(); c.setLineDash([]);
+      // angle swept since the start (mod one turn): same θ, different arc length s = rθ
+      c.save(); c.globalAlpha = 0.45; c.strokeStyle = col; c.lineWidth = 7; c.lineCap = 'butt';
+      c.beginPath(); c.arc(CX, CY, rp, -p.phi0 - thm, -p.phi0); c.stroke(); c.restore();
+      c.strokeStyle = 'rgba(45,52,54,.25)'; c.lineWidth = 1.5; c.setLineDash([3, 4]);
+      c.beginPath(); c.moveTo(CX, CY); c.lineTo(CX + rp * Math.cos(p.phi0), CY - rp * Math.sin(p.phi0)); c.stroke(); c.setLineDash([]);
+      // radius line
+      c.strokeStyle = col; c.lineWidth = 2.5; c.beginPath(); c.moveTo(CX, CY); c.lineTo(x, y); c.stroke();
+      text(c, `r_${k + 1}`, CX + rp * 0.55 * Math.cos(ph) - 12 * Math.sin(ph), CY - rp * 0.55 * Math.sin(ph) - 12 * Math.cos(ph), col, 15, 'center', 800);
+      // velocity (tangent, CCW) and centripetal acceleration (toward the axis)
+      const tx = -Math.sin(ph), ty = -Math.cos(ph);         // screen tangent for CCW motion
+      const v = p.r * w, a = p.r * w * w;
+      if (Math.abs(v) > 1e-6) { arrow(c, x, y, x + tx * v * kv, y + ty * v * kv, '#00b894', 4); text(c, `v_${k + 1}`, x + tx * (v * kv + 14), y + ty * (v * kv + 14), '#00866b', 15, 'center', 800); }
+      if (a > 1e-6) { const ux = (CX - x) / rp, uy = (CY - y) / rp; arrow(c, x, y, x + ux * a * ka, y + uy * a * ka, '#d63031', 4); }
+    }
+    c.fillStyle = col; c.strokeStyle = '#fff'; c.lineWidth = 2.5;
+    c.beginPath(); c.arc(x, y, 7, 0, TAU); c.fill(); c.stroke();
+  });
+
+  // stage label + legend (right side)
+  const stg = stageName();
+  text(c, stg, 20, 24, '#4834d4', 17, 'left', 800);
+  const lx = 610; let ly = 90;
+  text(c, 'සංකේත', lx, ly, '#2c3e50', 16, 'left', 800); ly += 32;
+  arrow(c, lx, ly, lx + 50, ly, '#00b894', 4); text(c, 'v = rω (ස්පර්ශකය දිගේ)', lx + 62, ly, '#00866b', 14); ly += 32;
+  arrow(c, lx, ly, lx + 50, ly, '#d63031', 4); text(c, 'a_c = rω² (අක්ෂය දෙසට)', lx + 62, ly, '#c0392b', 14); ly += 32;
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 2; c.setLineDash([7, 5]); c.beginPath(); c.moveTo(lx, ly); c.lineTo(lx + 50, ly); c.stroke(); c.setLineDash([]);
+  text(c, 'අංශුවේ වෘත්ත පථය', lx + 62, ly, '#2c3e50', 14); ly += 32;
+  c.save(); c.globalAlpha = 0.45; c.strokeStyle = '#6c5ce7'; c.lineWidth = 7; c.beginPath(); c.moveTo(lx, ly); c.lineTo(lx + 50, ly); c.stroke(); c.restore();
+  text(c, 'θ (සියල්ලටම එකයි)', lx + 62, ly, '#2c3e50', 14); ly += 46;
+  text(c, `θ = ${thm.toFixed(2)} rad  (${(thm * 180 / Math.PI).toFixed(0)}°)`, lx, ly, '#2c3e50', 17, 'left', 800); ly += 28;
+  text(c, `ω = ${w.toFixed(2)} rad s⁻¹`, lx, ly, '#2c3e50', 17, 'left', 800); ly += 28;
+  text(c, `α = ${state.alpha.toFixed(2)} rad s⁻²`, lx, ly, '#2c3e50', 17, 'left', 800); ly += 26;
+  text(c, '↑ මේ තුන මුළු වස්තුවටම එකයි', lx, ly, '#1e8449', 14, 'left', 700);
+  text(c, '↺ වාමාවර්තව භ්‍රමණය · අක්ෂය = ●', lx, H - 52, '#636e72', 13, 'left', 600);
+  text(c, `අංශු ${P.length} ක් ඇඳ ඇත · සැබෑ ලෙස ≈ 10²³`, lx, H - 28, '#d35400', 14, 'left', 800);
+  if (!state.playing) text(c, '⏸', W - 24, 24, '#636e72', 18, 'right', 800);
+}
+function stageName() {
+  const z = state.zoom;
+  return z < 25 ? '① ඝන වස්තුවක් ලෙස — මුළු වස්තුවම "කැරකෙනවා" වගේ'
+       : z < 60 ? '② අංශු (පරමාණු) ජාලයක් ලෙස'
+       : '③ සෑම අංශුවක්ම තමන්ගේම වෘත්තයක — වෘත්ත චලිතය!';
+}
+
+// ---------- readouts ----------
+const f2 = x => (Math.abs(x) < 5e-4 ? 0 : x).toFixed(2), f3 = x => (Math.abs(x) < 5e-5 ? 0 : x).toFixed(3);
+function updateTable() {
+  const sel = state.selected.filter(i => i < state.particles.length);
+  const tb = document.getElementById('tbl'), cmp = document.getElementById('compare');
+  if (!sel.length) {
+    tb.innerHTML = '<tr><td>අංශුවක් click / tap කරන්න, නැත්නම් "● අංශු 3" ඔබන්න.</td></tr>';
+    cmp.innerHTML = '<b>සසඳන්න:</b> අංශු කිහිපයක් තෝරන්න.'; return;
+  }
+  const rows = sel.map(i => readout(i)), thm = ((state.theta % TAU) + TAU) % TAU;
+  let h = '<tr><th>අංශුව</th><th>r (m)</th><th>θ (rad)</th><th>ω (rad s⁻¹)</th><th>α (rad s⁻²)</th><th>v = rω (m s⁻¹)</th><th>a<sub>c</sub> = rω² (m s⁻²)</th><th>F<sub>c</sub> = mrω²</th></tr>';
+  rows.forEach((q, k) => {
+    h += `<tr><td><span class="dot" style="background:${COLS[k % COLS.length]}"></span>${k + 1}</td><td>${f2(q.r)}</td>` +
+      `<td class="same">${f2(thm)}</td><td class="same">${f2(q.omega)}</td><td class="same">${f2(q.alpha)}</td>` +
+      `<td class="diff">${f3(q.v)}</td><td class="diff">${f3(q.ac)}</td><td class="diff">m × ${f3(q.Fc_per_m)}</td></tr>`;
+  });
+  tb.innerHTML = h;
+  // comparison box
+  let c = '<b>සසඳන්න (තෝරාගත් අංශු):</b>';
+  c += `<div class="row">θ = ${f2(thm)} rad , ω = ${f2(state.omega)} rad s⁻¹ , α = ${f2(state.alpha)} → <b class="same">සියල්ලටම එකයි ✅</b></div>`;
+  const nz = rows.filter(q => q.r > 1e-9);
+  if (nz.length >= 2) {
+    const r0 = Math.min(...nz.map(q => q.r));
+    const ratio = nz.map(q => (q.r / r0).toFixed(1).replace(/\.0$/, '')).join(' : ');
+    c += `<div class="row">v සහ a<sub>c</sub> → <b class="diff">වෙනස් ❗</b> (r ට අනුලෝමයි)</div>`;
+    c += `<div class="row">r අනුපාතය = ${ratio} ⇒ v අනුපාතය = ${ratio}, a<sub>c</sub> අනුපාතය = ${ratio}</div>`;
+    c += `<div class="row">v/r = ${nz.map(q => f2(q.v / q.r)).join(' = ')} = ω 👍</div>`;
+  } else {
+    c += '<div class="row">වෙනස් r ඇති අංශු 2 ක් හෝ වැඩියෙන් තෝරන්න — v, a වෙනස් බව පෙනේවි.</div>';
+  }
+  cmp.innerHTML = c;
+}
+
+// ---------- UI ----------
+const rpmS = document.getElementById('rpmS'), zoomS = document.getElementById('zoomS');
+function showRpm() {
+  document.getElementById('rpmVal').textContent = state.rpm;
+  document.getElementById('wVal').textContent = (state.rpm * TAU / 60).toFixed(2);
+}
+rpmS.addEventListener('input', () => { setOmega(+rpmS.value, true); showRpm(); });
+zoomS.addEventListener('input', () => {
+  state.zoom = +zoomS.value; document.getElementById('zVal').textContent = state.zoom;
+  document.getElementById('zStage').textContent = stageName();
+});
+const playBtn = document.getElementById('playBtn');
+function setPlaying(on) { state.playing = on; playBtn.textContent = on ? '⏸ නවත්වන්න' : '▶ කරකවන්න'; }
+playBtn.addEventListener('click', () => setPlaying(!state.playing));
+document.getElementById('resetBtn').addEventListener('click', () => { reset(); showRpm(); });
+document.getElementById('presetBtn').addEventListener('click', () => { state.selected = state.presets.slice(); });
+document.getElementById('clearBtn').addEventListener('click', () => { state.selected = []; });
+function setBody(b) {
+  state.body = b; build();
+  document.getElementById('fanBtn').className = b === 'fan' ? 'on' : '';
+  document.getElementById('discBtn').className = b === 'disc' ? 'on' : '';
+}
+document.getElementById('fanBtn').addEventListener('click', () => setBody('fan'));
+document.getElementById('discBtn').addEventListener('click', () => setBody('disc'));
+sc.cv.addEventListener('click', e => {
+  const rc = sc.cv.getBoundingClientRect();
+  const x = (e.clientX - rc.left) * W / rc.width, y = (e.clientY - rc.top) * H / rc.height;
+  let best = -1, bd = 16;
+  state.particles.forEach((p, i) => { const [px, py] = posOf(p); const d = Math.hypot(px - x, py - y); if (d < bd) { bd = d; best = i; } });
+  if (best >= 0) select(best);
+});
+
+window.sim = {
+  step, state, setOmega, select, reset, readout,
+  setZoom: z => { zoomS.value = z; zoomS.dispatchEvent(new Event('input')); },
+  setBody
+};
+
+// ---------- start ----------
+build(); setOmega(+rpmS.value || 15); showRpm();
+let last = performance.now(), lastTbl = 0;
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (state.playing) step(dt);
+  drawScene();
+  if (now - lastTbl > 120) { updateTable(); lastTbl = now; }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

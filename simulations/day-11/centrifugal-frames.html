@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>කේන්ද්‍රාභිසාරී සහ කේන්ද්‍රාපසාරී බල (327–334) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 14px; line-height: 1.6; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+  .tabs button.on, .seg button.on { background: #6c5ce7; color: #fff; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 8px; grid-column: 1 / -1; margin-bottom: 4px; }
+  .seg button { flex: 1 1 200px; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  button.danger { border-color: #d63031; background: #d63031; color: #fff; }
+  .chk { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: #dff3d3; border: 1px solid #dfe6e9; }
+  .rope { background: #f0f7ff; border: 1px solid #dfe6e9; }
+  .status { margin-top: 14px; border-left: 6px solid #6c5ce7; background: #f1efff; padding: 12px 16px; border-radius: 6px; font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; gap: 10px 26px; justify-content: space-between; }
+  .status small { display: block; font-size: 13px; color: #636e72; font-weight: 600; }
+  .cap { margin-top: 12px; border-left: 6px solid #0984e3; background: #eaf4fd; padding: 12px 16px; border-radius: 6px; font-size: 15px; line-height: 1.75; }
+  .cap.pv { border-left-color: #d63031; background: #fdedec; }
+  .cap.ok { border-left-color: #27ae60; background: #eafaf1; }
+  .cap b.t { display: block; font-size: 16px; margin-bottom: 2px; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .eq { font-family: 'Courier New', monospace; font-weight: 700; background: #fff; border: 1px solid #dfe6e9; border-radius: 6px; padding: 8px 12px; margin: 6px 0; display: block; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .hot { border-color: #ff7675; background: #fff5f5; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .hide { display: none; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } .status { font-size: 14px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .side .status { margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 15px; }
+    .side .status > div:first-child { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">Q327–334 · වෘත්ත චලිතය</span></div>
+  <h1>කේන්ද්‍රාභිසාරී බලය (සැබෑ) සහ කේන්ද්‍රාපසාරී බලය (ව්‍යාජ)</h1>
+  <p class="sub">එකම චලිතය — නිරීක්ෂකයන් දෙදෙනෙකුගේ විස්තර දෙකක්. රථය හදිසියේ <b>දකුණට</b> හැරෙන විට වම් ආසනයේ ඉන්න මගියාට මොකද වෙන්නේ කියලා බලන්න, ඊට පස්සේ නිරීක්ෂකයා මාරු කරලා ආයෙත් බලන්න. 🚗</p>
+
+  <div class="tabs">
+    <button class="on" id="tabCar">🚗 මෝටර් රථය හැරෙන විට</button>
+    <button id="tabRope">🪨 තන්තුවක ගැටගැසූ ගල් කැටය</button>
+  </div>
+
+  <!-- ================= CAR TAB ================= -->
+  <div id="panelCar">
+   <div class="layout">
+    <aside class="side">
+     <div class="controls">
+       <div class="seg">
+         <button class="on" id="viewG">🌍 පිටත නිරීක්ෂකයා (පොළොව)</button>
+         <button id="viewP">🧑 රථය තුළ මගියා</button>
+       </div>
+       <div><label>වේගය v = <span class="v" id="vVal">12.0</span> m s⁻¹</label><input type="range" id="vS" min="5" max="25" step="0.5" value="12"></div>
+       <div><label>වංගුවේ අරය r = <span class="v" id="rVal">15</span> m</label><input type="range" id="rS" min="8" max="50" step="1" value="15"></div>
+       <div><label>මගියාගේ ස්කන්ධය m = <span class="v" id="mVal">60</span> kg</label><input type="range" id="mS" min="40" max="100" step="5" value="60"></div>
+       <div class="btns">
+         <button class="solid" id="playBtn">⏸ නවත්වන්න</button>
+         <button id="resetBtn">↺ නැවත</button>
+         <label class="chk"><input type="checkbox" id="slowChk" checked> 🐢 මන්දගාමී (×0.3)</label>
+       </div>
+     </div>
+     <div class="status">
+       <div><small>තත්ත්වය</small><span id="stPhase">–</span></div>
+       <div><small>වේගය v</small><span id="stV">–</span> m s⁻¹</div>
+       <div><small>අරය r</small><span id="stR">–</span> m</div>
+       <div><small>a<sub>c</sub> = v²/r</small><span id="stA">–</span> m s⁻²</div>
+       <div><small>F<sub>c</sub> = mv²/r</small><span id="stF">–</span> N</div>
+       <div><small>ω = v/r</small><span id="stW">–</span> rad s⁻¹</div>
+     </div>
+    </aside>
+    <div class="main">
+     <div class="cvs"><canvas id="scene" class="scene"></canvas></div>
+     <div class="cap" id="cap">–</div>
+    </div>
+   </div>
+  </div>
+
+  <!-- ================= ROPE TAB ================= -->
+  <div id="panelRope" class="hide">
+   <div class="layout">
+    <aside class="side">
+     <div class="controls">
+       <div><label>කෝණික ප්‍රවේගය ω = <span class="v" id="wVal">2.2</span> rad s⁻¹</label><input type="range" id="wS" min="1" max="5" step="0.1" value="2.2"></div>
+       <div class="btns">
+         <button class="danger" id="cutBtn">✂️ තන්තුව කපන්න</button>
+         <button id="ropeResetBtn">↺ නැවත කරකවන්න</button>
+         <span class="note" style="margin:0">ගලේ ස්කන්ධය 0.2 kg, තන්තුවේ දිග 1.4 m</span>
+       </div>
+     </div>
+     <div class="status">
+       <div><small>තත්ත්වය</small><span id="stRope">–</span></div>
+       <div><small>v = rω</small><span id="stSv">–</span> m s⁻¹</div>
+       <div><small>T = mrω²</small><span id="stST">–</span> N</div>
+     </div>
+    </aside>
+    <div class="main">
+     <div class="cvs"><canvas id="ropeCv" class="rope"></canvas></div>
+     <div class="cap" id="capR">–</div>
+    </div>
+   </div>
+  </div>
+
+  <h2>පැහැදිලි කිරීම</h2>
+  <details>
+    <summary><span class="qtag">අ</span>කේන්ද්‍රාභිසාරී බලය — සැබෑ බලයකි</summary>
+    <div class="ans">
+      වස්තුවක් වෘත්තයක යන විට එහි ප්‍රවේගයේ <b>දිශාව</b> නිතරම වෙනස් වේ. ඒ නිසා එයට කේන්ද්‍රය දෙසට ත්වරණයක් (a<sub>c</sub>) තියෙනවා. නිව්ටන්ගේ දෙවන නියමයට අනුව මේ ත්වරණය ඇති කරන්න කේන්ද්‍රය දෙසට <b>සැබෑ බාහිර බලයක්</b> අවශ්‍යයි — ඒකයි <b>කේන්ද්‍රාභිසාරී බලය</b>.
+      <span class="eq">F<sub>c</sub> = m a<sub>c</sub> ,   a<sub>c</sub> = v²/r = rω²</span>
+      <span class="eq">F<sub>c</sub> = mv²/r = mrω²   (දිශාව: නිතරම කේන්ද්‍රය දෙසට)</span>
+      කේන්ද්‍රාභිසාරී බලය අලුත් වර්ගයක බලයක් නොවේ — දැනටමත් තියෙන සැබෑ බලයක් ඒ වැඩේ කරනවා:<br>
+      • තන්තුවක ගැට ගසා කරකවන ගල → <b>තන්තුවේ ආතතිය (T)</b><br>
+      • පෘථිවිය වටා යන චන්ද්‍රයා → <b>ගුරුත්වාකර්ෂණ බලය</b><br>
+      • වංගුවක හැරෙන මෝටර් රථය → <b>ටයර් හා පාර අතර සර්ෂණය</b><br>
+      • (මේ සිමියුලේෂනයේ) දොරට තද වූ මගියා → <b>දොරෙන් ලැබෙන අභිලම්බ ප්‍රතික්‍රියාව (N)</b>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">ආ</span>මෝටර් රථයේ උදාහරණය</summary>
+    <div class="ans">
+      ඔබ රථයේ ඉදිරිපස <b>වම් ආසනයේ</b> (මගී ආසනය) ඉන්නවා කියලා හිතන්න. රියදුරු හදිසියේම රථය <b>දකුණට</b> හරවනවා. ඔබට දැනෙන්නේ කවුරුහරි ඔබව <b>වමට, දොර දෙසට</b> තල්ලු කළා වගේ — "මාව එළියට විසි කළා!" කියලා. 😲<br><br>
+      ඇත්තටම වුණේ මොකක්ද? 👉 <b>ජඩත්වය</b> නිසා (නිව්ටන්ගේ පළමු නියමය) ඔබේ ශරීරය <b>සරල රේඛාවේම</b> දිගටම යන්න උත්සාහ කරනවා. නමුත් රථය දකුණට හැරුණා. ඉතින් ඔබ දොර දෙසට ගියා නොවේ — <b>දොර ඔබ දෙසට ඇවිත් ඔබේ ඇඟේ වැදුණා!</b> ඊට පස්සේ දොර ඔබව කේන්ද්‍රය දෙසට තල්ලු කරමින් රථය සමඟ හැරෙන්න සලස්වනවා.
+      <p class="note">සිමියුලේෂනයේ "පිටත නිරීක්ෂකයා" දර්ශනයේ ඉරි කඩ සරල රේඛාව බලන්න — මගියා දොර හමු වන තුරු ඒ රේඛාව දිගේම යනවා.</p>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">ඇ</span>නිරීක්ෂකයාගේ සමුද්දේශ රාමුව</summary>
+    <div class="ans">
+      <b>🌍 පිටත නිරීක්ෂකයා (පොළොව මත — අවස්ථිති රාමුව):</b> ඔහුට <b>පිටතට</b> ක්‍රියා කරන කිසිම බලයක් පේන්නේ නැහැ. ඔහු දකින්නේ මගියා සරල රේඛාවේ යන බවත්, පසුව දොර මගියාව <b>කේන්ද්‍රය දෙසට</b> තල්ලු කරන බවත් විතරයි. ඒ දොරේ බලය = කේන්ද්‍රාභිසාරී බලය (සැබෑ බලය).
+      <span class="eq">N = mv²/r  (කේන්ද්‍රය දෙසට)  →  මගියා වෘත්ත චලිතයේ</span>
+      <b>🧑 රථය තුළ මගියා (රථය සමඟ කැරකෙන — අනවස්ථිති රාමුව):</b> ඔහුට අනුව ඔහු රථය තුළ නිශ්චලයි. නමුත් දොර ඔහුව ඇතුළට (N) තල්ලු කරනවා! ඔහුගේ රාමුවේ නිව්ටන්ගේ නියම (ΣF = 0) භාවිත කරන්න නම්, N ට සමාන හා ප්‍රතිවිරුද්ධ, <b>පිටතට</b> ක්‍රියා කරන ව්‍යාජ බලයක් උපකල්පනය කරන්න වෙනවා. ඒකයි <b>කේන්ද්‍රාපසාරී බලය</b>.
+      <span class="eq">N − mv²/r = 0   (සැබෑ N ඇතුළට  +  ව්‍යාජ mv²/r පිටතට)</span>
+      එකම චලිතය — විස්තර කිරීම් දෙකක්. ඉහළ බොත්තම් දෙකෙන් දර්ශනය මාරු කරලා බලන්න.
+    </div>
+  </details>
+  <details class="hot">
+    <summary><span class="qtag" style="background:#d63031">🔥 NOTE</span>මතක තියාගන්න!</summary>
+    <div class="ans">
+      • <b>කේන්ද්‍රාභිසාරී බලය</b> = වෘත්ත චලිතයට <b>අවශ්‍ය සැබෑ බලය</b> (ආතතිය, ගුරුත්වය, සර්ෂණය, ප්‍රතික්‍රියාව ...). එය කේන්ද්‍රය දෙසට ක්‍රියා කරයි.<br>
+      • <b>කේන්ද්‍රාපසාරී බලය</b> = සැබෑ බලයක් නොවේ. කැරකෙන පද්ධතිය <b>තුළ සිටින නිරීක්ෂකයෙකුට පමණක්</b>, ඔහුගේම ජඩත්වය නිසා දැනෙන <b>ගණිතමය ව්‍යාජ බලයකි</b>. එය ඇති කරන වස්තුවක් නැති නිසා එයට ප්‍රතික්‍රියාවක් (නිව්ටන් III) ද නැත.<br>
+      • පොළොවේ රාමුවෙන් බල සටහනක් අඳින විට <b>කේන්ද්‍රාපසාරී බලය අඳින්න එපා!</b><br>
+      • සාක්ෂිය: තන්තුව කැපූ විට ගල පිටතට (අරය දිගේ) යන්නේ නැහැ — <b>ස්පර්ශකය දිගේ</b> යනවා ("තන්තුවේ ගල" ටැබය බලන්න). පිටතට සැබෑ බලයක් තිබුණා නම් ගල අරය දිගේ පිටතට යා යුතුයි.
+    </div>
+  </details>
+  <p class="note">සරල කිරීම: මගියා සහ ආසනය අතර සර්ෂණය නොසලකා ඇත. ඊතලවල දිග F සමඟ වැඩි වේ (නිවැරදි පරිමාණයට නොවේ). මගියාගේ වංගු අරය r ට වඩා මඳක් වැඩි වුවත් F<sub>c</sub> ≈ mv²/r ලෙස ගෙන ඇත.</p>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    if (!w) return;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(14, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+const FONT = s => `${s}px 'Segoe UI','Iskoola Pota','Noto Sans Sinhala',sans-serif`;
+// Draws text; "x_abc" is drawn with "abc" as a real subscript.
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  t = String(t);
+  const font = s => weight + ' ' + FONT(s);
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/);
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
+}
+// text on a white rounded label (no subscripts)
+function tag(ctx, t, x, y, col, size = 14, align = 'left', bg = 'rgba(255,255,255,.9)') {
+  ctx.font = '700 ' + FONT(size);
+  const w = ctx.measureText(t).width, h = size + 10;
+  const x0 = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.fillStyle = bg; ctx.beginPath(); ctx.roundRect(x0 - 7, y - h / 2, w + 14, h, 7); ctx.fill();
+  text(ctx, t, x, y, col, size, align);
+}
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+
+// ================= CAR MODEL (world metres, y up; car first drives east, then turns RIGHT) =================
+const APPROACH = 7;                 // m of straight road before the turn starts
+const HALF_L = 2.15, HALF_W = 1.05; // car half length / half width
+const IN_W = 0.93;                  // inner face of the doors (from the centre line)
+const PR = 0.28;                    // passenger body radius
+const LON0 = 0.25, LAT0 = 0.30;     // passenger seat: 0.25 m ahead of centre, 0.30 m to the LEFT
+const LATC = IN_W - PR;             // lateral position when touching the left door
+const ROAD = 3;                     // road half width
+const CW = 900, CH = 520;
+const SG = 32, GX0 = 300, GY0 = 140;  // ground camera (fixed): px per m, origin = point where the turn starts
+const SP = 72, PCX = 430, PCY = 262;  // passenger camera (rotates with the car)
+
+const S = {
+  view: 'ground', v: 12, r: 15, m: 60,
+  t: 0, phase: 'straight', car: null, pass: null, lonC: 0, tContact: null, ended: false,
+  trailW: [], trailL: [], lastTrail: -1, stone: null
+};
+let endWait = 0, playing = true, trees = [];
+
+// Car pose after travelling path length s (s = 0 where the turn begins). Centre of the turn: C = (0, -r).
+function carPose(s) {
+  if (s <= 0) return { x: s, y: 0, hx: 1, hy: 0, lx: 0, ly: 1, phi: 0, s };
+  const r = S.r, p = s / r, sn = Math.sin(p), cs = Math.cos(p);
+  // heading (cos p, -sin p) turns clockwise = a right turn; left = (sin p, cos p) points away from C
+  return { x: r * sn, y: r * cs - r, hx: cs, hy: -sn, lx: sn, ly: cs, phi: p, s };
+}
+
+function resetCar() {
+  S.t = 0; S.phase = 'straight'; S.tContact = null; S.ended = false; S.lonC = 0; endWait = 0;
+  S.trailW = []; S.trailL = []; S.lastTrail = -1;
+  S.car = carPose(-APPROACH);
+  S.pass = { x: -APPROACH + LON0, y: LAT0, lon: LON0, lat: LAT0 };
+}
+
+function stepCar(dt) {
+  if (S.ended || !(dt > 0)) return;
+  const n = Math.max(1, Math.ceil(dt / 0.004)), h = dt / n;
+  for (let i = 0; i < n && !S.ended; i++) {
+    S.t += h;
+    const s = -APPROACH + S.v * S.t, c = carPose(s);
+    S.car = c;
+    let lon, lat;
+    if (S.phase !== 'contact') {
+      // No sideways force on the passenger (seat friction ignored) -> by inertia he keeps
+      // the straight-line velocity (v, 0) he had before the turn: P = (s + LON0, LAT0).
+      const px = s + LON0, py = LAT0, dx = px - c.x, dy = py - c.y;
+      lon = dx * c.hx + dy * c.hy; lat = dx * c.lx + dy * c.ly;
+      if (s > 0) S.phase = 'free';
+      if (lat >= LATC) { S.phase = 'contact'; S.tContact = S.t; S.lonC = lon; }
+    }
+    if (S.phase === 'contact') { lon = S.lonC; lat = LATC; } // the door now carries him round the circle
+    S.pass = { x: c.x + lon * c.hx + lat * c.lx, y: c.y + lon * c.hy + lat * c.ly, lon, lat };
+    if (S.t - S.lastTrail >= 0.02) {
+      S.lastTrail = S.t; S.trailW.push([S.pass.x, S.pass.y]);
+      if (S.phase !== 'straight') S.trailL.push([lon, lat]);
+    }
+    const X = GX0 + SG * c.x, Y = GY0 - SG * c.y;
+    if (X > CW + 90 || Y > CH + 90 || (S.tContact !== null && S.t - S.tContact > 3) || S.t > 60) S.ended = true;
+  }
+}
+
+// trees (fixed in the ground) so the rotation of the world is visible in the passenger view
+function makeTrees() {
+  let seed = 7;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  trees = [];
+  for (let i = 0; i < 400 && trees.length < 150; i++) {
+    const x = -32 + rnd() * 110, y = -115 + rnd() * 135, tr = 0.7 + rnd() * 0.9;
+    const dRoad = x <= 0 ? Math.abs(y) : Infinity;
+    const dRing = Math.abs(Math.hypot(x, y + S.r) - S.r);
+    if (Math.min(dRoad, dRing) < ROAD + tr + 0.6) continue;
+    if (trees.some(t => Math.hypot(t.x - x, t.y - y) < t.r + tr + 0.4)) continue;
+    trees.push({ x, y, r: tr });
+  }
+}
+
+// ================= STONE ON A ROPE (top view) =================
+const ST = { R: 1.4, m: 0.2, K: 110, HX: 450, HY: 230 };
+function resetStone() {
+  const w = S.stone ? S.stone.w : 2.2;
+  S.stone = { w, th: 0, attached: true, x: ST.R, y: 0, vx: 0, vy: ST.R * w, rel: null, trail: [], gone: false };
+}
+function stepStone(dt) {
+  const st = S.stone; if (!(dt > 0)) return;
+  if (st.attached) {
+    st.th += st.w * dt;
+    const c = Math.cos(st.th), s = Math.sin(st.th);
+    st.x = ST.R * c; st.y = ST.R * s; st.vx = -ST.R * st.w * s; st.vy = ST.R * st.w * c;
+  } else if (!st.gone) {
+    // tension is gone -> no horizontal force -> straight line with the release velocity
+    st.x += st.vx * dt; st.y += st.vy * dt; st.trail.push([st.x, st.y]);
+    if (Math.hypot(st.x, st.y) > 7) st.gone = true;
+  }
+}
+function cutRope() {
+  const st = S.stone; if (!st.attached) return;
+  st.attached = false; st.rel = { x: st.x, y: st.y, vx: st.vx, vy: st.vy }; st.trail = [[st.x, st.y]];
+}
+
+// ================= DRAWING: CAR =================
+const sc = stage($('scene'), CW, CH);
+function W2S(x, y) {
+  if (S.view === 'ground') return [GX0 + SG * x, GY0 - SG * y];
+  const c = S.car, dx = x - c.x, dy = y - c.y;
+  return [PCX + SP * (dx * c.hx + dy * c.hy), PCY - SP * (dx * c.lx + dy * c.ly)];
+}
+function sDir(wx, wy) { // world direction -> unit direction on screen
+  let a = wx, b = wy;
+  if (S.view !== 'ground') { const c = S.car; a = wx * c.hx + wy * c.hy; b = wx * c.lx + wy * c.ly; }
+  const L = Math.hypot(a, b) || 1; return [a / L, -b / L];
+}
+function drawWorld(c, px) {
+  const r = S.r;
+  c.lineCap = 'butt';
+  const road = (w, col, dash) => {
+    c.strokeStyle = col; c.lineWidth = w; c.setLineDash(dash || []);
+    c.beginPath(); c.moveTo(-200, 0); c.lineTo(0, 0); c.stroke();
+    c.beginPath(); c.arc(0, -r, r, 0, Math.PI * 2); c.stroke();
+  };
+  road(2 * ROAD + 0.35, '#ffffff'); road(2 * ROAD, '#9aa5b1'); road(0.12, '#ffffff', [1.4, 1.4]);
+  c.setLineDash([]);
+  for (const t of trees) {
+    c.fillStyle = '#6ab04c'; c.beginPath(); c.arc(t.x, t.y, t.r, 0, 7); c.fill();
+    c.fillStyle = '#badc58'; c.beginPath(); c.arc(t.x - t.r * 0.25, t.y + t.r * 0.25, t.r * 0.45, 0, 7); c.fill();
+  }
+  // centre of the turn
+  c.strokeStyle = '#2d3436'; c.lineWidth = 2.5 / px;
+  c.beginPath(); c.arc(0, -r, 6 / px, 0, 7); c.stroke();
+  c.beginPath(); c.moveTo(-10 / px, -r); c.lineTo(10 / px, -r); c.moveTo(0, -r - 10 / px); c.lineTo(0, -r + 10 / px); c.stroke();
+}
+function rr(c, x, y, w, h, rad) { c.beginPath(); c.roundRect(x, y, w, h, rad); }
+function drawCar(c, px) {
+  const car = S.car, p = W2S(car.x, car.y), contact = S.phase === 'contact', turned = S.phase !== 'straight';
+  c.save(); c.translate(p[0], p[1]); c.rotate(S.view === 'ground' ? -Math.atan2(car.hy, car.hx) : 0); c.scale(px, px);
+  // local coords: x = forward, y = to the car's RIGHT (so the left door is at y < 0)
+  c.fillStyle = 'rgba(0,0,0,.18)'; rr(c, -HALF_L + 0.12, -HALF_W + 0.14, 2 * HALF_L, 2 * HALF_W, 0.45); c.fill();
+  // wheels (front ones steered right during the turn)
+  const steer = turned ? Math.atan(2.7 / S.r) : 0;
+  c.fillStyle = '#2d3436';
+  for (const [wx, wy, st] of [[1.35, -HALF_W, steer], [1.35, HALF_W, steer], [-1.35, -HALF_W, 0], [-1.35, HALF_W, 0]]) {
+    c.save(); c.translate(wx, wy); c.rotate(st); c.fillRect(-0.33, -0.12, 0.66, 0.24); c.restore();
+  }
+  c.fillStyle = '#a29bfe'; c.strokeStyle = '#6c5ce7'; c.lineWidth = 0.07;
+  rr(c, -HALF_L, -HALF_W, 2 * HALF_L, 2 * HALF_W, 0.45); c.fill(); c.stroke();
+  c.fillStyle = '#f5f3ff'; rr(c, -1.45, -IN_W, 2.45, 2 * IN_W, 0.15); c.fill();          // cabin (roof removed)
+  c.fillStyle = '#81ecec'; rr(c, 1.0, -0.86, 0.36, 1.72, 0.1); c.fill();                   // windscreen
+  c.fillStyle = '#81ecec'; rr(c, -1.78, -0.8, 0.3, 1.6, 0.1); c.fill();                    // rear window
+  c.fillStyle = '#dfe6e9';
+  rr(c, LON0 - 0.3, -0.56, 0.55, 0.5, 0.08); c.fill(); rr(c, LON0 - 0.3, 0.06, 0.55, 0.5, 0.08); c.fill();
+  c.fillStyle = '#b2bec3';
+  rr(c, LON0 - 0.42, -0.58, 0.14, 0.54, 0.05); c.fill(); rr(c, LON0 - 0.42, 0.04, 0.14, 0.54, 0.05); c.fill();
+  rr(c, -1.38, -0.86, 0.55, 1.72, 0.1); c.fill();                                           // rear bench
+  c.fillStyle = '#2d3436'; rr(c, 0.74, 0.11, 0.08, 0.38, 0.03); c.fill();                  // steering wheel
+  c.fillStyle = '#74b9ff'; c.beginPath(); c.arc(LON0, 0.3, 0.26, 0, 7); c.fill();           // driver (belted in)
+  // doors (inner faces)
+  c.lineWidth = 0.1; c.lineCap = 'round';
+  c.strokeStyle = contact ? '#00b894' : '#636e72';
+  c.beginPath(); c.moveTo(-0.55, -IN_W - 0.02); c.lineTo(0.95, -IN_W - 0.02); c.stroke();
+  c.strokeStyle = '#636e72';
+  c.beginPath(); c.moveTo(-0.55, IN_W + 0.02); c.lineTo(0.95, IN_W + 0.02); c.stroke();
+  // lights
+  c.fillStyle = '#ffeaa7'; c.beginPath(); c.arc(2.05, -0.72, 0.13, 0, 7); c.arc(2.05, 0.72, 0.13, 0, 7); c.fill();
+  if (turned && Math.floor(S.t * 3) % 2 === 0) {
+    c.fillStyle = '#e67e22'; c.beginPath(); c.arc(2.02, 0.95, 0.12, 0, 7); c.fill();
+    c.beginPath(); c.arc(-2.08, 0.92, 0.12, 0, 7); c.fill();
+  }
+  c.restore();
+}
+function forceLen() { const F = S.m * S.v * S.v / S.r; return 30 + 22 * Math.log(1 + F / 50); }
+
+function drawCarScene() {
+  const c = sc.ctx, g = S.view === 'ground', px = g ? SG : SP, car = S.car;
+  const turned = S.phase !== 'straight', contact = S.phase === 'contact';
+  c.save();
+  c.fillStyle = '#dff3d3'; c.fillRect(0, 0, CW, CH);
+  c.save();
+  if (g) { c.translate(GX0, GY0); c.scale(SG, -SG); }
+  else { c.translate(PCX, PCY); c.scale(SP, -SP); c.rotate(-Math.atan2(car.hy, car.hx)); c.translate(-car.x, -car.y); }
+  drawWorld(c, px);
+  c.restore();
+
+  const AL = forceLen();
+  if (g) {
+    // centre label (or an edge pointer if O is off screen)
+    const o = W2S(0, -S.r);
+    if (o[0] > 20 && o[0] < CW - 20 && o[1] > 20 && o[1] < CH - 20) tag(c, 'O (කේන්ද්‍රය)', o[0] + 14, o[1] + 18, '#2d3436', 13);
+    else {
+      const q = [clamp(o[0], 40, CW - 40), clamp(o[1], 40, CH - 34)], d = [o[0] - q[0], o[1] - q[1]], L = Math.hypot(d[0], d[1]);
+      arrow(c, q[0] - 18 * d[0] / L, q[1] - 18 * d[1] / L, q[0] + 14 * d[0] / L, q[1] + 14 * d[1] / L, '#2d3436', 3);
+      tag(c, 'O (කේන්ද්‍රය) මේ දෙසට', q[0] - 26, q[1] - 6, '#2d3436', 13, 'right');
+    }
+    // passenger path on the ground
+    if (S.trailW.length > 1) {
+      c.strokeStyle = '#e17055'; c.lineWidth = 2.5; c.beginPath();
+      S.trailW.forEach((p, i) => { const q = W2S(p[0], p[1]); i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]); });
+      c.stroke();
+    }
+    if (turned) { // the straight line inertia wants
+      const a = W2S(LON0, LAT0), b = W2S(80, LAT0);
+      c.strokeStyle = '#6c5ce7'; c.lineWidth = 2.5; c.setLineDash([9, 7]);
+      c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); c.setLineDash([]);
+      tag(c, 'ජඩත්වය → සරල රේඛාව', W2S(9.5, 0)[0], a[1] - 22, '#6c5ce7', 13, 'center');
+    }
+  } else if (S.trailL.length > 1) { // apparent path inside the car
+    c.strokeStyle = '#e17055'; c.lineWidth = 2.5; c.setLineDash([5, 5]); c.beginPath();
+    S.trailL.forEach((p, i) => { const x = PCX + SP * p[0], y = PCY - SP * p[1]; i ? c.lineTo(x, y) : c.moveTo(x, y); });
+    c.stroke(); c.setLineDash([]);
+  }
+
+  drawCar(c, px);
+
+  // ghost: where he would be with no door
+  if (g && contact) {
+    const q = W2S(car.s + LON0, LAT0);
+    if (q[0] < CW + 20) {
+      c.strokeStyle = '#6c5ce7'; c.lineWidth = 2; c.setLineDash([4, 4]);
+      c.beginPath(); c.arc(q[0], q[1], PR * SG, 0, 7); c.stroke(); c.setLineDash([]);
+      tag(c, 'දොර නොතිබුණා නම් මෙතන', q[0], q[1] - 26, '#6c5ce7', 12, 'center');
+    }
+  }
+
+  // passenger
+  const pp = W2S(S.pass.x, S.pass.y), pr = PR * px;
+  c.fillStyle = '#fdcb6e'; c.strokeStyle = '#e17055'; c.lineWidth = 2;
+  c.beginPath(); c.arc(pp[0], pp[1], pr, 0, 7); c.fill(); c.stroke();
+  const face = contact ? '😣' : turned ? '😲' : '🙂';
+  c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = FONT(Math.round(pr * 1.35)); c.fillText(face, pp[0], pp[1] + 1);
+
+  // forces
+  if (g) {
+    if (contact) {
+      const d = sDir(-S.pass.x, -S.r - S.pass.y), e = [pp[0] + d[0] * (pr + AL), pp[1] + d[1] * (pr + AL)];
+      arrow(c, pp[0] + d[0] * pr, pp[1] + d[1] * pr, e[0], e[1], '#00b894', 5);
+      tag(c, 'N = mv²/r — දොරේ සැබෑ බලය (කේන්ද්‍රය දෙසට)', e[0] + 12, e[1] + 16, '#00866b', 13);
+    } else if (turned) {
+      tag(c, 'පැත්තට බලයක් නැත → සෘජුවම යයි', pp[0] + 16, pp[1] - 30, '#6c5ce7', 13);
+    }
+  } else {
+    const lbl = (t, x, y, col) => tag(c, t, x, y, col, 13);
+    lbl('රියදුරු', PCX + SP * LON0 + 30, PCY + SP * 0.3 + 34, '#0984e3');
+    lbl('වම් දොර', PCX + SP * 1.25, PCY - SP * HALF_W - 14, contact ? '#00866b' : '#636e72');
+    if (turned) {
+      const top = pp[1] - pr, tip = top - AL;
+      arrow(c, pp[0], top, pp[0], tip, '#d63031', 5, [8, 6]);
+      tag(c, 'කේන්ද්‍රාපසාරී (ව්‍යාජ) බලය = mv²/r', pp[0] - 14, tip + 2, '#d63031', 14, 'right');
+      if (contact) {
+        arrow(c, pp[0] + 4, pp[1] + pr, pp[0] + 4, pp[1] + pr + AL, '#00b894', 5);
+        tag(c, 'දොරේ බලය N (ඇතුළට)', pp[0] + 16, pp[1] + pr + AL - 6, '#00866b', 13);
+      } else tag(c, 'මාව වමට විසි වෙනවා!', pp[0] + 18, pp[1] - 28, '#e17055', 13);
+      // which way the centre is
+      const d = sDir(-car.x, -S.r - car.y);
+      arrow(c, 800, 400, 800 + d[0] * 70, 400 + d[1] * 70, '#2d3436', 3);
+      tag(c, `O කේන්ද්‍රය මේ දෙසට (r = ${S.r} m)`, 790, 380, '#2d3436', 12, 'right');
+    } else lbl('මගියා (ඔබ)', pp[0] - 16, pp[1] - 30, '#e17055');
+  }
+
+  // HUD
+  tag(c, g ? '🌍 පිටත නිරීක්ෂකයා (පොළොව) — අවස්ථිති රාමුව' : '🧑 රථය තුළ මගියා — රථය සමඟ කැරකෙන රාමුව', 16, 22, g ? '#0984e3' : '#d63031', 15);
+  const ph = { straight: ['➡ සෘජුව යයි', '#27ae60'], free: ['↱ දකුණට හැරේ!', '#e67e22'], contact: ['💥 දොර මගියා හමු විය', '#d63031'] }[S.phase];
+  tag(c, ph[0], CW - 16, 22, ph[1], 15, 'right');
+  tag(c, g ? '━ මගියාගේ සැබෑ පථය   ┅ ජඩත්ව පථය   ✗ පිටතට බලයක් නැත'
+           : '┅ මගියාට පෙනෙන පථය (රථය තුළ)   ┅➜ ව්‍යාජ බලය   ━➜ සැබෑ බලය', 16, CH - 20, '#2d3436', 12);
+  c.restore();
+}
+
+// ================= DRAWING: STONE =================
+const rc = stage($('ropeCv'), CW, 460);
+function drawRope() {
+  const c = rc.ctx, st = S.stone, K = ST.K, X = x => ST.HX + K * x, Y = y => ST.HY - K * y;
+  c.save();
+  c.fillStyle = '#f0f7ff'; c.fillRect(0, 0, CW, 460);
+  c.strokeStyle = '#b2bec3'; c.lineWidth = 2; c.setLineDash([6, 6]);
+  c.beginPath(); c.arc(ST.HX, ST.HY, ST.R * K, 0, 7); c.stroke(); c.setLineDash([]);
+  const sx = X(st.x), sy = Y(st.y);
+  if (st.attached) {
+    c.strokeStyle = '#8e6e53'; c.lineWidth = 3; c.beginPath(); c.moveTo(ST.HX, ST.HY); c.lineTo(sx, sy); c.stroke();
+    const u = [(ST.HX - sx) / (ST.R * K), (ST.HY - sy) / (ST.R * K)];
+    arrow(c, sx + u[0] * 16, sy + u[1] * 16, sx + u[0] * 80, sy + u[1] * 80, '#00b894', 5);
+    text(c, 'T', sx + u[0] * 92 + 10, sy + u[1] * 92, '#00866b', 18, 'center', 800);
+    const vl = Math.hypot(st.vx, st.vy), t = [st.vx / vl, -st.vy / vl];
+    arrow(c, sx + t[0] * 16, sy + t[1] * 16, sx + t[0] * 75, sy + t[1] * 75, '#0984e3', 4);
+    text(c, 'v', sx + t[0] * 88, sy + t[1] * 88, '#0984e3', 18, 'center', 800);
+  } else {
+    const R = st.rel, rx = X(R.x), ry = Y(R.y), u = [R.x / ST.R, -R.y / ST.R], vl = Math.hypot(R.vx, R.vy), t = [R.vx / vl, -R.vy / vl];
+    c.strokeStyle = '#8e6e53'; c.lineWidth = 3; c.beginPath(); c.moveTo(ST.HX, ST.HY); c.lineTo(ST.HX + u[0] * 30, ST.HY + u[1] * 30 + 10); c.stroke();
+    // radius at release
+    c.strokeStyle = '#636e72'; c.lineWidth = 1.5; c.setLineDash([4, 4]);
+    c.beginPath(); c.moveTo(ST.HX, ST.HY); c.lineTo(rx, ry); c.stroke();
+    // wrong: radially outward
+    c.strokeStyle = '#d63031'; c.lineWidth = 2.5; c.setLineDash([2, 6]);
+    c.beginPath(); c.moveTo(rx, ry); c.lineTo(rx + u[0] * 230, ry + u[1] * 230); c.stroke();
+    tag(c, '✗ අරය දිගේ පිටතට — එසේ නොයයි', rx + u[0] * 150, ry + u[1] * 150, '#d63031', 13, 'center');
+    // right: tangent
+    c.strokeStyle = '#00b894'; c.lineWidth = 2.5; c.setLineDash([10, 6]);
+    c.beginPath(); c.moveTo(rx, ry); c.lineTo(rx + t[0] * 900, ry + t[1] * 900); c.stroke(); c.setLineDash([]);
+    tag(c, '✓ ස්පර්ශකය දිගේ', rx + t[0] * 200 - u[0] * 26, ry + t[1] * 200 - u[1] * 26, '#00866b', 14, 'center');
+    // 90° mark
+    const q = 14; c.strokeStyle = '#2d3436'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(rx - u[0] * q, ry - u[1] * q); c.lineTo(rx - u[0] * q + t[0] * q, ry - u[1] * q + t[1] * q); c.lineTo(rx + t[0] * q, ry + t[1] * q); c.stroke();
+    text(c, '90°', rx - u[0] * 34 + t[0] * 20, ry - u[1] * 34 + t[1] * 20, '#2d3436', 13, 'center');
+    c.fillStyle = '#d63031'; c.beginPath(); c.arc(rx, ry, 4, 0, 7); c.fill();
+    if (!st.gone) {
+      arrow(c, sx + t[0] * 16, sy + t[1] * 16, sx + t[0] * 75, sy + t[1] * 75, '#0984e3', 4);
+      text(c, 'v', sx + t[0] * 88, sy + t[1] * 88 - 14, '#0984e3', 18, 'center', 800);
+    }
+  }
+  // hand + stone
+  c.fillStyle = '#fab1a0'; c.strokeStyle = '#e17055'; c.lineWidth = 2;
+  c.beginPath(); c.arc(ST.HX, ST.HY, 15, 0, 7); c.fill(); c.stroke();
+  text(c, 'අත (O)', ST.HX, ST.HY + 30, '#e17055', 13, 'center');
+  if (!st.gone) {
+    c.fillStyle = '#7f8c8d'; c.strokeStyle = '#2d3436'; c.lineWidth = 2;
+    c.beginPath(); c.arc(sx, sy, 13, 0, 7); c.fill(); c.stroke();
+  }
+  tag(c, '🪨 ඉහළ සිට බලන විට — තන්තුවක ගැටගැසූ ගල් කැටය', 16, 22, '#6c5ce7', 15);
+  tag(c, st.attached ? '🔄 කැරකෙයි' : '✂️ තන්තුව කපා ඇත', CW - 16, 22, st.attached ? '#27ae60' : '#d63031', 15, 'right');
+  c.restore();
+}
+
+// ================= UI =================
+const vS = $('vS'), rS = $('rS'), mS = $('mS'), wS = $('wS');
+function syncUI() {
+  vS.value = S.v; rS.value = S.r; mS.value = S.m; wS.value = S.stone.w;
+  $('vVal').textContent = S.v.toFixed(1); $('rVal').textContent = S.r; $('mVal').textContent = S.m; $('wVal').textContent = S.stone.w.toFixed(1);
+  $('stV').textContent = S.v.toFixed(1); $('stR').textContent = S.r.toFixed(0);
+  $('stA').textContent = (S.v * S.v / S.r).toFixed(2);
+  $('stF').textContent = (S.m * S.v * S.v / S.r).toFixed(0);
+  $('stW').textContent = (S.v / S.r).toFixed(2);
+  $('stSv').textContent = (ST.R * S.stone.w).toFixed(2);
+  $('stST').textContent = (ST.m * ST.R * S.stone.w * S.stone.w).toFixed(2);
+  $('viewG').className = S.view === 'ground' ? 'on' : '';
+  $('viewP').className = S.view === 'ground' ? '' : 'on';
+}
+const CAPS = {
+  ground: {
+    straight: ['🌍 පොළොවේ සිට:', 'රථය සෘජුව යයි. මගියා ද රථය සමඟම v වේගයෙන් එකම දිශාවට යයි.'],
+    free: ['🌍 පොළොවේ සිට:', 'රථය දකුණට හැරේ. මගියාට පැත්තට කිසිම බලයක් නැති නිසා <b>ජඩත්වය</b> නිසා (නිව්ටන් I) ඔහු <b>සරල රේඛාවේම</b> දිගටම යයි (ඉරි කඩ රේඛාව). රථය ඔහු යටින් දකුණට හැරේ — දොර ඔහු වෙතට ළං වේ.'],
+    contact: ['🌍 පොළොවේ සිට:', '<b>දොර ඇවිත් මගියාගේ ඇඟේ වැදුණා!</b> දැන් දොර ඔහුව <b>කේන්ද්‍රය දෙසට</b> තල්ලු කරයි (N = mv²/r). මෙම සැබෑ බලයයි කේන්ද්‍රාභිසාරී බලය — එය නිසා ඔහු වෘත්තාකාරව යයි. <b>පිටතට ක්‍රියා කරන බලයක් කොහේවත් නැත.</b>']
+  },
+  passenger: {
+    straight: ['🧑 රථය තුළ සිට:', 'මම මගේ ආසනයේ සන්සුන්ව ඉන්නවා. 🙂 රථය තුළ කිසිම දෙයක් චලනය වෙන්නේ නැහැ.'],
+    free: ['🧑 රථය තුළ සිට:', 'හදිසියේම මාව <b>වමට (පිටතට)</b> විසි වෙනවා වගේ! 😲 කවුරුවත් මාව තල්ලු කළේ නැහැ — ඒත් රථයට සාපේක්ෂව මම ත්වරණය වෙනවා. මගේ (කැරකෙන) රාමුවේ නිව්ටන්ගේ නියම පාවිච්චි කරන්න, පිටතට ක්‍රියා කරන <b>ව්‍යාජ බලයක්</b> උපකල්පනය කරනවා: <b>කේන්ද්‍රාපසාරී බලය = mv²/r</b>.'],
+    contact: ['🧑 රථය තුළ සිට:', 'දැන් මම දොරට තද වෙලා රථය තුළ නිශ්චලයි. මගේ රාමුවේ: දොරේ සැබෑ බලය N (ඇතුළට) = කේන්ද්‍රාපසාරී ව්‍යාජ බලය mv²/r (පිටතට) → <b>ΣF = 0</b>. ලෝකය (පාර, ගස්) මා වටා කැරකෙන බව පෙනේ — ඇත්තටම කැරකෙන්නේ මමයි!']
+  }
+};
+let capKey = '';
+function updateText() {
+  const key = S.view + S.phase + (S.stone.attached ? 'a' : 'c');
+  if (key === capKey) return; capKey = key;
+  const cp = CAPS[S.view][S.phase], cap = $('cap');
+  cap.innerHTML = `<b class="t">${cp[0]}</b>${cp[1]}`;
+  cap.className = 'cap' + (S.view === 'passenger' ? ' pv' : '');
+  $('stPhase').textContent = { straight: 'සෘජුව යයි ➡', free: 'හැරේ ↱ — මගියා ලිස්සයි', contact: 'දොර ගැටුණි — වෘත්ත චලිතය' }[S.phase];
+  const capR = $('capR');
+  if (S.stone.attached) {
+    capR.className = 'cap';
+    capR.innerHTML = '<b class="t">🔄 කැරකෙන විට:</b>ගල වෘත්තාකාරව යන්නේ තන්තුවේ <b>ආතතිය (T)</b> නිතරම අත (කේන්ද්‍රය) දෙසට අදින නිසයි. T = කේන්ද්‍රාභිසාරී බලය = mrω². ප්‍රවේගය v නිතරම ස්පර්ශකය දිගේ. දැන් <b>✂️ තන්තුව කපන්න</b>!';
+    $('stRope').textContent = 'කැරකෙයි 🔄';
+  } else {
+    capR.className = 'cap ok';
+    capR.innerHTML = '<b class="t">✂️ කැපූ පසු:</b>T = 0 වූ නිසා ගලට තිරස් බලයක් නැත → ජඩත්වය නිසා එම මොහොතේ ප්‍රවේගයේ දිශාවට, එනම් <b>ස්පර්ශකය දිගේ</b> සරල රේඛාවේ යයි. ගල අරය දිගේ පිටතට යන්නේ <b>නැහැ</b> → ගල පිටතට තල්ලු කරපු "කේන්ද්‍රාපසාරී බලයක්" ඇත්තටම තිබුණේ නැහැ!';
+    $('stRope').textContent = 'කපා ඇත ✂️';
+  }
+}
+
+function setView(v) { S.view = (v === 'passenger' || v === 'p') ? 'passenger' : 'ground'; syncUI(); }
+function reset() { resetCar(); resetStone(); syncUI(); }
+window.sim = {
+  step(dt) { stepCar(dt); stepStone(dt); },
+  state: S,
+  setView,
+  setSpeed(v) { S.v = clamp(+v, 5, 25); resetCar(); syncUI(); },
+  setRadius(r) { S.r = clamp(+r, 8, 50); makeTrees(); resetCar(); syncUI(); },
+  setMass(m) { S.m = clamp(+m, 40, 100); syncUI(); },
+  cutRope() { cutRope(); },
+  reset
+};
+
+$('viewG').addEventListener('click', () => setView('ground'));
+$('viewP').addEventListener('click', () => setView('passenger'));
+vS.addEventListener('input', () => window.sim.setSpeed(vS.value));
+rS.addEventListener('input', () => window.sim.setRadius(rS.value));
+mS.addEventListener('input', () => window.sim.setMass(mS.value));
+wS.addEventListener('input', () => { S.stone.w = +wS.value; syncUI(); });
+$('playBtn').addEventListener('click', () => { playing = !playing; $('playBtn').textContent = playing ? '⏸ නවත්වන්න' : '▶ ධාවනය කරන්න'; });
+$('resetBtn').addEventListener('click', () => { resetCar(); });
+$('cutBtn').addEventListener('click', () => cutRope());
+$('ropeResetBtn').addEventListener('click', () => resetStone());
+let tab = 'car';
+function showTab(t) {
+  tab = t;
+  $('panelCar').className = t === 'car' ? '' : 'hide'; $('panelRope').className = t === 'rope' ? '' : 'hide';
+  $('tabCar').className = t === 'car' ? 'on' : ''; $('tabRope').className = t === 'rope' ? 'on' : '';
+}
+$('tabCar').addEventListener('click', () => showTab('car'));
+$('tabRope').addEventListener('click', () => showTab('rope'));
+
+makeTrees(); resetStone(); resetCar(); syncUI();
+let last = performance.now();
+function loop(now) {
+  const rdt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  if (tab === 'car') {
+    if (playing) stepCar(rdt * ($('slowChk').checked ? 0.3 : 1));
+    if (S.ended && playing) { endWait += rdt; if (endWait > 1.6) resetCar(); }
+    drawCarScene();
+  } else { stepStone(rdt); drawRope(); }
+  updateText();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
