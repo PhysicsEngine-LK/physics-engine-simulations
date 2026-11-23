@@ -245,7 +245,7 @@
         <div><label>පුද්ගලයාගේ ස්කන්ධය m = <span class="v" id="mCVal">60</span> kg</label><input type="range" id="mCS" min="30" max="120" step="5" value="60">
           <span class="massnote" id="massNote">⚖️ ස්කන්ධය කැපී යයි — ω<sub>min</sub> වෙනස් නොවේ</span></div>
         <div class="btns">
-          <button class="warn" id="btnFloor">⬇ බිම ඉවත් කරන්න</button>
+          <button class="warn" id="btnFloor">⬇ පතුල ඉවත් කරන්න</button>
           <button id="btnWmin">ω = ω<sub>min</sub></button>
           <button class="solid" id="btnQ364">Q368–369: r = 4 m, μ = 0.4</button>
         </div>
@@ -265,7 +265,7 @@
     </div>
 
     <div class="dbox">
-      <div class="dh">රොටරය — බිම ඉවත් කළ පසු නොලිස්සීමට අවම ω</div>
+      <div class="dh">රොටරය — පතුල ඉවත් කළ පසු නොලිස්සීමට අවම ω</div>
       <div class="l">• තිරස් දිශාවට (කේන්ද්‍රය දෙසට) — කේන්ද්‍රාභිසාරී බලය සපයන්නේ බිත්තියේ R:</div>
       <div class="l m">R = mrω² <span class="tg">—— (1)</span></div>
       <div class="l">• සිරස් දිශාවට (නොලිස්සීමට) — බර දරන්නේ ඝර්ෂණය:</div>
@@ -284,7 +284,7 @@
 
     <h2>විසඳුම (පන්තියේ ගැටලුව)</h2>
     <details>
-      <summary><span class="qtag">Q368–369</span>රොටරය: r = 4 m, μ = 0.4 — බිම ඉවත් කළ විට නොලිස්සීමට අවම කෝණික ප්‍රවේගය</summary>
+      <summary><span class="qtag">Q368–369</span>රොටරය: r = 4 m, μ = 0.4 — පතුල ඉවත් කළ විට නොලිස්සීමට අවම කෝණික ප්‍රවේගය</summary>
       <div class="ans">
         <div class="dbox">
           <div class="l">(i) බිත්තියෙන් අභිලම්බ ප්‍රතික්‍රියාව <b>R</b> (කේන්ද්‍රය දෙසට, තිරස්), ඝර්ෂණය <b>f</b> (ඉහළට), බර <b>mg</b> (පහළට). කේන්ද්‍රාභිසාරී බලය සපයන්නේ <b>R</b> යි.</div>
@@ -710,7 +710,7 @@ function drawC() {
   ell(c, cx, yPit, rx, ry, 0, Math.PI); c.stroke();
   c.beginPath(); c.moveTo(cx - rx, yTop); c.lineTo(cx - rx, yPit); c.moveTo(cx + rx, yTop); c.lineTo(cx + rx, yPit); c.stroke();
   dashLine(c, cx - rx, yBase, cx - rx - 16, yBase, '#8d6e63', 1.2, [3, 3]);
-  text(c, 'මුල් බිම', cx - rx - 18, yBase, '#8d6e63', 12, 'right', 700);
+  text(c, 'මුල් පතුල', cx - rx - 18, yBase, '#8d6e63', 12, 'right', 700);
   // radius on top
   dashLine(c, cx, yTop, cx + rx, yTop, '#d35400', 1.5);
   c.fillStyle = '#d35400'; c.beginPath(); c.arc(cx, yTop, 3.5, 0, 2 * Math.PI); c.fill();
@@ -724,10 +724,10 @@ function drawC() {
   }
   // badge
   const B = {
-    floor:  ['බිම මත සිටියි 🧍', 'බිම බර දරයි — දැන් "බිම ඉවත් කරන්න" ඔබන්න', '#0984e3'],
+    floor:  ['පතුල මත සිටියි 🧍', 'පතුල බර දරයි — දැන් "පතුල ඉවත් කරන්න" ඔබන්න', '#0984e3'],
     stuck:  ['බිත්තියේ ඇලී සිටියි ✅', 'ඝර්ෂණය f = mg ≤ μR — පහළට නොලිස්සයි', '#27ae60'],
     slide:  ['පහළට ලිස්සයි! ⬇', 'μR < mg — ඝර්ෂණයට බර දැරිය නොහැක', '#d63031'],
-    landed: [C.holds ? 'පහළ බිම මත 😅' : 'ලිස්සා පහළ බිමට ආවා 😅', C.holds ? 'බිම නැවත දමා ω වැඩි කර බලන්න' : `ω ≥ ω_min = ${f2(C.wMin)} rad s⁻¹ අවශ්‍යයි`, '#e17055'],
+    landed: [C.holds ? 'පහළ පතුල මත 😅' : 'ලිස්සා පහළ පතුලට ආවා 😅', C.holds ? 'පතුල නැවත දමා ω වැඩි කර බලන්න' : `ω ≥ ω_min = ${f2(C.wMin)} rad s⁻¹ අවශ්‍යයි`, '#e17055'],
   }[mode];
   text(c, B[0], 22, 440, B[2], 18, 'left', 800);
   text(c, B[1], 22, 462 - 4, '#636e72', 13, 'left', 700);
@@ -759,7 +759,7 @@ function drawC() {
     text(c, mode === 'slide' ? 'f = μR' : 'f = mg', wx - 12, byTop - Math.min(fNow * k1, 76) + 6, '#d35400', 14, 'right', 800);
   } else if (onFloor) {
     arrow(c, bx + 10, byTop + bh + 72, bx + 10, byTop + bh + 4, '#8d6e63', 3);
-    text(c, 'බිමෙන් ප්‍රතික්‍රියාව', bx + 2, byTop + bh + 40, '#8d6e63', 12, 'right', 700);
+    text(c, 'පතුලෙන් ප්‍රතික්‍රියාව', bx + 2, byTop + bh + 40, '#8d6e63', 12, 'right', 700);
   }
   // bars: required f = mg vs available μR
   const bx0 = px + 18, bw = pw - 36, FS = 3 * C.W, sc = bw / FS;
@@ -785,7 +785,7 @@ function syncUI() {
   show('alVal', f1(S.alpha)); show('vAVal', f2(S.vA)); show('RbVal', f2(S.Rb)); show('wVal', f1(S.w));
   show('rCVal', f1(S.rC)); show('muCVal', f2(S.muC)); show('wCVal', f2(S.wC)); show('mCVal', S.mC);
   const bf = $('btnFloor');
-  if (bf) { bf.textContent = S.floorOut ? '⬆ බිම නැවත දමන්න' : '⬇ බිම ඉවත් කරන්න'; bf.className = S.floorOut ? 'solid' : 'warn'; }
+  if (bf) { bf.textContent = S.floorOut ? '⬆ පතුල නැවත දමන්න' : '⬇ පතුල ඉවත් කරන්න'; bf.className = S.floorOut ? 'solid' : 'warn'; }
 }
 function updateStatus() {
   if (S.tab === 'A') {
@@ -808,7 +808,7 @@ function updateStatus() {
     $('statusB').className = 'status' + (B.lifted ? '' : ' limit');
   } else {
     const C = computeC(), mode = modeC();
-    show('stC', { floor: 'බිම මත සිටියි 🧍', stuck: 'බිත්තියේ ඇලී සිටියි ✅', slide: 'පහළට ලිස්සයි! ⬇', landed: 'පහළ බිම මත 😅' }[mode]);
+    show('stC', { floor: 'පතුල මත සිටියි 🧍', stuck: 'බිත්තියේ ඇලී සිටියි ✅', slide: 'පහළට ලිස්සයි! ⬇', landed: 'පහළ පතුල මත 😅' }[mode]);
     show('stCv', `${f2(C.v)} m s⁻¹`);
     show('stCwm', `${f2(C.wMin)} rad s⁻¹`);
     show('stCvm', `${f2(C.vMin)} m s⁻¹`);
