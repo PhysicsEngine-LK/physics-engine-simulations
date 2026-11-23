@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>චන්ද්‍රිකා සහ කෘත්‍රිම ගුරුත්වය (Q368–370) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 14px; line-height: 1.6; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+  .tabs button { font-size: 16px; padding: 9px 18px; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  .controls select { font: inherit; font-weight: 700; font-size: 15px; border: 2px solid #6c5ce7; border-radius: 8px; padding: 6px 8px; margin: 6px 0 4px; width: 100%; background: #fff; color: #2c3e50; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  button.fire { background: #e17055; border-color: #e17055; color: #fff; }
+  button.sm { padding: 4px 10px; font-size: 13px; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: #10163a; border: 1px solid #dfe6e9; }
+  .light { background: linear-gradient(#f0f7ff, #fff); border: 1px solid #dfe6e9; }
+  .cvs + .cvs, .cvs + .cap { margin-top: 12px; }
+  .status { margin-top: 14px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 12px 16px; border-radius: 6px; font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; gap: 10px 26px; justify-content: space-between; }
+  .status.limit { border-left-color: #f39c12; background: #fef5e7; }
+  .status.move { border-left-color: #e74c3c; background: #fdedec; }
+  .status small { display: block; font-size: 13px; color: #636e72; font-weight: 600; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* derivation boxes: one step per line */
+  .dbox { background: #fbfaff; border: 1px solid #d6d2ff; border-left: 6px solid #6c5ce7; border-radius: 10px; padding: 12px 16px; margin: 12px 0; overflow-x: auto; }
+  .dbox .dh { font-weight: 800; font-size: 16px; color: #6c5ce7; margin-bottom: 6px; }
+  .dbox .l { padding: 5px 0 5px 6px; line-height: 1.6; font-size: 15px; }
+  .dbox .l.m { padding-left: 34px; font-family: 'Cambria', 'Times New Roman', serif; font-size: 19px; white-space: nowrap; }
+  .dbox .l.m .si { font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; font-size: 15px; }
+  .fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 4px; line-height: 1.25; }
+  .fr > span:first-child { border-bottom: 1.6px solid currentColor; padding: 0 4px 2px; }
+  .fr > span:last-child { padding: 2px 4px 0; }
+  .sq { white-space: nowrap; }
+  .sq > span { border-top: 1.6px solid currentColor; padding: 2px 3px 0; margin-left: 1px; display: inline-block; }
+  .tg { color: #6c5ce7; font-weight: 700; margin-left: 22px; font-family: 'Segoe UI', sans-serif; font-size: 15px; }
+  .res { display: inline-block; border: 2px solid #6c5ce7; border-radius: 8px; padding: 4px 10px; background: #fff; }
+  .ans .dbox { margin: 6px 0 10px; }
+  .qtext { background: #fff; border: 1px dashed #a29bfe; border-radius: 8px; padding: 8px 12px; margin: 4px 0 8px; font-size: 15px; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } .status { font-size: 14px; } .dbox .l.m { font-size: 17px; padding-left: 14px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .side .status { margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 15px; }
+    .side .status > div:first-child { grid-column: 1 / -1; }
+    .main > .cvs:first-child { margin-top: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">Q368–370 · වෘත්ත චලිතය</span></div>
+  <h1>චන්ද්‍රිකා සහ කෘත්‍රිම ගුරුත්වය</h1>
+  <p class="sub">චන්ද්‍රිකාවක් යනු <b>නොනවත්වා පෘථිවිය දෙසට වැටෙන</b> නමුත් ඉතා වේගයෙන් පැත්තට යන නිසා කවදාවත් බිම නොවදින වස්තුවකි. ගගනගාමීන් "පාවෙන්නේ" ඇයි, කැරකෙන මධ්‍යස්ථානයක "බරක්" හදාගන්නේ කොහොමද — එකින් එක බලමු!</p>
+
+  <div class="tabs">
+    <button id="tabA" class="solid">🚀 A. කක්ෂගත චන්ද්‍රිකාව</button>
+    <button id="tabB">🧑‍🚀 B. "බර නැති" බව</button>
+    <button id="tabC">🎡 C. කෘත්‍රිම ගුරුත්වය</button>
+  </div>
+
+  <!-- ================= TAB A ================= -->
+  <section id="paneA">
+    <div class="layout">
+     <aside class="side">
+      <div class="controls">
+        <div style="grid-column:1/-1"><label>දියත් කිරීමේ වේගය v = <span class="v" id="vVal">8.0</span> km s⁻¹</label><input type="range" id="vS" min="0" max="10" step="0.1" value="8"></div>
+        <div class="btns">
+          <button class="fire" id="btnFire">🔥 වෙඩි තබන්න</button>
+          <button class="solid" id="btnV8">v = √(gR<sub>E</sub>) = 8 km s⁻¹</button>
+          <button id="btnClear">🧹 පථ මකන්න</button>
+        </div>
+        <div class="btns"><span class="note" style="margin:0">උත්සාහ කරන්න:</span>
+          <button class="sm" data-v="3">3</button><button class="sm" data-v="6">6</button><button class="sm" data-v="7.5">7.5</button><button class="sm" data-v="7.9">7.9</button><button class="sm" data-v="9">9</button><button class="sm" data-v="10">10</button>
+        </div>
+        <div style="grid-column:1/-1"><label>සජීවිකරණ වේගය × <span class="v" id="warpVal">600</span></label><input type="range" id="warpS" min="100" max="3000" step="100" value="600"></div>
+      </div>
+      <div class="status" id="statusA">
+        <div><small>ප්‍රතිඵලය</small><span id="stA">–</span></div>
+        <div><small>දියත් කළ v</small><span id="stAv">–</span></div>
+        <div><small>√(gR<sub>E</sub>)</small><span id="stAvc">8.0 km s⁻¹</span></div>
+        <div><small>ගත වූ කාලය</small><span id="stAt">–</span></div>
+        <div><small>ආවර්ත කාලය T</small><span id="stAT">–</span></div>
+        <div><small>ත්වරණය g (එම උසේදී)</small><span id="stAg">–</span></div>
+      </div>
+     </aside>
+     <div class="main">
+      <div class="cvs"><canvas id="cvA" class="scene"></canvas></div>
+      <p class="note">නිව්ටන්ගේ කාලතුවක්කුව: ඉතා උස කන්දක් මුදුනේ සිට තිරස්ව වෙඩි තබයි. වේගය අඩු නම් බෝලය පෘථිවියට වැටේ. v = √(gR<sub>E</sub>) ≈ 8 km s⁻¹ වූ විට පෘථිවිය "වක්‍ර වන" තරමටම එය වැටේ — එය කවදාවත් බිම නොවදී: <b>කක්ෂගතයි!</b> ඊට වැඩි නම් කක්ෂය ඉලිප්සාකාර වේ. (කන්ද පරිමාණයට නැත — උස 30 km ලෙස ගෙන ඇත.)</p>
+     </div>
+    </div>
+
+    <div class="dbox">
+      <div class="dh">පෘථිවිය අසල වෘත්තාකාර කක්ෂයක වේගය</div>
+      <div class="l">• චන්ද්‍රිකාව මත ඇත්තේ ගුරුත්වාකර්ෂණය (mg) පමණි — එයම කේන්ද්‍රාභිසාරී බලය සපයයි (අරය ≈ R<sub>E</sub>):</div>
+      <div class="l m">mg = <span class="fr"><span>mv²</span><span>R<sub>E</sub></span></span> <span class="tg">—— (1)</span></div>
+      <div class="l">දෙපසින්ම m කැපී යයි:</div>
+      <div class="l m">v² = gR<sub>E</sub></div>
+      <div class="l m"><span class="res">v = <span class="sq">√<span>gR<sub>E</sub></span></span></span></div>
+      <div class="l">• එක් වටයකට ගත වන කාලය (පරිධිය ÷ වේගය):</div>
+      <div class="l m">T = <span class="fr"><span>2πR<sub>E</sub></span><span>v</span></span> <span class="tg">—— (2)</span></div>
+      <div class="note">ස්කන්ධය කැපී යන නිසා කුඩා චන්ද්‍රිකාවකටත් විශාල අභ්‍යවකාශ මධ්‍යස්ථානයකටත් එකම උසේදී අවශ්‍ය වේගය සමානයි.</div>
+    </div>
+
+    <h2>විසඳුම (පන්තියේ ගැටලුව)</h2>
+    <details>
+      <summary><span class="qtag">Q368</span>පෘථිවිය අසල චන්ද්‍රිකාව — කක්ෂීය වේගය සහ ආවර්ත කාලය</summary>
+      <div class="ans">
+        <div class="qtext">පෘථිවි පෘෂ්ඨයට ඉතා ආසන්නයෙන් (R<sub>E</sub> = 6400 km) කක්ෂගත චන්ද්‍රිකාවක් (g = 10 m s⁻²). (i) කක්ෂීය වේගය (ii) එක් වටයකට ගත වන කාලය මිනිත්තුවලින්.</div>
+        <div class="dbox">
+          <div class="l">(i) ගුරුත්වය මඟින් කේන්ද්‍රාභිසාරී බලය සපයයි:</div>
+          <div class="l m">mg = <span class="fr"><span>mv²</span><span>R<sub>E</sub></span></span> <span class="tg">—— (1)</span></div>
+          <div class="l m">v = <span class="sq">√<span>gR<sub>E</sub></span></span></div>
+          <div class="l m">v = <span class="sq">√<span>10 × 6.4 × 10⁶</span></span></div>
+          <div class="l m"><span class="res">v = 8000 m s⁻¹ = 8 km s⁻¹</span></div>
+          <div class="l">(ii) ආවර්ත කාලය:</div>
+          <div class="l m">T = <span class="fr"><span>2πR<sub>E</sub></span><span>v</span></span> <span class="tg">—— (2)</span></div>
+          <div class="l m">T = <span class="fr"><span>2π × 6.4 × 10⁶</span><span>8000</span></span></div>
+          <div class="l m">T = 1600π s</div>
+          <div class="l m">T ≈ 5024 s</div>
+          <div class="l m"><span class="res">T ≈ 84 <span class="si">මිනිත්තු</span></span></div>
+        </div>
+        <div class="btns"><button data-preset="Q368">▶ සිමියුලේෂනයේ බලන්න</button></div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= TAB B ================= -->
+  <section id="paneB" style="display:none">
+    <div class="layout">
+     <aside class="side">
+      <div class="controls">
+        <div><label>කක්ෂයේ උස h = <span class="v" id="hVal">400</span> km</label><input type="range" id="hS" min="0" max="2000" step="10" value="400"></div>
+        <div><label>ගගනගාමියාගේ ස්කන්ධය m = <span class="v" id="mBVal">60</span> kg</label><input type="range" id="mBS" min="40" max="100" step="5" value="60"></div>
+        <div class="btns">
+          <button id="modeGround">🌍 බිම මත</button>
+          <button id="modeOrbit">🛰️ කක්ෂයේ</button>
+          <button id="modeBoth" class="solid">⚖️ දෙකම සසඳන්න</button>
+        </div>
+      </div>
+      <div class="status" id="statusB">
+        <div><small>ප්‍රධාන අදහස</small><span id="stB">–</span></div>
+        <div><small>g′ (එම උසේදී)</small><span id="stBg">–</span></div>
+        <div><small>ගුරුත්ව බලය mg′</small><span id="stBW">–</span></div>
+        <div><small>තරාදිය — බිම මත</small><span id="stBRg">–</span></div>
+        <div><small>තරාදිය — කක්ෂයේ</small><span id="stBRo">0 N</span></div>
+        <div><small>කක්ෂීය වේගය √(g′r)</small><span id="stBv">–</span></div>
+        <div><small>ආවර්ත කාලය</small><span id="stBT">–</span></div>
+      </div>
+     </aside>
+     <div class="main">
+      <div class="cvs"><canvas id="cvB" class="light"></canvas></div>
+      <p class="note">h = 400 km (අභ්‍යවකාශ මධ්‍යස්ථානයේ උස පමණ) දී g′ ≈ 8.9 m s⁻² — පෘථිවියේ ගුරුත්වයෙන් 89% ක් පමණ! ගුරුත්වය නැති වුණා නොවේ. යානයත් ගගනගාමියාත් <b>එකම ත්වරණයෙන් එකට වැටෙන</b> නිසා බිම ඔහුව තල්ලු කරන්නේ නැත.</p>
+     </div>
+    </div>
+
+    <div class="dbox">
+      <div class="dh">කක්ෂයේදී තරාදිය 0 පෙන්වන්නේ ඇයි?</div>
+      <div class="l">• ගගනගාමියා මත බල: ගුරුත්වය mg′ (පෘථිවිය දෙසට) සහ බිමෙන් ප්‍රතික්‍රියාව R (පෘථිවියෙන් ඉවතට).</div>
+      <div class="l">• පෘථිවිය දෙසට F = ma යෙදීමෙන්:</div>
+      <div class="l m">mg′ − R = ma <span class="tg">—— (1)</span></div>
+      <div class="l">• යානය (සහ ඔහු) නිදහසේ වැටේ — ත්වරණය:</div>
+      <div class="l m">a = g′ <span class="tg">—— (2)</span></div>
+      <div class="l">(2) න් (1) ට ආදේශ කිරීමෙන්:</div>
+      <div class="l m">mg′ − R = mg′</div>
+      <div class="l m"><span class="res">R = 0</span></div>
+      <div class="l">• බිම මත නිශ්චල යානයක a = 0 නිසා (1) න්:</div>
+      <div class="l m">mg − R = 0</div>
+      <div class="l m"><span class="res">R = mg</span></div>
+      <div class="note">අපට "බර" ලෙස දැනෙන්නේ R (බිම අපව තල්ලු කරන බලය). තරාදියක් මනින්නේද R ය.</div>
+    </div>
+
+    <h2>විසඳුම (පන්තියේ ගැටලුව)</h2>
+    <details>
+      <summary><span class="qtag">Q369</span>ගගනගාමීන් "පාවෙන්නේ" ගුරුත්වය ශුන්‍ය නිසාද?</summary>
+      <div class="ans">
+        <div class="qtext">කක්ෂගත අභ්‍යවකාශ යානයක සිටින ගගනගාමීන් "පාවෙන" බව පෙනේ. එහි ගුරුත්වාකර්ෂණය ශුන්‍ය නිසා ද? ඔවුන් "බර නැති" ලෙස දැනෙන්නේ ඇයි?</div>
+        <div class="dbox">
+          <div class="l"><b>නැත.</b> කක්ෂයේ ගුරුත්වාකර්ෂණය පෘථිවියේ මෙන් බොහෝ දුරට සමාන ය; ගගනගාමියාට කේන්ද්‍රාභිසාරී බලය සපයන්නේ එයමයි.</div>
+          <div class="l">යානය සහ ගගනගාමියා යන දෙකම <b>එකම ත්වරණයකින්</b> (g, පෘථිවිය දෙසට) "නිදහසේ වැටේ" (free fall).</div>
+          <div class="l">එබැවින් යානයේ බිම ගගනගාමියා මත කිසිදු ප්‍රතික්‍රියාවක් නොයොදයි:</div>
+          <div class="l m"><span class="res">R = 0</span></div>
+          <div class="l">අපට දැනෙන "බර" යනු R නිසා ඔහුට බරක් නොදැනේ.</div>
+          <div class="l">(කන්දක් මුදුනේ v = √(rg) දී රථයේ මගීන්ට ද එසේමයි.)</div>
+        </div>
+        <div class="btns"><button data-preset="Q369">▶ සිමියුලේෂනයේ බලන්න</button></div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= TAB C ================= -->
+  <section id="paneC" style="display:none">
+    <div class="layout">
+     <aside class="side">
+      <div class="controls">
+        <div><label>මධ්‍යස්ථානයේ අරය r = <span class="v" id="rVal">250</span> m</label><input type="range" id="rS" min="50" max="500" step="10" value="250"></div>
+        <div><label>කෝණික ප්‍රවේගය ω = <span class="v" id="wVal">0.200</span> rad s⁻¹</label><input type="range" id="wS" min="0" max="0.5" step="0.005" value="0.2"></div>
+        <div><label>ගගනගාමියාගේ ස්කන්ධය m = <span class="v" id="mCVal">60</span> kg</label><input type="range" id="mCS" min="40" max="100" step="5" value="60"></div>
+        <div><label>සජීවිකරණ වේගය</label>
+          <select id="spdSel"><option value="1">× 1 (සැබෑ කාලය)</option><option value="2" selected>× 2</option><option value="5">× 5</option></select></div>
+        <div class="btns">
+          <button class="solid" id="btnWg">ω = √(g/r) (පෘථිවියේ බර)</button>
+          <button class="fire" id="btnDrop">🏀 බෝලය අතහරින්න</button>
+          <button id="btnResetC">↺ නැවත</button>
+        </div>
+      </div>
+      <div class="status" id="statusC">
+        <div><small>ගගනගාමියාට දැනෙන්නේ</small><span id="stC">–</span></div>
+        <div><small>R = mrω² (කේන්ද්‍රය දෙසට)</small><span id="stCR">–</span></div>
+        <div><small>දැනෙන ගුරුත්වය rω²</small><span id="stCg">–</span></div>
+        <div><small>අවශ්‍ය ω = √(g/r)</small><span id="stCw">–</span></div>
+        <div><small>ආවර්ත කාලය T = 2π/ω</small><span id="stCT">–</span></div>
+        <div><small>බිමේ වේගය v = ωr</small><span id="stCv">–</span></div>
+        <div><small>බෝලය</small><span id="stCb">–</span></div>
+      </div>
+     </aside>
+     <div class="main">
+      <div class="cvs"><canvas id="cvC" class="scene"></canvas></div>
+      <p class="note">වම: පිටතින් (අවස්ථිති රාමුව) — බිත්තිය (බිම) ගගනගාමියාව කේන්ද්‍රය දෙසට තල්ලු කරයි, R = mrω². එය ඔහුට "බර" ලෙස දැනේ. දකුණ: ගගනගාමියා සමඟ කැරකෙමින් බලන විට. 🏀 බෝලය අතහැරිය විට පිටතින් බලන කෙනෙකුට එය <b>සරල රේඛාවක</b> යයි — බිම එය යටින් කැරකේ. (ගගනගාමියා පරිමාණයට නැත.)</p>
+     </div>
+    </div>
+
+    <div class="dbox">
+      <div class="dh">කෘත්‍රිම ගුරුත්වය — අවශ්‍ය කෝණික ප්‍රවේගය</div>
+      <div class="l">• පිටත බිත්තිය (බිම) ගගනගාමියා මත කේන්ද්‍රය දෙසට R යොදයි — එයයි කේන්ද්‍රාභිසාරී බලය:</div>
+      <div class="l m">R = mrω² <span class="tg">—— (1)</span></div>
+      <div class="l">• පෘථිවියේ මෙන් බරක් දැනීමට තරාදිය mg පෙන්විය යුතුයි:</div>
+      <div class="l m">R = mg <span class="tg">—— (2)</span></div>
+      <div class="l">(1) සහ (2) න්:</div>
+      <div class="l m">mrω² = mg</div>
+      <div class="l m">ω² = <span class="fr"><span>g</span><span>r</span></span></div>
+      <div class="l m"><span class="res">ω = <span class="sq">√<span><span class="fr"><span>g</span><span>r</span></span></span></span></span></div>
+      <div class="note">ගගනගාමියාට "පහළ" ලෙස දැනෙන්නේ අක්ෂයෙන් ඉවතට (පිටතට) ය. ස්කන්ධය කැපී යන නිසා සැමටම අවශ්‍ය ω එකමයි.</div>
+    </div>
+
+    <h2>විසඳුම (පන්තියේ ගැටලුව)</h2>
+    <details>
+      <summary><span class="qtag">Q370</span>අරය 250 m මුද්ද හැඩැති මධ්‍යස්ථානය — ω, T සහ බිම යොදන බලය</summary>
+      <div class="ans">
+        <div class="qtext">අරය 250 m වූ මුද්ද හැඩැති අභ්‍යවකාශ මධ්‍යස්ථානයක ගගනගාමීන් පිටත බිත්තිය මත "සිටගෙන" සිටී. (i) පෘථිවියේ මෙන් බරක් (g = 10 m s⁻²) දැනීමට අවශ්‍ය ω සහ ආවර්ත කාලය (ii) 60 kg ගගනගාමියෙකු මත "බිම" යොදන බලය සහ දිශාව.</div>
+        <div class="dbox">
+          <div class="l">(i)</div>
+          <div class="l m">R = mrω² = mg <span class="tg">—— (1)</span></div>
+          <div class="l m">ω = <span class="sq">√<span><span class="fr"><span>g</span><span>r</span></span></span></span></div>
+          <div class="l m">ω = <span class="sq">√<span><span class="fr"><span>10</span><span>250</span></span></span></span></div>
+          <div class="l m"><span class="res">ω = 0.2 rad s⁻¹</span></div>
+          <div class="l m">T = <span class="fr"><span>2π</span><span>ω</span></span> <span class="tg">—— (2)</span></div>
+          <div class="l m">T = <span class="fr"><span>2π</span><span>0.2</span></span> = 10π</div>
+          <div class="l m"><span class="res">T ≈ 31.4 s</span></div>
+          <div class="l">(ii)</div>
+          <div class="l m">R = mrω²</div>
+          <div class="l m">R = 60 × 250 × 0.04</div>
+          <div class="l m"><span class="res">R = 600 N</span></div>
+          <div class="l">දිශාව: <b>මධ්‍යස්ථානයේ කේන්ද්‍රය (අක්ෂය) දෙසට</b>. ඔහුට "පහළ" ලෙස දැනෙන්නේ අක්ෂයෙන් ඉවතට ය.</div>
+        </div>
+        <div class="btns"><button data-preset="Q370">▶ සිමියුලේෂනයේ බලන්න</button></div>
+      </div>
+    </details>
+  </section>
+</div>
+
+<script>
+// ===================== physics core (no DOM) =====================
+const g0 = 10, RE = 6.4e6, GM = g0 * RE * RE;      // g = g0 (RE/r)^2
+const HM = 30e3, R0 = RE + HM, VMAX = 10;          // cannon height (m), launch radius, max speed (km/s)
+const TAU = 2 * Math.PI;
+const DEF = { tab: 'A', v: 8, warp: 600, h: 400, mB: 60, mode: 'both', r: 250, w: 0.2, mC: 60, speedC: 2 };
+const S = Object.assign({}, DEF);
+
+// ---------- Tab A: Newton's cannon ----------
+const COLS = ['#ff7675', '#55efc4', '#74b9ff', '#fd79a8', '#ffeaa7', '#a29bfe'];
+const shots = [];
+let shotN = 0;
+const view = { k: 200 / RE, cx: 450, cy: 280 };
+const WA = 900, HA = 560;
+
+function gAt(r) { return GM / (r * r); }
+function acc(x, y) { const r2 = x * x + y * y, r = Math.sqrt(r2), f = -GM / (r2 * r); return [f * x, f * y]; }
+// analytic orbit for a horizontal launch at radius R0 with speed v (m/s)
+function classify(v) {
+  const vc = Math.sqrt(GM / R0), eps = v * v / 2 - GM / R0;
+  if (eps >= 0) return { kind: 'escape', vc };
+  const a = -GM / (2 * eps), r2 = 2 * a - R0;
+  const rp = Math.max(0, Math.min(R0, r2)), ra = Math.max(R0, r2);
+  const e = (ra - rp) / (ra + rp), b = a * Math.sqrt(Math.max(0, 1 - e * e));
+  const T = TAU * Math.sqrt(a * a * a / GM);
+  return { kind: rp < RE ? 'crash' : (e < 0.01 ? 'circle' : 'ellipse'), a, rp, ra, e, b, T, vc };
+}
+function computeA() {
+  const s = shots[shots.length - 1] || null, v = S.v * 1000, c = classify(v);
+  return { shot: s, cls: c, vcSurface: Math.sqrt(g0 * RE), Tsurface: TAU * RE / Math.sqrt(g0 * RE), g: s ? gAt(Math.max(RE, Math.hypot(s.x, s.y))) : gAt(R0) };
+}
+function fire(vKm) {
+  if (vKm !== undefined) S.v = Math.max(0, Math.min(VMAX, +vKm));
+  const v = S.v * 1000;
+  const s = { v0: v, x: 0, y: R0, vx: v, vy: 0, t: 0, lastT: 0, ang: 0, swept: 0, status: 'fly', landKm: null,
+              trail: [[0, R0]], col: COLS[shotN++ % COLS.length], cls: classify(v) };
+  shots.push(s);
+  while (shots.length > 6) shots.shift();
+  if (typeof syncUI === 'function') syncUI();
+  return s;
+}
+function clearShots() { shots.length = 0; }
+function advanceShot(s, T) {
+  while (T > 1e-9 && s.status !== 'land') {
+    const h = Math.min(T, 2); T -= h;
+    let [ax, ay] = acc(s.x, s.y);
+    s.vx += ax * h / 2; s.vy += ay * h / 2;
+    const px = s.x, py = s.y;
+    s.x += s.vx * h; s.y += s.vy * h;
+    [ax, ay] = acc(s.x, s.y);
+    s.vx += ax * h / 2; s.vy += ay * h / 2;
+    s.t += h;
+    const r = Math.hypot(s.x, s.y);
+    if (r <= RE) {                                     // hit the ground: back up to the surface
+      const rp = Math.hypot(px, py), f = Math.min(1, Math.max(0, (rp - RE) / Math.max(rp - r, 1e-9)));
+      s.x = px + f * (s.x - px); s.y = py + f * (s.y - py);
+      const rr = Math.hypot(s.x, s.y) || RE; s.x *= RE / rr; s.y *= RE / rr;
+      s.t -= h * (1 - f); s.vx = 0; s.vy = 0; s.status = 'land';
+    }
+    const ang = Math.atan2(s.x, s.y);                 // clockwise from the top
+    let d = ang - s.ang; if (d > Math.PI) d -= TAU; else if (d < -Math.PI) d += TAU;
+    s.ang = ang; s.swept += d;
+    if (s.status === 'land') { s.landKm = s.swept * RE / 1000; s.trail.push([s.x, s.y]); break; }
+    if (s.status === 'fly') {
+      if (s.swept >= TAU) { s.status = 'orbit'; s.trail.push([0, R0]); }
+      else if (s.t - s.lastT >= 5 && s.trail.length < 6000) { s.trail.push([s.x, s.y]); s.lastT = s.t; }
+    }
+  }
+}
+function shotBox(s) {
+  const c = s.cls, B = { x0: -R0, x1: R0, y0: -R0, y1: R0 };
+  if ((c.kind === 'circle' || c.kind === 'ellipse') && c.ra > R0 + 1) { B.x0 = -c.b; B.x1 = c.b; B.y0 = -c.ra; }
+  B.x0 = Math.min(B.x0, -R0); B.x1 = Math.max(B.x1, R0);
+  return B;
+}
+function viewTarget() {
+  const B = { x0: -R0, x1: R0, y0: -R0, y1: R0 };
+  shots.forEach(s => { const b = shotBox(s); B.x0 = Math.min(B.x0, b.x0); B.x1 = Math.max(B.x1, b.x1); B.y0 = Math.min(B.y0, b.y0); B.y1 = Math.max(B.y1, b.y1); });
+  const m = 46;
+  let k = 0.88 * Math.min((WA - 2 * m) / (B.x1 - B.x0), (HA - 2 * m) / (B.y1 - B.y0));
+  k = Math.min(k, 205 / RE);
+  return { k, cx: WA / 2 - k * (B.x0 + B.x1) / 2, cy: HA / 2 + k * (B.y0 + B.y1) / 2 };
+}
+function stepA(dt) {
+  const T = viewTarget(), f = Math.min(1, dt * 3);
+  view.k += (T.k - view.k) * f; view.cx += (T.cx - view.cx) * f; view.cy += (T.cy - view.cy) * f;
+  const s = shots[shots.length - 1];
+  if (s) advanceShot(s, dt * S.warp);
+}
+
+// ---------- Tab B: weightlessness ----------
+const BB = { th: 0, t: 0 };
+function computeB() {
+  const r = RE + S.h * 1000, gh = gAt(r), m = S.mB;
+  const v = Math.sqrt(gh * r), T = TAU * r / v;
+  return { r, gh, m, Wground: m * g0, Wh: m * gh, Rground: m * g0, Rorbit: 0, aOrbit: gh, v, T, ratio: gh / g0 };
+}
+function stepB(dt) {
+  const B = computeB();
+  BB.th = (BB.th + B.v / B.r * dt * 300) % TAU; BB.t += dt;
+}
+
+// ---------- Tab C: rotating space station ----------
+const RPX = 185, HAND = 46, A0 = -Math.PI / 2;       // ring radius in px, ball height above floor in px, astronaut angle
+const CC = { phi: 0 };
+let ball = { st: 'hand' };
+function computeC() {
+  const r = S.r, w = S.w, m = S.mC;
+  const R = m * r * w * w, geff = r * w * w, wNeed = Math.sqrt(g0 / r);
+  return { r, w, m, R, geff, ratio: geff / g0, wNeed, T: w > 0 ? TAU / w : Infinity, v: w * r, kgShown: R / g0 };
+}
+function handPos() { const rb = S.r * (1 - HAND / RPX), a = CC.phi + A0; return [rb * Math.cos(a), rb * Math.sin(a)]; }
+function dropBall() {
+  const [x0, y0] = handPos(), w = S.w, vx = -w * y0, vy = w * x0;
+  const v2 = vx * vx + vy * vy, pv = x0 * vx + y0 * vy, p2 = x0 * x0 + y0 * y0, r = S.r;
+  const tHit = v2 > 1e-12 ? (-pv + Math.sqrt(Math.max(0, pv * pv - v2 * (p2 - r * r)))) / v2 : Infinity;
+  ball = { st: 'fly', x0, y0, vx, vy, x: x0, y: y0, t: 0, tHit, trI: [[x0, y0]], trR: [rotTo(x0, y0, CC.phi)], landRot: null, offM: null };
+  return ball;
+}
+function rotTo(x, y, phi) { const c = Math.cos(-phi), s = Math.sin(-phi); return [x * c - y * s, x * s + y * c]; }
+function resetBall() { ball = { st: 'hand' }; }
+function stepC(dt) {
+  const T = dt * S.speedC;
+  CC.phi = (CC.phi + S.w * T) % TAU;
+  if (ball.st !== 'fly') return;
+  const tNew = ball.t + T;
+  if (tNew >= ball.tHit) {
+    const over = tNew - ball.tHit;
+    ball.t = ball.tHit;
+    ball.x = ball.x0 + ball.vx * ball.t; ball.y = ball.y0 + ball.vy * ball.t;
+    const phiHit = CC.phi - S.w * over;
+    ball.landRot = Math.atan2(ball.y, ball.x) - phiHit;
+    let d = ball.landRot - A0; d = ((d + Math.PI) % TAU + TAU) % TAU - Math.PI;
+    ball.offM = d * S.r;                               // >0 spinward (ahead), <0 behind
+    ball.st = 'land';
+    ball.trI.push([ball.x, ball.y]); ball.trR.push(rotTo(ball.x, ball.y, phiHit));
+    return;
+  }
+  ball.t = tNew;
+  ball.x = ball.x0 + ball.vx * ball.t; ball.y = ball.y0 + ball.vy * ball.t;
+  if (ball.trI.length < 900) { ball.trI.push([ball.x, ball.y]); ball.trR.push(rotTo(ball.x, ball.y, CC.phi)); }
+}
+
+function step(dt) {
+  while (dt > 1e-9) { const h = Math.min(dt, 0.05); stepA(h); stepB(h); stepC(h); dt -= h; }
+}
+
+// ===================== drawing =====================
+const $ = id => document.getElementById(id);
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    if (!w) return;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (!(L >= 2)) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(14, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+// Draws text; "x_abc" is drawn with "abc" as a real subscript.
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Iskoola Pota','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/);
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
+}
+const fN = x => Math.round(x).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const f1 = x => x.toFixed(1);
+const STARS = (() => { let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647; return Array.from({ length: 150 }, () => [rnd() * 900, rnd() * 560, rnd() * 1.3 + 0.3]); })();
+function stars(c, x0, y0, w, h) {
+  c.fillStyle = 'rgba(255,255,255,.7)';
+  STARS.forEach(([x, y, r]) => { if (x >= x0 && x <= x0 + w && y >= y0 && y <= y0 + h) { c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); } });
+}
+function earth(c, x, y, R) {
+  if (!(R > 1)) return;
+  c.fillStyle = 'rgba(116,185,255,.18)'; c.beginPath(); c.arc(x, y, R * 1.06, 0, TAU); c.fill();
+  const gr = c.createRadialGradient(x - R * 0.35, y - R * 0.35, R * 0.1, x, y, R);
+  gr.addColorStop(0, '#74b9ff'); gr.addColorStop(1, '#0652dd');
+  c.fillStyle = gr; c.beginPath(); c.arc(x, y, R, 0, TAU); c.fill();
+  c.save(); c.beginPath(); c.arc(x, y, R, 0, TAU); c.clip();
+  c.fillStyle = '#2ecc71';
+  [[-0.35, 0.15, 0.32, 0.2, 0.6], [0.3, -0.25, 0.25, 0.14, -0.4], [0.25, 0.45, 0.2, 0.1, 0.2], [-0.15, -0.55, 0.18, 0.08, 0.1]].forEach(([dx, dy, rx, ry, rot]) => {
+    c.beginPath(); c.ellipse(x + dx * R, y + dy * R, rx * R, ry * R, rot, 0, TAU); c.fill();
+  });
+  c.restore();
+}
+// small capsule; local +y = floor side
+function capsule(c, x, y, rot, s = 1) {
+  c.save(); c.translate(x, y); c.rotate(rot); c.scale(s, s);
+  c.fillStyle = '#dfe6e9'; c.strokeStyle = '#636e72'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(-12, 8); c.lineTo(12, 8); c.lineTo(6, -10); c.lineTo(-6, -10); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = '#74b9ff'; c.beginPath(); c.arc(0, -1, 3, 0, TAU); c.fill();
+  c.fillStyle = '#636e72'; c.fillRect(-12, 8, 24, 3);
+  c.restore();
+}
+// astronaut; feet at (0,0), local -y = head. hold → arm raised holding (drawn separately) ball at (0,-HAND)
+function astronaut(c, x, y, rot, s = 1, hold = false) {
+  c.save(); c.translate(x, y); c.rotate(rot); c.scale(s, s);
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  c.fillStyle = '#b2bec3'; c.fillRect(-10, -27, 5, 13);
+  c.strokeStyle = '#dfe6e9'; c.lineWidth = 5;
+  c.beginPath(); c.moveTo(-3, -12); c.lineTo(-4, -1); c.moveTo(3, -12); c.lineTo(4, -1); c.stroke();
+  c.fillStyle = '#636e72'; c.fillRect(-7, -2, 6, 3); c.fillRect(1, -2, 6, 3);
+  c.fillStyle = '#f5f6fa'; c.strokeStyle = '#636e72'; c.lineWidth = 1.2;
+  c.beginPath(); c.roundRect(-6, -27, 12, 16, 3); c.fill(); c.stroke();
+  c.fillStyle = '#e17055'; c.fillRect(-3, -23, 6, 3);
+  c.strokeStyle = '#dfe6e9'; c.lineWidth = 4;
+  c.beginPath(); c.moveTo(-5, -24); c.lineTo(-9, -15);
+  if (hold) { c.moveTo(5, -24); c.lineTo(3, -41); } else { c.moveTo(5, -24); c.lineTo(9, -15); }
+  c.stroke();
+  c.fillStyle = '#f5f6fa'; c.strokeStyle = '#636e72'; c.lineWidth = 1.2;
+  c.beginPath(); c.arc(0, -33, 6.5, 0, TAU); c.fill(); c.stroke();
+  c.fillStyle = '#0984e3'; c.beginPath(); c.ellipse(1.5, -33, 4, 3.2, 0, 0, TAU); c.fill();
+  c.restore();
+}
+
+let cA, cB, cC;
+
+// ---------- Tab A canvas ----------
+function rho(r) { const P = 0.09 * view.k * RE; return view.k * r + (r >= R0 ? P : P * Math.max(0, r - RE) / HM); }
+function scrA(x, y) { const r = Math.hypot(x, y); if (r < 1) return [view.cx, view.cy]; const s = rho(r) / r; return [view.cx + x * s, view.cy - y * s]; }
+function drawA() {
+  const c = cA.ctx; c.clearRect(0, 0, WA, HA);
+  c.fillStyle = '#10163a'; c.fillRect(0, 0, WA, HA); stars(c, 0, 0, WA, HA);
+  const ER = view.k * RE, cx = view.cx, cy = view.cy;
+  // circular-orbit guide
+  c.strokeStyle = 'rgba(255,234,167,.35)'; c.lineWidth = 1.5; c.setLineDash([6, 8]);
+  c.beginPath(); c.arc(cx, cy, rho(R0), 0, TAU); c.stroke(); c.setLineDash([]);
+  earth(c, cx, cy, ER);
+  text(c, 'පෘථිවිය', cx, cy - 10, '#fff', Math.max(12, Math.min(20, ER / 9)), 'center', 800);
+  text(c, 'R_E = 6400 km', cx, cy + 12, '#dfe6e9', Math.max(11, Math.min(15, ER / 12)), 'center', 700);
+  // mountain + cannon at the top
+  const apex = rho(R0), bw = Math.max(9, (apex - ER) * 1.3);
+  const by = cy - Math.sqrt(Math.max(0, ER * ER - bw * bw));
+  c.fillStyle = '#8d6e63'; c.beginPath(); c.moveTo(cx - bw, by + 2); c.lineTo(cx, cy - apex + 3); c.lineTo(cx + bw, by + 2); c.closePath(); c.fill();
+  c.fillStyle = '#fff'; c.beginPath(); c.moveTo(cx - bw * 0.3, cy - apex + 3 + (apex - ER) * 0.3); c.lineTo(cx, cy - apex + 3); c.lineTo(cx + bw * 0.3, cy - apex + 3 + (apex - ER) * 0.3); c.closePath(); c.fill();
+  c.fillStyle = '#2d3436'; c.fillRect(cx - 6, cy - apex - 6, 18, 6); c.beginPath(); c.arc(cx - 2, cy - apex + 1, 4, 0, TAU); c.fill();
+  // trails
+  const last = shots[shots.length - 1];
+  shots.forEach(s => {
+    if (s.trail.length < 1) return;
+    c.globalAlpha = s === last ? 1 : 0.45;
+    c.strokeStyle = s.col; c.lineWidth = s === last ? 2.6 : 2; c.beginPath();
+    s.trail.forEach(([x, y], i) => { const [X, Y] = scrA(x, y); i ? c.lineTo(X, Y) : c.moveTo(X, Y); });
+    if (s.status !== 'orbit') { const [X, Y] = scrA(s.x, s.y); c.lineTo(X, Y); }
+    c.stroke();
+    if (s.status === 'land') {
+      const [X, Y] = scrA(s.x, s.y);
+      c.strokeStyle = s.col; c.lineWidth = 3; c.beginPath(); c.moveTo(X - 5, Y - 5); c.lineTo(X + 5, Y + 5); c.moveTo(X + 5, Y - 5); c.lineTo(X - 5, Y + 5); c.stroke();
+    }
+    c.globalAlpha = 1;
+  });
+  // active ball + arrows
+  if (last && last.status !== 'land') {
+    const [X, Y] = scrA(last.x, last.y), sp = Math.hypot(last.vx, last.vy);
+    const r = Math.hypot(last.x, last.y), gl = 42 * gAt(r) / g0;
+    const dx = cx - X, dy = cy - Y, dl = Math.hypot(dx, dy) || 1;
+    arrow(c, X, Y, X + dx / dl * gl, Y + dy / dl * gl, '#ff7675', 3.5);
+    text(c, 'mg', X + dx / dl * (gl + 14), Y + dy / dl * (gl + 14), '#ff7675', 14, 'center', 800);
+    if (sp > 1) { const L = 18 + 6 * sp / 1000; arrow(c, X, Y, X + last.vx / sp * L, Y - last.vy / sp * L, '#74b9ff', 3.5); }
+    c.fillStyle = '#2d3436'; c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); c.arc(X, Y, 6, 0, TAU); c.fill(); c.stroke();
+  }
+  // labels
+  text(c, `v = ${f1(S.v)} km s⁻¹`, 18, 26, '#ffeaa7', 18, 'left', 800);
+  text(c, last ? `t = ${f1(last.t / 60)} min` : 't = 0', 18, 50, '#dfe6e9', 14, 'left', 700);
+  text(c, `සජීවිකරණය × ${S.warp}`, 18, 70, '#b2bec3', 12, 'left', 600);
+  const A = computeA();
+  let t1 = '🔥 "වෙඩි තබන්න" ඔබන්න', t2 = '', col = '#ffeaa7';
+  if (last) {
+    const k = last.cls.kind;
+    if (last.status === 'land') { t1 = 'පෘථිවියට වැටුණා 💥'; t2 = `කන්දේ සිට ${fN(last.landKm)} km දුරින්`; col = '#ff7675'; }
+    else if (last.status === 'orbit') { t1 = k === 'circle' ? 'වෘත්තාකාර කක්ෂය ✓' : 'ඉලිප්සාකාර කක්ෂය ✓'; t2 = `කක්ෂගතයි! T ≈ ${Math.round(last.cls.T / 60)} min`; col = '#55efc4'; }
+    else { t1 = k === 'crash' ? 'වැටෙමින්... ⬇' : 'කක්ෂයේ යමින්...'; t2 = k === 'crash' ? 'පෘථිවිය දෙසට වැටේ' : 'වැටෙයි — නමුත් බිම "මඟ හැරේ"'; }
+  }
+  text(c, t1, WA - 18, 28, col, 20, 'right', 800);
+  if (t2) text(c, t2, WA - 18, 54, '#dfe6e9', 14, 'right', 700);
+  arrow(c, 22, HA - 44, 58, HA - 44, '#74b9ff', 3); text(c, 'v (ප්‍රවේගය)', 66, HA - 44, '#74b9ff', 13, 'left', 700);
+  arrow(c, 22, HA - 22, 58, HA - 22, '#ff7675', 3); text(c, 'mg (ගුරුත්වය — කේන්ද්‍රය දෙසට)', 66, HA - 22, '#ff7675', 13, 'left', 700);
+  text(c, '- - -  v = √(gR_E) කක්ෂය', WA - 18, HA - 44, 'rgba(255,234,167,.8)', 13, 'right', 700);
+  text(c, `v_c = √(gR_E) = ${f1(A.vcSurface / 1000)} km s⁻¹`, WA - 18, HA - 22, '#ffeaa7', 13, 'right', 700);
+}
+
+// ---------- Tab B canvas ----------
+const WB = 900, HBc = 500, KN = 0.085;   // px per newton for the force diagram
+function drawB() {
+  const c = cB.ctx; c.clearRect(0, 0, WB, HBc);
+  const B = computeB();
+  if (S.mode === 'both') {
+    panelB(c, 'ground', 0, 0, 445, HBc, B);
+    panelB(c, 'orbit', 455, 0, 445, HBc, B);
+    c.strokeStyle = '#a29bfe'; c.lineWidth = 2; c.setLineDash([6, 6]); c.beginPath(); c.moveTo(450, 10); c.lineTo(450, HBc - 10); c.stroke(); c.setLineDash([]);
+  } else panelB(c, S.mode, 0, 0, WB, HBc, B);
+}
+function panelB(c, kind, x0, y0, w, h, B) {
+  const g = kind === 'ground';
+  text(c, g ? '🌍 පෘථිවිය මත (බිම මත ඇති යානය)' : `🛰️ කක්ෂයේ (h = ${S.h} km)`, x0 + 14, y0 + 20, '#2c3e50', 17, 'left', 800);
+  let ctx, inn;
+  if (w > 600) { ctx = [x0 + 10, y0 + 40, 380, h - 50]; inn = [x0 + 404, y0 + 40, w - 414, h - 50]; }
+  else { ctx = [x0 + 10, y0 + 38, w - 20, 168]; inn = [x0 + 10, y0 + 214, w - 20, h - 222]; }
+  contextB(c, g, ...ctx, B);
+  interiorB(c, g, ...inn, B);
+}
+function contextB(c, g, x, y, w, h, B) {
+  c.save(); c.beginPath(); c.roundRect(x, y, w, h, 10); c.clip();
+  if (g) {
+    const sky = c.createLinearGradient(0, y, 0, y + h); sky.addColorStop(0, '#a8d8ff'); sky.addColorStop(1, '#eaf6ff');
+    c.fillStyle = sky; c.fillRect(x, y, w, h);
+    const gy = y + h - 30;
+    c.fillStyle = '#6ab04c'; c.fillRect(x, gy, w, 30);
+    c.fillStyle = '#95a5a6'; c.fillRect(x + w / 2 - 40, gy - 6, 80, 6);
+    capsule(c, x + w / 2, gy - 6 - 11 * 2.2, 0, 2.2);
+    text(c, 'a = 0 (නිශ්චලයි)', x + 12, y + 18, '#2c3e50', 14, 'left', 800);
+    text(c, 'බිම', x + 12, gy + 15, '#fff', 13, 'left', 700);
+  } else {
+    c.fillStyle = '#10163a'; c.fillRect(x, y, w, h); stars(c, x, y, w, h);
+    const ex = x + w / 2, ey = y + h / 2 + 4, ER = Math.min(w, h) * 0.27;
+    const orR = ER * (1 + S.h * 1000 / RE) + 16;
+    earth(c, ex, ey, ER);
+    c.strokeStyle = 'rgba(255,234,167,.45)'; c.lineWidth = 1.5; c.setLineDash([5, 6]); c.beginPath(); c.arc(ex, ey, orR, 0, TAU); c.stroke(); c.setLineDash([]);
+    const a = BB.th, X = ex + orR * Math.cos(a), Y = ey - orR * Math.sin(a);
+    const toE = Math.atan2(ey - Y, ex - X);
+    arrow(c, X, Y, X + Math.cos(toE) * 34, Y + Math.sin(toE) * 34, '#fd79a8', 3);
+    arrow(c, X, Y, X - Math.sin(a) * 36, Y - Math.cos(a) * 36, '#74b9ff', 3);
+    capsule(c, X, Y, toE - Math.PI / 2, 1.1);
+    text(c, 'a = g′ (පෘථිවිය දෙසට)', x + 10, y + 16, '#fd79a8', 13, 'left', 800);
+    text(c, 'v (කක්ෂය දිගේ)', x + 10, y + 34, '#74b9ff', 13, 'left', 700);
+    text(c, 'යානය නොනවත්වා "වැටේ"', x + w - 10, y + h - 14, '#ffeaa7', 13, 'right', 700);
+  }
+  c.restore();
+}
+function interiorB(c, g, x, y, w, h, B) {
+  c.fillStyle = g ? '#fffaf0' : '#f5f3ff'; c.strokeStyle = '#636e72'; c.lineWidth = 5;
+  c.beginPath(); c.roundRect(x + 3, y + 3, w - 6, h - 6, 14); c.fill(); c.stroke();
+  text(c, 'යානය ඇතුළත', x + 16, y + 20, '#636e72', 13, 'left', 700);
+  const floorY = y + h - 26, sx = x + w * 0.32;
+  c.fillStyle = '#dfe6e9'; c.fillRect(x + 6, floorY, w - 12, 14);
+  text(c, 'බිම (පෘථිවිය දෙසට ↓)', x + 16, floorY + 7, '#2d3436', 11, 'left', 700);
+  // scale
+  const R = g ? B.Rground : 0;
+  c.fillStyle = '#2d3436'; c.beginPath(); c.roundRect(sx - 36, floorY - 12, 72, 12, 3); c.fill();
+  // astronaut
+  const s = Math.max(1, Math.min(2.2, (h - 110) / 52));
+  const bob = g ? 0 : (34 + 10 * Math.sin(BB.t * 1.3)) * s / 2;
+  const feetY = floorY - 12 - bob;
+  astronaut(c, sx, feetY, g ? 0 : 0.2 * Math.sin(BB.t * 0.7), s, false);
+  // scale reading
+  c.fillStyle = '#10163a'; c.beginPath(); c.roundRect(sx - 54, y + 30, 108, 36, 6); c.fill();
+  text(c, 'තරාදිය', sx, y + 41, '#b2bec3', 11, 'center', 700);
+  text(c, `${fN(R)} N`, sx, y + 57, g ? '#55efc4' : '#ffeaa7', 17, 'center', 800);
+  // free-body diagram
+  const fx = x + w * 0.74, fy = y + h * 0.5;
+  text(c, 'ගගනගාමියා මත බල', fx, y + 22, '#6c5ce7', 13, 'center', 800);
+  const W = g ? B.Wground : B.Wh;
+  arrow(c, fx, fy, fx, fy + W * KN, '#2d3436', 4);
+  text(c, g ? `mg = ${fN(W)} N` : `mg′ = ${fN(W)} N`, fx + 8, fy + W * KN - 6, '#2d3436', 13, 'left', 800);
+  if (g) { arrow(c, fx, fy, fx, fy - R * KN, '#00b894', 4); text(c, `R = ${fN(R)} N`, fx + 8, fy - R * KN + 6, '#00a383', 13, 'left', 800); }
+  else text(c, 'R = 0', fx + 8, fy - 22, '#d63031', 15, 'left', 800);
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(fx, fy, 5, 0, TAU); c.fill();
+  if (g) text(c, 'a = 0', fx - 12, fy - 30, '#6c5ce7', 13, 'right', 800);
+  else {
+    const L = B.aOrbit * 6;
+    arrow(c, fx - 34, fy - 10, fx - 34, fy - 10 + L, '#a29bfe', 3, [5, 4]);
+    text(c, `a = g′ = ${f1(B.aOrbit)}`, fx - 40, fy - 22, '#6c5ce7', 12, 'right', 800);
+    // capsule wall acceleration, same as the astronaut's
+    arrow(c, x + w - 20, y + 40, x + w - 20, y + 40 + L, '#a29bfe', 3, [5, 4]);
+    text(c, 'යානයේ a = g′', x + w - 26, y + 34, '#6c5ce7', 11, 'right', 700);
+  }
+  text(c, g ? 'R = mg → බර දැනේ' : 'එකට වැටේ → R = 0 → "බර නැත"', x + w - 16, floorY + 7, g ? '#00785a' : '#c0392b', 12, 'right', 800);
+}
+
+// ---------- Tab C canvas ----------
+const WC = 900, HC = 520, LX = 225, RX = 675, CY = 268;
+function ring(c, cx, cy, phi) {
+  c.strokeStyle = '#636e72'; c.lineWidth = 6;
+  for (let i = 0; i < 4; i++) { const a = phi + i * Math.PI / 2 + Math.PI / 4; c.beginPath(); c.moveTo(cx + 24 * Math.cos(a), cy - 24 * Math.sin(a)); c.lineTo(cx + RPX * Math.cos(a), cy - RPX * Math.sin(a)); c.stroke(); }
+  c.strokeStyle = '#b2bec3'; c.lineWidth = 16; c.beginPath(); c.arc(cx, cy, RPX + 8, 0, TAU); c.stroke();
+  c.strokeStyle = '#dfe6e9'; c.lineWidth = 2; c.beginPath(); c.arc(cx, cy, RPX, 0, TAU); c.stroke();
+  c.fillStyle = '#ffeaa7';
+  for (let i = 0; i < 12; i++) { const a = phi + i * TAU / 12 + 0.13; c.beginPath(); c.arc(cx + (RPX + 8) * Math.cos(a), cy - (RPX + 8) * Math.sin(a), 2.5, 0, TAU); c.fill(); }
+  c.fillStyle = '#b2bec3'; c.beginPath(); c.arc(cx, cy, 24, 0, TAU); c.fill();
+  c.fillStyle = '#636e72'; c.beginPath(); c.arc(cx, cy, 5, 0, TAU); c.fill();
+}
+function drawC() {
+  const c = cC.ctx; c.clearRect(0, 0, WC, HC);
+  c.fillStyle = '#10163a'; c.fillRect(0, 0, WC, HC); stars(c, 0, 0, WC, HC);
+  c.strokeStyle = 'rgba(162,155,254,.6)'; c.lineWidth = 2; c.setLineDash([6, 6]); c.beginPath(); c.moveTo(450, 10); c.lineTo(450, HC - 10); c.stroke(); c.setLineDash([]);
+  const C = computeC(), k = RPX / S.r;
+  text(c, '🔭 පිටතින් (අවස්ථිති රාමුව)', 14, 20, '#fff', 15, 'left', 800);
+  text(c, '🧑‍🚀 ගගනගාමියා සමඟ කැරකෙමින්', 464, 20, '#fff', 15, 'left', 800);
+  // ---- left: inertial ----
+  ring(c, LX, CY, CC.phi);
+  if (S.w > 0) {                                       // rotation sense
+    c.strokeStyle = '#ffeaa7'; c.lineWidth = 2.5; c.beginPath(); c.arc(LX, CY, 42, -0.3, -1.9, true); c.stroke();
+    const a = 1.9; arrow(c, LX + 42 * Math.cos(a - 0.15), CY - 42 * Math.sin(a - 0.15), LX + 42 * Math.cos(a), CY - 42 * Math.sin(a), '#ffeaa7', 2.5);
+    text(c, 'ω', LX + 50, CY - 30, '#ffeaa7', 16, 'left', 800);
+  }
+  const aA = CC.phi + A0, fx = LX + RPX * Math.cos(aA), fy = CY - RPX * Math.sin(aA);
+  const inA = Math.atan2(CY - fy, LX - fx);
+  const holding = ball.st === 'hand';
+  astronaut(c, fx, fy, inA + Math.PI / 2, 1, holding);
+  const Lr = Math.min(150, C.R * 0.15);
+  const mx = fx + Math.cos(inA) * 18, my = fy + Math.sin(inA) * 18;
+  if (Lr >= 2) {
+    arrow(c, mx + Math.cos(inA) * 22, my + Math.sin(inA) * 22, mx + Math.cos(inA) * (22 + Lr), my + Math.sin(inA) * (22 + Lr), '#55efc4', 4);
+    text(c, 'R = mrω²', mx + Math.cos(inA) * (30 + Lr) + 8, my + Math.sin(inA) * (30 + Lr), '#55efc4', 14, 'left', 800);
+  }
+  if (C.v > 0.01) {
+    const L = Math.min(90, 18 + C.v * 0.9), tx = -Math.sin(aA), ty = -Math.cos(aA);
+    arrow(c, fx + tx * 12, fy + ty * 12, fx + tx * (12 + L), fy + ty * (12 + L), '#74b9ff', 3.5);
+    text(c, 'v = ωr', fx + tx * (18 + L), fy + ty * (18 + L) + 14, '#74b9ff', 13, 'center', 800);
+  }
+  drawBall(c, 'I', LX, CY, k);
+  text(c, 'R (කේන්ද්‍රය දෙසට) = කේන්ද්‍රාභිසාරී බලය', 14, HC - 18, '#55efc4', 13, 'left', 700);
+  // ---- right: rotating frame ----
+  ring(c, RX, CY, 0);
+  const gx = RX + RPX * Math.cos(A0), gy = CY - RPX * Math.sin(A0);
+  c.fillStyle = '#2d3436'; c.beginPath(); c.roundRect(gx - 14, gy - 5, 28, 5, 2); c.fill();
+  astronaut(c, gx, gy - 5, 0, 1, holding);
+  drawBall(c, 'R', RX, CY, k);
+  // felt "down" and R
+  if (C.geff > 0.01) {
+    const Lg = Math.min(60, 10 + C.geff * 3);
+    arrow(c, gx + 34, gy - 62, gx + 34, gy - 62 + Lg, '#fd79a8', 3, [5, 4]);
+    text(c, 'දැනෙන "පහළ"', gx + 34, gy - 96, '#fd79a8', 13, 'center', 800);
+    text(c, '(අක්ෂයෙන් ඉවතට)', gx + 34, gy - 78, '#fd79a8', 11, 'center', 700);
+  }
+  if (Lr >= 2) { arrow(c, gx - 30, gy - 8, gx - 30, gy - 8 - Lr * 0.6, '#55efc4', 4); text(c, 'R', gx - 38, gy - 14 - Lr * 0.6, '#55efc4', 15, 'right', 800); }
+  c.fillStyle = 'rgba(45,52,54,.9)'; c.strokeStyle = '#a29bfe'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(WC - 158, 34, 144, 50, 8); c.fill(); c.stroke();
+  text(c, 'තරාදිය (R)', WC - 86, 46, '#b2bec3', 12, 'center', 700);
+  text(c, `${fN(C.R)} N`, WC - 86, 68, Math.abs(C.ratio - 1) < 0.03 ? '#55efc4' : '#ffeaa7', 19, 'center', 800);
+  if (ball.st === 'land' && ball.offM !== null) {
+    const off = ball.offM;
+    text(c, Math.abs(off) < 0.5 ? 'බෝලය පාද අසලම වැටුණා' : `බෝලය පාදවලට ${f1(Math.abs(off))} m ${off < 0 ? 'පසුපසින්' : 'ඉදිරියෙන්'} වැටුණා`, RX, HC - 18, '#ffeaa7', 13, 'center', 800);
+  } else if (ball.st === 'fly' && !isFinite(ball.tHit)) {
+    text(c, 'ω = 0 — බෝලය පාවෙයි (බරක් නැත)', RX, HC - 18, '#ffeaa7', 13, 'center', 800);
+  } else text(c, 'බිම (පිටත බිත්තිය) ගගනගාමියා සමඟ කැරකේ', RX, HC - 18, '#b2bec3', 12, 'center', 700);
+}
+// ball in inertial ('I') or rotating ('R') view
+function drawBall(c, which, cx, cy, k) {
+  let bx, by;
+  if (ball.st === 'hand') {
+    const [hx, hy] = handPos();
+    [bx, by] = which === 'I' ? [hx, hy] : rotTo(hx, hy, CC.phi);
+  } else {
+    const tr = which === 'I' ? ball.trI : ball.trR;
+    if (tr.length > 1) {
+      c.strokeStyle = which === 'I' ? 'rgba(255,234,167,.9)' : 'rgba(253,121,168,.95)'; c.lineWidth = 2; c.setLineDash([4, 4]); c.beginPath();
+      tr.forEach(([x, y], i) => { const X = cx + x * k, Y = cy - y * k; i ? c.lineTo(X, Y) : c.moveTo(X, Y); });
+      c.stroke(); c.setLineDash([]);
+    }
+    if (ball.st === 'land') {
+      const rr = S.r * (1 - 5 / RPX), a = ball.landRot + (which === 'I' ? CC.phi : 0);
+      [bx, by] = [rr * Math.cos(a), rr * Math.sin(a)];
+    } else if (which === 'I') [bx, by] = [ball.x, ball.y];
+    else [bx, by] = rotTo(ball.x, ball.y, CC.phi);
+  }
+  const X = cx + bx * k, Y = cy - by * k;
+  c.fillStyle = '#e17055'; c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.beginPath(); c.arc(X, Y, 5, 0, TAU); c.fill(); c.stroke();
+}
+
+// ===================== UI =====================
+function show(id, t) { const e = $(id); if (e) e.textContent = t; }
+function syncUI() {
+  const setv = (id, v) => { const e = $(id); if (e) e.value = v; };
+  setv('vS', S.v); setv('warpS', S.warp); setv('hS', S.h); setv('mBS', S.mB);
+  setv('rS', S.r); setv('wS', S.w); setv('mCS', S.mC); setv('spdSel', String(S.speedC));
+  show('vVal', f1(S.v)); show('warpVal', S.warp); show('hVal', S.h); show('mBVal', S.mB);
+  show('rVal', S.r); show('wVal', S.w.toFixed(3)); show('mCVal', S.mC);
+  $('modeGround').className = S.mode === 'ground' ? 'solid' : '';
+  $('modeOrbit').className = S.mode === 'orbit' ? 'solid' : '';
+  $('modeBoth').className = S.mode === 'both' ? 'solid' : '';
+}
+function updateStatus() {
+  if (S.tab === 'A') {
+    const A = computeA(), s = A.shot;
+    let st = 'වෙඩි තබා බලන්න 🔥', cls = '';
+    if (s) {
+      const k = s.cls.kind;
+      if (s.status === 'land') { st = `පෘථිවියට වැටුණා — ${fN(s.landKm)} km දුරින්`; cls = ' move'; }
+      else if (s.status === 'orbit') st = k === 'circle' ? 'වෘත්තාකාර කක්ෂයක් ✓' : 'ඉලිප්සාකාර කක්ෂයක් ✓';
+      else { st = k === 'crash' ? 'වැටෙමින්...' : 'කක්ෂයේ යමින්...'; cls = k === 'crash' ? ' limit' : ''; }
+    }
+    show('stA', st); $('statusA').className = 'status' + cls;
+    show('stAv', s ? `${f1(s.v0 / 1000)} km s⁻¹` : '–');
+    show('stAvc', `${f1(A.vcSurface / 1000)} km s⁻¹`);
+    show('stAt', s ? `${fN(s.t)} s (${f1(s.t / 60)} min)` : '–');
+    show('stAT', s && s.cls.kind !== 'crash' && s.cls.kind !== 'escape' ? `${fN(s.cls.T)} s ≈ ${Math.round(s.cls.T / 60)} min` : '– (කක්ෂයක් නැත)');
+    show('stAg', `${A.g.toFixed(2)} m s⁻²`);
+  } else if (S.tab === 'B') {
+    const B = computeB();
+    show('stB', 'ගුරුත්වය ඇත — නමුත් එකට වැටෙන නිසා R = 0');
+    show('stBg', `${B.gh.toFixed(2)} m s⁻² (${Math.round(B.ratio * 100)}%)`);
+    show('stBW', `${fN(B.Wh)} N`);
+    show('stBRg', `${fN(B.Rground)} N`); show('stBRo', '0 N');
+    show('stBv', `${f1(B.v / 1000)} km s⁻¹`);
+    show('stBT', `${fN(B.T)} s ≈ ${Math.round(B.T / 60)} min`);
+  } else {
+    const C = computeC();
+    const eq = Math.abs(C.ratio - 1) < 0.03;
+    show('stC', C.w === 0 ? 'කැරකෙන්නේ නැත — පාවෙයි (R = 0)' : eq ? 'පෘථිවියේ මෙන්ම බර ✓' : C.ratio < 1 ? 'පෘථිවියට වඩා සැහැල්ලුයි' : 'පෘථිවියට වඩා බරයි!');
+    $('statusC').className = 'status' + (eq ? '' : C.ratio > 1.5 ? ' move' : ' limit');
+    show('stCR', `${fN(C.R)} N`);
+    show('stCg', `${C.geff.toFixed(2)} m s⁻² (${C.ratio.toFixed(2)} g)`);
+    show('stCw', `${C.wNeed.toFixed(3)} rad s⁻¹`);
+    show('stCT', isFinite(C.T) ? `${f1(C.T)} s` : '∞ (නොකැරකේ)');
+    show('stCv', `${f1(C.v)} m s⁻¹`);
+    show('stCb', ball.st === 'hand' ? 'අතේ' : ball.st === 'fly' ? 'සරල රේඛාවක යයි...' : `බිමට — ${f1(Math.abs(ball.offM))} m ${ball.offM < 0 ? 'පසුපසින්' : 'ඉදිරියෙන්'}`);
+  }
+}
+function setTab(t) {
+  S.tab = t === 'B' || t === 'C' ? t : 'A';
+  ['A', 'B', 'C'].forEach(k => { $('pane' + k).style.display = S.tab === k ? '' : 'none'; $('tab' + k).className = S.tab === k ? 'solid' : ''; });
+  return S.tab;
+}
+function set(p, val) {
+  if (p === 'tab') return setTab(val);
+  if (p === 'omega') p = 'w';
+  if (p === 'm') p = S.tab === 'C' ? 'mC' : 'mB';
+  if (p === 'mode') { S.mode = ['ground', 'orbit', 'both'].includes(val) ? val : 'both'; }
+  else if (p === 'v') S.v = Math.max(0, Math.min(VMAX, +val));
+  else if (p === 'r') { S.r = Math.max(10, +val); resetBall(); }
+  else if (p === 'w') S.w = Math.max(0, +val);
+  else if (p in S) S[p] = +val;
+  else throw new Error('unknown param ' + p);
+  syncUI();
+  return S;
+}
+function reset() {
+  Object.assign(S, DEF); clearShots(); shotN = 0; Object.assign(view, viewTarget());
+  BB.th = 0; BB.t = 0; CC.phi = 0; resetBall(); setTab(S.tab); syncUI();
+}
+const presets = {
+  Q368: () => { setTab('A'); clearShots(); S.v = 8; fire(); },
+  Q369: () => { setTab('B'); Object.assign(S, { h: 400, mB: 60, mode: 'both' }); },
+  Q370: () => { setTab('C'); Object.assign(S, { r: 250, w: 0.2, mC: 60 }); resetBall(); },
+};
+function wire() {
+  const bind = (id, key, after) => $(id).addEventListener('input', e => { S[key] = +e.target.value; syncUI(); if (after) after(); });
+  bind('vS', 'v'); bind('warpS', 'warp'); bind('hS', 'h'); bind('mBS', 'mB');
+  bind('rS', 'r', resetBall); bind('wS', 'w'); bind('mCS', 'mC');
+  $('vS').addEventListener('change', () => fire());
+  $('spdSel').addEventListener('change', e => { S.speedC = +e.target.value; });
+  ['A', 'B', 'C'].forEach(k => $('tab' + k).addEventListener('click', () => setTab(k)));
+  $('btnFire').addEventListener('click', () => fire());
+  $('btnV8').addEventListener('click', () => fire(8));
+  $('btnClear').addEventListener('click', clearShots);
+  document.querySelectorAll('[data-v]').forEach(b => b.addEventListener('click', () => fire(+b.dataset.v)));
+  $('modeGround').addEventListener('click', () => set('mode', 'ground'));
+  $('modeOrbit').addEventListener('click', () => set('mode', 'orbit'));
+  $('modeBoth').addEventListener('click', () => set('mode', 'both'));
+  $('btnWg').addEventListener('click', () => { S.w = computeC().wNeed; syncUI(); });
+  $('btnDrop').addEventListener('click', dropBall);
+  $('btnResetC').addEventListener('click', () => { CC.phi = 0; resetBall(); });
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => { presets[b.dataset.preset](); syncUI(); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
+}
+
+cA = stage($('cvA'), WA, HA);
+cB = stage($('cvB'), WB, HBc);
+cC = stage($('cvC'), WC, HC);
+wire(); syncUI();
+
+window.sim = {
+  step, state: S, set, reset, setTab, fire, clearShots, dropBall, resetBall, presets,
+  computeA, computeB, computeC, classify, shots, view,
+  get ball() { return ball; }, phiC: () => CC.phi, consts: { g0, RE, GM, HM, R0 },
+};
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  step(dt);
+  if (S.tab === 'A') drawA(); else if (S.tab === 'B') drawB(); else drawC();
+  updateStatus();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

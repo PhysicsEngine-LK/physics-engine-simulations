@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>වංගුවේ ඇල වන මෝටර් සයිකලය (Q361) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 14px; line-height: 1.6; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  .chk { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .chk input { width: 18px; height: 18px; accent-color: #6c5ce7; }
+  .chk.warn { background: #fff; border: 2px dashed #e17055; border-radius: 8px; padding: 5px 10px; color: #d35400; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: linear-gradient(#f0f7ff, #fff); border: 1px solid #dfe6e9; }
+  .status { margin-top: 14px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 12px 16px; border-radius: 6px; font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; gap: 10px 26px; justify-content: space-between; }
+  .status.limit { border-left-color: #f39c12; background: #fef5e7; }
+  .status.move { border-left-color: #e74c3c; background: #fdedec; }
+  .status small { display: block; font-size: 13px; color: #636e72; font-weight: 600; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* derivation boxes: one step per line */
+  .dbox { background: #fbfaff; border: 1px solid #d6d2ff; border-left: 6px solid #6c5ce7; border-radius: 10px; padding: 12px 16px; margin: 12px 0; overflow-x: auto; }
+  .dbox .dh { font-weight: 800; font-size: 16px; color: #6c5ce7; margin: 6px 0; }
+  .dbox .l { padding: 5px 0 5px 6px; line-height: 1.6; font-size: 15px; }
+  .dbox .l.m { padding-left: 34px; font-family: 'Cambria', 'Times New Roman', serif; font-size: 19px; white-space: nowrap; }
+  .dbox .l.m .si { font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; font-size: 15px; }
+  .fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 4px; line-height: 1.25; }
+  .fr > span:first-child { border-bottom: 1.6px solid currentColor; padding: 0 4px 2px; }
+  .fr > span:last-child { padding: 2px 4px 0; }
+  .sq { white-space: nowrap; }
+  .sq > span { border-top: 1.6px solid currentColor; padding: 2px 3px 0; margin-left: 1px; display: inline-block; }
+  .tg { color: #6c5ce7; font-weight: 700; margin-left: 22px; font-family: 'Segoe UI', sans-serif; font-size: 15px; }
+  .res { display: inline-block; border: 2px solid #6c5ce7; border-radius: 8px; padding: 4px 10px; background: #fff; }
+  .extra { background: #fdcb6e; color: #2d3436; }
+  .rail { margin-top: 18px; border: 2px dashed #a29bfe; border-radius: 12px; padding: 14px; background: #fcfbff; }
+  .rail h3 { margin: 0 0 10px; font-size: 18px; }
+  .big { font-size: 22px; font-weight: 800; color: #6c5ce7; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } .status { font-size: 14px; } .dbox .l.m { font-size: 17px; padding-left: 14px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .side .status { margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 15px; }
+    .side .status > div:first-child { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">Q361 · වෘත්ත චලිතය</span></div>
+  <h1>වංගුවේ ඇල වන මෝටර් සයිකලය</h1>
+  <p class="sub">තිරස් වංගුවක යන පදවන්නාට කේන්ද්‍රය දෙසට <b>mv²/r</b> බලය සපයන්නේ ටයරය හා මාර්ගය අතර <b>ඝර්ෂණය F</b> යි. නමුත් F ක්‍රියා කරන්නේ පොළොව මට්ටමේ — ගුරුත්ව කේන්ද්‍රය <b>G</b> ට පහළින්. ඒ නිසා පදවන්නා ඇතුළට ඇල වේ: එවිට <b>R</b> සහ <b>F</b> හි සම්ප්‍රයුක්තය සයිකලය දිගේම <b>G හරහා</b> යයි. “කෙළින් සිටියොත්” ක්ලික් කර බලන්න!</p>
+
+  <div class="layout">
+   <aside class="side">
+    <div class="controls">
+      <div><label>වේගය v = <span class="v" id="vVal">15.0</span> m s⁻¹</label><input type="range" id="vS" min="0" max="30" step="0.5" value="15"></div>
+      <div><label>අරය r = <span class="v" id="rVal">30</span> m</label><input type="range" id="rS" min="10" max="100" step="1" value="30"></div>
+      <div><label>ඝර්ෂණ සංගුණකය μ = <span class="v" id="muVal">0.80</span></label><input type="range" id="muS" min="0.1" max="1.2" step="0.05" value="0.8"></div>
+      <div class="btns">
+        <label class="chk warn"><input type="checkbox" id="upChk"> 🧍 කෙළින් සිටියොත්</label>
+      </div>
+      <div class="btns">
+        <button class="solid" id="btnQ">Q361: r = 30 m, v = 15 m s⁻¹</button>
+        <button id="btnMu">μ = μ<sub>min</sub></button>
+        <button id="btnReset">↺ නැවත</button>
+      </div>
+      <div class="btns"><span class="note" style="margin:0">m = 200 kg (පදවන්නා + සයිකලය), g = 10 m s⁻². ස්කන්ධය කැපී යයි — α ට බලපාන්නේ නැත.</span></div>
+    </div>
+    <div class="status" id="status">
+      <div><small>තත්ත්වය</small><span id="stState">–</span></div>
+      <div><small>ඇල වන කෝණය α</small><span id="stAlpha">–</span></div>
+      <div><small>tanα = v²/(rg)</small><span id="stTan">–</span></div>
+      <div><small>μ<sub>min</sub> = tanα</small><span id="stMuMin">–</span></div>
+      <div><small>අවශ්‍ය F = mv²/r</small><span id="stF">–</span></div>
+      <div><small>සීමාකාරී μR</small><span id="stFmax">–</span></div>
+      <div><small>R = mg</small><span id="stR">–</span></div>
+    </div>
+   </aside>
+   <div class="main">
+    <div class="cvs"><canvas id="cv" class="scene"></canvas></div>
+   </div>
+  </div>
+
+  <div class="dbox">
+    <div class="dh">ඇල වන කෝණය — G වටා ව්‍යාවර්ත</div>
+    <div class="l">G සිට ස්පර්ශ ලක්ෂ්‍යයට දුර h යැයි ද, සයිකලය සිරසට α කෝණයකින් ඇල වී ඇතැයි ද ගනිමු.</div>
+    <div class="l">• R හි G වටා ව්‍යාවර්තය (ඔහුව <b>ඇතුළට</b> පෙරළීමට තැත් කරයි):</div>
+    <div class="l m">R × h sinα <span class="tg">—— (1)</span></div>
+    <div class="l">• F හි G වටා ව්‍යාවර්තය (ඔහුව <b>පිටතට</b> පෙරළීමට තැත් කරයි):</div>
+    <div class="l m">F × h cosα <span class="tg">—— (2)</span></div>
+    <div class="l">පෙරළීමක් නැත්නම් (1) = (2):</div>
+    <div class="l m">R h sinα = F h cosα</div>
+    <div class="l m">tanα = <span class="fr"><span>F</span><span>R</span></span></div>
+    <div class="l">R = mg සහ F = mv²/r ආදේශයෙන්:</div>
+    <div class="l m">tanα = <span class="fr"><span>mv²/r</span><span>mg</span></span></div>
+    <div class="l m"><span class="res">tanα = <span class="fr"><span>v²</span><span>rg</span></span></span></div>
+    <div class="note">α = 0 (කෙළින්) නම් (1) = 0 නමුත් (2) = F h — එය ශුන්‍ය නොවන නිසා පදවන්නා <b>පිටතට</b> පෙරළේ.<br>මෙය කේතු අවලම්බයේ තන්තුව සිරසට ඇල වන ආකාරයට සමානයි.</div>
+  </div>
+
+  <div class="dbox">
+    <div class="dh">ලිස්සා නොයාමට අවශ්‍ය අවම μ</div>
+    <div class="l">අවශ්‍ය ඝර්ෂණය සීමාකාරී ඝර්ෂණය ඉක්මවිය නොයුතුය:</div>
+    <div class="l m">F ≤ μR</div>
+    <div class="l m"><span class="fr"><span>mv²</span><span>r</span></span> ≤ μmg</div>
+    <div class="l m">μ ≥ <span class="fr"><span>v²</span><span>rg</span></span></div>
+    <div class="l m"><span class="res">μ<sub>min</sub> = <span class="fr"><span>v²</span><span>rg</span></span> = tanα</span></div>
+    <div class="note">v²/r &gt; μg නම් ඝර්ෂණයට කේන්ද්‍රාභිසාරී බලය සැපයිය නොහැක — සයිකලය <b>පිටතට ලිස්සයි</b>. එවිට ඇත්තේ μR පමණක් නිසා සම්ප්‍රයුක්තය ද G හරහා නොයයි.</div>
+  </div>
+
+  <h2>විසඳුම් (පන්තියේ ගැටලුව)</h2>
+  <details>
+    <summary><span class="qtag">Q361</span>r = 30 m, v = 15 m s⁻¹ — බල රූපය, ඇල වන කෝණය, අවම μ</summary>
+    <div class="dbox" style="margin:4px 12px 12px">
+      <div class="dh">(i) බල රූපය — ඇතුළට ඇල විය යුත්තේ ඇයි?</div>
+      <div class="l">පදවන්නා + සයිකලය මත බල:</div>
+      <div class="l">• බර mg — G හිදී සිරස්ව පහළට</div>
+      <div class="l">• අභිලම්බ ප්‍රතික්‍රියාව R — ස්පර්ශ ලක්ෂ්‍යයේදී සිරස්ව ඉහළට</div>
+      <div class="l">• ඝර්ෂණය F — ස්පර්ශ ලක්ෂ්‍යයේදී තිරස්ව, කේන්ද්‍රය දෙසට</div>
+      <div class="l">ඔහු කෙළින් සිටියහොත් F මගින් G වටා ඇති වන ව්‍යාවර්තය ඔහුව <b>පිටතට</b> පෙරළයි.</div>
+      <div class="l">ඇල වූ විට R සහ F හි සම්ප්‍රයුක්තය G හරහා යන නිසා G වටා ව්‍යාවර්තයක් නැත.</div>
+      <div class="dh">(ii) ඇල විය යුතු කෝණය</div>
+      <div class="l">• සිරස් සමතුලිතතාවය (↑):</div>
+      <div class="l m">R = mg <span class="tg">—— (1)</span></div>
+      <div class="l">• තිරස්ව (කේන්ද්‍රය දෙසට):</div>
+      <div class="l m">F = <span class="fr"><span>mv²</span><span>r</span></span> <span class="tg">—— (2)</span></div>
+      <div class="l">• සම්ප්‍රයුක්තය G හරහා යාමට:</div>
+      <div class="l m">tanα = <span class="fr"><span>F</span><span>R</span></span> <span class="tg">—— (3)</span></div>
+      <div class="l">(1) සහ (2), (3) ට ආදේශයෙන්:</div>
+      <div class="l m">tanα = <span class="fr"><span>v²</span><span>rg</span></span></div>
+      <div class="l m">tanα = <span class="fr"><span>15²</span><span>30 × 10</span></span></div>
+      <div class="l m">tanα = <span class="fr"><span>225</span><span>300</span></span></div>
+      <div class="l m">tanα = 0.75</div>
+      <div class="l m"><span class="res">α = 37°</span> <span class="si">(සිරස සමඟ)</span></div>
+      <div class="dh">(iii) අවම ඝර්ෂණ සංගුණකය</div>
+      <div class="l">ලිස්සා නොයාමට:</div>
+      <div class="l m">F ≤ μR</div>
+      <div class="l m"><span class="fr"><span>mv²</span><span>r</span></span> ≤ μmg</div>
+      <div class="l m">μ ≥ <span class="fr"><span>v²</span><span>rg</span></span></div>
+      <div class="l m">μ ≥ 0.75</div>
+      <div class="l m"><span class="res">μ<sub>min</sub> = 0.75</span></div>
+      <div class="btns" style="margin-top:6px"><button data-preset="Q361">▶ සිමියුලේෂනයේ බලන්න (μ = 0.75)</button><button data-preset="Q361up">▶ කෙළින් සිටියොත්?</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag extra">අමතර</span>එම වංගුවේ (r = 30 m) μ = 0.5 නම් ආරක්ෂිත උපරිම වේගය</summary>
+    <div class="dbox" style="margin:4px 12px 12px">
+      <div class="l">ලිස්සා නොයාමට:</div>
+      <div class="l m">μ ≥ <span class="fr"><span>v²</span><span>rg</span></span></div>
+      <div class="l m">v² ≤ μrg</div>
+      <div class="l m">v² ≤ 0.5 × 30 × 10</div>
+      <div class="l m">v² ≤ 150</div>
+      <div class="l m"><span class="res">v<sub>max</sub> = <span class="sq">√<span>150</span></span> ≈ 12.2 m s⁻¹</span></div>
+      <div class="l">එම වේගයේදී ඇල වන කෝණය:</div>
+      <div class="l m">tanα = μ = 0.5</div>
+      <div class="l m">α ≈ 26.6°</div>
+      <div class="btns" style="margin-top:6px"><button data-preset="X1">▶ සිමියුලේෂනයේ බලන්න</button></div>
+    </div>
+  </details>
+
+  <div class="rail">
+    <h3>📏 අවම අරය — පදවන්නාට ඇල විය හැකි උපරිම කෝණය α<sub>max</sub> නම්</h3>
+    <div class="controls">
+      <div><label>α<sub>max</sub> = <span class="v" id="aHVal">36.9</span>°</label><input type="range" id="aHS" min="10" max="60" step="0.5" value="37"></div>
+      <div><label>වේගය v = <span class="v" id="vHVal">12.0</span> m s⁻¹</label><input type="range" id="vHS" min="5" max="30" step="0.5" value="12"></div>
+      <div class="btns">
+        <button id="btnH37">උදාහරණය: tanα<sub>max</sub> = 0.75 (≈37°), v = 12 m s⁻¹</button>
+        <button id="btnHApply">▶ ප්‍රධාන සිමියුලේෂනයට (r = r<sub>min</sub>)</button>
+      </div>
+    </div>
+    <div class="status" id="statusH" style="margin-top:0">
+      <div><small>tanα<sub>max</sub></small><span id="hTan">–</span></div>
+      <div><small>r<sub>min</sub> = v²/(g tanα<sub>max</sub>)</small><span class="big" id="hR">–</span></div>
+    </div>
+    <div class="dbox">
+      <div class="l">ඇල වන කෝණය:</div>
+      <div class="l m">tanα = <span class="fr"><span>v²</span><span>rg</span></span></div>
+      <div class="l m">r = <span class="fr"><span>v²</span><span>g tanα</span></span></div>
+      <div class="l">r අඩු වන විට α වැඩි වේ. α ≤ α<sub>max</sub> විය යුතු නිසා:</div>
+      <div class="l m"><span class="res">r<sub>min</sub> = <span class="fr"><span>v²</span><span>g tanα<sub>max</sub></span></span></span></div>
+      <div class="l">උදා: α<sub>max</sub> = 37° (tan = 0.75), v = 12 m s⁻¹:</div>
+      <div class="l m">r<sub>min</sub> = <span class="fr"><span>12²</span><span>10 × 0.75</span></span></div>
+      <div class="l m">r<sub>min</sub> = <span class="fr"><span>144</span><span>7.5</span></span></div>
+      <div class="l m"><span class="res">r<sub>min</sub> = 19.2 m</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== physics core (no DOM) =====================
+const g = 10, M = 200;            // M: rider + bike (kg) — only for force numbers
+const H_G = 1.0;                  // height of G above the tyre contact (m) — for the tip-over animation
+const SLOW = 0.35;                // tip-over is shown in slow motion
+const PHI_FALL = 72 * Math.PI / 180;
+const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
+const DEFAULTS = { v: 15, r: 30, mu: 0.8, upright: false, vH: 12, tanH: 0.75 };
+const S = Object.assign({}, DEFAULTS, {
+  phi: Math.atan(0.75), phiDot: 0, // current lean (rad), + = towards the centre
+  hold: 0, fallen: false, fallT: 0,
+  slip: 0, slipHold: 0, dist: 0, t: 0,
+});
+
+function compute() {
+  const a = S.v * S.v / S.r, tanA = a / g, alpha = Math.atan(tanA);
+  const R = M * g, Fneed = M * a, Fmax = S.mu * R;
+  const skid = Fneed > Fmax * (1 + 1e-9);
+  const F = skid ? Fmax : Fneed;               // friction actually acting
+  const resAng = Math.atan2(F, R);             // resultant angle from the vertical
+  // torque about G (outward +), h = H_G, at the present lean phi
+  const tauOut = F * H_G * Math.cos(S.phi) - R * H_G * Math.sin(S.phi);
+  const tipping = S.upright && !S.fallen && Fneed > 1e-9;
+  return { a, tanA, alpha, alphaDeg: deg(alpha), muMin: tanA, R, Fneed, Fmax, F, skid, resAng, tauOut, tipping,
+           limit: !skid && Fneed > 0.9 * Fmax };
+}
+function rMin(v = S.vH, tanMax = S.tanH) { return v * v / (g * tanMax); }
+
+function sub(dt) {
+  const C = compute();
+  S.t += dt; S.dist += S.v * dt;
+  if (!S.upright) {
+    S.phi += (C.alpha - S.phi) * Math.min(1, 6 * dt); S.phiDot = 0; S.fallen = false; S.hold = 0;
+  } else if (S.fallen) {
+    S.fallT += dt;
+    if (S.fallT > 1.6) { S.phi = 0; S.phiDot = 0; S.fallen = false; S.fallT = 0; S.hold = 0; }
+  } else if (S.hold < 0.9) {
+    // pause upright so students can see the forces first
+    S.hold += dt; S.phi += (0 - S.phi) * Math.min(1, 12 * dt); S.phiDot = 0;
+    if (S.hold >= 0.9) S.phi = 0;           // start the tip exactly upright
+  } else {
+    // rigid body about the contact: phi'' = (g sinφ − (F/m) cosφ) / h   (− ⇒ tips outward)
+    const acc = (g * Math.sin(S.phi) - (C.F / M) * Math.cos(S.phi)) / H_G;
+    S.phiDot += acc * dt * SLOW; S.phi += S.phiDot * dt * SLOW;
+    if (Math.abs(S.phi) >= PHI_FALL) { S.phi = Math.sign(S.phi) * PHI_FALL; S.phiDot = 0; S.fallen = true; S.fallT = 0; }
+  }
+  if (C.skid) {
+    if (S.slip < 170) { S.slip += 75 * dt; S.slipHold = 0; }
+    else { S.slipHold += dt; if (S.slipHold > 0.8) { S.slip = 0; S.slipHold = 0; } }
+  } else { S.slip *= Math.max(0, 1 - 6 * dt); S.slipHold = 0; }
+}
+function step(dt) { while (dt > 1e-9) { const h = Math.min(dt, 0.01); sub(h); dt -= h; } }
+
+function setUpright(on) {
+  S.upright = !!on;
+  if (S.upright) { S.hold = 0; S.fallen = false; S.fallT = 0; S.phiDot = 0; }
+}
+function reset() {
+  Object.assign(S, DEFAULTS, { phi: Math.atan(0.75), phiDot: 0, hold: 0, fallen: false, fallT: 0, slip: 0, slipHold: 0, dist: 0 });
+  syncUI(); return S;
+}
+function set(p, val) {
+  if (p === 'upright') setUpright(val);
+  else if (p === 'alphaH') S.tanH = Math.tan(rad(+val));
+  else if (['v', 'r', 'mu', 'vH', 'tanH'].includes(p)) S[p] = +val;
+  else throw new Error('unknown param ' + p);
+  syncUI(); return S;
+}
+
+// ===================== drawing =====================
+const $ = id => document.getElementById(id);
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    if (!w) return;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (!(L >= 2)) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(14, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+// arrow with a white halo so it reads on top of the bike
+function harrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) { arrow(ctx, x1, y1, x2, y2, 'rgba(255,255,255,.85)', lw + 4, dash); arrow(ctx, x1, y1, x2, y2, col, lw, dash); }
+// Draws text; "x_abc" is drawn with "abc" as a real subscript.
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Iskoola Pota','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/);
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
+}
+const fN = x => Math.round(x).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const f1 = x => x.toFixed(1);
+
+// rear view of rider + bike, local origin = tyre contact, local −y = up the bike
+const HPX = 150;   // G height in pixels
+function bikeRear(c, danger) {
+  const body = danger ? '#e17055' : '#6c5ce7', jacket = danger ? '#d63031' : '#0984e3';
+  // handlebar + mirrors (behind the rider)
+  c.strokeStyle = '#2d3436'; c.lineWidth = 5; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-52, -160); c.lineTo(52, -160); c.stroke();
+  c.lineWidth = 2; c.beginPath(); c.moveTo(-44, -160); c.lineTo(-50, -180); c.moveTo(44, -160); c.lineTo(50, -180); c.stroke();
+  c.fillStyle = '#636e72'; c.beginPath(); c.arc(-50, -184, 6, 0, 7); c.arc(50, -184, 6, 0, 7); c.fill();
+  // tyre
+  c.fillStyle = '#2d3436'; c.beginPath(); c.roundRect(-10, -64, 20, 64, 9); c.fill();
+  // exhaust
+  c.fillStyle = '#b2bec3'; c.beginPath(); c.roundRect(18, -92, 13, 32, 6); c.fill();
+  // mudguard, plate, tail light
+  c.fillStyle = '#636e72'; c.beginPath(); c.roundRect(-16, -74, 32, 12, 5); c.fill();
+  c.fillStyle = '#fff'; c.strokeStyle = '#636e72'; c.lineWidth = 1.5; c.fillRect(-16, -90, 32, 14); c.strokeRect(-16, -90, 32, 14);
+  c.fillStyle = '#d63031'; c.fillRect(-11, -100, 22, 8);
+  // body / seat
+  c.fillStyle = body; c.strokeStyle = '#4834d4'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(-22, -100); c.lineTo(22, -100); c.lineTo(32, -122); c.lineTo(-32, -122); c.closePath(); c.fill(); c.stroke();
+  // legs
+  c.strokeStyle = '#2d3436'; c.lineWidth = 11;
+  c.beginPath(); c.moveTo(-18, -124); c.lineTo(-36, -104); c.lineTo(-30, -82); c.moveTo(18, -124); c.lineTo(36, -104); c.lineTo(30, -82); c.stroke();
+  // torso
+  c.fillStyle = jacket; c.beginPath(); c.roundRect(-25, -194, 50, 74, 12); c.fill();
+  // arms to the grips
+  c.strokeStyle = jacket; c.lineWidth = 10;
+  c.beginPath(); c.moveTo(-20, -184); c.lineTo(-46, -162); c.moveTo(20, -184); c.lineTo(46, -162); c.stroke();
+  // helmet
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(0, -214, 22, 0, 7); c.fill();
+  c.fillStyle = '#fdcb6e'; c.fillRect(-18, -218, 36, 6);
+}
+
+let cS;
+function draw() {
+  const c = cS.ctx, W = 900, H = 480; c.clearRect(0, 0, W, H);
+  const C = compute(), GY = 420;
+  const P = [330 + S.slip, GY];
+  const sphi = Math.sin(S.phi), cphi = Math.cos(S.phi);
+  const G = [P[0] - HPX * sphi, P[1] - HPX * cphi];
+  const danger = C.skid || C.tipping || (S.upright && S.fallen);
+  // road
+  c.fillStyle = '#b2bec3'; c.fillRect(0, GY, W, H - GY);
+  c.fillStyle = '#636e72'; c.fillRect(0, GY, W, 8);
+  c.strokeStyle = '#fff'; c.lineWidth = 3; c.setLineDash([26, 18]); c.lineDashOffset = -((S.dist * 6) % 44);
+  c.beginPath(); c.moveTo(0, GY + 34); c.lineTo(W, GY + 34); c.stroke(); c.setLineDash([]); c.lineDashOffset = 0;
+  if (S.slip > 2) { c.strokeStyle = 'rgba(45,52,54,.55)'; c.lineWidth = 6; c.beginPath(); c.moveTo(330, GY + 4); c.lineTo(P[0], GY + 4); c.stroke(); }
+  // centre direction
+  arrow(c, 260, 52, 26, 52, '#6c5ce7', 4);
+  text(c, 'කේන්ද්‍රය දෙසට (O)', 30, 26, '#6c5ce7', 16, 'left', 800);
+  text(c, 'පිටත →', 600, 52, '#95a5a6', 14, 'right', 700);
+  // vertical reference + α arc
+  c.strokeStyle = '#95a5a6'; c.lineWidth = 1.5; c.setLineDash([5, 5]);
+  c.beginPath(); c.moveTo(P[0], P[1]); c.lineTo(P[0], P[1] - 250); c.stroke(); c.setLineDash([]);
+  // bike
+  c.save(); c.translate(P[0], P[1]); c.rotate(-S.phi); bikeRear(c, danger); c.restore();
+  if (Math.abs(S.phi) > rad(2)) {
+    const a0 = -Math.PI / 2, a1 = -Math.PI / 2 - S.phi;
+    c.strokeStyle = '#6c5ce7'; c.lineWidth = 2.5; c.beginPath(); c.arc(P[0], P[1], 64, Math.min(a0, a1), Math.max(a0, a1)); c.stroke();
+    const am = (a0 + a1) / 2;
+    text(c, (S.phi > 0 ? 'α = ' : '') + Math.abs(deg(S.phi)).toFixed(1) + '°', P[0] + 84 * Math.cos(am) + (S.phi > 0 ? -6 : 6), P[1] + 84 * Math.sin(am), '#6c5ce7', 15, S.phi > 0 ? 'right' : 'left', 800);
+  }
+  // forces (common scale)
+  const k = Math.min(HPX / C.R, 260 / Math.max(C.F, C.R, C.Fneed));
+  const Rk = C.R * k, Fk = C.F * k;
+  const res = [P[0] - Fk, P[1] - Rk];
+  // line of action of the resultant (dashed, long)
+  const ux = -Math.sin(C.resAng), uy = -Math.cos(C.resAng);
+  c.strokeStyle = 'rgba(142,68,173,.55)'; c.lineWidth = 2; c.setLineDash([8, 6]);
+  c.beginPath(); c.moveTo(P[0], P[1]); c.lineTo(P[0] + ux * 330, P[1] + uy * 330); c.stroke(); c.setLineDash([]);
+  // gap between G and the line of action
+  const dx = G[0] - P[0], dy = G[1] - P[1], along = dx * ux + dy * uy, gap = Math.abs(dx * uy - dy * ux);
+  const through = gap < 3;
+  if (!through) {
+    const Fp = [P[0] + ux * along, P[1] + uy * along];
+    c.strokeStyle = '#d63031'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(G[0], G[1]); c.lineTo(Fp[0], Fp[1]); c.stroke();
+  }
+  if (C.skid && C.Fneed * k > 2) {
+    harrow(c, P[0], P[1] - 3, P[0] - C.Fneed * k, P[1] - 3, '#fab1a0', 3, [6, 5]);
+    text(c, 'අවශ්‍ය mv²/r', P[0] - C.Fneed * k, P[1] - 22, '#e17055', 13, 'center', 700);
+  }
+  harrow(c, P[0], P[1], P[0], P[1] - Rk, '#00b894', 5);
+  text(c, 'R = mg', P[0] + 10, P[1] - Rk + 2, '#00a383', 17, 'left', 800);
+  if (Fk > 2) {
+    harrow(c, P[0], P[1], P[0] - Fk, P[1], '#d35400', 5);
+    text(c, C.skid ? 'F = μR' : 'F = mv²/r', P[0] - Fk / 2, P[1] + 22, '#d35400', 16, 'center', 800);
+  }
+  if (Fk > 2) {
+    harrow(c, P[0], P[1], res[0], res[1], '#8e44ad', 6);
+    text(c, 'සම්ප්‍රයුක්තය', res[0] - 8, res[1] - 12, '#8e44ad', 15, 'right', 800);
+  }
+  // weight at G
+  harrow(c, G[0], G[1], G[0], G[1] + Rk * 0.75, '#2d3436', 4);
+  text(c, 'mg', G[0] + 10, G[1] + Rk * 0.75 - 4, '#2d3436', 16, 'left', 800);
+  c.fillStyle = '#fff'; c.strokeStyle = '#2d3436'; c.lineWidth = 2.5; c.beginPath(); c.arc(G[0], G[1], 7, 0, 7); c.fill(); c.stroke();
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(G[0], G[1], 3, 0, 7); c.fill();
+  text(c, 'G', G[0] - 14, G[1] - 14, '#2d3436', 17, 'right', 800);
+  // torque about G when the resultant misses G
+  if (!through && C.tauOut > 0 && !S.fallen) {
+    const r0 = 40, b0 = -Math.PI * 0.85 - S.phi, b1 = -Math.PI * 0.15 - S.phi;
+    c.strokeStyle = '#d63031'; c.lineWidth = 3.5; c.beginPath(); c.arc(G[0], G[1], r0, b0, b1); c.stroke();
+    const ex = G[0] + r0 * Math.cos(b1), ey = G[1] + r0 * Math.sin(b1), tx = -Math.sin(b1), ty = Math.cos(b1);
+    c.fillStyle = '#d63031'; c.beginPath(); c.moveTo(ex + tx * 10, ey + ty * 10);
+    c.lineTo(ex - ty * 7, ey + tx * 7); c.lineTo(ex + ty * 7, ey - tx * 7); c.closePath(); c.fill();
+    text(c, 'G වටා ව්‍යාවර්තය', G[0] + 50, G[1] - 44, '#d63031', 14, 'left', 800);
+  }
+  // badges (right)
+  const flash = 0.55 + 0.45 * Math.abs(Math.sin(S.t * 5));
+  let t1, t2, bc;
+  if (C.skid) { bc = '#d63031'; t1 = 'ලිස්සයි! 💨'; t2 = `v²/r = ${f1(C.a)} > μg = ${f1(S.mu * g)}`; }
+  else if (S.upright && C.Fneed > 1e-9) { bc = '#d63031'; t1 = '⚠ පිටතට පෙරළෙයි!'; t2 = 'සම්ප්‍රයුක්තය G හරහා නොයයි ✗'; }
+  else { bc = '#27ae60'; t1 = 'සමතුලිතයි ✅'; t2 = C.Fneed > 1e-9 ? 'සම්ප්‍රයුක්තය සයිකලය දිගේ G හරහා ✓' : 'v = 0 — ඇල වීම අවශ්‍ය නැත'; }
+  c.globalAlpha = bc === '#d63031' ? flash : 1;
+  text(c, t1, 885, 250, bc, 24, 'right', 800);
+  c.globalAlpha = 1;
+  text(c, t2, 885, 280, bc, 14, 'right', 700);
+  if (C.skid && S.upright && C.Fneed > 1e-9) text(c, '+ කෙළින් සිටි නිසා පෙරළෙයි', 885, 300, '#d63031', 13, 'right', 700);
+  text(c, `tanα = v²/(rg) = ${C.tanA.toFixed(3)}`, 885, 322, '#6c5ce7', 15, 'right', 800);
+  text(c, `μ_min = ${C.muMin.toFixed(2)},  μ = ${S.mu.toFixed(2)}`, 885, 344, C.skid ? '#d63031' : '#2c3e50', 15, 'right', 800);
+  if (C.tipping) text(c, '(මන්දගාමී චලිතය)', 885, 366, '#95a5a6', 12, 'right', 600);
+  text(c, '⊗ v : සයිකලය තිරයට ඇතුළට යයි (පසුපස දසුන)', 885, 466, '#fff', 13, 'right', 700);
+  drawInset(c, C);
+}
+function bikeTop(c, x, y, ang, col) {
+  c.save(); c.translate(x, y); c.rotate(ang);
+  c.fillStyle = '#2d3436'; c.fillRect(-17, -2.5, 8, 5); c.fillRect(10, -2.5, 8, 5);
+  c.fillStyle = col; c.beginPath(); c.roundRect(-13, -5, 26, 10, 4); c.fill();
+  c.strokeStyle = '#2d3436'; c.lineWidth = 2; c.beginPath(); c.moveTo(9, -9); c.lineTo(9, 9); c.stroke();
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(-1, 0, 5, 0, 7); c.fill();
+  c.restore();
+}
+function drawInset(c, C) {
+  const bx = 640, by = 12, bw = 248, bh = 200;
+  c.save();
+  c.fillStyle = '#e3f4e1'; c.strokeStyle = '#a29bfe'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(bx, by, bw, bh, 10); c.fill(); c.stroke(); c.clip();
+  const Ox = bx + 34, Oy = by + bh / 2 + 6, Rp = 150;
+  c.strokeStyle = '#636e72'; c.lineWidth = 26; c.beginPath(); c.arc(Ox, Oy, Rp, -1.1, 1.1); c.stroke();
+  c.strokeStyle = '#ffeaa7'; c.lineWidth = 2; c.setLineDash([10, 10]); c.lineDashOffset = -((S.dist * 4) % 20);
+  c.beginPath(); c.arc(Ox, Oy, Rp, -1.1, 1.1); c.stroke(); c.setLineDash([]); c.lineDashOffset = 0;
+  const off = S.slip * 0.22, carX = Ox + Rp + off, carY = Oy - S.slip * 0.15;
+  if (S.slip > 2) {
+    c.strokeStyle = 'rgba(45,52,54,.6)'; c.lineWidth = 3; c.beginPath();
+    c.moveTo(Ox + Rp, Oy + 20); c.quadraticCurveTo(Ox + Rp + off * 0.2, Oy - S.slip * 0.05, carX, carY); c.stroke();
+  }
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 1.5; c.setLineDash([5, 5]); c.beginPath(); c.moveTo(Ox, Oy); c.lineTo(carX, carY); c.stroke(); c.setLineDash([]);
+  c.fillStyle = '#6c5ce7'; c.beginPath(); c.arc(Ox, Oy, 5, 0, 7); c.fill();
+  text(c, 'O', Ox - 2, Oy + 16, '#6c5ce7', 15, 'center', 800);
+  text(c, `r = ${S.r} m`, (Ox + carX) / 2, Oy - 14, '#6c5ce7', 14, 'center', 800);
+  if (C.F > 0) arrow(c, carX - 14, carY, carX - 14 - Math.min(48, 12 + C.F / C.R * 30), carY, '#d35400', 3);
+  bikeTop(c, carX, carY, -Math.PI / 2, C.skid ? '#fab1a0' : '#a29bfe');
+  arrow(c, carX, Oy + 82, carX, Oy + 34, '#95a5a6', 2);
+  text(c, 'දසුන', carX - 8, Oy + 90, '#95a5a6', 12, 'right', 700);
+  text(c, 'ඉහළ සිට', bx + bw - 10, by + 16, '#2c3e50', 13, 'right', 800);
+  c.restore();
+}
+
+// ===================== UI =====================
+function show(id, t) { const e = $(id); if (e) e.textContent = t; }
+function syncUI() {
+  const setv = (id, v) => { const e = $(id); if (e) e.value = v; };
+  setv('vS', S.v); setv('rS', S.r); setv('muS', S.mu); setv('vHS', S.vH); setv('aHS', deg(Math.atan(S.tanH)));
+  $('upChk').checked = S.upright;
+  show('vVal', f1(S.v)); show('rVal', S.r); show('muVal', S.mu.toFixed(2));
+  show('vHVal', f1(S.vH)); show('aHVal', deg(Math.atan(S.tanH)).toFixed(1));
+  show('hTan', S.tanH.toFixed(3)); show('hR', rMin().toFixed(1) + ' m');
+}
+function updateStatus() {
+  const C = compute();
+  const tip = S.upright && C.Fneed > 1e-9;
+  show('stState', C.skid ? (tip ? 'ලිස්සයි! 💨 + පෙරළෙයි' : 'ලිස්සයි! 💨 (v²/r > μg)') : tip ? '⚠ පිටතට පෙරළෙයි!' : C.limit ? 'සීමාවේ ⚠ (F ≈ μR)' : 'ආරක්ෂිතයි ✅');
+  show('stAlpha', `${C.alphaDeg.toFixed(1)}°`);
+  show('stTan', C.tanA.toFixed(3));
+  show('stMuMin', `${C.muMin.toFixed(2)} (μ = ${S.mu.toFixed(2)})`);
+  show('stF', `${fN(C.Fneed)} N`); show('stFmax', `${fN(C.Fmax)} N`); show('stR', `${fN(C.R)} N`);
+  $('status').className = 'status' + (C.skid || tip ? ' move' : C.limit ? ' limit' : '');
+}
+function wire() {
+  const bind = (id, key) => $(id).addEventListener('input', e => { S[key] = +e.target.value; syncUI(); });
+  bind('vS', 'v'); bind('rS', 'r'); bind('muS', 'mu'); bind('vHS', 'vH');
+  $('aHS').addEventListener('input', e => { S.tanH = Math.tan(rad(+e.target.value)); syncUI(); });
+  $('upChk').addEventListener('change', e => { setUpright(e.target.checked); syncUI(); });
+  $('btnQ').addEventListener('click', () => { Object.assign(S, { v: 15, r: 30 }); syncUI(); });
+  $('btnMu').addEventListener('click', () => { S.mu = Math.min(1.2, Math.max(0.1, Math.ceil(compute().muMin * 20 - 1e-9) / 20)); syncUI(); });
+  $('btnReset').addEventListener('click', reset);
+  $('btnH37').addEventListener('click', () => { S.tanH = 0.75; S.vH = 12; syncUI(); });
+  $('btnHApply').addEventListener('click', () => { S.v = S.vH; S.r = Math.min(100, Math.max(10, Math.ceil(rMin() - 1e-9))); setUpright(false); syncUI(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  const presets = {
+    Q361: () => { Object.assign(S, { v: 15, r: 30, mu: 0.75 }); setUpright(false); },
+    Q361up: () => { Object.assign(S, { v: 15, r: 30, mu: 0.8 }); setUpright(true); },
+    X1: () => { Object.assign(S, { v: 12, r: 30, mu: 0.5 }); setUpright(false); },
+  };
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => { presets[b.dataset.preset](); syncUI(); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
+}
+
+cS = stage($('cv'), 900, 480);
+wire(); syncUI();
+
+window.sim = { step, state: S, set, reset, compute, rMin, draw };
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  step(dt); draw(); updateStatus();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

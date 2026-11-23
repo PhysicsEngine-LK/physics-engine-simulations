@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>කේතුව, පාත්‍රය සහ රොටරය (Q362–364) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 14px; line-height: 1.6; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+  .tabs button { font-size: 16px; padding: 9px 18px; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  button.warn { background: #e17055; border-color: #e17055; color: #fff; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: linear-gradient(#f0f7ff, #fff); border: 1px solid #dfe6e9; }
+  .graph { background: #fff; border: 1px solid #dfe6e9; }
+  .cvs + .cvs, .cvs + .cap { margin-top: 12px; }
+  .cap { font-weight: 800; font-size: 15px; margin: 12px 0 6px; color: #2c3e50; }
+  .status { margin-top: 14px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 12px 16px; border-radius: 6px; font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; gap: 10px 26px; justify-content: space-between; }
+  .status.limit { border-left-color: #f39c12; background: #fef5e7; }
+  .status.move { border-left-color: #e74c3c; background: #fdedec; }
+  .status small { display: block; font-size: 13px; color: #636e72; font-weight: 600; }
+  .massnote { display: inline-block; margin-top: 4px; font-size: 13px; font-weight: 700; color: #6c5ce7; background: #fff; border: 1px dashed #a29bfe; border-radius: 6px; padding: 3px 8px; transition: background .3s, transform .3s; }
+  .massnote.flash { background: #ffeaa7; transform: scale(1.06); }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; line-height: 1.6; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* derivation boxes: one step per line */
+  .dbox { background: #fbfaff; border: 1px solid #d6d2ff; border-left: 6px solid #6c5ce7; border-radius: 10px; padding: 12px 16px; margin: 12px 0; overflow-x: auto; }
+  details .dbox { margin: 4px 0 8px; }
+  .dbox .dh { font-weight: 800; font-size: 16px; color: #6c5ce7; margin-bottom: 6px; }
+  .dbox .l { padding: 5px 0 5px 6px; line-height: 1.6; font-size: 15px; }
+  .dbox .l.m { padding-left: 34px; font-family: 'Cambria', 'Times New Roman', serif; font-size: 19px; white-space: nowrap; }
+  .dbox .l.m .si { font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; font-size: 15px; }
+  .fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 4px; line-height: 1.25; }
+  .fr > span:first-child { border-bottom: 1.6px solid currentColor; padding: 0 4px 2px; }
+  .fr > span:last-child { padding: 2px 4px 0; }
+  .sq { white-space: nowrap; }
+  .sq > span { border-top: 1.6px solid currentColor; padding: 2px 3px 0; margin-left: 1px; display: inline-block; }
+  .tg { color: #6c5ce7; font-weight: 700; margin-left: 22px; font-family: 'Segoe UI', sans-serif; font-size: 15px; }
+  .res { display: inline-block; border: 2px solid #6c5ce7; border-radius: 8px; padding: 4px 10px; background: #fff; }
+  .extra { background: #fdcb6e; color: #2d3436; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } .status { font-size: 14px; } .dbox .l.m { font-size: 17px; padding-left: 14px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .side .status { margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 15px; }
+    .side .status > div:first-child { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">Q362–364 · වෘත්ත චලිතය</span></div>
+  <h1>කේතුව, පාත්‍රය සහ රොටරය — කේන්ද්‍රාභිසාරී බලය සපයන්නේ කවුද?</h1>
+  <p class="sub">සුමට පෘෂ්ඨයක් තුළ වස්තුවක් තිරස් වෘත්තයක යන විට, පෘෂ්ඨයට ලම්බක <b>අභිලම්බ ප්‍රතික්‍රියාව (R)</b> කේතු අවලම්බයේ තන්තුවේ ආතතියේ කාර්යයම කරයි: R හි <b>සිරස් සංරචකය</b> බර සංතුලනය කරයි, <b>තිරස් සංරචකය</b> කේන්ද්‍රාභිසාරී බලය සපයයි. රොටරයේදී R සම්පූර්ණයෙන්ම කේන්ද්‍රය දෙසට — එවිට බර දරන්නේ <b>ඝර්ෂණයයි</b>. ස්ලයිඩර් වෙනස් කර බලන්න!</p>
+
+  <div class="tabs">
+    <button id="tabA" class="solid">🌀 A. සුමට කේතුව</button>
+    <button id="tabB">🥣 B. අර්ධ ගෝලීය පාත්‍රය</button>
+    <button id="tabC">🎡 C. රොටරය</button>
+  </div>
+
+  <!-- ================= TAB A : smooth cone ================= -->
+  <section id="paneA">
+    <div class="layout">
+     <aside class="side">
+      <div class="controls">
+        <div><label>කේතුවේ ඇතුළු පෘෂ්ඨය තිරසට α = <span class="v" id="alVal">36.9</span>°</label><input type="range" id="alS" min="20" max="60" step="0.5" value="37"></div>
+        <div><label>බෝලයේ වේගය v = <span class="v" id="vAVal">1.50</span> m s⁻¹</label><input type="range" id="vAS" min="0.5" max="3" step="0.05" value="1.5"></div>
+        <div class="btns">
+          <button class="solid" id="btnQ362">Q362: α = 37°, v = 1.5 m s⁻¹</button>
+          <span class="note" style="margin:0">g = 10 m s⁻², කේතුවේ දාරයේ අරය 1 m</span>
+        </div>
+      </div>
+      <div class="status" id="statusA">
+        <div><small>තත්ත්වය</small><span id="stA">–</span></div>
+        <div><small>වෘත්තයේ අරය r = v²/(g tanα)</small><span id="stAr">–</span></div>
+        <div><small>ශීර්ෂයට ඉහළින් උස h = v²/g</small><span id="stAh">–</span></div>
+        <div><small>එක් වටයකට කාලය T = 2πr/v</small><span id="stAT">–</span></div>
+        <div><small>ප්‍රතික්‍රියාව R = mg/cosα</small><span id="stAR">–</span></div>
+        <div><small>කේන්ද්‍රාභිසාරී mv²/r = R sinα</small><span id="stAF">–</span></div>
+      </div>
+     </aside>
+     <div class="main">
+      <div class="cvs"><canvas id="cvA" class="scene"></canvas></div>
+     </div>
+    </div>
+
+    <div class="dbox">
+      <div class="dh">කේතුව තුළ බෝලය — r සහ h සොයමු</div>
+      <div class="l">• සිරස් සමතුලිතතාවය (↑):</div>
+      <div class="l m">R cosα = mg <span class="tg">—— (1)</span></div>
+      <div class="l">• තිරස් දිශාවට (අක්ෂය දෙසට, කේන්ද්‍රාභිසාරී බලය):</div>
+      <div class="l m">R sinα = <span class="fr"><span>mv²</span><span>r</span></span> <span class="tg">—— (2)</span></div>
+      <div class="l">(2) ÷ (1):</div>
+      <div class="l m">tanα = <span class="fr"><span>v²</span><span>rg</span></span></div>
+      <div class="l m"><span class="res">r = <span class="fr"><span>v²</span><span>g tanα</span></span></span></div>
+      <div class="l">බෝලය කේතුවේ ශීර්ෂයට ඉහළින් ඇති උස:</div>
+      <div class="l m">h = r tanα</div>
+      <div class="l m"><span class="res">h = <span class="fr"><span>v²</span><span>g</span></span></span></div>
+      <div class="note">ආනත වංගුවේ සූත්‍රයමයි! වේගය වැඩි කළ විට බෝලය <b>ඉහළට</b> නැග විශාල වෘත්තයක කැරකෙයි.<br>(1) න් R = mg / cosα — R, වේගය මත රඳා නොපවතී. h = v²/g, α මත වත් රඳා නොපවතී!</div>
+    </div>
+
+    <h2>විසඳුම (පන්තියේ ගැටලුව)</h2>
+    <details>
+      <summary><span class="qtag">Q362</span>සුමට කේතුව: α = 37°, r = 0.3 m — බෝලයේ වේගය සහ එක් වටයකට කාලය</summary>
+      <div class="ans">
+        <div class="dbox">
+          <div class="l">(i) බෝලය මත බල: බර <b>mg</b> (පහළට) සහ පෘෂ්ඨයට ලම්බක <b>R</b> (සිරස සමඟ 37°, ඉහළට හා කේන්ද්‍රය දෙසට). ඝර්ෂණය නැත.</div>
+          <div class="l">(ii) • සිරස් (↑):</div>
+          <div class="l m">R cos37° = mg <span class="tg">—— (1)</span></div>
+          <div class="l">• තිරස් (කේන්ද්‍රය දෙසට):</div>
+          <div class="l m">R sin37° = <span class="fr"><span>mv²</span><span>r</span></span> <span class="tg">—— (2)</span></div>
+          <div class="l">(2) ÷ (1) — ආනත වංගුවේ සූත්‍රයමයි!</div>
+          <div class="l m">tan37° = <span class="fr"><span>v²</span><span>rg</span></span></div>
+          <div class="l m">v² = rg tan37°</div>
+          <div class="l m">v² = 0.3 × 10 × 0.75</div>
+          <div class="l m">v² = 2.25</div>
+          <div class="l m"><span class="res">v = 1.5 m s⁻¹</span></div>
+          <div class="l">• එක් වටයකට ගත වන කාලය:</div>
+          <div class="l m">t = <span class="fr"><span>2πr</span><span>v</span></span></div>
+          <div class="l m">t = <span class="fr"><span>2π × 0.3</span><span>1.5</span></span></div>
+          <div class="l m">t = 0.4π</div>
+          <div class="l m"><span class="res">t = 1.2 s</span> <span class="si">(π = 3)</span></div>
+        </div>
+        <div class="btns"><button data-preset="Q362">▶ සිමියුලේෂනයේ බලන්න</button></div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= TAB B : rotating hemispherical bowl ================= -->
+  <section id="paneB" style="display:none">
+    <div class="layout">
+     <aside class="side">
+      <div class="controls">
+        <div><label>පාත්‍රයේ අරය R = <span class="v" id="RbVal">0.50</span> m</label><input type="range" id="RbS" min="0.2" max="1" step="0.05" value="0.5"></div>
+        <div><label>කෝණික ප්‍රවේගය ω = <span class="v" id="wVal">5.0</span> rad s⁻¹</label><input type="range" id="wS" min="0" max="12" step="0.1" value="5"></div>
+        <div class="btns">
+          <button class="solid" id="btnQ363">Q363: R = 0.5 m, ω = 5 rad s⁻¹</button>
+          <button id="btnWc">ω = ω<sub>c</sub> = √(g/R)</button>
+        </div>
+      </div>
+      <div class="status" id="statusB">
+        <div><small>තත්ත්වය</small><span id="stB">–</span></div>
+        <div><small>cosθ = g/(Rω²) → θ</small><span id="stBth">–</span></div>
+        <div><small>වෘත්තයේ අරය r = R sinθ</small><span id="stBr">–</span></div>
+        <div><small>කේන්ද්‍රයට පහළින් ගැඹුර h = R cosθ</small><span id="stBh">–</span></div>
+        <div><small>ඉහළ නැගීමට අවම ω<sub>c</sub> = √(g/R)</small><span id="stBwc">–</span></div>
+        <div><small>අභිලම්බ ප්‍රතික්‍රියාව N</small><span id="stBN">–</span></div>
+      </div>
+     </aside>
+     <div class="main">
+      <div class="cvs"><canvas id="cvB" class="scene"></canvas></div>
+      <div class="cap">θ, ω සමඟ වෙනස් වන හැටි (R නියතව)</div>
+      <div class="cvs"><canvas id="cvG" class="graph"></canvas></div>
+     </div>
+    </div>
+
+    <div class="dbox">
+      <div class="dh">කැරකෙන පාත්‍රය තුළ පබළුව — θ සහ h සොයමු</div>
+      <div class="l">N පබළුවේ සිට පාත්‍රයේ කේන්ද්‍රය (O) දෙසට — සිරසට θ කෝණයකින්.</div>
+      <div class="l">• සිරස් සමතුලිතතාවය (↑):</div>
+      <div class="l m">N cosθ = mg <span class="tg">—— (1)</span></div>
+      <div class="l">• තිරස් දිශාවට (අක්ෂය දෙසට):</div>
+      <div class="l m">N sinθ = mrω² <span class="tg">—— (2)</span></div>
+      <div class="l">• වෘත්තයේ අරය:</div>
+      <div class="l m">r = R sinθ <span class="tg">—— (3)</span></div>
+      <div class="l">(3) → (2):</div>
+      <div class="l m">N sinθ = mR sinθ ω²</div>
+      <div class="l m">N = mRω² <span class="tg">—— (4)</span></div>
+      <div class="l">(4) → (1):</div>
+      <div class="l m">mRω² cosθ = mg</div>
+      <div class="l m"><span class="res">cosθ = <span class="fr"><span>g</span><span>Rω²</span></span></span></div>
+      <div class="l">කේන්ද්‍රයට පහළින් ගැඹුර:</div>
+      <div class="l m">h = R cosθ</div>
+      <div class="l m"><span class="res">h = <span class="fr"><span>g</span><span>ω²</span></span></span></div>
+      <div class="note">cosθ ≤ 1 විය යුතු නිසා Rω² &gt; g (එනම් ω &gt; √(g/R)) නම් පමණක් පබළුව ඉහළ නගී. නැතහොත් පබළුව <b>පතුලේම</b> පවතී (එවිට sinθ = 0 නිසා (2) න් sinθ කපා හැරිය නොහැක).<br>ω වැඩි වන විට පබළුව ඉහළට නගී — නමුත් θ = 90° (දාරය) කිසි විටෙක ළඟා නොවේ.</div>
+    </div>
+
+    <h2>විසඳුම (පන්තියේ ගැටලුව)</h2>
+    <details>
+      <summary><span class="qtag">Q363</span>R = 0.5 m පාත්‍රය ω = 5 rad s⁻¹ න් කැරකේ — θ, වෘත්තයේ අරය සහ ගැඹුර</summary>
+      <div class="ans">
+        <div class="dbox">
+          <div class="l">(i) අභිලම්බ ප්‍රතික්‍රියාව N පාත්‍රයේ කේන්ද්‍රය දෙසට (සිරසට θ). වෘත්තයේ අරය:</div>
+          <div class="l m">r = R sinθ</div>
+          <div class="l">• සිරස්:</div>
+          <div class="l m">N cosθ = mg <span class="tg">—— (1)</span></div>
+          <div class="l">• තිරස්:</div>
+          <div class="l m">N sinθ = mrω²</div>
+          <div class="l m">N sinθ = mR sinθ ω²</div>
+          <div class="l m">N = mRω² <span class="tg">—— (2)</span></div>
+          <div class="l">(1) න්:</div>
+          <div class="l m">cosθ = <span class="fr"><span>mg</span><span>N</span></span></div>
+          <div class="l m">cosθ = <span class="fr"><span>g</span><span>Rω²</span></span></div>
+          <div class="l m">cosθ = <span class="fr"><span>10</span><span>0.5 × 25</span></span></div>
+          <div class="l m">cosθ = 0.8</div>
+          <div class="l m"><span class="res">θ = 37°</span></div>
+          <div class="l">(ii) sin37° = 0.6 ලෙස ගනිමු.</div>
+          <div class="l m">r = R sinθ</div>
+          <div class="l m">r = 0.5 × 0.6</div>
+          <div class="l m"><span class="res">r = 0.3 m</span></div>
+          <div class="l m">ගැඹුර = R cosθ</div>
+          <div class="l m">ගැඹුර = 0.5 × 0.8</div>
+          <div class="l m"><span class="res">ගැඹුර = 0.4 m</span></div>
+          <div class="note">ω² &lt; g/R නම් cosθ &gt; 1 විය නොහැකි නිසා පබළුව පතුලේම පවතී.<br><span class="qtag extra">අමතර</span> ගැඹුර = g/ω² = 10/25 = 0.4 m — පාත්‍රයේ අරය මත රඳා නොපවතී!</div>
+        </div>
+        <div class="btns"><button data-preset="Q363">▶ සිමියුලේෂනයේ බලන්න</button></div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= TAB C : rotor ================= -->
+  <section id="paneC" style="display:none">
+    <div class="layout">
+     <aside class="side">
+      <div class="controls">
+        <div><label>රොටරයේ අරය r = <span class="v" id="rCVal">4.0</span> m</label><input type="range" id="rCS" min="2" max="6" step="0.5" value="4"></div>
+        <div><label>ඝර්ෂණ සංගුණකය μ = <span class="v" id="muCVal">0.40</span></label><input type="range" id="muCS" min="0.1" max="1" step="0.05" value="0.4"></div>
+        <div><label>කෝණික ප්‍රවේගය ω = <span class="v" id="wCVal">3.00</span> rad s⁻¹</label><input type="range" id="wCS" min="0" max="5" step="0.05" value="3"></div>
+        <div><label>පුද්ගලයාගේ ස්කන්ධය m = <span class="v" id="mCVal">60</span> kg</label><input type="range" id="mCS" min="30" max="120" step="5" value="60">
+          <span class="massnote" id="massNote">⚖️ ස්කන්ධය කැපී යයි — ω<sub>min</sub> වෙනස් නොවේ</span></div>
+        <div class="btns">
+          <button class="warn" id="btnFloor">⬇ බිම ඉවත් කරන්න</button>
+          <button id="btnWmin">ω = ω<sub>min</sub></button>
+          <button class="solid" id="btnQ364">Q364: r = 4 m, μ = 0.4</button>
+        </div>
+      </div>
+      <div class="status" id="statusC">
+        <div><small>තත්ත්වය</small><span id="stC">–</span></div>
+        <div><small>වේගය v = ωr</small><span id="stCv">–</span></div>
+        <div><small>ω<sub>min</sub> = √(g/(μr))</small><span id="stCwm">–</span></div>
+        <div><small>v<sub>min</sub> = √(rg/μ)</small><span id="stCvm">–</span></div>
+        <div><small>බිත්තියේ R = mω²r</small><span id="stCR">–</span></div>
+        <div><small>උපරිම ඝර්ෂණය μR / බර mg</small><span id="stCf">–</span></div>
+      </div>
+     </aside>
+     <div class="main">
+      <div class="cvs"><canvas id="cvC" class="scene"></canvas></div>
+     </div>
+    </div>
+
+    <div class="dbox">
+      <div class="dh">රොටරය — බිම ඉවත් කළ පසු නොලිස්සීමට අවම ω</div>
+      <div class="l">• තිරස් දිශාවට (කේන්ද්‍රය දෙසට) — කේන්ද්‍රාභිසාරී බලය සපයන්නේ බිත්තියේ R:</div>
+      <div class="l m">R = mrω² <span class="tg">—— (1)</span></div>
+      <div class="l">• සිරස් දිශාවට (නොලිස්සීමට) — බර දරන්නේ ඝර්ෂණය:</div>
+      <div class="l m">f = mg <span class="tg">—— (2)</span></div>
+      <div class="l">• ස්ථිතික ඝර්ෂණයේ සීමාව:</div>
+      <div class="l m">f ≤ μR <span class="tg">—— (3)</span></div>
+      <div class="l">(1), (2) → (3):</div>
+      <div class="l m">mg ≤ μmrω²</div>
+      <div class="l m">g ≤ μrω²</div>
+      <div class="l m">ω² ≥ <span class="fr"><span>g</span><span>μr</span></span></div>
+      <div class="l m"><span class="res">ω<sub>min</sub> = <span class="sq">√<span><span class="fr"><span>g</span><span>μr</span></span></span></span></span></div>
+      <div class="l">v = rω නිසා:</div>
+      <div class="l m"><span class="res">v<sub>min</sub> = <span class="sq">√<span><span class="fr"><span>rg</span><span>μ</span></span></span></span></span></div>
+      <div class="note">m කැපී යයි — බර කුමක් වුවත් සැමට එකම ω ප්‍රමාණවත්. ω &lt; ω<sub>min</sub> වූ විට μR &lt; mg නිසා පුද්ගලයා බිත්තිය දිගේ පහළට ලිස්සයි.</div>
+    </div>
+
+    <h2>විසඳුම (පන්තියේ ගැටලුව)</h2>
+    <details>
+      <summary><span class="qtag">Q364</span>රොටරය: r = 4 m, μ = 0.4 — බිම ඉවත් කළ විට නොලිස්සීමට අවම කෝණික ප්‍රවේගය</summary>
+      <div class="ans">
+        <div class="dbox">
+          <div class="l">(i) බිත්තියෙන් අභිලම්බ ප්‍රතික්‍රියාව <b>R</b> (කේන්ද්‍රය දෙසට, තිරස්), ඝර්ෂණය <b>f</b> (ඉහළට), බර <b>mg</b> (පහළට). කේන්ද්‍රාභිසාරී බලය සපයන්නේ <b>R</b> යි.</div>
+          <div class="l">(ii) • තිරස්:</div>
+          <div class="l m">R = mrω² <span class="tg">—— (1)</span></div>
+          <div class="l">• සිරස් (නොලිස්සීමට):</div>
+          <div class="l m">f = mg <span class="tg">—— (2)</span></div>
+          <div class="l m">f ≤ μR <span class="tg">—— (3)</span></div>
+          <div class="l">(1), (2) → (3):</div>
+          <div class="l m">mg ≤ μmrω²</div>
+          <div class="l m">ω² ≥ <span class="fr"><span>g</span><span>μr</span></span></div>
+          <div class="l m">ω<sub>min</sub> = <span class="sq">√<span><span class="fr"><span>g</span><span>μr</span></span></span></span></div>
+          <div class="l m">ω<sub>min</sub> = <span class="sq">√<span><span class="fr"><span>10</span><span>0.4 × 4</span></span></span></span></div>
+          <div class="l m">ω<sub>min</sub> = <span class="sq">√<span>6.25</span></span></div>
+          <div class="l m"><span class="res">ω<sub>min</sub> = 2.5 rad s⁻¹</span></div>
+          <div class="note">m කැපී යන නිසා බර කුමක් වුවත් සැමට එකම ω ප්‍රමාණවත්.<br><span class="qtag extra">අමතර</span> එවිට බිත්තියේ වේගය v<sub>min</sub> = ω<sub>min</sub> r = 2.5 × 4 = 10 m s⁻¹.</div>
+        </div>
+        <div class="btns"><button data-preset="Q364">▶ සිමියුලේෂනයේ බලන්න</button></div>
+      </div>
+    </details>
+  </section>
+</div>
+
+<script>
+// ===================== physics core (no DOM) =====================
+const g = 10;
+const SQ = 0.28;                  // vertical squash of horizontal circles (view from slightly above)
+const RIM_A = 1.0;                // cone rim radius (m)
+const D_DROP = 2.0;               // rotor: how far the floor drops (m)
+const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
+const DEFAULTS = {
+  tab: 'A',
+  alpha: deg(Math.atan(0.75)), vA: 1.5,        // A: smooth cone
+  Rb: 0.5, w: 5,                                // B: rotating bowl
+  rC: 4, muC: 0.4, wC: 3, mC: 60, floorOut: false, // C: rotor
+};
+const S = Object.assign({}, DEFAULTS);
+
+// A — smooth cone, inner surface at α to the horizontal; R at α to the vertical
+//   R cosα = mg ,  R sinα = mv²/r  →  r = v²/(g tanα),  h = r tanα = v²/g
+function computeA() {
+  const a = rad(S.alpha), t = Math.tan(a), v = S.vA;
+  const rEq = v * v / (g * t), hEq = v * v / g;
+  const out = rEq > RIM_A + 1e-12;
+  return { a, t, rEq, hEq, out, rShow: Math.min(rEq, RIM_A),
+           T: 2 * Math.PI * rEq / v, T3: 6 * rEq / v, R_mg: 1 / Math.cos(a), Fc_mg: t };
+}
+// B — smooth hemispherical bowl radius Rb rotating at ω; bead at θ from the downward vertical
+//   N cosθ = mg , N sinθ = m(R sinθ)ω²  →  cosθ = g/(Rω²)  (only if Rω² > g)
+function computeB() {
+  const R = S.Rb, w = S.w, wc = Math.sqrt(g / R);
+  const lifted = R * w * w > g * (1 + 1e-12);
+  const cosT = lifted ? g / (R * w * w) : 1;
+  const th = Math.acos(Math.min(1, cosT));
+  return { wc, lifted, cosT, th, r: R * Math.sin(th), h: R * cosT,
+           N_mg: lifted ? R * w * w / g : 1, T: w > 0 ? 2 * Math.PI / w : Infinity };
+}
+// C — rotor: R = mω²r (horizontal), friction up ≤ μR; holds if μω²r ≥ g
+function computeC() {
+  const r = S.rC, mu = S.muC, w = S.wC, m = S.mC;
+  const R = m * w * w * r, fmax = mu * R, W = m * g;
+  return { v: w * r, R, fmax, W, holds: mu * w * w * r >= g * (1 - 1e-9),
+           wMin: Math.sqrt(g / (mu * r)), vMin: Math.sqrt(r * g / mu), aDown: g - mu * w * w * r };
+}
+
+// ---- animation state ----
+const ballA = { r: 0.3, phi: 0 };
+const beadB = { th: Math.acos(0.8), phi: 0, spin: 0 };
+const rot = { phi: 0, floorY: 0, y: 0, vy: 0 };
+function resetAnim() {
+  ballA.r = computeA().rShow; ballA.phi = 0;
+  beadB.th = computeB().th; beadB.phi = 0; beadB.spin = 0;
+  Object.assign(rot, { phi: 0, floorY: 0, y: 0, vy: 0 });
+}
+
+function stepA(dt) {
+  const A = computeA();
+  ballA.r += (A.rShow - ballA.r) * (1 - Math.exp(-2.5 * dt));       // settles at the new circle
+  const om = Math.min(15, S.vA / Math.max(ballA.r, 0.02));          // display angular speed (capped)
+  ballA.phi = (ballA.phi + om * dt) % (2 * Math.PI);
+}
+function stepB(dt) {
+  const B = computeB();
+  beadB.th += (B.th - beadB.th) * (1 - Math.exp(-2.5 * dt));
+  beadB.phi = (beadB.phi + S.w * dt) % (2 * Math.PI);
+}
+function stepC(dt) {
+  const C = computeC();
+  rot.phi = (rot.phi + S.wC * dt) % (2 * Math.PI);
+  // floor moves at 1.5 m/s towards its target
+  const target = S.floorOut ? D_DROP : 0, dF = target - rot.floorY;
+  rot.floorY += Math.sign(dF) * Math.min(Math.abs(dF), 1.5 * dt);
+  // person on the wall: net downward acceleration g − μω²r while sliding (kinetic ≈ μR)
+  const a = C.aDown;
+  if (rot.vy > 0 || (a > 0 && !C.holds)) {
+    rot.vy = Math.max(0, rot.vy + a * dt);
+    rot.y += rot.vy * dt;
+  } else rot.vy = 0;
+  if (rot.y >= rot.floorY) { rot.y = rot.floorY; rot.vy = 0; }   // standing on the floor (also pushed up by it)
+}
+function modeC() {
+  const onFloor = rot.y >= rot.floorY - 1e-6;
+  if (onFloor) return rot.floorY < 1e-3 ? 'floor' : 'landed';
+  return rot.vy > 1e-9 ? 'slide' : 'stuck';
+}
+function step(dt) {
+  while (dt > 1e-9) { const h = Math.min(dt, 0.02); stepA(h); stepB(h); stepC(h); dt -= h; }
+}
+
+// ===================== drawing =====================
+const $ = id => document.getElementById(id);
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    if (!w) return;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (!(L >= 2)) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(14, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+// Draws text; "x_abc" is drawn with "abc" as a real subscript.
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Iskoola Pota','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/);
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
+}
+function dashLine(c, x1, y1, x2, y2, col, lw = 1.5, dash = [6, 5]) {
+  c.strokeStyle = col; c.lineWidth = lw; c.setLineDash(dash);
+  c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); c.setLineDash([]);
+}
+function ell(c, x, y, rx, ry, a0 = 0, a1 = 2 * Math.PI) {
+  c.beginPath(); c.ellipse(x, y, Math.max(0, rx), Math.max(0, ry), 0, a0, a1);
+}
+function panel(c, x, y, w, h, title) {
+  c.fillStyle = '#fff'; c.strokeStyle = '#a29bfe'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(x, y, w, h, 10); c.fill(); c.stroke();
+  text(c, title, x + w / 2, y + 18, '#6c5ce7', 15, 'center', 800);
+}
+const f2 = x => x.toFixed(2), f1 = x => x.toFixed(1);
+const fN = x => Math.round(x).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+function ball(c, X, Y, rr, col, edge, alpha = 1) {
+  c.save(); c.globalAlpha = alpha;
+  const gr = c.createRadialGradient(X - rr * 0.35, Y - rr * 0.35, rr * 0.15, X, Y, rr);
+  gr.addColorStop(0, '#fff'); gr.addColorStop(1, col);
+  c.fillStyle = gr; c.strokeStyle = edge; c.lineWidth = 2;
+  c.beginPath(); c.arc(X, Y, rr, 0, 2 * Math.PI); c.fill(); c.stroke();
+  c.restore();
+}
+
+let cA, cB, cG, cC;
+
+// ---------- Tab A : smooth cone ----------
+function drawA() {
+  const c = cA.ctx, W = 900, H = 470; c.clearRect(0, 0, W, H);
+  const A = computeA(), a = A.a, t = A.t;
+  const k = Math.min(230 / RIM_A, 330 / (RIM_A * t));           // px per metre
+  const cx = 280, apexY = 430, rimY = apexY - k * RIM_A * t, rimRx = k * RIM_A, rimRy = rimRx * SQ;
+  // axis
+  dashLine(c, cx, apexY + 18, cx, rimY - rimRy - 18, '#95a5a6', 1.5);
+  text(c, 'සිරස් අක්ෂය', cx, rimY - rimRy - 28, '#95a5a6', 12, 'center', 600);
+  // glass funnel body (outer surface + front of rim)
+  c.fillStyle = 'rgba(116,185,255,.18)'; c.strokeStyle = '#0984e3'; c.lineWidth = 2.5;
+  c.beginPath(); c.moveTo(cx, apexY); c.lineTo(cx + rimRx, rimY);
+  c.ellipse(cx, rimY, rimRx, rimRy, 0, 0, Math.PI); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(cx - rimRx, rimY); c.lineTo(cx, apexY); c.lineTo(cx + rimRx, rimY); c.stroke();
+  // inside (seen through the opening)
+  c.fillStyle = 'rgba(162,155,254,.16)'; ell(c, cx, rimY, rimRx, rimRy); c.fill();
+  c.strokeStyle = '#0984e3'; c.lineWidth = 2.5; ell(c, cx, rimY, rimRx, rimRy); c.stroke();
+  // a few generator lines on the inner back surface
+  c.strokeStyle = 'rgba(9,132,227,.18)'; c.lineWidth = 1;
+  for (let j = 1; j < 6; j++) { const q = Math.PI + j * Math.PI / 6; c.beginPath(); c.moveTo(cx, apexY); c.lineTo(cx + rimRx * Math.cos(q), rimY + rimRy * Math.sin(q)); c.stroke(); }
+  // α at the apex
+  dashLine(c, cx, apexY, cx + 95, apexY, '#6c5ce7', 1.5);
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 2; c.beginPath(); c.arc(cx, apexY, 58, -a, 0); c.stroke();
+  text(c, 'α = ' + f1(S.alpha) + '°', cx + 66, apexY - 14 - S.alpha * 0.25, '#6c5ce7', 15, 'left', 800);
+  // the ball's horizontal circle
+  const rb = ballA.r, cyB = apexY - k * rb * t, rx = k * rb, ry = rx * SQ;
+  c.strokeStyle = '#e17055'; c.lineWidth = 1.8; c.setLineDash([6, 5]); ell(c, cx, cyB, rx, ry); c.stroke(); c.setLineDash([]);
+  // r and h markers
+  if (rx > 14) {
+    arrow(c, cx, cyB, cx + rx, cyB, '#d35400', 2);
+    text(c, `r = ${f2(rb)} m`, cx + rx / 2, cyB - 14, '#d35400', 14, 'center', 800);
+  }
+  const hx = cx - rimRx - 26;
+  dashLine(c, hx - 8, apexY, cx - 6, apexY, '#00a383', 1, [3, 4]);
+  dashLine(c, hx - 8, cyB, cx - rx - 4, cyB, '#00a383', 1, [3, 4]);
+  if (apexY - cyB > 14) { arrow(c, hx, apexY, hx, cyB, '#00a383', 2); arrow(c, hx, cyB, hx, apexY, '#00a383', 2); }
+  text(c, `h = ${f2(rb * t)} m`, hx - 8, (apexY + cyB) / 2, '#00a383', 14, 'right', 800);
+  // ball + velocity
+  const ph = ballA.phi, X = cx + rx * Math.cos(ph), Y = cyB + ry * Math.sin(ph);
+  const front = Math.sin(ph) > 0, L = 26 + 22 * S.vA;
+  ball(c, X, Y - 9, 9, '#e17055', '#c0392b', front ? 1 : 0.7);
+  arrow(c, X, Y - 9, X - L * Math.sin(ph), Y - 9 + L * SQ * Math.cos(ph), '#0984e3', 3);
+  // badge
+  if (A.out) {
+    text(c, '⚠ v වැඩියි!', 22, 32, '#d63031', 22, 'left', 800);
+    text(c, `r = ${f2(A.rEq)} m > දාරය (1 m) — බෝලය කේතුවෙන් පිටතට යයි`, 22, 58, '#d63031', 13, 'left', 700);
+  } else {
+    text(c, 'තිරස් වෘත්තයක කැරකෙයි ✅', 22, 32, '#27ae60', 19, 'left', 800);
+    text(c, 'වේගය වැඩි කළොත් → ඉහළට, විශාල වෘත්තයක', 22, 56, '#636e72', 13, 'left', 700);
+  }
+  text(c, '→ v (ප්‍රවේගය)', 22, 452, '#0984e3', 13, 'left', 700);
+  text(c, 'සුමට කේතුව (funnel)', 535, 452, '#95a5a6', 13, 'right', 600);
+
+  // --- right: cross-section force diagram ---
+  const px = 555, pw = 335;
+  panel(c, px, 10, pw, 450, 'හරස්කඩ — බෝලය මත බල');
+  c.save(); c.beginPath(); c.roundRect(px, 10, pw, 450, 10); c.clip();
+  const u = [Math.cos(a), -Math.sin(a)], n = [-Math.sin(a), -Math.cos(a)];
+  const P = [770, 265], P1 = [P[0] - 200 * u[0], P[1] - 200 * u[1]], P2 = [P[0] + 160 * u[0], P[1] + 160 * u[1]];
+  c.fillStyle = '#dfe6e9'; c.beginPath(); c.moveTo(P1[0], P1[1]); c.lineTo(P2[0], P2[1]); c.lineTo(P2[0] + 200, P2[1]); c.lineTo(P2[0] + 200, 480); c.lineTo(P1[0], 480); c.closePath(); c.fill();
+  c.strokeStyle = '#0984e3'; c.lineWidth = 4; c.beginPath(); c.moveTo(P1[0], P1[1]); c.lineTo(P2[0], P2[1]); c.stroke();
+  // axis to the left
+  dashLine(c, px + 26, 40, px + 26, 440, '#95a5a6', 1.5);
+  text(c, 'අක්ෂය', px + 32, 46, '#95a5a6', 12, 'left', 600);
+  // α marker lower on the surface
+  const Q = [P[0] - 150 * u[0], P[1] - 150 * u[1]];
+  dashLine(c, Q[0], Q[1], Q[0] + 90, Q[1], '#6c5ce7', 1.2);
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 2; c.beginPath(); c.arc(Q[0], Q[1], 46, -a, 0); c.stroke();
+  text(c, 'α', Q[0] + 54, Q[1] - 10, '#6c5ce7', 16, 'left', 800);
+  // ball + forces
+  const rr = 14, G = [P[0] + rr * n[0], P[1] + rr * n[1]];
+  ball(c, G[0], G[1], rr, '#e17055', '#c0392b');
+  const Lmg = 90, LR = Lmg * A.R_mg;
+  arrow(c, G[0], G[1], G[0], G[1] + Lmg, '#2d3436', 4);
+  text(c, 'mg', G[0] + 10, G[1] + Lmg - 6, '#2d3436', 16, 'left', 800);
+  arrow(c, G[0], G[1], G[0], G[1] - LR * Math.cos(a), '#00a383', 2.5, [6, 5]);
+  text(c, 'R cosα', G[0] + 8, G[1] - LR * Math.cos(a) + 2, '#00a383', 14, 'left', 700);
+  arrow(c, G[0], G[1], G[0] - LR * Math.sin(a), G[1], '#00a383', 2.5, [6, 5]);
+  text(c, 'R sinα', G[0] - LR * Math.sin(a) / 2, G[1] + 16, '#00a383', 14, 'center', 700);
+  const RE = [G[0] + LR * n[0], G[1] + LR * n[1]];
+  arrow(c, G[0], G[1], RE[0], RE[1], '#00b894', 5);
+  text(c, 'R', RE[0] - 10, RE[1] - 8, '#00b894', 19, 'right', 800);
+  // α between R and the vertical
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 1.5; c.beginPath(); c.arc(G[0], G[1], 34, -Math.PI / 2 - a, -Math.PI / 2); c.stroke();
+  text(c, 'α', G[0] - 10, G[1] - 46, '#6c5ce7', 14, 'center', 800);
+  c.restore();
+  text(c, `R = mg/cosα = ${f2(A.R_mg)} mg`, px + 14, 400, '#00a383', 14, 'left', 800);
+  text(c, `mv²/r = mg tanα = ${f2(A.Fc_mg)} mg`, px + 14, 422, '#00a383', 14, 'left', 800);
+  text(c, '(R වේගය මත රඳා නොපවතී)', px + 14, 444, '#636e72', 12, 'left', 600);
+}
+
+// ---------- Tab B : rotating hemispherical bowl ----------
+function drawB() {
+  const c = cB.ctx, W = 900, H = 460; c.clearRect(0, 0, W, H);
+  const B = computeB(), R = S.Rb, rho = 200, k = rho / R, Ox = 280, Oy = 120, rimRy = rho * SQ;
+  // axis
+  dashLine(c, Ox, Oy - rimRy - 20, Ox, Oy + rho + 24, '#95a5a6', 1.5);
+  // bowl (glass)
+  c.fillStyle = 'rgba(116,185,255,.18)'; c.strokeStyle = '#0984e3'; c.lineWidth = 2.5;
+  c.beginPath(); c.arc(Ox, Oy, rho, 0, Math.PI); c.closePath(); c.fill();
+  c.beginPath(); c.arc(Ox, Oy, rho, 0, Math.PI); c.stroke();
+  c.fillStyle = 'rgba(162,155,254,.16)'; ell(c, Ox, Oy, rho, rimRy); c.fill();
+  c.strokeStyle = '#0984e3'; ell(c, Ox, Oy, rho, rimRy); c.stroke();
+  // rim marks rotating with the bowl
+  for (let j = 0; j < 8; j++) {
+    const q = beadB.phi + j * Math.PI / 4, X = Ox + rho * Math.cos(q), Y = Oy + rimRy * Math.sin(q);
+    c.fillStyle = Math.sin(q) > 0 ? '#0984e3' : 'rgba(9,132,227,.45)'; c.beginPath(); c.arc(X, Y, 4, 0, 2 * Math.PI); c.fill();
+  }
+  // ω arrow on the rim
+  if (S.w > 0.05) {
+    c.strokeStyle = '#6c5ce7'; c.lineWidth = 3; ell(c, Ox, Oy, rho + 16, rimRy + 6, 0.35, 1.25); c.stroke();
+    const q = 1.25, ex = Ox + (rho + 16) * Math.cos(q), ey = Oy + (rimRy + 6) * Math.sin(q);
+    arrow(c, ex + 14, ey - 3, ex - 2, ey + 1, '#6c5ce7', 3);
+    text(c, 'ω', Ox + (rho + 30) * Math.cos(0.75), Oy + (rimRy + 18) * Math.sin(0.75), '#6c5ce7', 18, 'left', 800);
+  }
+  // O
+  c.fillStyle = '#6c5ce7'; c.beginPath(); c.arc(Ox, Oy, 4, 0, 2 * Math.PI); c.fill();
+  text(c, 'O', Ox - 10, Oy - 10, '#6c5ce7', 15, 'right', 800);
+  // bead's horizontal circle
+  const th = beadB.th, r = R * Math.sin(th), h = R * Math.cos(th);
+  const cy = Oy + k * h, rx = k * r, ry = rx * SQ;
+  if (rx > 1) { c.strokeStyle = '#e17055'; c.lineWidth = 1.8; c.setLineDash([6, 5]); ell(c, Ox, cy, rx, ry); c.stroke(); c.setLineDash([]); }
+  if (rx > 16) {
+    arrow(c, Ox, cy, Ox + rx, cy, '#d35400', 2);
+    text(c, `r = ${f2(r)} m`, Ox + rx / 2, cy - 13, '#d35400', 14, 'center', 800);
+  }
+  if (k * h > 16) {
+    const hx = Ox - rho - 22;
+    dashLine(c, hx - 6, Oy, Ox - rho, Oy, '#00a383', 1, [3, 4]);
+    dashLine(c, hx - 6, cy, Ox - Math.max(rx, 6), cy, '#00a383', 1, [3, 4]);
+    arrow(c, hx, Oy, hx, cy, '#00a383', 2); arrow(c, hx, cy, hx, Oy, '#00a383', 2);
+    text(c, 'h', hx - 8, (Oy + cy) / 2, '#00a383', 16, 'right', 800);
+  }
+  // bead
+  const ph = beadB.phi, X = Ox + rx * Math.cos(ph), Y = cy + ry * Math.sin(ph);
+  dashLine(c, Ox, Oy, X, Y, 'rgba(108,92,231,.6)', 1.2, [4, 4]);
+  ball(c, X, Y - 8, 8, '#fd79a8', '#e84393', Math.sin(ph) >= 0 ? 1 : 0.75);
+  // badge
+  if (B.lifted) {
+    text(c, `θ = ${f1(deg(B.th))}° — පබළුව ඉහළ නැග ඇත ✅`, 22, 420, '#27ae60', 17, 'left', 800);
+    text(c, 'ω වැඩි කළොත් → තවත් ඉහළට (θ → 90° කිසිදා නැත)', 22, 444, '#636e72', 13, 'left', 700);
+  } else {
+    text(c, 'ω < ω_c — පබළුව පතුලේම 💤', 22, 420, '#e17055', 17, 'left', 800);
+    text(c, `ω_c = √(g/R) = ${f2(B.wc)} rad s⁻¹ ට වඩා වැඩි කරන්න`, 22, 444, '#636e72', 13, 'left', 700);
+  }
+
+  // --- right: cross-section ---
+  const px = 555, pw = 335;
+  panel(c, px, 10, pw, 440, 'හරස්කඩ — පබළුව මත බල');
+  const O2 = [735, 80], r2 = 175;
+  c.strokeStyle = '#0984e3'; c.lineWidth = 4; c.beginPath(); c.arc(O2[0], O2[1], r2, 0.05, Math.PI - 0.05); c.stroke();
+  dashLine(c, O2[0], O2[1] - 26, O2[0], O2[1] + r2 + 22, '#95a5a6', 1.5);
+  c.fillStyle = '#6c5ce7'; c.beginPath(); c.arc(O2[0], O2[1], 4, 0, 2 * Math.PI); c.fill();
+  text(c, 'O', O2[0] - 8, O2[1] - 10, '#6c5ce7', 15, 'right', 800);
+  const sb = Math.sin(th), cb = Math.cos(th);
+  const Pb = [O2[0] + (r2 - 10) * sb, O2[1] + (r2 - 10) * cb];
+  dashLine(c, O2[0], O2[1], Pb[0], Pb[1], '#6c5ce7', 1.5);
+  if (th > 0.05) {
+    text(c, 'R', (O2[0] + Pb[0]) / 2 + 10 * cb, (O2[1] + Pb[1]) / 2 - 10 * sb, '#6c5ce7', 15, 'left', 800);
+    c.strokeStyle = '#6c5ce7'; c.lineWidth = 2; c.beginPath(); c.arc(O2[0], O2[1], 40, Math.PI / 2 - th, Math.PI / 2); c.stroke();
+    text(c, 'θ', O2[0] + 50 * Math.sin(th / 2), O2[1] + 50 * Math.cos(th / 2), '#6c5ce7', 15, 'center', 800);
+    // r and h labels
+    dashLine(c, O2[0], Pb[1], Pb[0], Pb[1], '#d35400', 1.2, [3, 4]);
+    text(c, 'r = R sinθ', (O2[0] + Pb[0]) / 2, Pb[1] + 14, '#d35400', 12, 'center', 700);
+  }
+  ball(c, Pb[0], Pb[1], 9, '#fd79a8', '#e84393');
+  const Lmg = 80 * Math.min(1, 2.4 / B.N_mg), LN = Lmg * B.N_mg;
+  arrow(c, Pb[0], Pb[1], Pb[0], Pb[1] + Lmg, '#2d3436', 4);
+  text(c, 'mg', Pb[0] + 10, Pb[1] + Lmg - 4, '#2d3436', 15, 'left', 800);
+  if (th > 0.05) {
+    arrow(c, Pb[0], Pb[1], Pb[0], Pb[1] - LN * cb, '#00a383', 2.5, [6, 5]);
+    text(c, 'N cosθ', Pb[0] + 8, Pb[1] - LN * cb + 10, '#00a383', 13, 'left', 700);
+    arrow(c, Pb[0], Pb[1], Pb[0] - LN * sb, Pb[1], '#00a383', 2.5, [6, 5]);
+    text(c, 'N sinθ', Pb[0] - LN * sb / 2, Pb[1] - 12, '#00a383', 13, 'center', 700);
+  }
+  const NE = [Pb[0] - LN * sb, Pb[1] - LN * cb];
+  arrow(c, Pb[0], Pb[1], NE[0], NE[1], '#00b894', 5);
+  text(c, 'N', NE[0] - 6, NE[1] + (th > 0.05 ? -6 : 0), '#00b894', 18, 'right', 800);
+  text(c, B.lifted ? `N = mRω² = ${f2(B.N_mg)} mg` : 'N = mg (පතුලේ, r = 0)', px + 14, 392, '#00a383', 14, 'left', 800);
+  text(c, B.lifted ? `cosθ = g/(Rω²) = ${B.cosT.toFixed(3)}` : `Rω² = ${f2(R * S.w * S.w)} ≤ g`, px + 14, 414, '#6c5ce7', 14, 'left', 800);
+  text(c, `h = R cosθ = g/ω² = ${f2(B.h)} m`, px + 14, 436, '#00a383', 13, 'left', 700);
+}
+function drawG() {
+  const c = cG.ctx, W = 900, H = 210; c.clearRect(0, 0, W, H);
+  const B = computeB(), R = S.Rb, x0 = 80, x1 = 870, y0 = 172, y1 = 22, WMAX = 12;
+  const X = w => x0 + (x1 - x0) * w / WMAX, Y = d => y0 - (y0 - y1) * d / 90;
+  c.strokeStyle = '#ecf0f1'; c.lineWidth = 1;
+  for (let d = 0; d <= 90; d += 30) { c.beginPath(); c.moveTo(x0, Y(d)); c.lineTo(x1, Y(d)); c.stroke(); text(c, d + '°', x0 - 8, Y(d), '#95a5a6', 12, 'right', 600); }
+  for (let w = 0; w <= WMAX; w += 2) { text(c, w, X(w), y0 + 16, '#95a5a6', 12, 'center', 600); }
+  c.strokeStyle = '#2d3436'; c.lineWidth = 2; c.beginPath(); c.moveTo(x0, y1 - 6); c.lineTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+  text(c, 'ω (rad s⁻¹)', x1, y0 + 32, '#2c3e50', 13, 'right', 700);
+  text(c, 'θ', x0 - 40, y1 + 4, '#2c3e50', 15, 'center', 800);
+  // curve
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 3; c.beginPath();
+  for (let i = 0; i <= 400; i++) {
+    const w = WMAX * i / 400, q = R * w * w > g ? deg(Math.acos(g / (R * w * w))) : 0;
+    i ? c.lineTo(X(w), Y(q)) : c.moveTo(X(w), Y(q));
+  }
+  c.stroke();
+  if (B.wc <= WMAX) {
+    dashLine(c, X(B.wc), y0, X(B.wc), y1, '#e17055', 1.5);
+    text(c, `ω_c = ${f2(B.wc)}`, X(B.wc) + 6, y1 + 6, '#e17055', 13, 'left', 800);
+  }
+  const wNow = Math.min(S.w, WMAX), qNow = deg(B.th);
+  c.fillStyle = '#e84393'; c.beginPath(); c.arc(X(wNow), Y(qNow), 7, 0, 2 * Math.PI); c.fill();
+  text(c, `(${f1(S.w)}, ${f1(qNow)}°)`, X(wNow) + (wNow > 9 ? -12 : 12), Y(qNow) + (qNow > 70 ? 16 : -14), '#e84393', 13, wNow > 9 ? 'right' : 'left', 800);
+}
+
+// ---------- Tab C : rotor ----------
+function person(c, X, Yf, hp, col, alpha) {
+  c.save(); c.globalAlpha = alpha; c.lineCap = 'round';
+  c.strokeStyle = '#2d3436'; c.lineWidth = Math.max(2, hp * 0.07);
+  c.beginPath();
+  c.moveTo(X - hp * 0.06, Yf); c.lineTo(X - hp * 0.04, Yf - hp * 0.45);
+  c.moveTo(X + hp * 0.06, Yf); c.lineTo(X + hp * 0.04, Yf - hp * 0.45);
+  c.moveTo(X - hp * 0.1, Yf - hp * 0.74); c.lineTo(X - hp * 0.22, Yf - hp * 0.92);
+  c.moveTo(X + hp * 0.1, Yf - hp * 0.74); c.lineTo(X + hp * 0.22, Yf - hp * 0.92);
+  c.stroke();
+  c.fillStyle = col; c.beginPath(); c.roundRect(X - hp * 0.11, Yf - hp * 0.8, hp * 0.22, hp * 0.38, hp * 0.06); c.fill();
+  c.fillStyle = '#ffeaa7'; c.lineWidth = Math.max(1, hp * 0.03); c.beginPath(); c.arc(X, Yf - hp * 0.89, hp * 0.11, 0, 2 * Math.PI); c.fill(); c.stroke();
+  c.restore();
+}
+function drawC() {
+  const c = cC.ctx, W = 900, H = 470; c.clearRect(0, 0, W, H);
+  const C = computeC(), r = S.rC, k = Math.min(170 / r, 50), cx = 280, rx = k * r, ry = rx * SQ;
+  const yTop = 34 + ry, yBase = yTop + 3.4 * k, yPit = yBase + D_DROP * k;
+  const mode = modeC();
+  // back inner wall
+  c.fillStyle = '#eef1ff';
+  c.fillRect(cx - rx, yTop, 2 * rx, yPit - yTop); ell(c, cx, yTop, rx, ry); c.fill(); ell(c, cx, yPit, rx, ry); c.fill();
+  c.fillStyle = 'rgba(45,52,54,.07)'; c.fillRect(cx - rx, yBase, 2 * rx, yPit - yBase); ell(c, cx, yPit, rx, ry); c.fill();
+  c.strokeStyle = 'rgba(108,92,231,.28)'; c.lineWidth = 1.5;
+  for (let j = 0; j < 12; j++) {
+    const q = rot.phi + j * Math.PI / 6, s = Math.sin(q);
+    if (s < 0) { const X = cx + rx * Math.cos(q); c.beginPath(); c.moveTo(X, yTop + ry * s); c.lineTo(X, yPit + ry * s); c.stroke(); }
+  }
+  // floor
+  const yF = yBase + rot.floorY * k;
+  c.fillStyle = '#d7ccc8'; c.strokeStyle = '#8d6e63'; c.lineWidth = 2; ell(c, cx, yF, rx * 0.985, ry * 0.985); c.fill(); c.stroke();
+  // three people (mass cancels → all behave the same)
+  const cols = ['#a29bfe', '#fd79a8', '#55efc4'], hp = 1.7 * k;
+  [0, 1, 2].map(j => ({ j, q: rot.phi + j * 2 * Math.PI / 3 })).sort((p, q) => Math.sin(p.q) - Math.sin(q.q)).forEach(p => {
+    const s = Math.sin(p.q), X = cx + rx * 0.93 * Math.cos(p.q), Yf = yBase + rot.y * k + ry * 0.93 * s;
+    person(c, X, Yf, hp, cols[p.j], s < 0 ? 0.75 : 1);
+  });
+  // front wall (glass) + outline
+  c.fillStyle = 'rgba(108,92,231,.05)'; c.beginPath(); c.moveTo(cx - rx, yTop); c.ellipse(cx, yTop, rx, ry, 0, Math.PI, 0, true); c.lineTo(cx + rx, yPit); c.ellipse(cx, yPit, rx, ry, 0, 0, Math.PI); c.closePath(); c.fill();
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 2.5;
+  ell(c, cx, yTop, rx, ry); c.stroke();
+  ell(c, cx, yPit, rx, ry, 0, Math.PI); c.stroke();
+  c.beginPath(); c.moveTo(cx - rx, yTop); c.lineTo(cx - rx, yPit); c.moveTo(cx + rx, yTop); c.lineTo(cx + rx, yPit); c.stroke();
+  dashLine(c, cx - rx, yBase, cx - rx - 16, yBase, '#8d6e63', 1.2, [3, 3]);
+  text(c, 'මුල් බිම', cx - rx - 18, yBase, '#8d6e63', 12, 'right', 700);
+  // radius on top
+  dashLine(c, cx, yTop, cx + rx, yTop, '#d35400', 1.5);
+  c.fillStyle = '#d35400'; c.beginPath(); c.arc(cx, yTop, 3.5, 0, 2 * Math.PI); c.fill();
+  text(c, `r = ${f1(r)} m`, cx + rx / 2, yTop - 12, '#d35400', 14, 'center', 800);
+  // ω arrow
+  if (S.wC > 0.02) {
+    c.strokeStyle = '#6c5ce7'; c.lineWidth = 3; ell(c, cx, yTop, rx + 14, ry + 5, 0.35, 1.25); c.stroke();
+    const q = 1.25, ex = cx + (rx + 14) * Math.cos(q), ey = yTop + (ry + 5) * Math.sin(q);
+    arrow(c, ex + 14, ey - 3, ex - 2, ey + 1, '#6c5ce7', 3);
+    text(c, `ω = ${f2(S.wC)}`, cx + (rx + 24) * Math.cos(0.6), yTop + (ry + 16) * Math.sin(0.6), '#6c5ce7', 14, 'left', 800);
+  }
+  // badge
+  const B = {
+    floor:  ['බිම මත සිටියි 🧍', 'බිම බර දරයි — දැන් "බිම ඉවත් කරන්න" ඔබන්න', '#0984e3'],
+    stuck:  ['බිත්තියේ ඇලී සිටියි ✅', 'ඝර්ෂණය f = mg ≤ μR — පහළට නොලිස්සයි', '#27ae60'],
+    slide:  ['පහළට ලිස්සයි! ⬇', 'μR < mg — ඝර්ෂණයට බර දැරිය නොහැක', '#d63031'],
+    landed: [C.holds ? 'පහළ බිම මත 😅' : 'ලිස්සා පහළ බිමට ආවා 😅', C.holds ? 'බිම නැවත දමා ω වැඩි කර බලන්න' : `ω ≥ ω_min = ${f2(C.wMin)} rad s⁻¹ අවශ්‍යයි`, '#e17055'],
+  }[mode];
+  text(c, B[0], 22, 440, B[2], 18, 'left', 800);
+  text(c, B[1], 22, 462 - 4, '#636e72', 13, 'left', 700);
+
+  // --- right: forces on the person ---
+  const px = 555, pw = 335;
+  panel(c, px, 10, pw, 450, 'පුද්ගලයා මත බල (හරස්කඩ)');
+  const wx = 850;
+  c.fillStyle = '#dfe6e9'; c.fillRect(wx, 36, 32, 230);
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 3; c.beginPath(); c.moveTo(wx, 36); c.lineTo(wx, 266); c.stroke();
+  text(c, 'බිත්තිය', wx + 16, 278, '#636e72', 12, 'center', 700);
+  const onFloor = mode === 'floor' || mode === 'landed';
+  const bx = wx - 40, byTop = 112, bh = 84, Gx = bx + 20, Gy = byTop + bh / 2;
+  if (onFloor) { c.fillStyle = '#d7ccc8'; c.fillRect(px + 140, byTop + bh, wx - px - 140, 8); }
+  c.fillStyle = cols[0]; c.strokeStyle = '#4834d4'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(bx, byTop, 40, bh, 8); c.fill(); c.stroke();
+  text(c, 'm', Gx, Gy, '#fff', 16, 'center', 800);
+  const k1 = 70 / C.W;                       // mg ↔ 70 px
+  const LRraw = C.R * k1, LR = Math.min(LRraw, 220);
+  arrow(c, bx, Gy, bx - LR, Gy, '#00b894', 5);
+  text(c, 'R = mω²r', bx - Math.max(LR, 30) / 2, Gy - 16, '#00b894', 15, 'center', 800);
+  if (LRraw > 220) text(c, '(පරිමාණයට නැත)', bx - 110, Gy + 18, '#95a5a6', 11, 'center', 600);
+  text(c, '← කේන්ද්‍රය දෙසට', px + 16, 50, '#6c5ce7', 14, 'left', 800);
+  arrow(c, Gx, byTop + bh, Gx, byTop + bh + 70, '#2d3436', 4);
+  text(c, 'mg', Gx - 10, byTop + bh + 62, '#2d3436', 15, 'right', 800);
+  const fNow = mode === 'stuck' ? C.W : mode === 'slide' ? C.fmax : 0;
+  if (fNow * k1 > 2) {
+    arrow(c, wx - 6, byTop, wx - 6, byTop - Math.min(fNow * k1, 76), '#d35400', 5);
+    text(c, mode === 'slide' ? 'f = μR' : 'f = mg', wx - 12, byTop - Math.min(fNow * k1, 76) + 6, '#d35400', 14, 'right', 800);
+  } else if (onFloor) {
+    arrow(c, bx + 10, byTop + bh + 72, bx + 10, byTop + bh + 4, '#8d6e63', 3);
+    text(c, 'බිමෙන් ප්‍රතික්‍රියාව', bx + 2, byTop + bh + 40, '#8d6e63', 12, 'right', 700);
+  }
+  // bars: required f = mg vs available μR
+  const bx0 = px + 18, bw = pw - 36, FS = 3 * C.W, sc = bw / FS;
+  const bar = (y, F, col, label) => {
+    text(c, label, bx0, y - 12, '#2c3e50', 13, 'left', 800);
+    c.fillStyle = '#f1f2f6'; c.fillRect(bx0, y, bw, 20);
+    c.fillStyle = col; c.fillRect(bx0, y, Math.min(F, FS) * sc, 20);
+    text(c, fN(F) + ' N' + (F > FS ? ' ▶' : ''), bx0 + bw - 4, y - 12, col, 13, 'right', 800);
+  };
+  bar(328, C.W, '#2d3436', 'අවශ්‍ය ඝර්ෂණය f = mg');
+  bar(382, C.fmax, C.holds ? '#00b894' : '#e74c3c', 'උපරිම ඝර්ෂණය μR = μmω²r');
+  dashLine(c, bx0 + C.W * sc, 316, bx0 + C.W * sc, 404, '#2d3436', 1.5, [4, 3]);
+  text(c, C.holds ? 'μR ≥ mg ✓ — නොලිස්සයි' : 'μR < mg ✗ — ලිස්සයි', px + pw / 2, 428, C.holds ? '#27ae60' : '#d63031', 15, 'center', 800);
+  text(c, `m = ${S.mC} kg — ස්කන්ධය කැපී යයි`, px + pw / 2, 448, '#6c5ce7', 12, 'center', 700);
+}
+
+// ===================== UI =====================
+function show(id, t) { const e = $(id); if (e && e.innerHTML !== String(t)) e.innerHTML = t; }
+function syncUI() {
+  const setv = (id, v) => { const e = $(id); if (e) e.value = v; };
+  setv('alS', S.alpha); setv('vAS', S.vA); setv('RbS', S.Rb); setv('wS', S.w);
+  setv('rCS', S.rC); setv('muCS', S.muC); setv('wCS', S.wC); setv('mCS', S.mC);
+  show('alVal', f1(S.alpha)); show('vAVal', f2(S.vA)); show('RbVal', f2(S.Rb)); show('wVal', f1(S.w));
+  show('rCVal', f1(S.rC)); show('muCVal', f2(S.muC)); show('wCVal', f2(S.wC)); show('mCVal', S.mC);
+  const bf = $('btnFloor');
+  if (bf) { bf.textContent = S.floorOut ? '⬆ බිම නැවත දමන්න' : '⬇ බිම ඉවත් කරන්න'; bf.className = S.floorOut ? 'solid' : 'warn'; }
+}
+function updateStatus() {
+  if (S.tab === 'A') {
+    const A = computeA();
+    show('stA', A.out ? '⚠ කේතුවෙන් පිටතට යයි!' : 'තිරස් වෘත්තයක කැරකෙයි ✅');
+    show('stAr', `${A.rEq.toFixed(3)} m`);
+    show('stAh', `${A.hEq.toFixed(3)} m`);
+    show('stAT', A.out ? '—' : `${A.T.toFixed(3)} s <small style="display:inline">(π = 3 නම් ${f2(A.T3)} s)</small>`);
+    show('stAR', `${f2(A.R_mg)} mg`);
+    show('stAF', `${f2(A.Fc_mg)} mg`);
+    $('statusA').className = 'status' + (A.out ? ' move' : A.rEq > 0.85 * RIM_A ? ' limit' : '');
+  } else if (S.tab === 'B') {
+    const B = computeB();
+    show('stB', B.lifted ? 'පබළුව ඉහළ නැග කැරකෙයි ✅' : 'ω &lt; ω<sub>c</sub> — පබළුව පතුලේ');
+    show('stBth', B.lifted ? `cosθ = ${B.cosT.toFixed(3)} → θ = ${f1(deg(B.th))}°` : 'θ = 0°');
+    show('stBr', `${B.r.toFixed(3)} m`);
+    show('stBh', `${B.h.toFixed(3)} m`);
+    show('stBwc', `${f2(B.wc)} rad s⁻¹`);
+    show('stBN', B.lifted ? `mRω² = ${f2(B.N_mg)} mg` : '1.00 mg');
+    $('statusB').className = 'status' + (B.lifted ? '' : ' limit');
+  } else {
+    const C = computeC(), mode = modeC();
+    show('stC', { floor: 'බිම මත සිටියි 🧍', stuck: 'බිත්තියේ ඇලී සිටියි ✅', slide: 'පහළට ලිස්සයි! ⬇', landed: 'පහළ බිම මත 😅' }[mode]);
+    show('stCv', `${f2(C.v)} m s⁻¹`);
+    show('stCwm', `${f2(C.wMin)} rad s⁻¹`);
+    show('stCvm', `${f2(C.vMin)} m s⁻¹`);
+    show('stCR', `${fN(C.R)} N`);
+    show('stCf', `${fN(C.fmax)} N / ${fN(C.W)} N ${C.holds ? '✓' : '✗'}`);
+    $('statusC').className = 'status' + (mode === 'slide' || mode === 'landed' ? ' move' : C.holds ? '' : ' limit');
+  }
+}
+function setTab(t) {
+  S.tab = ['A', 'B', 'C'].includes(t) ? t : 'A';
+  ['A', 'B', 'C'].forEach(x => { $('pane' + x).style.display = S.tab === x ? '' : 'none'; $('tab' + x).className = S.tab === x ? 'solid' : ''; });
+  return S.tab;
+}
+const ALIAS = { v: 'vA', R: 'Rb', omega: null, r: 'rC', mu: 'muC', m: 'mC' };
+function set(p, val) {
+  if (p === 'tab') return setTab(val);
+  if (p in ALIAS) p = ALIAS[p] || (S.tab === 'C' ? 'wC' : 'w');
+  if (p === 'tanAlpha') S.alpha = deg(Math.atan(+val));
+  else if (p === 'floorOut') S.floorOut = !!val;
+  else if (p in S) S[p] = +val;
+  else throw new Error('unknown param ' + p);
+  syncUI();
+  return S;
+}
+const PRESETS = {
+  Q362: () => { setTab('A'); S.alpha = deg(Math.atan(0.75)); S.vA = 1.5; },
+  Q363: () => { setTab('B'); S.Rb = 0.5; S.w = 5; },
+  Q364: () => { setTab('C'); Object.assign(S, { rC: 4, muC: 0.4, wC: 2.5, mC: 60 }); },
+};
+function preset(name) { PRESETS[name](); syncUI(); return S; }
+function reset() {
+  Object.assign(S, DEFAULTS); setTab(S.tab); resetAnim(); syncUI(); return S;
+}
+function compute() { return { A: computeA(), B: computeB(), C: computeC(), modeC: modeC() }; }
+function draw() { if (S.tab === 'A') drawA(); else if (S.tab === 'B') { drawB(); drawG(); } else drawC(); updateStatus(); }
+
+function wire() {
+  const bind = (id, key, after) => $(id).addEventListener('input', e => { S[key] = +e.target.value; syncUI(); if (after) after(); });
+  bind('alS', 'alpha'); bind('vAS', 'vA'); bind('RbS', 'Rb'); bind('wS', 'w');
+  bind('rCS', 'rC'); bind('muCS', 'muC'); bind('wCS', 'wC');
+  bind('mCS', 'mC', () => { const nEl = $('massNote'); nEl.classList.add('flash'); clearTimeout(wire.t); wire.t = setTimeout(() => nEl.classList.remove('flash'), 700); });
+  ['A', 'B', 'C'].forEach(x => $('tab' + x).addEventListener('click', () => setTab(x)));
+  $('btnQ362').addEventListener('click', () => preset('Q362'));
+  $('btnQ363').addEventListener('click', () => preset('Q363'));
+  $('btnQ364').addEventListener('click', () => preset('Q364'));
+  $('btnWc').addEventListener('click', () => { S.w = Math.ceil(computeB().wc * 10) / 10; syncUI(); });
+  $('btnWmin').addEventListener('click', () => { S.wC = computeC().wMin; syncUI(); });
+  $('btnFloor').addEventListener('click', () => { S.floorOut = !S.floorOut; syncUI(); });
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => { preset(b.dataset.preset); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
+}
+
+cA = stage($('cvA'), 900, 470);
+cB = stage($('cvB'), 900, 460);
+cG = stage($('cvG'), 900, 210);
+cC = stage($('cvC'), 900, 470);
+wire(); resetAnim(); syncUI();
+
+window.sim = { step, state: S, set, reset, setTab, preset, compute, computeA, computeB, computeC, modeC, draw, drawA, drawB, drawG, drawC, ballA, beadB, rot };
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  step(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

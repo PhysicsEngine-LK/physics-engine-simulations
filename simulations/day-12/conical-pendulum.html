@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>කේතු අවලම්බය (Q354–360) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 14px; line-height: 1.6; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+  .tabs button { font-size: 16px; padding: 9px 18px; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  input[type=range]:disabled { opacity: .4; cursor: not-allowed; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  .chk { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .chk input { width: 18px; height: 18px; accent-color: #6c5ce7; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: linear-gradient(#f0f7ff, #fff); border: 1px solid #dfe6e9; }
+  .status { margin-top: 14px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 12px 16px; border-radius: 6px; font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; gap: 10px 26px; justify-content: space-between; }
+  .status.limit { border-left-color: #f39c12; background: #fef5e7; }
+  .status.move { border-left-color: #e74c3c; background: #fdedec; }
+  .status small { display: block; font-size: 13px; color: #636e72; font-weight: 600; }
+  .massnote { display: inline-block; margin-top: 4px; font-size: 13px; font-weight: 700; color: #6c5ce7; background: #fff; border: 1px dashed #a29bfe; border-radius: 6px; padding: 3px 8px; transition: background .3s, transform .3s; }
+  .massnote.flash { background: #ffeaa7; transform: scale(1.06); }
+  .warn { margin-top: 10px; border: 2px dashed #e17055; background: #fff5f0; color: #c0392b; border-radius: 8px; padding: 9px 12px; font-weight: 700; font-size: 14px; line-height: 1.6; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .cvs + .cvs { margin-top: 12px; }
+  /* derivation boxes: one step per line */
+  .dbox { background: #fbfaff; border: 1px solid #d6d2ff; border-left: 6px solid #6c5ce7; border-radius: 10px; padding: 12px 16px; margin: 12px 0; overflow-x: auto; }
+  .dbox .dh { font-weight: 800; font-size: 16px; color: #6c5ce7; margin-bottom: 6px; }
+  .dbox .l { padding: 5px 0 5px 6px; line-height: 1.6; font-size: 15px; }
+  .dbox .l.m { padding-left: 34px; font-family: 'Cambria', 'Times New Roman', serif; font-size: 19px; white-space: nowrap; }
+  .dbox .l.m .si { font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; font-size: 15px; }
+  .ans .dbox { margin: 6px 0 10px; }
+  .fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 4px; line-height: 1.25; }
+  .fr > span:first-child { border-bottom: 1.6px solid currentColor; padding: 0 4px 2px; }
+  .fr > span:last-child { padding: 2px 4px 0; }
+  .sq { white-space: nowrap; }
+  .sq > span { border-top: 1.6px solid currentColor; padding: 2px 3px 0; margin-left: 1px; display: inline-block; }
+  .tg { color: #6c5ce7; font-weight: 700; margin-left: 22px; font-family: 'Segoe UI', sans-serif; font-size: 15px; }
+  .res { display: inline-block; border: 2px solid #6c5ce7; border-radius: 8px; padding: 4px 10px; background: #fff; }
+  .ok { color: #27ae60; font-weight: 800; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } .status { font-size: 14px; } .dbox .l.m { font-size: 17px; padding-left: 14px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .side .status { margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 15px; }
+    .side .status > div:first-child { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">Q354–360 · වෘත්ත චලිතය</span></div>
+  <h1>06. කේතු අවලම්බය</h1>
+  <p class="sub">තන්තුවක එල්ලූ ගෝලයක් තිරස් වෘත්තයක කරකවන විට තන්තුව අවකාශයේ <b>කේතුවක්</b> අඳියි. ආතතියේ <b>සිරස් සංරචකය (T cosθ)</b> බර දරයි; <b>තිරස් සංරචකය (T sinθ)</b> කේන්ද්‍රාභිසාරී බලය සපයයි. ω වෙනස් කර කේතුව විවෘත වන හැටි බලන්න!</p>
+
+  <div class="tabs">
+    <button id="tabA" class="solid">🎯 A. කේතු අවලම්බය</button>
+    <button id="tabB">👯 B. අවලම්බ දෙකක්</button>
+    <button id="tabC">🎡 C. කැරකෙන ඔන්චිල්ලාව</button>
+  </div>
+
+  <!-- ================= TAB A ================= -->
+  <section id="paneA">
+    <div class="layout">
+     <aside class="side">
+      <div class="controls">
+        <div><label>කෝණික ප්‍රවේගය ω = <span class="v" id="wVal">5.0</span> rad s⁻¹</label><input type="range" id="wS" min="0.5" max="12" step="0.1" value="5"></div>
+        <div><label>තන්තුවේ දිග l = <span class="v" id="lVal">0.50</span> m</label><input type="range" id="lS" min="0.2" max="1.2" step="0.05" value="0.5"></div>
+        <div style="grid-column:1/-1"><label>ගෝලයේ ස්කන්ධය m = <span class="v" id="mVal">0.20</span> kg</label><input type="range" id="mS" min="0.05" max="1" step="0.05" value="0.2">
+          <span class="massnote" id="massNote">⚖️ θ, h, t ස්කන්ධය මත රඳා නොපවතී — T පමණක් වෙනස් වේ</span></div>
+        <div class="btns">
+          <label class="chk"><input type="checkbox" id="mistakeChk"> 🤔 සිසුවාගේ වැරැද්ද (T = mg cosθ ?)</label>
+          <label class="chk"><input type="checkbox" class="slowChk"> 🐢 සෙමින් (×0.25)</label>
+        </div>
+        <div class="btns">
+          <button class="solid" id="btnQ355">Q355: l = 0.5 m, m = 0.2 kg, ω = 5</button>
+          <button id="btnWc">ω = √(g/l) (සීමාව)</button>
+          <button id="btnW12">ω = 12 (θ → 90° ?)</button>
+        </div>
+      </div>
+      <div class="status" id="statusA">
+        <div><small>තත්ත්වය</small><span id="stA">–</span></div>
+        <div><small>θ (සිරස සමඟ)</small><span id="stTh">–</span></div>
+        <div><small>cosθ = g/(lω²)</small><span id="stCos">–</span></div>
+        <div><small>r = l sinθ</small><span id="stR">–</span></div>
+        <div><small>h = l cosθ = g/ω²</small><span id="stH">–</span></div>
+        <div><small>T = mlω² = mg/cosθ</small><span id="stT">–</span></div>
+        <div><small>T cosθ ↔ mg</small><span id="stTc">–</span></div>
+        <div><small>T sinθ ↔ mrω²</small><span id="stTs">–</span></div>
+        <div><small>v = rω</small><span id="stV">–</span></div>
+        <div><small>t = 2π√(h/g)</small><span id="stP">–</span></div>
+      </div>
+      <div class="warn" id="noCone" style="display:none"></div>
+     </aside>
+     <div class="main">
+      <div class="cvs"><canvas id="cvA" class="scene"></canvas></div>
+     </div>
+    </div>
+
+    <div class="dbox">
+      <div class="dh">කේතු අවලම්බයේ සමීකරණ</div>
+      <div class="l">• සිරස්ව (ගෝලය ඉහළ පහළ නොයයි — බල සංතුලිතයි):</div>
+      <div class="l m">T cosθ = mg <span class="tg">—— (1)</span></div>
+      <div class="l">• තිරස්ව (වෘත්තයේ කේන්ද්‍රය දෙසට):</div>
+      <div class="l m">T sinθ = mrω² <span class="tg">—— (2)</span></div>
+      <div class="l">• වෘත්තයේ අරය:</div>
+      <div class="l m">r = l sinθ <span class="tg">—— (3)</span></div>
+      <div class="l">(3), (2) ට ආදේශ කිරීමෙන්:</div>
+      <div class="l m">T sinθ = m(l sinθ)ω²</div>
+      <div class="l m">T = mlω² <span class="tg">—— (4)</span></div>
+      <div class="l">(4), (1) ට ආදේශ කිරීමෙන්:</div>
+      <div class="l m">mlω² cosθ = mg</div>
+      <div class="l m">cosθ = <span class="fr"><span>g</span><span>lω²</span></span> <span class="tg">—— (5)</span></div>
+      <div class="l">• කේතුවේ සිරස් උස:</div>
+      <div class="l m">h = l cosθ</div>
+      <div class="l m">h = <span class="fr"><span>g</span><span>ω²</span></span> <span class="tg">—— (6)</span></div>
+      <div class="l">• ආවර්ත කාලය:</div>
+      <div class="l m">t = <span class="fr"><span>2π</span><span>ω</span></span></div>
+      <div class="l m"><span class="res">t = 2π<span class="sq">√<span><span class="fr"><span>h</span><span>g</span></span></span></span></span></div>
+      <div class="l">(2) ÷ (1):</div>
+      <div class="l m">tanθ = <span class="fr"><span>rω²</span><span>g</span></span> = <span class="fr"><span>v²</span><span>rg</span></span></div>
+      <div class="note">• cosθ ≤ 1 විය යුතු නිසා lω² &gt; g, එනම් <b>ω &gt; √(g/l)</b> වූ විට පමණක් කේතුවක් සෑදේ. ω ≤ √(g/l) නම් ගෝලය සිරස්ව එල්ලී තැනම කැරකෙයි.<br>
+      • θ = 90° (තන්තුව තිරස්) වීමට cosθ = 0 විය යුතුයි — එවිට (1) හි T cosθ = 0 ≠ mg. එබැවින් ω → ∞ වුවත් θ, 90° ට ළං වනවා පමණි; <b>තන්තුව කිසිවිටෙක තිරස් නොවේ</b>.</div>
+    </div>
+  </section>
+
+  <!-- ================= TAB B ================= -->
+  <section id="paneB" style="display:none">
+    <div class="layout">
+     <aside class="side">
+      <div class="controls">
+        <div><label>A හි දිග l<sub>A</sub> = <span class="v" id="lAVal">1.000</span> m</label><input type="range" id="lAS" min="0.3" max="1.2" step="0.025" value="1"></div>
+        <div><label>B හි දිග l<sub>B</sub> = <span class="v" id="lBVal">0.625</span> m</label><input type="range" id="lBS" min="0.3" max="1.2" step="0.025" value="0.625"></div>
+        <div><label>A හි උස h<sub>A</sub> = <span class="v" id="hAVal">0.50</span> m</label><input type="range" id="hAS" min="0.1" max="1.2" step="0.05" value="0.5"></div>
+        <div><label>B හි උස h<sub>B</sub> = <span class="v" id="hBVal">0.50</span> m</label><input type="range" id="hBS" min="0.1" max="1.2" step="0.05" value="0.5"></div>
+        <div class="btns">
+          <label class="chk"><input type="checkbox" id="sameHChk" checked> 🔗 උස සමානයි (h<sub>A</sub> = h<sub>B</sub>)</label>
+          <label class="chk"><input type="checkbox" class="slowChk"> 🐢 සෙමින් (×0.25)</label>
+        </div>
+        <div class="btns">
+          <button class="solid" id="btnQ357">Q357: A 1.0 m @ 60°, B 0.625 m @ 37°</button>
+          <button id="btnPhase">↺ එකට අරඹන්න</button>
+        </div>
+      </div>
+      <div class="status" id="statusB">
+        <div><small>තලය</small><span id="stPlane">–</span></div>
+        <div><small>θ<sub>A</sub></small><span id="stThA">–</span></div>
+        <div><small>θ<sub>B</sub></small><span id="stThB">–</span></div>
+        <div><small>t<sub>A</sub> = 2π√(h<sub>A</sub>/g)</small><span id="stPA">–</span></div>
+        <div><small>t<sub>B</sub> = 2π√(h<sub>B</sub>/g)</small><span id="stPB">–</span></div>
+        <div><small>ω<sub>A</sub></small><span id="stWA">–</span></div>
+        <div><small>ω<sub>B</sub></small><span id="stWB">–</span></div>
+        <div><small>T<sub>A</sub> = mg/cosθ<sub>A</sub></small><span id="stTA">–</span></div>
+        <div><small>T<sub>B</sub> = mg/cosθ<sub>B</sub></small><span id="stTB">–</span></div>
+        <div><small>T<sub>A</sub> : T<sub>B</sub></small><span id="stRatio">–</span></div>
+      </div>
+      <div class="warn" id="hWarn" style="display:none"></div>
+     </aside>
+     <div class="main">
+      <div class="cvs"><canvas id="cvB" class="scene"></canvas></div>
+     </div>
+    </div>
+
+    <div class="dbox">
+      <div class="dh">ආවර්ත කාලය රඳා පවතින්නේ h මත පමණි</div>
+      <div class="l m">t = 2π<span class="sq">√<span><span class="fr"><span>h</span><span>g</span></span></span></span></div>
+      <div class="l">h<sub>A</sub> = h<sub>B</sub> නම්:</div>
+      <div class="l m">t<sub>A</sub> = t<sub>B</sub></div>
+      <div class="l m">ω<sub>A</sub> = ω<sub>B</sub></div>
+      <div class="l">ආතතිය (එකම ස්කන්ධය m):</div>
+      <div class="l m">T = <span class="fr"><span>mg</span><span>cosθ</span></span></div>
+      <div class="note">l සහ θ වෙනස් වුවත් h සමාන නම් ගෝල දෙකම එකම ω න් කැරකේ. එබැවින් ඒවා සැමවිටම අක්ෂය හරහා යන <b>එකම සිරස් තලයේ</b> පිහිටයි. "උස සමානයි" ඉවත් කර h<sub>B</sub> වෙනස් කළොත් — ගෝල දෙක ක්‍රමයෙන් වෙන් වෙයි!</div>
+    </div>
+  </section>
+
+  <!-- ================= TAB C ================= -->
+  <section id="paneC" style="display:none">
+    <div class="layout">
+     <aside class="side">
+      <div class="controls">
+        <div><label>රාමුවේ අරය R = <span class="v" id="RVal">4.5</span> m</label><input type="range" id="RS" min="0" max="6" step="0.1" value="4.5"></div>
+        <div><label>දම්වැලේ දිග l = <span class="v" id="lcVal">5.0</span> m</label><input type="range" id="lcS" min="2" max="7" step="0.1" value="5"></div>
+        <div><label>කෝණික ප්‍රවේගය ω = <span class="v" id="wcVal">1.00</span> rad s⁻¹</label><input type="range" id="wcS" min="0" max="1.5" step="0.01" value="1"></div>
+        <div><label>ආසනය + පුද්ගලයා m = <span class="v" id="mcVal">60</span> kg</label><input type="range" id="mcS" min="20" max="120" step="5" value="60"></div>
+        <div class="btns">
+          <label class="chk"><input type="checkbox" class="slowChk"> 🐢 සෙමින් (×0.25)</label>
+        </div>
+        <div class="btns">
+          <button class="solid" id="btnQ359">Q359: R = 4.5 m, l = 5 m, ω = 1 rad s⁻¹</button>
+        </div>
+      </div>
+      <div class="status" id="statusC">
+        <div><small>θ (සිරස සමඟ)</small><span id="stThC">–</span></div>
+        <div><small>r = R + l sinθ</small><span id="stRC">–</span></div>
+        <div><small>tanθ</small><span id="stTanC">–</span></div>
+        <div><small>rω²/g</small><span id="stRhsC">–</span></div>
+        <div><small>T = mg/cosθ</small><span id="stTC">–</span></div>
+        <div><small>T sinθ = mrω²</small><span id="stTsC">–</span></div>
+        <div><small>v = rω</small><span id="stVC">–</span></div>
+        <div><small>t = 2π/ω</small><span id="stPC">–</span></div>
+      </div>
+     </aside>
+     <div class="main">
+      <div class="cvs"><canvas id="cvC" class="scene"></canvas></div>
+     </div>
+    </div>
+
+    <div class="dbox">
+      <div class="dh">කැරකෙන ඔන්චිල්ලාව (chair-o-plane)</div>
+      <div class="l">• ආසනයේ වෘත්තයේ අරය (රාමුවේ අරය + දම්වැලේ තිරස් කොටස):</div>
+      <div class="l m">r = R + l sinθ <span class="tg">—— (1)</span></div>
+      <div class="l">• සිරස්ව:</div>
+      <div class="l m">T cosθ = mg <span class="tg">—— (2)</span></div>
+      <div class="l">• තිරස්ව (කේන්ද්‍රය දෙසට):</div>
+      <div class="l m">T sinθ = mrω² <span class="tg">—— (3)</span></div>
+      <div class="l">(3) ÷ (2):</div>
+      <div class="l m">tanθ = <span class="fr"><span>rω²</span><span>g</span></span></div>
+      <div class="l m">tanθ = <span class="fr"><span>(R + l sinθ)ω²</span><span>g</span></span></div>
+      <div class="note">θ සමීකරණයේ දෙපසම ඇති නිසා සිමියුලේෂනය එය සංඛ්‍යාත්මකව (numerically) විසඳයි. R = 0 නම් මෙය සාමාන්‍ය කේතු අවලම්බයයි. R &gt; 0 නම් ω කුඩා වුවත් θ &gt; 0 — දම්වැල් ඇල වීමට අවම ω එකක් නැත.</div>
+    </div>
+  </section>
+
+  <h2>විසඳුම් (පන්තියේ ගැටලු Q354–360)</h2>
+  <details>
+    <summary><span class="qtag">Q354</span>T = mg/cosθ — සහ සිසුවාගේ T = mg cosθ වැරැද්ද</summary>
+    <div class="ans">
+      <b>(i)</b>
+      <div class="dbox">
+        <div class="l">• සිරස්ව (සමීකරණය 1):</div>
+        <div class="l m">T cosθ = mg <span class="tg">—— (1)</span></div>
+        <div class="l m"><span class="res">T = <span class="fr"><span>mg</span><span>cosθ</span></span></span></div>
+        <div class="l">θ &gt; 0 විට cosθ &lt; 1 නිසා:</div>
+        <div class="l m">T &gt; mg</div>
+        <div class="l">ආතතියට බර දැරීමට අමතරව කේන්ද්‍රාභිසාරී බලය ද (T sinθ) සැපයීමට සිදු වේ.</div>
+      </div>
+      <b>(ii)</b>
+      <div class="dbox">
+        <div class="l">ගෝලයට තිරස්ව කේන්ද්‍රය දෙසට ත්වරණයක් (a = rω²) ඇත. එයට තන්තුව දිගේ <b>a sinθ</b> සංරචකයක් ඇති නිසා, එම දිශාවට බල සංතුලනය කළ නොහැක.</div>
+        <div class="l">නිවැරදිව, තන්තුව දිගේ (F = ma):</div>
+        <div class="l m">T − mg cosθ = ma sinθ <span class="tg">—— (a)</span></div>
+        <div class="l">(2) ÷ (1) න්:</div>
+        <div class="l m">a = rω² = g tanθ <span class="tg">—— (b)</span></div>
+        <div class="l">(b), (a) ට ආදේශ කිරීමෙන්:</div>
+        <div class="l m">T = mg cosθ + <span class="fr"><span>mg sin²θ</span><span>cosθ</span></span></div>
+        <div class="l m">T = <span class="fr"><span>mg(cos²θ + sin²θ)</span><span>cosθ</span></span></div>
+        <div class="l m"><span class="res">T = <span class="fr"><span>mg</span><span>cosθ</span></span></span></div>
+        <div class="l">එබැවින් සිසුවාගේ T = mg cosθ සැබෑ ආතතියට වඩා <b>කුඩා</b> ය. බල සංතුලනය කළ හැක්කේ ත්වරණය නැති දිශාවට (සිරස්ව) පමණි.</div>
+        <div class="note">උදා: m = 0.2 kg, θ ≈ 37° — සිසුවා: mg cosθ = 1.6 N ✗, සැබෑ T = mg/cosθ = 2.5 N ✓</div>
+      </div>
+      <div class="btns"><button data-preset="Q354">▶ සිමියුලේෂනයේ බලන්න (සිසුවාගේ වැරැද්ද)</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q355</span>l = 0.5 m, m = 0.2 kg, ω = 5 rad s⁻¹ — T, θ, r, v</summary>
+    <div class="ans">
+      <b>(i)</b>
+      <div class="dbox">
+        <div class="l m">T sinθ = mrω² <span class="tg">—— (2)</span></div>
+        <div class="l m">T sinθ = m(l sinθ)ω²</div>
+        <div class="l m">T = mlω²</div>
+        <div class="l m">T = 0.2 × 0.5 × 25</div>
+        <div class="l m"><span class="res">T = 2.5 N</span></div>
+      </div>
+      <b>(ii)</b>
+      <div class="dbox">
+        <div class="l m">T cosθ = mg <span class="tg">—— (1)</span></div>
+        <div class="l m">cosθ = <span class="fr"><span>mg</span><span>T</span></span> = <span class="fr"><span>2</span><span>2.5</span></span></div>
+        <div class="l m">cosθ = 0.8</div>
+        <div class="l m"><span class="res">θ = 37°</span></div>
+        <div class="l m">r = l sinθ = 0.5 × 0.6</div>
+        <div class="l m"><span class="res">r = 0.3 m</span></div>
+        <div class="l m">v = rω = 0.3 × 5</div>
+        <div class="l m"><span class="res">v = 1.5 m s⁻¹</span></div>
+      </div>
+      <div class="btns"><button data-preset="Q355">▶ සිමියුලේෂනයේ බලන්න</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q356</span>h සහ ආවර්ත කාලය; තන්තුව කිසිවිටෙක තිරස් නොවන්නේ ඇයි?</summary>
+    <div class="ans">
+      <b>(i)</b>
+      <div class="dbox">
+        <div class="l m">h = l cosθ = 0.5 × 0.8</div>
+        <div class="l m"><span class="res">h = 0.4 m</span></div>
+        <div class="l m">t = 2π<span class="sq">√<span><span class="fr"><span>h</span><span>g</span></span></span></span> = 2π<span class="sq">√<span><span class="fr"><span>0.4</span><span>10</span></span></span></span></div>
+        <div class="l m">t = 2π × 0.2</div>
+        <div class="l m"><span class="res">t = 0.4π s ≈ 1.26 s</span></div>
+        <div class="l">ω = 5 rad s⁻¹ නම්:</div>
+        <div class="l m">t = <span class="fr"><span>2π</span><span>ω</span></span> = <span class="fr"><span>2π</span><span>5</span></span> = 0.4π s <span class="ok">✓</span></div>
+      </div>
+      <b>(ii)</b>
+      <div class="dbox">
+        <div class="l m">T cosθ = mg <span class="tg">—— (1)</span></div>
+        <div class="l">තන්තුව තිරස් නම් θ = 90°:</div>
+        <div class="l m">cosθ = 0</div>
+        <div class="l m">T cosθ = 0 ≠ mg</div>
+        <div class="l">එවිට බර සංතුලනය කිරීමට සිරස් බලයක් නැත. mg ≠ 0 නිසා θ සැමවිටම 90° ට අඩු ය. (ω වැඩි වන විට θ, 90° ට ළං වේ; h = g/ω² අඩු වේ.)</div>
+      </div>
+      <div class="btns"><button data-preset="Q356">▶ (i) බලන්න</button><button data-preset="Q356b">▶ (ii) ω = 12 බලන්න</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q357</span>A (1.0 m, 60°) සහ B (0.625 m, 37°) — ආවර්ත කාල සසඳන්න</summary>
+    <div class="ans">
+      <div class="dbox">
+        <div class="l m">h<sub>A</sub> = 1.0 × cos60°</div>
+        <div class="l m">h<sub>A</sub> = 0.5 m</div>
+        <div class="l m">h<sub>B</sub> = 0.625 × 0.8</div>
+        <div class="l m">h<sub>B</sub> = 0.5 m</div>
+        <div class="l">h සමාන නිසා ආවර්ත කාල සමාන ය:</div>
+        <div class="l m">t = 2π<span class="sq">√<span>0.05</span></span></div>
+        <div class="l m"><span class="res">t ≈ 1.4 s</span></div>
+        <div class="l">(තන්තුවේ දිග හා කෝණය වෙනස් වුවත්!)</div>
+      </div>
+      <div class="btns"><button data-preset="Q357">▶ සිමියුලේෂනයේ බලන්න</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q358</span>කෝණික ප්‍රවේග සහ තන්තුවල ආතති සසඳන්න</summary>
+    <div class="ans">
+      <div class="dbox">
+        <div class="l">t සමාන ⇒ ω සමාන:</div>
+        <div class="l m">ω<sub>A</sub> : ω<sub>B</sub> = 1 : 1</div>
+        <div class="l">ගෝල දෙක සැමවිටම එකම තලයක, එක රේඛාවක පිහිටයි.</div>
+        <div class="l m">T = <span class="fr"><span>mg</span><span>cosθ</span></span></div>
+        <div class="l m">T<sub>A</sub> = <span class="fr"><span>mg</span><span>0.5</span></span> = 2mg</div>
+        <div class="l m">T<sub>B</sub> = <span class="fr"><span>mg</span><span>0.8</span></span> = 1.25mg</div>
+        <div class="l m"><span class="res">T<sub>A</sub> : T<sub>B</sub> = 8 : 5</span></div>
+      </div>
+      <div class="btns"><button data-preset="Q357">▶ සිමියුලේෂනයේ බලන්න</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q359</span>Chair-o-plane: r සොයා tanθ = rω²/g තෘප්ත වන බව</summary>
+    <div class="ans">
+      <div class="dbox">
+        <div class="l">ආසනය ගමන් කරන වෘත්තයේ අරය (r):</div>
+        <div class="l m">r = R + l sin37°</div>
+        <div class="l m">r = 4.5 + (5 × 0.6)</div>
+        <div class="l m">r = 4.5 + 3</div>
+        <div class="l m"><span class="res">r = 7.5 m</span></div>
+        <div class="l">tanθ = rω²/g පරීක්ෂා කිරීම:</div>
+        <div class="l m">වම් පස = tan37° = 0.75</div>
+        <div class="l m">දකුණු පස = <span class="fr"><span>7.5 × (1)²</span><span>10</span></span> = 0.75</div>
+        <div class="l">වම් පස = දකුණු පස බැවින් සම්බන්ධතාවය තෘප්ත වේ <span class="ok">✓</span></div>
+      </div>
+      <div class="btns"><button data-preset="Q359">▶ සිමියුලේෂනයේ බලන්න</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q360</span>m = 60 kg — දම්වැලේ ආතතිය</summary>
+    <div class="ans">
+      <div class="dbox">
+        <div class="l">සිරස් සමතුලිතතාවයෙන්:</div>
+        <div class="l m">T cos37° = mg</div>
+        <div class="l m">T × 0.8 = 60 × 10</div>
+        <div class="l m">0.8T = 600</div>
+        <div class="l m">T = <span class="fr"><span>600</span><span>0.8</span></span></div>
+        <div class="l m"><span class="res">T = 750 N</span></div>
+      </div>
+      <div class="btns"><button data-preset="Q359">▶ සිමියුලේෂනයේ බලන්න</button></div>
+    </div>
+  </details>
+  <p class="note">g = 10 m s⁻² · cos37° = 0.8, sin37° = 0.6 ලෙස ගෙන ඇත.</p>
+</div>
+
+<script>
+// ===================== physics core (no DOM) =====================
+const g = 10;
+const TAU = 2 * Math.PI;
+const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
+const DEF = {
+  tab: 'A', slow: false,
+  // Tab A — single conical pendulum
+  w: 5, l: 0.5, m: 0.2, mistake: false, phi: 0,
+  // Tab B — two pendulums, same pivot
+  lA: 1.0, lB: 0.625, hA: 0.5, hB: 0.5, sameH: true, phiA: 0, phiB: 0,
+  // Tab C — chair-o-plane
+  R: 4.5, lc: 5, wc: 1, mc: 60, phiC: 0,
+};
+const S = Object.assign({}, DEF);
+
+// Tab A: cosθ = g/(lω²) when lω² > g, otherwise the bob hangs straight (θ = 0)
+function computeA() {
+  const w = S.w, l = S.l, m = S.m, mg = m * g;
+  const wc = Math.sqrt(g / l), cone = l * w * w > g * (1 + 1e-9);
+  const co = cone ? g / (l * w * w) : 1, th = Math.acos(co), si = Math.sin(th);
+  const T = cone ? m * l * w * w : mg;
+  const r = l * si, h = l * co;
+  return { cone, wc, th, cos: co, sin: si, T, r, h, v: r * w, a: r * w * w, mg,
+           Tc: T * co, Ts: T * si, Fc: m * r * w * w, student: mg * co,
+           period: TAU / w, periodH: TAU * Math.sqrt(h / g) };
+}
+
+// Tab B: a pendulum with length l and cone height h (h ≥ l → hangs straight)
+function pend(l, h) {
+  const straight = h >= l - 1e-9, he = Math.min(h, l);
+  const co = he / l, th = Math.acos(Math.min(1, co));
+  return { l, h: he, straight, th, cos: co, r: l * Math.sin(th), w: Math.sqrt(g / he),
+           period: TAU * Math.sqrt(he / g), Tmg: 1 / co };
+}
+function computeB() {
+  const A = pend(S.lA, S.hA), B = pend(S.lB, S.sameH ? S.hA : S.hB);
+  let dphi = ((S.phiA - S.phiB) % TAU + TAU) % TAU; if (dphi > Math.PI) dphi = TAU - dphi;
+  const sameW = Math.abs(A.w - B.w) < 1e-9;
+  const inPlane = !A.straight && !B.straight && sameW && dphi < 0.03;
+  return { A, B, sameW, inPlane, dphi, ratio: A.Tmg / B.Tmg };
+}
+
+// Tab C: solve tanθ = (R + l sinθ)ω²/g for θ in [0, 90°)
+function solveChair(R, l, w) {
+  const a = R * w * w / g, b = l * w * w / g;
+  const f = th => Math.tan(th) - a - b * Math.sin(th);
+  // tanθ − b sinθ has a single minimum at cos³θ = 1/b (if b > 1) → search to the right of it
+  let lo = b > 1 ? Math.acos(Math.cbrt(1 / b)) : 0, hi = Math.PI / 2 - 1e-9;
+  if (f(lo) >= 0) return lo;
+  for (let i = 0; i < 200; i++) { const mid = (lo + hi) / 2; if (f(mid) > 0) hi = mid; else lo = mid; }
+  return (lo + hi) / 2;
+}
+function computeC() {
+  const th = solveChair(S.R, S.lc, S.wc), co = Math.cos(th), si = Math.sin(th), mg = S.mc * g;
+  const r = S.R + S.lc * si, T = mg / co;
+  return { th, cos: co, sin: si, tan: Math.tan(th), r, rhs: r * S.wc * S.wc / g, T, mg,
+           Ts: T * si, Fc: S.mc * r * S.wc * S.wc, v: r * S.wc, period: S.wc > 0 ? TAU / S.wc : Infinity };
+}
+
+function step(dt) {
+  dt *= S.slow ? 0.25 : 1;
+  const B = computeB();
+  S.phi = (S.phi + S.w * dt) % TAU;
+  S.phiA = (S.phiA + B.A.w * dt) % TAU;
+  S.phiB = (S.phiB + B.B.w * dt) % TAU;
+  S.phiC = (S.phiC + S.wc * dt) % TAU;
+}
+
+// ===================== drawing helpers =====================
+const $ = id => document.getElementById(id);
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    if (!w) return;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (!(L >= 2)) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(13, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+// Draws text; "x_abc" is drawn with "abc" as a real subscript.
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Iskoola Pota','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/);
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
+}
+function panel(c, x, y, w, h, fill = '#fff') {
+  c.fillStyle = fill; c.strokeStyle = '#d6d2ff'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(x, y, w, h, 10); c.fill(); c.stroke();
+}
+function line(c, x1, y1, x2, y2, col, lw = 2, dash) {
+  c.strokeStyle = col; c.lineWidth = lw; if (dash) c.setLineDash(dash);
+  c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); c.setLineDash([]);
+}
+// ellipse arc (centre x,y; radii rx, ry); skipped when degenerate
+function ell(c, x, y, rx, ry, a0, a1, col, lw = 2, dash) {
+  if (!(rx > 0.5)) return;
+  c.strokeStyle = col; c.lineWidth = lw; if (dash) c.setLineDash(dash);
+  c.beginPath(); c.ellipse(x, y, rx, Math.max(ry, 0.3), 0, a0, a1); c.stroke(); c.setLineDash([]);
+}
+function ceiling(c, x, y, w) {
+  c.fillStyle = '#b2bec3'; c.fillRect(x - w / 2, y - 10, w, 10);
+  c.strokeStyle = '#636e72'; c.lineWidth = 1.5;
+  for (let i = -w / 2; i < w / 2; i += 12) { c.beginPath(); c.moveTo(x + i, y - 10); c.lineTo(x + i + 10, y - 20); c.stroke(); }
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(x, y, 4, 0, TAU); c.fill();
+}
+function bob(c, x, y, rr, col, edge) {
+  const gr = c.createRadialGradient(x - rr * 0.35, y - rr * 0.35, rr * 0.2, x, y, rr);
+  gr.addColorStop(0, '#fff'); gr.addColorStop(1, col);
+  c.fillStyle = gr; c.strokeStyle = edge; c.lineWidth = 2;
+  c.beginPath(); c.arc(x, y, rr, 0, TAU); c.fill(); c.stroke();
+}
+const f1 = x => x.toFixed(1), f2 = x => x.toFixed(2), f3 = x => x.toFixed(3);
+const fN = x => Math.round(x).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const fT = x => x === Infinity ? '∞' : x.toFixed(2);
+const E = 0.3; // pseudo-3D tilt: depth y (away from viewer) shows as y·E upward
+
+// ---------- Tab A canvas ----------
+let cA, cB, cC;
+function drawA() {
+  const c = cA.ctx, W = 900, H = 520; c.clearRect(0, 0, W, H);
+  const A = computeA();
+  // ---- left: pseudo-3D side view ----
+  panel(c, 10, 10, 500, 500, '#f8f9ff');
+  const k = 200, px = 260, py = 70;
+  const P = (x, y, z) => [px + x * k, py + z * k - y * k * E];   // x right, y away, z down
+  ceiling(c, px, py, 150);
+  const [ex, ey] = P(0, 0, A.h), rx = A.r * k, ry = rx * E;
+  // cone surface
+  if (A.cone && rx > 1) {
+    c.fillStyle = 'rgba(108,92,231,.08)'; c.beginPath(); c.moveTo(px, py); c.lineTo(ex - rx, ey);
+    c.ellipse(ex, ey, rx, ry, 0, Math.PI, 0, true); c.closePath(); c.fill();
+  }
+  ell(c, ex, ey, rx, ry, Math.PI, TAU, '#a29bfe', 2, [6, 5]);          // far half
+  line(c, px, py, px, Math.max(ey, py) + 40, '#95a5a6', 1.5, [5, 5]);   // axis
+  ell(c, ex, ey, rx, ry, 0, Math.PI, '#6c5ce7', 2.5);                    // near half
+  // h bracket on the axis
+  const hx = px - 18;
+  if (ey - py > 12) { arrow(c, hx, (py + ey) / 2, hx, py + 2, '#e17055', 2); arrow(c, hx, (py + ey) / 2, hx, ey - 2, '#e17055', 2); }
+  text(c, `h = ${f2(A.h)} m`, hx - 8, (py + ey) / 2, '#e17055', 15, 'right', 800);
+  // bob
+  const ph = S.phi, [bx, by] = P(A.r * Math.cos(ph), A.r * Math.sin(ph), A.h);
+  if (A.cone && rx > 1) { line(c, ex, ey, bx, by, '#6c5ce7', 1.5, [4, 4]); c.fillStyle = '#6c5ce7'; c.beginPath(); c.arc(ex, ey, 3.5, 0, TAU); c.fill(); }
+  line(c, px, py, bx, by, '#2d3436', 2.5);
+  const Ls = Math.hypot(bx - px, by - py) || 1;
+  const kF = Math.min(55 / A.mg, 0.72 * Ls / A.T);
+  const ux = (px - bx) / Ls, uy = (py - by) / Ls;
+  const rr = (9 + 10 * Math.sqrt(S.m)) * (1 - 0.1 * Math.sin(ph) * (A.cone ? 1 : 0));
+  bob(c, bx, by, rr, '#a29bfe', '#4834d4');
+  arrow(c, bx, by, bx + ux * A.T * kF, by + uy * A.T * kF, '#00a383', 4);
+  text(c, `T = ${f2(A.T)} N`, bx + ux * A.T * kF + (ux < 0 ? -8 : 8), by + uy * A.T * kF + 4, '#00a383', 15, ux < 0 ? 'right' : 'left', 800);
+  arrow(c, bx, by, bx, by + A.mg * kF, '#2d3436', 4);
+  text(c, `mg = ${f2(A.mg)} N`, bx + 10, by + A.mg * kF + 8, '#2d3436', 14, 'left', 800);
+  // headline
+  if (A.cone) {
+    text(c, `θ = ${f1(deg(A.th))}°`, 24, 34, '#6c5ce7', 22, 'left', 800);
+    text(c, `r = ${f2(A.r)} m`, 24, 60, '#6c5ce7', 15, 'left', 700);
+  } else {
+    text(c, 'කේතුවක් නැත!', 24, 34, '#d63031', 20, 'left', 800);
+    text(c, `ω ≤ √(g/l) = ${f2(A.wc)} rad s⁻¹`, 24, 58, '#d63031', 14, 'left', 700);
+    text(c, 'ගෝලය සිරස්ව එල්ලී තැනම කැරකෙයි', 24, 80, '#d63031', 13, 'left', 700);
+  }
+  text(c, 'පැත්තෙන් දසුන (ත්‍රිමාන)', 496, 496, '#95a5a6', 13, 'right', 600);
+  text(c, 'බල එකම පරිමාණයට', 24, 496, '#95a5a6', 12, 'left', 600);
+
+  drawFBD(c, A);
+  drawTopA(c, A);
+}
+// 2D cross-section: free-body diagram (and the student's mistake)
+function drawFBD(c, A) {
+  panel(c, 520, 10, 370, 320, '#fff');
+  text(c, S.mistake ? 'සිසුවාගේ වැරැද්ද 🤔' : 'බල රූපසටහන (හරස්කඩ)', 880, 30, S.mistake ? '#d63031' : '#2c3e50', 15, 'right', 800);
+  const ox = 590, oy = 50, Ls = 125, si = A.sin, co = A.cos;
+  ceiling(c, ox, oy, 90);
+  const bx = ox + Ls * si, by = oy + Ls * co;
+  line(c, ox, oy, ox, oy + Ls + 40, '#95a5a6', 1.5, [5, 5]);
+  if (S.mistake) line(c, ox, oy, ox + (Ls + 75) * si, oy + (Ls + 75) * co, '#e17055', 1.5, [2, 4]);
+  line(c, ox, oy, bx, by, '#2d3436', 2.5);
+  if (A.th > 0.02) {
+    c.strokeStyle = '#6c5ce7'; c.lineWidth = 2; c.beginPath(); c.arc(ox, oy, 34, Math.PI / 2 - A.th, Math.PI / 2); c.stroke();
+    text(c, 'θ', ox + 40 * Math.cos(Math.PI / 2 - A.th / 2), oy + 46 * Math.sin(Math.PI / 2 - A.th / 2), '#6c5ce7', 15, 'center', 800);
+  }
+  const kF = Math.min(68 / A.mg, 125 / A.T);
+  bob(c, bx, by, 10, '#a29bfe', '#4834d4');
+  const TL = A.T * kF;
+  if (!S.mistake) {
+    if (A.th > 0.02) {
+      arrow(c, bx, by, bx, by - A.Tc * kF, '#00a383', 2.5, [6, 4]);
+      text(c, 'T cosθ', bx + 8, by - A.Tc * kF + 6, '#00a383', 13, 'left', 800);
+      arrow(c, bx, by, bx - A.Ts * kF, by, '#00a383', 2.5, [6, 4]);
+      text(c, 'T sinθ', bx - A.Ts * kF / 2, by + 16, '#00a383', 13, 'center', 800);
+    }
+  } else {
+    // student resolves along the string — but the acceleration has a component a sinθ along it
+    const mc = A.mg * co * kF;
+    arrow(c, bx, by, bx + si * mc, by + co * mc, '#e17055', 2.5, [6, 4]);
+    text(c, 'mg cosθ', bx + si * mc + 8, by + co * mc + 2, '#e17055', 13, 'left', 800);
+    const aL = Math.min(90, 8 + A.a * 6);
+    if (A.th > 0.02) { arrow(c, bx, by + 26, bx - aL, by + 26, '#0984e3', 2.5); text(c, 'a = rω²', bx - aL - 4, by + 26, '#0984e3', 13, 'right', 800); }
+  }
+  arrow(c, bx, by, bx - si * TL, by - co * TL, '#00b894', 4);
+  text(c, 'T', bx - si * TL - 10, by - co * TL + 2, '#00b894', 17, 'right', 800);
+  arrow(c, bx, by, bx, by + A.mg * kF, '#2d3436', 4);
+  text(c, 'mg', bx + 8, by + A.mg * kF - 4, '#2d3436', 15, 'left', 800);
+  // readouts
+  if (!S.mistake) {
+    text(c, `T cosθ = ${f2(A.Tc)} N  =  mg = ${f2(A.mg)} N ✓`, 535, 276, '#00a383', 14, 'left', 800);
+    text(c, `T sinθ = ${f2(A.Ts)} N  =  mrω² = ${f2(A.Fc)} N ✓`, 535, 300, '#00a383', 14, 'left', 800);
+  } else {
+    text(c, `සිසුවා: T = mg cosθ = ${f2(A.student)} N ✗`, 535, 266, '#d63031', 14, 'left', 800);
+    text(c, `සැබෑ: T = mg/cosθ = ${f2(A.T)} N ✓`, 535, 290, '#00a383', 14, 'left', 800);
+    text(c, 'තන්තුව දිගේ ත්වරණ සංරචකය a sinθ ≠ 0', 535, 313, '#0984e3', 13, 'left', 700);
+  }
+}
+function drawTopA(c, A) {
+  panel(c, 520, 340, 370, 170, '#f2fbf4');
+  const cx = 610, cy = 425, kt = 62, rp = A.r * kt;
+  if (rp > 1) { c.strokeStyle = '#6c5ce7'; c.lineWidth = 2; c.setLineDash([6, 5]); c.beginPath(); c.arc(cx, cy, rp, 0, TAU); c.stroke(); c.setLineDash([]); }
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(cx, cy, 3.5, 0, TAU); c.fill();
+  text(c, 'O', cx - 9, cy + 12, '#2d3436', 12, 'center', 800);
+  const ph = S.phi, bx = cx + rp * Math.cos(ph), by = cy - rp * Math.sin(ph);
+  if (rp > 1) {
+    line(c, cx, cy, bx, by, '#2d3436', 1.5);
+    const vl = Math.min(70, 14 + A.v * 12);
+    arrow(c, bx, by, bx - Math.sin(ph) * vl, by - Math.cos(ph) * vl, '#0984e3', 3);
+    const fl = Math.min(rp - 4, 0.6 * rp);
+    if (fl > 6) arrow(c, bx, by, bx + (cx - bx) / rp * fl, by + (cy - by) / rp * fl, '#00a383', 3);
+  }
+  bob(c, bx, by, 8, '#a29bfe', '#4834d4');
+  text(c, 'ඉහළ සිට දසුන', 880, 358, '#2c3e50', 13, 'right', 800);
+  text(c, `→ v = rω = ${f2(A.v)} m s⁻¹`, 880, 390, '#0984e3', 13, 'right', 800);
+  text(c, `→ T sinθ (කේන්ද්‍රය දෙසට)`, 880, 414, '#00a383', 13, 'right', 800);
+  text(c, A.cone ? `t = 2π/ω = ${f2(A.period)} s` : 'r = 0 (කේතුවක් නැත)', 880, 446, '#6c5ce7', 14, 'right', 800);
+  if (A.cone) text(c, `2π√(h/g) = ${f2(A.periodH)} s ✓`, 880, 470, '#6c5ce7', 14, 'right', 800);
+}
+
+// ---------- Tab B canvas ----------
+function drawB() {
+  const c = cB.ctx, W = 900, H = 480; c.clearRect(0, 0, W, H);
+  const Bc = computeB(), pA = Bc.A, pB = Bc.B;
+  panel(c, 10, 10, 550, 460, '#f8f9ff');
+  const k = 200, px = 285, py = 62;
+  const P = (x, y, z) => [px + x * k, py + z * k - y * k * E];
+  ceiling(c, px, py, 150);
+  const items = [
+    { p: pA, phi: S.phiA, col: '#a29bfe', edge: '#4834d4', ln: '#6c5ce7', name: 'A' },
+    { p: pB, phi: S.phiB, col: '#fab1a0', edge: '#d35400', ln: '#e17055', name: 'B' },
+  ];
+  // the vertical plane through the axis that contains both bobs
+  if (Bc.inPlane) {
+    const Rm = 1.25, zm = Math.max(pA.h, pB.h) + 0.15, ph = S.phiA;
+    const q = [P(0, 0, -0.02), P(Rm * Math.cos(ph), Rm * Math.sin(ph), -0.02), P(Rm * Math.cos(ph), Rm * Math.sin(ph), zm), P(0, 0, zm)];
+    c.fillStyle = 'rgba(0,184,148,.10)'; c.strokeStyle = 'rgba(0,184,148,.45)'; c.lineWidth = 1.5;
+    c.beginPath(); q.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); c.fill(); c.stroke();
+  }
+  items.forEach(it => { const [ex, ey] = P(0, 0, it.p.h), rx = it.p.r * k; ell(c, ex, ey, rx, rx * E, Math.PI, TAU, it.ln, 1.5, [6, 5]); });
+  const zmax = Math.max(pA.h, pB.h);
+  line(c, px, py, px, py + zmax * k + 40, '#95a5a6', 1.5, [5, 5]);
+  items.forEach(it => { const [ex, ey] = P(0, 0, it.p.h), rx = it.p.r * k; ell(c, ex, ey, rx, rx * E, 0, Math.PI, it.ln, 2.2); });
+  // h brackets
+  const hs = [{ h: pA.h, col: '#6c5ce7', x: px - 18, t: 'h_A' }, { h: pB.h, col: '#e17055', x: px - 18 - (Math.abs(pA.h - pB.h) > 1e-9 ? 70 : 0), t: 'h_B' }];
+  if (Math.abs(pA.h - pB.h) < 1e-9) {
+    const y2 = py + pA.h * k;
+    if (y2 - py > 12) { arrow(c, px - 18, (py + y2) / 2, px - 18, py + 2, '#00a383', 2); arrow(c, px - 18, (py + y2) / 2, px - 18, y2 - 2, '#00a383', 2); }
+    text(c, `h_A = h_B = ${f2(pA.h)} m`, px - 26, (py + y2) / 2, '#00a383', 15, 'right', 800);
+    line(c, 30, y2, 540, y2, 'rgba(0,163,131,.5)', 1.2, [3, 6]);
+    text(c, 'එකම තිරස් තලය', 540 - 4, y2 + 14, '#00a383', 12, 'right', 700);
+  } else hs.forEach(s => {
+    const y2 = py + s.h * k;
+    if (y2 - py > 12) { arrow(c, s.x, (py + y2) / 2, s.x, py + 2, s.col, 2); arrow(c, s.x, (py + y2) / 2, s.x, y2 - 2, s.col, 2); }
+    text(c, `${s.t} = ${f2(s.h)}`, s.x - 6, (py + y2) / 2, s.col, 14, 'right', 800);
+  });
+  // bobs, far one first
+  items.map(it => Object.assign(it, { depth: it.p.r * Math.sin(it.phi) })).sort((a, b) => b.depth - a.depth).forEach(it => {
+    const [bx, by] = P(it.p.r * Math.cos(it.phi), it.p.r * Math.sin(it.phi), it.p.h);
+    line(c, px, py, bx, by, '#2d3436', 2.2);
+    bob(c, bx, by, 13, it.col, it.edge);
+    text(c, it.name, bx, by + 1, it.edge, 13, 'center', 800);
+  });
+  text(c, `A: l = ${f3(pA.l)} m,  θ = ${f1(deg(pA.th))}°`, 24, 32, '#6c5ce7', 15, 'left', 800);
+  text(c, `B: l = ${f3(pB.l)} m,  θ = ${f1(deg(pB.th))}°`, 24, 56, '#d35400', 15, 'left', 800);
+  text(c, 'පැත්තෙන් දසුන (ත්‍රිමාන)', 546, 456, '#95a5a6', 13, 'right', 600);
+
+  // ---- right: top view ----
+  panel(c, 570, 10, 320, 460, '#f2fbf4');
+  text(c, 'ඉහළ සිට දසුන', 880, 30, '#2c3e50', 14, 'right', 800);
+  const cx = 730, cy = 175, kt = 110;
+  items.forEach(it => {
+    const rp = it.p.r * kt;
+    if (rp > 1) { c.strokeStyle = it.ln; c.lineWidth = 1.8; c.setLineDash([6, 5]); c.beginPath(); c.arc(cx, cy, rp, 0, TAU); c.stroke(); c.setLineDash([]); }
+  });
+  items.forEach(it => {
+    const rp = it.p.r * kt, bx = cx + rp * Math.cos(it.phi), by = cy - rp * Math.sin(it.phi);
+    line(c, cx, cy, bx, by, it.ln, 2);
+    bob(c, bx, by, 10, it.col, it.edge);
+    text(c, it.name, bx, by + 1, it.edge, 11, 'center', 800);
+  });
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(cx, cy, 3.5, 0, TAU); c.fill();
+  const ok = Bc.inPlane;
+  text(c, ok ? '✓ එකම රේඛාවක — එකම තලයක' : '✗ ගෝල වෙන් වෙයි', 730, 330, ok ? '#00a383' : '#d63031', 16, 'center', 800);
+  text(c, `ω_A = ${f2(pA.w)}   ω_B = ${f2(pB.w)} rad s⁻¹`, 730, 360, '#2c3e50', 14, 'center', 700);
+  text(c, `t_A = ${f2(pA.period)} s   t_B = ${f2(pB.period)} s`, 730, 386, '#2c3e50', 14, 'center', 700);
+  text(c, `T_A = ${f2(pA.Tmg)} mg   T_B = ${f2(pB.Tmg)} mg`, 730, 412, '#2c3e50', 14, 'center', 700);
+  text(c, `T_A : T_B = ${f2(Bc.ratio)} : 1`, 730, 438, '#6c5ce7', 14, 'center', 800);
+}
+
+// ---------- Tab C canvas ----------
+function drawC() {
+  const c = cC.ctx, W = 900, H = 500; c.clearRect(0, 0, W, H);
+  const C = computeC();
+  panel(c, 10, 10, 590, 480, '#f8f9ff');
+  const k = 20, cx = 300, top = 130;
+  const P = (x, y, z) => [cx + x * k, top + z * k - y * k * E];   // z down from the frame
+  // ground
+  c.fillStyle = '#e3f4e1'; c.beginPath(); c.ellipse(cx, 455, 280, 280 * E * 0.45, 0, 0, TAU); c.fill();
+  // pole + canopy
+  c.fillStyle = '#636e72'; c.fillRect(cx - 7, top - 50, 14, 455 - top + 50);
+  const Rk = S.R * k;
+  const N = 8, chairs = [];
+  for (let i = 0; i < N; i++) {
+    const al = S.phiC + TAU * i / N;
+    chairs.push({ i, al, depth: Math.sin(al), Q: P(S.R * Math.cos(al), S.R * Math.sin(al), 0),
+      Ch: P(C.r * Math.cos(al), C.r * Math.sin(al), S.lc * C.cos) });
+  }
+  const spoke = ch => line(c, cx, top, ch.Q[0], ch.Q[1], '#8e6e53', 4);
+  // far spokes, frame, canopy
+  chairs.filter(ch => ch.depth > 0).forEach(spoke);
+  ell(c, cx, top, Rk, Rk * E, 0, TAU, '#8e6e53', 3);
+  c.fillStyle = '#fd79a8'; c.strokeStyle = '#d63031'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(cx, top - 62); c.lineTo(cx - Math.max(Rk, 18) - 8, top - 14); c.lineTo(cx + Math.max(Rk, 18) + 8, top - 14); c.closePath(); c.fill(); c.stroke();
+  chairs.filter(ch => ch.depth <= 0).forEach(spoke);
+  // chairs, far first
+  chairs.sort((a, b) => b.depth - a.depth).forEach(ch => {
+    const hi = ch.i === 0, sc = 1 - 0.12 * ch.depth;
+    line(c, ch.Q[0], ch.Q[1], ch.Ch[0], ch.Ch[1], hi ? '#2d3436' : '#95a5a6', hi ? 2.5 : 1.8);
+    const [x, y] = ch.Ch;
+    c.fillStyle = hi ? '#6c5ce7' : '#a29bfe';
+    c.beginPath(); c.roundRect(x - 10 * sc, y - 2, 20 * sc, 7 * sc, 2); c.fill();
+    c.fillStyle = hi ? '#e17055' : '#fab1a0';
+    c.beginPath(); c.arc(x, y - 9 * sc, 6 * sc, 0, TAU); c.fill();
+  });
+  // forces on the highlighted chair
+  const h0 = chairs.find(ch => ch.i === 0), [x0, y0] = h0.Ch, Lc = Math.hypot(h0.Q[0] - x0, h0.Q[1] - y0) || 1;
+  const kF = Math.min(55 / C.mg, 0.8 * Lc / C.T), ux = (h0.Q[0] - x0) / Lc, uy = (h0.Q[1] - y0) / Lc;
+  arrow(c, x0, y0, x0 + ux * C.T * kF, y0 + uy * C.T * kF, '#00a383', 3.5);
+  text(c, 'T', x0 + ux * C.T * kF + (ux < 0 ? -8 : 8), y0 + uy * C.T * kF, '#00a383', 16, ux < 0 ? 'right' : 'left', 800);
+  arrow(c, x0, y0, x0, y0 + C.mg * kF, '#2d3436', 3.5);
+  text(c, 'mg', x0 + 8, y0 + C.mg * kF, '#2d3436', 14, 'left', 800);
+  text(c, `θ = ${f1(deg(C.th))}°`, 24, 34, '#6c5ce7', 22, 'left', 800);
+  text(c, `r = ${f2(C.r)} m`, 24, 60, '#6c5ce7', 15, 'left', 700);
+  text(c, 'පැත්තෙන් දසුන (ත්‍රිමාන)', 586, 478, '#95a5a6', 13, 'right', 600);
+
+  // ---- right: cross-section ----
+  panel(c, 610, 10, 280, 480, '#fff');
+  text(c, 'හරස්කඩ (එක් ආසනයක්)', 880, 30, '#2c3e50', 14, 'right', 800);
+  const ax = 640, ay = 80, si = C.sin, co = C.cos;
+  const k2 = Math.min(220 / Math.max(C.r, 0.5), 170 / Math.max(S.lc * co, 0.5), 40);
+  const rimX = ax + S.R * k2, chX = ax + C.r * k2, chY = ay + S.lc * co * k2;
+  line(c, ax, ay - 30, ax, chY + 60, '#95a5a6', 1.5, [5, 5]);
+  line(c, ax, ay, rimX, ay, '#8e6e53', 5);
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(rimX, ay, 3.5, 0, TAU); c.fill();
+  text(c, `R = ${f1(S.R)} m`, (ax + rimX) / 2, ay - 14, '#8e6e53', 13, 'center', 800);
+  line(c, rimX, ay, chX, chY, '#2d3436', 2.5);
+  line(c, rimX, ay, rimX, chY + 10, '#95a5a6', 1.2, [3, 4]);
+  if (C.th > 0.02) {
+    c.strokeStyle = '#6c5ce7'; c.lineWidth = 2; c.beginPath(); c.arc(rimX, ay, 30, Math.PI / 2 - C.th, Math.PI / 2); c.stroke();
+    text(c, 'θ', rimX + 38 * Math.cos(Math.PI / 2 - C.th / 2), ay + 42 * Math.sin(Math.PI / 2 - C.th / 2), '#6c5ce7', 14, 'center', 800);
+  }
+  // r dimension at chair level
+  const dy = chY + 34;
+  line(c, ax, dy, chX, dy, '#6c5ce7', 1.5);
+  line(c, chX, chY + 8, chX, dy + 6, '#6c5ce7', 1, [3, 3]);
+  text(c, 'r = R + l sinθ', (ax + chX) / 2, dy + 14, '#6c5ce7', 13, 'center', 800);
+  // chair + forces
+  c.fillStyle = '#6c5ce7'; c.beginPath(); c.roundRect(chX - 11, chY - 2, 22, 8, 2); c.fill();
+  c.fillStyle = '#e17055'; c.beginPath(); c.arc(chX, chY - 10, 6, 0, TAU); c.fill();
+  const kF2 = Math.min(70 / C.mg, 110 / C.T), TL = C.T * kF2;
+  arrow(c, chX, chY, chX - si * TL, chY - co * TL, '#00b894', 3.5);
+  text(c, 'T', chX - si * TL - 8, chY - co * TL, '#00b894', 15, 'right', 800);
+  if (C.th > 0.02) arrow(c, chX, chY, chX - C.Ts * kF2, chY, '#00a383', 2, [5, 4]);
+  arrow(c, chX, chY, chX, chY + C.mg * kF2, '#2d3436', 3.5);
+  // readouts
+  const ry0 = 360;
+  text(c, `tanθ = ${f3(C.tan)}`, 625, ry0, '#2c3e50', 14, 'left', 800);
+  text(c, `rω²/g = ${f3(C.rhs)} ✓`, 625, ry0 + 24, '#00a383', 14, 'left', 800);
+  text(c, `T = mg/cosθ = ${fN(C.T)} N`, 625, ry0 + 48, '#00a383', 14, 'left', 800);
+  text(c, `T sinθ = ${fN(C.Ts)} N`, 625, ry0 + 72, '#2c3e50', 13, 'left', 700);
+  text(c, `mrω² = ${fN(C.Fc)} N ✓`, 625, ry0 + 94, '#2c3e50', 13, 'left', 700);
+}
+
+// ===================== UI =====================
+function show(id, t) { const e = $(id); if (e) e.textContent = t; }
+function normalize() { if (S.sameH) S.hB = S.hA; }
+function syncUI() {
+  normalize();
+  const setv = (id, v) => { const e = $(id); if (e) e.value = v; };
+  setv('wS', S.w); setv('lS', S.l); setv('mS', S.m);
+  setv('lAS', S.lA); setv('lBS', S.lB); setv('hAS', S.hA); setv('hBS', S.hB);
+  setv('RS', S.R); setv('lcS', S.lc); setv('wcS', S.wc); setv('mcS', S.mc);
+  $('mistakeChk').checked = S.mistake; $('sameHChk').checked = S.sameH; $('hBS').disabled = S.sameH;
+  document.querySelectorAll('.slowChk').forEach(e => { e.checked = S.slow; });
+  show('wVal', f1(S.w)); show('lVal', f2(S.l)); show('mVal', f2(S.m));
+  show('lAVal', f3(S.lA)); show('lBVal', f3(S.lB)); show('hAVal', f2(S.hA)); show('hBVal', f2(S.hB));
+  show('RVal', f1(S.R)); show('lcVal', f1(S.lc)); show('wcVal', f2(S.wc)); show('mcVal', S.mc);
+}
+function updateStatus() {
+  if (S.tab === 'A') {
+    const A = computeA();
+    show('stA', A.cone ? 'කේතු අවලම්බයක් ✅ (ω > √(g/l))' : 'සිරස්ව එල්ලෙයි — කේතුවක් නැත');
+    show('stTh', A.cone ? `${f1(deg(A.th))}°` : '0°');
+    show('stCos', A.cone ? f3(A.cos) : `1 (g/(lω²) = ${f2(g / (S.l * S.w * S.w))} ≥ 1)`);
+    show('stR', `${f3(A.r)} m`); show('stH', `${f3(A.h)} m`);
+    show('stT', `${f2(A.T)} N` + (A.cone ? '' : ' (= mg)'));
+    show('stTc', `${f2(A.Tc)} N = ${f2(A.mg)} N ✓`);
+    show('stTs', `${f2(A.Ts)} N = ${f2(A.Fc)} N ✓`);
+    show('stV', `${f2(A.v)} m s⁻¹`);
+    show('stP', A.cone ? `${f2(A.periodH)} s (= 2π/ω ✓)` : '— (කේතුවක් නැත)');
+    $('statusA').className = 'status' + (A.cone ? '' : ' limit');
+    const nc = $('noCone');
+    nc.style.display = A.cone ? 'none' : '';
+    nc.textContent = `ω ≤ √(g/l) = ${f2(A.wc)} rad s⁻¹ නිසා කේතුවක් නැත — ගෝලය සිරස්ව එල්ලී තැනම කැරකෙයි (θ = 0, T = mg). cosθ = g/(lω²) ≤ 1 වීමට ω > ${f2(A.wc)} rad s⁻¹ විය යුතුයි.`;
+  } else if (S.tab === 'B') {
+    const Bc = computeB(), pA = Bc.A, pB = Bc.B;
+    show('stPlane', Bc.inPlane ? 'එකම තලයක ✓ (ω සමානයි)' : (Bc.sameW ? 'ω සමානයි — කලාව වෙනස්' : 'ω වෙනස් ✗ — වෙන් වෙයි'));
+    show('stThA', `${f1(deg(pA.th))}°`); show('stThB', `${f1(deg(pB.th))}°`);
+    show('stPA', `${f2(pA.period)} s`); show('stPB', `${f2(pB.period)} s`);
+    show('stWA', `${f2(pA.w)} rad s⁻¹`); show('stWB', `${f2(pB.w)} rad s⁻¹`);
+    show('stTA', `${f2(pA.Tmg)} mg`); show('stTB', `${f2(pB.Tmg)} mg`);
+    show('stRatio', `${f2(Bc.ratio)} : 1` + (Math.abs(Bc.ratio - 1.6) < 1e-6 ? ' (= 8 : 5)' : ''));
+    $('statusB').className = 'status' + (Bc.inPlane ? '' : ' limit');
+    const hw = $('hWarn'), bad = [];
+    if (pA.straight) bad.push('A: h ≥ l_A');
+    if (pB.straight) bad.push('B: h ≥ l_B');
+    hw.style.display = bad.length ? '' : 'none';
+    hw.textContent = bad.join(', ') + ' — එවැනි කේතුවක් නොහැක; තන්තුව සිරස්ව (θ = 0) පෙන්වයි. h < l විය යුතුයි.';
+  } else {
+    const C = computeC();
+    show('stThC', `${f1(deg(C.th))}°`); show('stRC', `${f2(C.r)} m`);
+    show('stTanC', f3(C.tan)); show('stRhsC', `${f3(C.rhs)} ✓`);
+    show('stTC', `${fN(C.T)} N`); show('stTsC', `${fN(C.Ts)} N = ${fN(C.Fc)} N ✓`);
+    show('stVC', `${f2(C.v)} m s⁻¹`); show('stPC', `${fT(C.period)} s`);
+  }
+}
+function setTab(t) {
+  S.tab = ['A', 'B', 'C'].includes(t) ? t : 'A';
+  ['A', 'B', 'C'].forEach(x => { $('pane' + x).style.display = S.tab === x ? '' : 'none'; $('tab' + x).className = S.tab === x ? 'solid' : ''; });
+  return S.tab;
+}
+function set(p, val) {
+  if (p === 'tab') return setTab(val);
+  if (!(p in S)) throw new Error('unknown param ' + p);
+  if (typeof DEF[p] === 'boolean') S[p] = !!val; else S[p] = +val;
+  if (p === 'sameH' && S.sameH) S.phiB = S.phiA;
+  syncUI();
+  return S;
+}
+function reset() { Object.assign(S, DEF); setTab('A'); syncUI(); return S; }
+const PRESETS = {
+  Q354: () => { setTab('A'); Object.assign(S, { l: 0.5, m: 0.2, w: 5, mistake: true }); },
+  Q355: () => { setTab('A'); Object.assign(S, { l: 0.5, m: 0.2, w: 5, mistake: false }); },
+  Q356: () => { setTab('A'); Object.assign(S, { l: 0.5, m: 0.2, w: 5, mistake: false }); },
+  Q356b: () => { setTab('A'); Object.assign(S, { l: 0.5, m: 0.2, w: 12, mistake: false }); },
+  Q357: () => { setTab('B'); Object.assign(S, { lA: 1.0, lB: 0.625, hA: 0.5, hB: 0.5, sameH: true }); S.phiB = S.phiA; },
+  Q359: () => { setTab('C'); Object.assign(S, { R: 4.5, lc: 5, wc: 1, mc: 60 }); },
+};
+function preset(name) { PRESETS[name](); syncUI(); }
+
+function wire() {
+  const bind = (id, key, after) => $(id).addEventListener('input', e => { S[key] = +e.target.value; syncUI(); if (after) after(); });
+  bind('wS', 'w'); bind('lS', 'l');
+  bind('mS', 'm', () => { const nEl = $('massNote'); nEl.classList.add('flash'); clearTimeout(wire.t); wire.t = setTimeout(() => nEl.classList.remove('flash'), 700); });
+  bind('lAS', 'lA'); bind('lBS', 'lB'); bind('hAS', 'hA'); bind('hBS', 'hB');
+  bind('RS', 'R'); bind('lcS', 'lc'); bind('wcS', 'wc'); bind('mcS', 'mc');
+  $('mistakeChk').addEventListener('change', e => set('mistake', e.target.checked));
+  $('sameHChk').addEventListener('change', e => set('sameH', e.target.checked));
+  document.querySelectorAll('.slowChk').forEach(el => el.addEventListener('change', e => set('slow', e.target.checked)));
+  ['A', 'B', 'C'].forEach(x => $('tab' + x).addEventListener('click', () => setTab(x)));
+  $('btnQ355').addEventListener('click', () => preset('Q355'));
+  $('btnWc').addEventListener('click', () => { S.w = Math.sqrt(g / S.l); syncUI(); });
+  $('btnW12').addEventListener('click', () => { S.w = 12; syncUI(); });
+  $('btnQ357').addEventListener('click', () => preset('Q357'));
+  $('btnPhase').addEventListener('click', () => { S.phiB = S.phiA; });
+  $('btnQ359').addEventListener('click', () => preset('Q359'));
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => { preset(b.dataset.preset); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
+}
+
+cA = stage($('cvA'), 900, 520);
+cB = stage($('cvB'), 900, 480);
+cC = stage($('cvC'), 900, 500);
+wire(); syncUI();
+
+function draw() { if (S.tab === 'A') drawA(); else if (S.tab === 'B') drawB(); else drawC(); updateStatus(); }
+window.sim = { step, state: S, set, reset, setTab, preset, draw, computeA, computeB, computeC, solveChair, pend,
+  compute: () => ({ a: computeA(), b: computeB(), c: computeC() }) };
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  step(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

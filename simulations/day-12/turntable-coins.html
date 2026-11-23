@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>භ්‍රමණය වන තැටියක් මත කාසි (Q351–353) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 14px; line-height: 1.6; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+  .tabs button { font-size: 16px; padding: 9px 18px; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  .controls small { color: #636e72; font-weight: 600; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  button.run { background: #e17055; border-color: #e17055; color: #fff; }
+  .coinbox { grid-column: 1 / -1; background: #fff; border-radius: 8px; padding: 6px 12px 4px; border-left: 6px solid #f39c12; display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+  .coinbox .ch { grid-column: 1 / -1; font-weight: 800; font-size: 15px; }
+  canvas { width: 100%; display: block; border-radius: 10px; touch-action: none; }
+  .scene { background: linear-gradient(#f0f7ff, #fff); border: 1px solid #dfe6e9; }
+  .graph { background: #fff; border: 1px solid #dfe6e9; touch-action: auto; }
+  .cvs + .cvs, .cvs + .cap { margin-top: 12px; }
+  .cap { font-weight: 800; font-size: 15px; margin: 12px 0 6px; color: #2c3e50; }
+  .status { margin-top: 14px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 12px 16px; border-radius: 6px; font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; gap: 10px 26px; justify-content: space-between; }
+  .status.limit { border-left-color: #f39c12; background: #fef5e7; }
+  .status.move { border-left-color: #e74c3c; background: #fdedec; }
+  .status small { display: block; font-size: 13px; color: #636e72; font-weight: 600; }
+  .ccard { flex: 1 1 100%; border-top: 1px dashed #b2bec3; padding-top: 6px; font-size: 14px; line-height: 1.55; }
+  .ccard b { font-size: 15px; }
+  .massnote { display: inline-block; margin-top: 4px; font-size: 13px; font-weight: 700; color: #6c5ce7; background: #fff; border: 1px dashed #a29bfe; border-radius: 6px; padding: 3px 8px; transition: background .3s, transform .3s; }
+  .massnote.flash { background: #ffeaa7; transform: scale(1.06); }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; line-height: 1.5; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* derivation boxes: one step per line */
+  .dbox { background: #fbfaff; border: 1px solid #d6d2ff; border-left: 6px solid #6c5ce7; border-radius: 10px; padding: 12px 16px; margin: 12px 0; overflow-x: auto; }
+  .dbox .dh { font-weight: 800; font-size: 16px; color: #6c5ce7; margin-bottom: 6px; }
+  .dbox .l { padding: 5px 0 5px 6px; line-height: 1.6; font-size: 15px; }
+  .dbox .l.m { padding-left: 34px; font-family: 'Cambria', 'Times New Roman', serif; font-size: 19px; white-space: nowrap; }
+  .fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 4px; line-height: 1.25; }
+  .fr > span:first-child { border-bottom: 1.6px solid currentColor; padding: 0 4px 2px; }
+  .fr > span:last-child { padding: 2px 4px 0; }
+  .sq { white-space: nowrap; }
+  .sq > span { border-top: 1.6px solid currentColor; padding: 2px 3px 0; margin-left: 1px; display: inline-block; }
+  .tg { color: #6c5ce7; font-weight: 700; margin-left: 22px; font-family: 'Segoe UI', sans-serif; font-size: 15px; }
+  .res { display: inline-block; border: 2px solid #6c5ce7; border-radius: 8px; padding: 4px 10px; background: #fff; }
+  .ans .dbox { margin: 6px 0 10px; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls, .coinbox { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } .status { font-size: 14px; } .dbox .l.m { font-size: 17px; padding-left: 14px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 350px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .side .coinbox { grid-template-columns: 1fr; }
+    .side .status { margin-top: 0; font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">Q351–353 · වෘත්ත චලිතය</span></div>
+  <h1>භ්‍රමණය වන තැටියක් මත ඇති වස්තුවක්</h1>
+  <p class="sub">කැරකෙන තිරස් තැටියක (turntable) තබා ඇති කාසියක් තැටිය සමඟ වෘත්තයක ගමන් කරයි. එයට අවශ්‍ය කේන්ද්‍රාභිසාරී බලය <b>mrω²</b> සපයන්නේ <b>ස්ථිතික ඝර්ෂණය</b> යි — එබැවින් ඝර්ෂණය <b>කේන්ද්‍රය දෙසට</b> ක්‍රියා කරයි. නමුත් ඝර්ෂණයට දිය හැක්කේ උපරිම <b>μmg</b> පමණි. වේගය සෙමින් වැඩි කර බලන්න — කාසිය ලිස්සන්නේ කවදාද? කාසි කිහිපයක් ඇත්නම් මුලින්ම ලිස්සන්නේ කුමක්ද? 🪙</p>
+
+  <div class="tabs">
+    <button id="tabA" class="solid">🪙 A. එක් කාසියක් (Q351–352)</button>
+    <button id="tabB">🪙🪙 B. කාසි කිහිපයක් (Q353)</button>
+  </div>
+
+  <div class="layout">
+   <aside class="side">
+    <div class="controls">
+      <div><label>කෝණික ප්‍රවේගය ω = <span class="v" id="omVal">4.00</span> rad s⁻¹ <small id="rpmVal">(38.2 rpm)</small></label><input type="range" id="omS" min="0" max="8" step="0.05" value="4"></div>
+      <div><label>μ (කාසිය – තැටිය) = <span class="v" id="muVal">0.40</span></label><input type="range" id="muS" min="0.1" max="1" step="0.05" value="0.4"></div>
+      <div class="btns">
+        <button class="solid" id="btnRamp">▶ වේගය සෙමින් වැඩි කරන්න</button>
+        <button id="btnReset">↺ නැවත අරඹන්න (ω = 0)</button>
+      </div>
+      <div class="coinbox" id="cb0">
+        <div class="ch">🪙 කාසිය 1</div>
+        <div><label>r = <span class="v" id="r0Val">0.16</span> m</label><input type="range" id="r0S" min="0.04" max="0.24" step="0.01" value="0.16"></div>
+        <div><label>m = <span class="v" id="m0Val">50</span> g</label><input type="range" id="m0S" min="10" max="200" step="5" value="50"></div>
+      </div>
+      <div class="coinbox" id="cb1" style="border-left-color:#00b894">
+        <div class="ch">🪙 කාසිය 2</div>
+        <div><label>r = <span class="v" id="r1Val">0.20</span> m</label><input type="range" id="r1S" min="0.04" max="0.24" step="0.01" value="0.2"></div>
+        <div><label>m = <span class="v" id="m1Val">80</span> g</label><input type="range" id="m1S" min="10" max="200" step="5" value="80"></div>
+      </div>
+      <div class="coinbox" id="cb2" style="border-left-color:#e84393">
+        <div class="ch">🪙 කාසිය 3</div>
+        <div><label>r = <span class="v" id="r2Val">0.08</span> m</label><input type="range" id="r2S" min="0.04" max="0.24" step="0.01" value="0.08"></div>
+        <div><label>m = <span class="v" id="m2Val">60</span> g</label><input type="range" id="m2S" min="10" max="200" step="5" value="60"></div>
+      </div>
+      <div class="btns" id="addRow">
+        <button id="btnAdd">＋ කාසියක් එකතු කරන්න</button>
+        <button id="btnDel">－ කාසියක් ඉවත් කරන්න</button>
+      </div>
+      <div class="btns">
+        <span class="massnote" id="massNote">⚖️ ස්කන්ධය කැපී යයි — ω<sub>max</sub> = √(μg/r)</span>
+        <span class="note" style="margin:0">g = 10 m s⁻² · කාසිය ඇදගෙන ගොස් (drag) r වෙනස් කළ හැක</span>
+      </div>
+    </div>
+    <div class="status" id="status"></div>
+   </aside>
+   <div class="main">
+    <div class="cvs"><canvas id="cvT" class="scene"></canvas></div>
+    <div class="cap">ω<sub>max</sub> = √(μg/r) ප්‍රස්තාරය — රේඛාවට ඉහළ නම් ලිස්සයි</div>
+    <div class="cvs"><canvas id="cvG" class="graph"></canvas></div>
+   </div>
+  </div>
+
+  <div class="dbox">
+    <div class="dh">කාසිය නොලිස්සා සිටීමට කොන්දේසිය</div>
+    <div class="l">• සිරස්ව (ත්වරණයක් නැත):</div>
+    <div class="l m">R = mg <span class="tg">—— (1)</span></div>
+    <div class="l">• කේන්ද්‍රය දෙසට (කේන්ද්‍රාභිසාරී බලය සපයන්නේ ස්ථිතික ඝර්ෂණය f):</div>
+    <div class="l m">f = mrω² <span class="tg">—— (2)</span></div>
+    <div class="l">• ස්ථිතික ඝර්ෂණයට සීමාවක් ඇත:</div>
+    <div class="l m">f ≤ μR</div>
+    <div class="l m">f ≤ μmg <span class="tg">—— (3)</span></div>
+    <div class="l">(2) හා (3) න්:</div>
+    <div class="l m">mrω² ≤ μmg</div>
+    <div class="l">දෙපසින්ම ස්කන්ධය (m) කැපී යයි:</div>
+    <div class="l m">rω² ≤ μg</div>
+    <div class="l m">ω² ≤ <span class="fr"><span>μg</span><span>r</span></span></div>
+    <div class="l m"><span class="res">ω<sub>max</sub> = <span class="sq">√<span><span class="fr"><span>μg</span><span>r</span></span></span></span></span></div>
+    <div class="note">• ω<sub>max</sub> <b>ස්කන්ධය මත රඳා නොපවතී</b> — එකම r හි ඇති බර කාසියත් සැහැල්ලු කාසියත් එකවර ලිස්සයි.<br>• r වැඩි නම් ω<sub>max</sub> <b>අඩුයි</b> — එබැවින් <b>පිටතින්ම ඇති කාසිය මුලින්ම</b> ලිස්සයි.<br>• ලිස්සන කාසිය අරයක් දිගේ කෙලින්ම පිටතට නොයයි — බිම සිට බලන විට එය <b>ස්පර්ශකයට ආසන්න, වක්‍ර මාර්ගයක</b> ඉවතට යයි. (ලිස්සන විට චාලක ඝර්ෂණය ≈ 0.5 μmg ලෙස ගෙන ඇත.)</div>
+  </div>
+
+  <h2>විසඳුම් (පන්තියේ ගැටලු)</h2>
+  <details>
+    <summary><span class="qtag">Q351</span>0.16 m දුරින් 50 g කාසියක්, μ = 0.4 — (i) ඝර්ෂණයේ දිශාව (ii) ω = 4 rad s⁻¹ දී ඝර්ෂණ බලය</summary>
+    <div class="ans">
+      <b>(i)</b> ඝර්ෂණය ක්‍රියා කරන්නේ <b>කේන්ද්‍රය දෙසට</b>. කාසිය වෘත්තයේ යාමට අවශ්‍ය කේන්ද්‍රාභිසාරී බලය සපයන්නේ ස්ථිතික ඝර්ෂණය යි.
+      <div class="dbox">
+        <div class="dh">(ii) ඝර්ෂණ බලය</div>
+        <div class="l">m = 50 g = 0.05 kg, r = 0.16 m, ω = 4 rad s⁻¹</div>
+        <div class="l m">f = mrω² <span class="tg">—— (1)</span></div>
+        <div class="l m">f = 0.05 × 0.16 × 4²</div>
+        <div class="l m">f = 0.05 × 0.16 × 16</div>
+        <div class="l m"><span class="res">f = 0.128 N</span></div>
+        <div class="note">පරීක්ෂාව: උපරිම ඝර්ෂණය μmg = 0.4 × 0.05 × 10 = 0.2 N. 0.128 N &lt; 0.2 N නිසා කාසිය ලිස්සන්නේ නැත ✓</div>
+      </div>
+      <div class="btns"><button data-preset="Q351">▶ සිමියුලේෂනයේ බලන්න</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q352</span>කාසිය නොලිස්සා තැටිය කැරකැවිය හැකි උපරිම කෝණික ප්‍රවේගය</summary>
+    <div class="ans">
+      <div class="dbox">
+        <div class="l">නොලිස්සීමට අවශ්‍ය බලය ≤ උපරිම ඝර්ෂණය:</div>
+        <div class="l m">mrω² ≤ μmg <span class="tg">—— (1)</span></div>
+        <div class="l m">ω<sub>max</sub> = <span class="sq">√<span><span class="fr"><span>μg</span><span>r</span></span></span></span></div>
+        <div class="l m">ω<sub>max</sub> = <span class="sq">√<span><span class="fr"><span>0.4 × 10</span><span>0.16</span></span></span></span></div>
+        <div class="l m">ω<sub>max</sub> = <span class="sq">√<span><span class="fr"><span>4</span><span>0.16</span></span></span></span></div>
+        <div class="l m">ω<sub>max</sub> = √25</div>
+        <div class="l m"><span class="res">ω<sub>max</sub> = 5 rad s⁻¹</span></div>
+      </div>
+      සිමියුලේෂනයේ ω සෙමින් වැඩි වන විට කාසිය හරියටම ω = 5.00 rad s⁻¹ දී ලිස්සයි.
+      <div class="btns"><button data-preset="Q352">▶ සිමියුලේෂනයේ බලන්න</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q353</span>0.1 m සහ 0.2 m දුරින් වෙනස් ස්කන්ධ ඇති කාසි දෙකක් — මුලින්ම ලිස්සන්නේ කුමක්ද?</summary>
+    <div class="ans">
+      ලිස්සීම ආරම්භ වන්නේ ω<sub>max</sub> = √(μg/r) දී ය. මෙය <b>ස්කන්ධයෙන් ස්වායත්ත</b> වන අතර r වැඩි විට <b>අඩු</b> ය.
+      <div class="dbox">
+        <div class="dh">r = 0.1 m</div>
+        <div class="l m">ω<sub>max</sub> = <span class="sq">√<span><span class="fr"><span>0.4 × 10</span><span>0.1</span></span></span></span></div>
+        <div class="l m">ω<sub>max</sub> = √40</div>
+        <div class="l m">ω<sub>max</sub> ≈ 6.3 rad s⁻¹</div>
+        <div class="dh" style="margin-top:8px">r = 0.2 m</div>
+        <div class="l m">ω<sub>max</sub> = <span class="sq">√<span><span class="fr"><span>0.4 × 10</span><span>0.2</span></span></span></span></div>
+        <div class="l m">ω<sub>max</sub> = √20</div>
+        <div class="l m">ω<sub>max</sub> ≈ 4.5 rad s⁻¹</div>
+      </div>
+      එබැවින් <b>0.2 m දුරින් ඇති කාසිය</b> මුලින්ම ලිස්සයි (ස්කන්ධය කුමක් වුවත්).
+      <div class="btns"><button data-preset="Q353">▶ සිමියුලේෂනයේ බලන්න</button><button data-preset="MASS">⚖️ එකම r, වෙනස් m — එකවර ලිස්සයිද?</button></div>
+    </div>
+  </details>
+</div>
+
+<script>
+// ===================== physics core (no DOM) =====================
+const g = 10, RT = 0.25, MUK = 0.5, OMAX = 8, RAMP = 0.3, RMIN = 0.03, RMAX = 0.24;
+const COLORS = ['#f39c12', '#00b894', '#e84393'], DARK = ['#b9770e', '#00876a', '#b0326f'];
+const DEF_COINS = [[0.16, 0.05], [0.2, 0.08], [0.08, 0.06]];
+const S = { tab: 'A', omega: 4, mu: 0.4, ramp: false, theta: 0, sel: 0, t: 0, coins: [] };
+
+function mkCoin(r, m, i) {
+  return { r, m, phi: Math.PI / 2 - i * 2.2, state: 'stick', held: false,
+           x: 0, y: 0, vx: 0, vy: 0, slipOmega: null, slipPt: null, tan: null, trail: [], tt: 0 };
+}
+function setCoins(list) { S.coins = list.map(([r, m], i) => mkCoin(r, m, i)); S.sel = 0; }
+setCoins([DEF_COINS[0]]);
+
+// per-coin numbers; f is the static friction needed (= mrω²), fmax = μmg
+function coinInfo(c) {
+  const w = S.omega, mu = S.mu;
+  const need = c.m * c.r * w * w, fmax = mu * c.m * g, wmax = Math.sqrt(mu * g / c.r);
+  return { need, fmax, wmax, ratio: c.r * w * w / (mu * g), f: Math.min(need, fmax) };
+}
+function slipsNow(c) { return c.r * S.omega * S.omega > S.mu * g * (1 + 1e-9); }
+function coinPos(c) {   // ground-frame position (m), maths axes (y up)
+  if (c.state === 'stick') { const a = S.theta + c.phi; return [c.r * Math.cos(a), c.r * Math.sin(a)]; }
+  return [c.x, c.y];
+}
+function startSlip(c) {
+  const a = S.theta + c.phi, w = S.omega;
+  Object.assign(c, { state: 'slip', x: c.r * Math.cos(a), y: c.r * Math.sin(a),
+    vx: -w * c.r * Math.sin(a), vy: w * c.r * Math.cos(a), slipOmega: w, tt: 0 });
+  c.slipPt = [c.x, c.y];
+  const sp = Math.hypot(c.vx, c.vy);
+  c.tan = sp > 1e-9 ? [c.vx / sp, c.vy / sp] : [-Math.sin(a), Math.cos(a)];
+  c.trail = [[c.x, c.y]];
+}
+function restick(c) {
+  c.r = Math.min(RT, Math.hypot(c.x, c.y)); c.phi = Math.atan2(c.y, c.x) - S.theta; c.state = 'stick';
+}
+function stepCoin(c, h) {
+  if (c.held) return;
+  const w = S.omega;
+  if (c.state === 'stick') { if (slipsNow(c)) startSlip(c); else return; }
+  if (c.state === 'slip') {
+    const d = Math.hypot(c.x, c.y);
+    if (d > RT) { c.state = 'fly'; }
+    else {
+      // velocity of the coin relative to the table surface under it
+      const rx = c.vx + w * c.y, ry = c.vy - w * c.x, s = Math.hypot(rx, ry);
+      if (s < 0.004 && d * w * w <= S.mu * g) { restick(c); return; }
+      const dv = MUK * S.mu * g * h;
+      if (s > 1e-6) { const k = Math.min(dv, s) / s; c.vx -= rx * k; c.vy -= ry * k; }
+      else if (d > 1e-9) { c.vx -= dv * c.x / d; c.vy -= dv * c.y / d; }
+    }
+  }
+  if (c.state === 'slip' || c.state === 'fly') {
+    c.x += c.vx * h; c.y += c.vy * h; c.tt += h;
+    if (c.trail.length < 500 && c.tt > 0.008 * c.trail.length) c.trail.push([c.x, c.y]);
+    if (c.state === 'fly' && Math.hypot(c.x, c.y) > 0.36) c.state = 'gone';
+  }
+}
+function step(dt) {
+  while (dt > 1e-9) {
+    const h = Math.min(dt, 0.002);
+    if (S.ramp) { S.omega = Math.min(OMAX, S.omega + RAMP * h); if (S.omega >= OMAX) S.ramp = false; }
+    S.theta = (S.theta + S.omega * h) % (2 * Math.PI);
+    S.coins.forEach(c => stepCoin(c, h));
+    S.t += h; dt -= h;
+  }
+}
+function resetCoins() {
+  S.coins.forEach((c, i) => Object.assign(c, mkCoin(c.r, c.m, i)));
+}
+function reset() { S.ramp = false; S.omega = 0; S.theta = 0; resetCoins(); if (typeof syncUI === 'function') syncUI(); return S; }
+function addCoin() {
+  if (S.coins.length >= 3) return false;
+  const i = S.coins.length; S.coins.push(mkCoin(DEF_COINS[i][0], DEF_COINS[i][1], i)); S.sel = i; return true;
+}
+function removeCoin() { if (S.coins.length <= 1) return false; S.coins.pop(); S.sel = Math.min(S.sel, S.coins.length - 1); return true; }
+function compute() { return { omega: S.omega, rpm: S.omega * 60 / (2 * Math.PI), coins: S.coins.map(c => Object.assign({ state: c.state, slipOmega: c.slipOmega }, coinInfo(c))) }; }
+
+const PRESETS = {
+  Q351: () => { S.tab = 'A'; setCoins([[0.16, 0.05]]); Object.assign(S, { mu: 0.4, omega: 4, ramp: false }); },
+  Q352: () => { S.tab = 'A'; setCoins([[0.16, 0.05]]); Object.assign(S, { mu: 0.4, omega: 4, ramp: true }); },
+  Q353: () => { S.tab = 'B'; setCoins([[0.1, 0.03], [0.2, 0.08]]); Object.assign(S, { mu: 0.4, omega: 3, ramp: true }); },
+  MASS: () => { S.tab = 'B'; setCoins([[0.15, 0.02], [0.15, 0.15], [0.08, 0.06]]); Object.assign(S, { mu: 0.4, omega: 3, ramp: true }); },
+  A: () => { S.tab = 'A'; setCoins([[0.16, 0.05]]); Object.assign(S, { mu: 0.4, omega: 4, ramp: false }); },
+  B: () => { S.tab = 'B'; setCoins([[0.1, 0.03], [0.2, 0.08]]); Object.assign(S, { mu: 0.4, omega: 0, ramp: false }); },
+};
+
+// ===================== drawing =====================
+const $ = id => document.getElementById(id);
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    if (!w) return;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(13, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+// Draws text; "x_abc" is drawn with "abc" as a real subscript.
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Iskoola Pota','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/);
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
+}
+const f2 = x => x.toFixed(2), f3 = x => x.toFixed(3);
+const gStr = m => Math.round(m * 1000) + ' g';
+
+// ---- top-down geometry ----
+const TC = [262, 250], TK = 800;                       // centre (px), px per metre
+const scr = (x, y) => [TC[0] + x * TK, TC[1] - y * TK];
+const coinRad = m => 8 + 8 * Math.sqrt(m / 0.2);
+
+let cT, cG;
+function drawCoin(c, X, Y, i, rot) {
+  const R = coinRad(c.m), bad = c.state !== 'stick';
+  c2.save(); c2.translate(X, Y); c2.rotate(rot);
+  c2.fillStyle = COLORS[i]; c2.strokeStyle = bad ? '#d63031' : DARK[i]; c2.lineWidth = bad ? 3 : 2;
+  c2.beginPath(); c2.arc(0, 0, R, 0, 2 * Math.PI); c2.fill(); c2.stroke();
+  c2.strokeStyle = 'rgba(255,255,255,.55)'; c2.lineWidth = 1.5; c2.beginPath(); c2.arc(0, 0, R * 0.7, 0, 2 * Math.PI); c2.stroke();
+  c2.restore();
+  text(c2, i + 1, X, Y + 1, '#fff', Math.round(R * 1.05), 'center', 800);
+}
+let c2;   // context currently drawn on (top-down)
+function drawTop() {
+  const c = cT.ctx, W = 900, H = 500; c2 = c; c.clearRect(0, 0, W, H);
+  c.save(); c.beginPath(); c.roundRect(8, 8, 508, 484, 10); c.clip();
+  c.fillStyle = '#eef1ff'; c.fillRect(8, 8, 508, 484);
+  const [cx, cy] = TC, Rp = RT * TK;
+  // turntable
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(cx, cy, Rp + 6, 0, 2 * Math.PI); c.fill();
+  c.fillStyle = '#636e72'; c.beginPath(); c.arc(cx, cy, Rp, 0, 2 * Math.PI); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = 1;
+  for (let rr = 20; rr < Rp; rr += 16) { c.beginPath(); c.arc(cx, cy, rr, 0, 2 * Math.PI); c.stroke(); }
+  c.strokeStyle = 'rgba(255,255,255,.22)'; c.lineWidth = 3;
+  for (let k = 0; k < 4; k++) {
+    const a = S.theta + k * Math.PI / 2;
+    c.beginPath(); c.moveTo(cx + 28 * Math.cos(a), cy - 28 * Math.sin(a)); c.lineTo(cx + (Rp - 4) * Math.cos(a), cy - (Rp - 4) * Math.sin(a)); c.stroke();
+  }
+  c.fillStyle = '#ffeaa7'; c.beginPath(); c.arc(cx + (Rp - 10) * Math.cos(S.theta), cy - (Rp - 10) * Math.sin(S.theta), 5, 0, 2 * Math.PI); c.fill();
+  // rotation sense
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 3; c.beginPath(); c.arc(cx, cy, Rp + 18, -0.35, -1.05, true); c.stroke();
+  const ae = -1.05; arrow(c, cx + (Rp + 18) * Math.cos(ae + 0.08), cy + (Rp + 18) * Math.sin(ae + 0.08), cx + (Rp + 18) * Math.cos(ae - 0.02), cy + (Rp + 18) * Math.sin(ae - 0.02), '#6c5ce7', 3);
+  text(c, 'ω', cx + (Rp + 36) * Math.cos(-0.7), cy + (Rp + 36) * Math.sin(-0.7), '#6c5ce7', 22, 'center', 800);
+  // circular paths of stuck coins
+  S.coins.forEach((cn, i) => {
+    if (cn.state !== 'stick') return;
+    c.strokeStyle = COLORS[i]; c.globalAlpha = 0.55; c.lineWidth = 1.5; c.setLineDash([6, 6]);
+    c.beginPath(); c.arc(cx, cy, cn.r * TK, 0, 2 * Math.PI); c.stroke(); c.setLineDash([]); c.globalAlpha = 1;
+  });
+  // spindle
+  c.fillStyle = '#b2bec3'; c.beginPath(); c.arc(cx, cy, 8, 0, 2 * Math.PI); c.fill();
+  c.fillStyle = '#6c5ce7'; c.beginPath(); c.arc(cx, cy, 3.5, 0, 2 * Math.PI); c.fill();
+  text(c, 'O', cx - 14, cy + 14, '#fff', 14, 'center', 800);
+  // force scale: biggest possible friction among coins → 80 px
+  const fBig = Math.max(...S.coins.map(cn => S.mu * cn.m * g));
+  const kf = 80 / fBig;
+  // slip trails + tangent lines
+  S.coins.forEach((cn, i) => {
+    if (cn.state === 'stick' || !cn.slipPt) return;
+    const [sx, sy] = scr(cn.slipPt[0], cn.slipPt[1]);
+    c.strokeStyle = '#95a5a6'; c.lineWidth = 1.5; c.setLineDash([4, 6]);
+    c.beginPath(); c.moveTo(sx, sy); c.lineTo(sx + cn.tan[0] * 260, sy - cn.tan[1] * 260); c.stroke(); c.setLineDash([]);
+    text(c, 'ස්පර්ශකය', sx + cn.tan[0] * 120, sy - cn.tan[1] * 120 - 12, '#95a5a6', 12, 'center', 700);
+    if (cn.trail.length > 1) {
+      c.strokeStyle = COLORS[i]; c.lineWidth = 3; c.setLineDash([2, 5]); c.beginPath();
+      cn.trail.forEach(([x, y], k) => { const [X, Y] = scr(x, y); k ? c.lineTo(X, Y) : c.moveTo(X, Y); });
+      c.stroke(); c.setLineDash([]);
+    }
+  });
+  // coins + arrows
+  S.coins.forEach((cn, i) => {
+    if (cn.state === 'gone') return;
+    const [px, py] = coinPos(cn), [X, Y] = scr(px, py), d = Math.hypot(px, py);
+    const R = coinRad(cn.m), inf = coinInfo(cn);
+    const ux = d > 1e-9 ? -px / d : 0, uy = d > 1e-9 ? py / d : 0;   // screen unit vector towards O
+    if (cn.state === 'stick') {
+      // velocity (tangential)
+      const v = S.omega * cn.r, a = S.theta + cn.phi;
+      if (v > 0.01) arrow(c, X, Y, X - Math.sin(a) * (R + v * 55), Y - Math.cos(a) * (R + v * 55), '#0984e3', 2.5);
+      // friction towards centre; tick shows the limit μmg
+      const room = Math.max(0, d * TK - 12);
+      const Lf = Math.min(inf.f * kf, room), Lm = Math.min(inf.fmax * kf, room);
+      if (Lm > 3) {
+        const tx = X + ux * Lm, ty = Y + uy * Lm;
+        c.strokeStyle = '#ffeaa7'; c.lineWidth = 2;
+        c.beginPath(); c.moveTo(tx - uy * 9, ty + ux * 9); c.lineTo(tx + uy * 9, ty - ux * 9); c.stroke();
+      }
+      if (Lf > 3) arrow(c, X, Y, X + ux * Lf, Y + uy * Lf, inf.ratio > 0.9 ? '#ff7675' : '#fab1a0', 5);
+    } else if (cn.state === 'slip') {
+      const rx = cn.vx + S.omega * cn.y, ry = cn.vy - S.omega * cn.x, s = Math.hypot(rx, ry);
+      const L = MUK * S.mu * cn.m * g * kf;
+      if (s > 1e-6) arrow(c, X, Y, X - rx / s * L, Y + ry / s * L, '#fab1a0', 3, [5, 4]);
+      else if (d > 1e-9) arrow(c, X, Y, X + ux * L, Y + uy * L, '#fab1a0', 3, [5, 4]);
+    }
+    if (cn.state !== 'stick') {
+      const sp = Math.hypot(cn.vx, cn.vy);
+      if (sp > 0.01) arrow(c, X, Y, X + cn.vx / sp * (R + sp * 55), Y - cn.vy / sp * (R + sp * 55), '#0984e3', 2.5);
+    }
+    drawCoin(cn, X, Y, i, -(S.theta + cn.phi));
+    if (i === S.sel && cn.state === 'stick') { c.strokeStyle = '#fff'; c.lineWidth = 2; c.setLineDash([3, 3]); c.beginPath(); c.arc(X, Y, R + 5, 0, 2 * Math.PI); c.stroke(); c.setLineDash([]); }
+    if (cn.state !== 'stick') {
+      const lx = Math.min(Math.max(X, 70), 455), ly = Math.min(Math.max(Y - R - 16, 24), 470);
+      text(c, cn.state === 'fly' ? 'ඉවතට! 💨' : 'ලිස්සයි!', lx, ly, '#d63031', 18, 'center', 800);
+    }
+  });
+  // header badges
+  const anySlip = S.coins.some(cn => cn.state !== 'stick');
+  if (anySlip) text(c, 'ලිස්සයි! 💨', 24, 28, '#d63031', 24, 'left', 800);
+  else text(c, 'තැටිය සමඟ යයි ✅', 24, 28, '#27ae60', 19, 'left', 800);
+  text(c, `ω = ${f2(S.omega)} rad s⁻¹`, 506, 28, '#6c5ce7', 16, 'right', 800);
+  text(c, '→ f (ස්ථිතික ඝර්ෂණය, කේන්ද්‍රය දෙසට) · ┃ = μmg සීමාව', 20, 454, '#d35400', 13, 'left', 700);
+  text(c, '→ v (බිමට සාපේක්ෂ ප්‍රවේගය)', 20, 474, '#0984e3', 13, 'left', 700);
+  text(c, 'ඉහළ සිට දසුන', 506, 474, '#95a5a6', 13, 'right', 600);
+  c.restore();
+  drawSide(c);
+  drawBars(c);
+}
+
+// ---- side (edge) view of the selected coin ----
+function drawSide(c) {
+  const bx = 526, by = 8, bw = 366, bh = 214;
+  c.save();
+  c.fillStyle = '#f8f9ff'; c.strokeStyle = '#a29bfe'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(bx, by, bw, bh, 10); c.fill(); c.stroke(); c.clip();
+  const cn = S.coins[S.sel] || S.coins[0], i = S.coins.indexOf(cn);
+  text(c, `පැති දසුන — කාසිය ${i + 1} (තැටිය සමඟ කැරකෙන හරස්කඩ)`, bx + 10, by + 16, '#2c3e50', 13, 'left', 800);
+  const AX = 556, K = 1230, top = 128;
+  // axis, slab, spindle
+  c.strokeStyle = '#95a5a6'; c.lineWidth = 1.5; c.setLineDash([5, 5]); c.beginPath(); c.moveTo(AX, 34); c.lineTo(AX, 216); c.stroke(); c.setLineDash([]);
+  c.fillStyle = '#b2bec3'; c.fillRect(AX - 6, top + 10, 12, 50); c.fillRect(AX - 32, top + 58, 64, 8);
+  c.fillStyle = '#636e72'; c.fillRect(AX - 22, top, 22 + RT * K, 10);
+  c.fillStyle = '#2d3436'; c.fillRect(AX - 22, top + 8, 22 + RT * K, 3);
+  // spin indicator
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 2.5; c.beginPath(); c.ellipse(AX, 46, 22, 6, 0, 0.3, Math.PI * 2 - 0.3); c.stroke();
+  arrow(c, AX + 20, 44, AX + 22, 48, '#6c5ce7', 2.5);
+  text(c, 'ω', AX - 30, 46, '#6c5ce7', 16, 'right', 800);
+  // other coins faint
+  S.coins.forEach((o, j) => {
+    if (o === cn || o.state !== 'stick') return;
+    const x = AX + o.r * K, hh = 4 + 6 * Math.sqrt(o.m / 0.2);
+    c.globalAlpha = 0.3; c.fillStyle = COLORS[j]; c.fillRect(x - 12, top - hh, 24, hh); c.globalAlpha = 1;
+  });
+  if (cn.state !== 'stick') {
+    text(c, `කාසිය ${i + 1} ලිස්සා ඉවත් විය 💨`, bx + bw / 2 + 20, 96, '#d63031', 17, 'center', 800);
+    text(c, '↺ “නැවත අරඹන්න” ඔබන්න', bx + bw / 2 + 20, 118, '#636e72', 13, 'center', 700);
+    c.restore(); return;
+  }
+  const inf = coinInfo(cn), x = AX + cn.r * K, hh = 4 + 6 * Math.sqrt(cn.m / 0.2);
+  c.fillStyle = COLORS[i]; c.strokeStyle = DARK[i]; c.lineWidth = 2;
+  c.fillRect(x - 13, top - hh, 26, hh); c.strokeRect(x - 13, top - hh, 26, hh);
+  const mg = cn.m * g, k = 62 / mg, ym = top - hh / 2;
+  arrow(c, x, top - hh, x, top - hh - mg * k, '#00b894', 4);
+  text(c, `R = ${f2(mg)} N`, x + 8, top - hh - mg * k + 6, '#00a383', 13, 'left', 800);
+  arrow(c, x + 4, ym, x + 4, ym + mg * k, '#2d3436', 4);
+  text(c, `mg = ${f2(mg)} N`, x + 12, ym + mg * k - 6, '#2d3436', 13, 'left', 800);
+  const Lf = Math.min(inf.f * k, cn.r * K - 18);
+  if (Lf > 3) arrow(c, x - 13, ym, x - 13 - Lf, ym, '#e17055', 4);
+  const Lm = Math.min(inf.fmax * k, cn.r * K - 18);
+  c.strokeStyle = '#e17055'; c.lineWidth = 1.5; c.setLineDash([3, 3]);
+  c.beginPath(); c.moveTo(x - 13 - Lm, ym - 9); c.lineTo(x - 13 - Lm, ym + 9); c.stroke(); c.setLineDash([]);
+  text(c, `f = ${f3(inf.f)} N`, Math.max(x - 13 - Lf / 2, 600), ym - 20, '#d35400', 13, 'center', 800);
+  // radius marker
+  c.strokeStyle = '#6c5ce7'; c.lineWidth = 1.2;
+  c.beginPath(); c.moveTo(AX, top + 22); c.lineTo(x, top + 22); c.stroke();
+  c.beginPath(); c.moveTo(x, top + 16); c.lineTo(x, top + 28); c.stroke();
+  text(c, `r = ${f2(cn.r)} m`, Math.max((AX + x) / 2, AX + 40), top + 36, '#6c5ce7', 13, 'center', 800);
+  text(c, 'කේන්ද්‍රය දෙසට ←', bx + bw - 10, by + 200, '#d35400', 12, 'right', 700);
+  c.restore();
+}
+
+// ---- f / fmax meters ----
+function drawBars(c) {
+  const bx = 526, by = 232, bw = 366, bh = 260;
+  c.save();
+  c.fillStyle = '#fff'; c.strokeStyle = '#dfe6e9'; c.lineWidth = 1.5;
+  c.beginPath(); c.roundRect(bx, by, bw, bh, 10); c.fill(); c.stroke();
+  text(c, 'අවශ්‍ය ඝර්ෂණය ÷ උපරිම ඝර්ෂණය', bx + 12, by + 18, '#2c3e50', 15, 'left', 800);
+  text(c, 'mrω² ÷ μmg = rω² ÷ μg  (m කැපී යයි!)', bx + 12, by + 40, '#6c5ce7', 13, 'left', 700);
+  const x0 = bx + 14, L = 290, full = 1.25, rowH = 66;
+  const X = p => x0 + Math.min(p, full) / full * L;
+  S.coins.forEach((cn, i) => {
+    const y = by + 64 + i * rowH, inf = coinInfo(cn), on = cn.state === 'stick';
+    text(c, `කාසිය ${i + 1}:  r = ${f2(cn.r)} m,  m = ${gStr(cn.m)}`, x0, y, DARK[i], 13, 'left', 800);
+    c.fillStyle = '#f1f2f6'; c.fillRect(x0, y + 12, L, 18);
+    const p = on ? inf.ratio : full;
+    c.fillStyle = on ? COLORS[i] : '#e74c3c'; c.fillRect(x0, y + 12, X(p) - x0, 18);
+    c.strokeStyle = '#d63031'; c.lineWidth = 2; c.beginPath(); c.moveTo(X(1), y + 7); c.lineTo(X(1), y + 35); c.stroke();
+    text(c, on ? Math.round(inf.ratio * 100) + '%' : 'ලිස්සයි!', x0 + L + 6, y + 21, on ? '#2c3e50' : '#d63031', 13, 'left', 800);
+    const sl = cn.slipOmega != null ? `  · ලිස්සූ ω = ${f2(cn.slipOmega)}` : '';
+    text(c, `f = ${f3(on ? inf.f : MUK * inf.fmax)} N, μmg = ${f3(inf.fmax)} N, ω_max = ${f2(inf.wmax)}${sl}`, x0, y + 44, '#636e72', 12, 'left', 600);
+  });
+  text(c, '100% = ලිස්සීමේ සීමාව', X(1), by + bh - 12, '#d63031', 12, 'center', 700);
+  c.restore();
+}
+
+// ---- ω_max vs r graph ----
+const GX0 = 76, GX1 = 860, GY0 = 206, GY1 = 22, GRM = 0.25, GWM = 10;
+const gx = r => GX0 + r / GRM * (GX1 - GX0), gy = w => GY0 - Math.min(w, GWM) / GWM * (GY0 - GY1);
+function drawGraph() {
+  const c = cG.ctx, W = 900, H = 250; c.clearRect(0, 0, W, H);
+  const mu = S.mu, w = S.omega;
+  const rStart = Math.max(0.004, mu * g / (GWM * GWM));
+  // shaded zones
+  c.fillStyle = 'rgba(231,76,60,.10)'; c.beginPath(); c.moveTo(gx(rStart), GY1);
+  for (let r = rStart; r <= GRM + 1e-9; r += 0.002) c.lineTo(gx(r), gy(Math.sqrt(mu * g / r)));
+  c.lineTo(GX1, GY1); c.closePath(); c.fill();
+  c.fillStyle = 'rgba(39,174,96,.12)'; c.beginPath(); c.moveTo(GX0, GY0); c.lineTo(GX0, GY1); c.lineTo(gx(rStart), GY1);
+  for (let r = rStart; r <= GRM + 1e-9; r += 0.002) c.lineTo(gx(r), gy(Math.sqrt(mu * g / r)));
+  c.lineTo(GX1, GY0); c.closePath(); c.fill();
+  // grid + axes
+  c.lineWidth = 1;
+  for (let wv = 0; wv <= GWM; wv += 2) { c.strokeStyle = '#ecf0f1'; c.beginPath(); c.moveTo(GX0, gy(wv)); c.lineTo(GX1, gy(wv)); c.stroke(); text(c, wv, GX0 - 8, gy(wv), '#95a5a6', 12, 'right', 600); }
+  for (let r = 0; r <= GRM + 1e-9; r += 0.05) { text(c, r.toFixed(2), gx(r), GY0 + 14, '#95a5a6', 12, 'center', 600); }
+  c.strokeStyle = '#2d3436'; c.lineWidth = 2; c.beginPath(); c.moveTo(GX0, GY1 - 6); c.lineTo(GX0, GY0); c.lineTo(GX1 + 6, GY0); c.stroke();
+  text(c, 'r / m', GX1 + 4, GY0 + 30, '#636e72', 13, 'right', 700);
+  text(c, 'ω / rad s⁻¹', 8, 12, '#636e72', 13, 'left', 700);
+  // curve
+  c.strokeStyle = '#d63031'; c.lineWidth = 3; c.beginPath();
+  for (let r = rStart, k = 0; r <= GRM + 1e-9; r += 0.002, k++) { const X = gx(r), Y = gy(Math.sqrt(mu * g / r)); k ? c.lineTo(X, Y) : c.moveTo(X, Y); }
+  c.stroke();
+  text(c, `ω_max = √(μg/r),  μ = ${f2(mu)}`, GX1 - 6, GY1 + 10, '#d63031', 15, 'right', 800);
+  text(c, 'ලිස්සයි', GX1 - 6, GY1 + 32, '#c0392b', 13, 'right', 700);
+  text(c, 'තැටිය සමඟ යයි', GX0 + 10, GY0 - 14, '#27ae60', 13, 'left', 700);
+  // current ω line
+  c.strokeStyle = '#0984e3'; c.lineWidth = 2; c.setLineDash([7, 5]);
+  c.beginPath(); c.moveTo(GX0, gy(w)); c.lineTo(GX1, gy(w)); c.stroke(); c.setLineDash([]);
+  text(c, `ω = ${f2(w)}`, GX0 + 6, gy(w) - 10, '#0984e3', 13, 'left', 800);
+  // boundary radius r* = μg/ω²: coins beyond it slip
+  if (w > 0.05) {
+    const rs = mu * g / (w * w);
+    if (rs < GRM && w <= GWM) {
+      c.strokeStyle = '#e17055'; c.lineWidth = 1.5; c.setLineDash([3, 4]);
+      c.beginPath(); c.moveTo(gx(rs), gy(w)); c.lineTo(gx(rs), GY0); c.stroke(); c.setLineDash([]);
+      text(c, `r > ${f3(rs)} m → ලිස්සයි`, Math.min(gx(rs) + 6, 760), GY0 - 32, '#e17055', 12, 'left', 800);
+    }
+  }
+  // coins
+  S.coins.forEach((cn, i) => {
+    const inf = coinInfo(cn), X = gx(cn.r);
+    c.strokeStyle = COLORS[i]; c.lineWidth = 2.5; c.fillStyle = '#fff';
+    c.beginPath(); c.arc(X, gy(inf.wmax), 7, 0, 2 * Math.PI); c.fill(); c.stroke();
+    text(c, `${i + 1}: ${f2(inf.wmax)}`, X + (i % 2 ? -10 : 10), gy(inf.wmax) - 14, DARK[i], 12, i % 2 ? 'right' : 'left', 800);
+    if (cn.state === 'stick') { c.fillStyle = COLORS[i]; c.beginPath(); c.arc(X, gy(w), 6, 0, 2 * Math.PI); c.fill(); }
+    else text(c, '✗', X, gy(w), '#d63031', 18, 'center', 800);
+  });
+}
+
+// ===================== UI =====================
+function show(id, t) { const e = $(id); if (e && e.textContent !== String(t)) e.textContent = t; }
+function syncUI() {
+  const setv = (id, v) => { const e = $(id); if (e) e.value = v; };
+  setv('omS', S.omega); setv('muS', S.mu);
+  show('omVal', f2(S.omega)); show('rpmVal', `(${(S.omega * 60 / (2 * Math.PI)).toFixed(1)} rpm)`); show('muVal', f2(S.mu));
+  for (let i = 0; i < 3; i++) {
+    const cn = S.coins[i], box = $('cb' + i);
+    if (box) box.style.display = cn ? '' : 'none';
+    if (!cn) continue;
+    setv('r' + i + 'S', cn.r); setv('m' + i + 'S', Math.round(cn.m * 1000));
+    show('r' + i + 'Val', f2(cn.r)); show('m' + i + 'Val', Math.round(cn.m * 1000));
+  }
+  $('addRow').style.display = S.tab === 'B' ? '' : 'none';
+  $('tabA').className = S.tab === 'A' ? 'solid' : '';
+  $('tabB').className = S.tab === 'B' ? 'solid' : '';
+  const rb = $('btnRamp');
+  rb.textContent = S.ramp ? '⏸ නවත්වන්න' : '▶ වේගය සෙමින් වැඩි කරන්න';
+  rb.className = S.ramp ? 'run' : 'solid';
+}
+let lastStatus = '';
+function updateStatus() {
+  const anySlip = S.coins.some(c => c.state !== 'stick');
+  const maxRatio = Math.max(...S.coins.map(c => c.state === 'stick' ? coinInfo(c).ratio : 0));
+  let h = `<div><small>තත්ත්වය</small>${anySlip ? 'ලිස්සයි! 💨' : maxRatio > 0.9 ? 'ලිස්සීමේ අද්දර ⚠️' : 'සියල්ල තැටිය සමඟ ✅'}</div>`;
+  h += `<div><small>ω</small>${f2(S.omega)} rad s⁻¹ (${(S.omega * 60 / (2 * Math.PI)).toFixed(1)} rpm)</div>`;
+  S.coins.forEach((cn, i) => {
+    const inf = coinInfo(cn);
+    const st = cn.state === 'stick' ? (inf.ratio > 0.999 ? 'සීමාකාරී — ලිස්සීමේ අද්දර ⚠️' : 'තැටිය සමඟ යයි ✅')
+      : `ලිස්සයි! (ω = ${f2(cn.slipOmega)} දී)`;
+    h += `<div class="ccard" style="border-left:5px solid ${COLORS[i]};padding-left:8px"><b>කාසිය ${i + 1}</b> — r = ${f2(cn.r)} m, m = ${gStr(cn.m)}<br>`
+      + `f = mrω² = ${f3(inf.need)} N · f<sub>max</sub> = μmg = ${f3(inf.fmax)} N<br>`
+      + `ω<sub>max</sub> = √(μg/r) = <b>${f2(inf.wmax)}</b> rad s⁻¹ · ${st}</div>`;
+  });
+  if (h !== lastStatus) { $('status').innerHTML = h; lastStatus = h; }
+  $('status').className = 'status' + (anySlip ? ' move' : maxRatio > 0.9 ? ' limit' : '');
+}
+function setTab(t) { (t === 'B' ? PRESETS.B : PRESETS.A)(); syncUI(); return S.tab; }
+function preset(name) { PRESETS[name](); syncUI(); return S; }
+function set(p, val) {
+  const mm = /^([rm])(\d)$/.exec(p);
+  if (p === 'tab') return setTab(val);
+  if (p === 'omega' || p === 'w') S.omega = Math.min(OMAX, Math.max(0, +val));
+  else if (p === 'rpm') S.omega = Math.min(OMAX, Math.max(0, +val * 2 * Math.PI / 60));
+  else if (p === 'mu') S.mu = +val;
+  else if (p === 'ramp') S.ramp = !!val;
+  else if (p === 'sel') S.sel = Math.min(S.coins.length - 1, Math.max(0, +val));
+  else if (mm && S.coins[+mm[2]]) {
+    const cn = S.coins[+mm[2]];
+    if (mm[1] === 'r') { const i = +mm[2]; Object.assign(cn, mkCoin(Math.min(RMAX, Math.max(RMIN, +val)), cn.m, i)); }
+    else cn.m = +val;   // kg
+  }
+  else throw new Error('unknown param ' + p);
+  syncUI();
+  return S;
+}
+function flashMass() { const nEl = $('massNote'); nEl.classList.add('flash'); clearTimeout(flashMass.t); flashMass.t = setTimeout(() => nEl.classList.remove('flash'), 700); }
+
+// drag coins on the top-down view
+let drag = null;
+function canvasXY(e) { const r = cT.cv.getBoundingClientRect(); return [(e.clientX - r.left) * 900 / r.width, (e.clientY - r.top) * 500 / r.height]; }
+function pickCoin(X, Y) {
+  let best = null, bd = 1e9;
+  S.coins.forEach((cn, i) => {
+    if (cn.state === 'gone') return;
+    const [px, py] = coinPos(cn), [cx, cy] = scr(px, py), d = Math.hypot(cx - X, cy - Y);
+    if (d < coinRad(cn.m) + 10 && d < bd) { bd = d; best = i; }
+  });
+  return best;
+}
+function dragTo(i, X, Y) {
+  const cn = S.coins[i], x = (X - TC[0]) / TK, y = (TC[1] - Y) / TK;
+  const r = Math.min(RMAX, Math.max(RMIN, Math.round(Math.hypot(x, y) * 100) / 100));
+  Object.assign(cn, mkCoin(r, cn.m, i)); cn.phi = Math.atan2(y, x) - S.theta; cn.held = true;
+  syncUI();
+}
+
+function wire() {
+  $('omS').addEventListener('input', e => { S.omega = +e.target.value; S.ramp = false; syncUI(); });
+  $('muS').addEventListener('input', e => { S.mu = +e.target.value; syncUI(); });
+  for (let i = 0; i < 3; i++) {
+    $('r' + i + 'S').addEventListener('input', e => { const cn = S.coins[i]; if (!cn) return; Object.assign(cn, mkCoin(+e.target.value, cn.m, i)); S.sel = i; syncUI(); });
+    $('m' + i + 'S').addEventListener('input', e => { const cn = S.coins[i]; if (!cn) return; cn.m = +e.target.value / 1000; S.sel = i; syncUI(); flashMass(); });
+  }
+  $('btnRamp').addEventListener('click', () => { S.ramp = !S.ramp; if (S.ramp && S.omega >= OMAX) S.omega = 0; syncUI(); });
+  $('btnReset').addEventListener('click', () => reset());
+  $('btnAdd').addEventListener('click', () => { addCoin(); syncUI(); });
+  $('btnDel').addEventListener('click', () => { removeCoin(); syncUI(); });
+  $('tabA').addEventListener('click', () => setTab('A'));
+  $('tabB').addEventListener('click', () => setTab('B'));
+  const cv = cT.cv;
+  cv.addEventListener('pointerdown', e => {
+    const [X, Y] = canvasXY(e), i = pickCoin(X, Y);
+    if (i == null) return;
+    drag = i; S.sel = i; cv.setPointerCapture && cv.setPointerCapture(e.pointerId); dragTo(i, X, Y); e.preventDefault();
+  });
+  cv.addEventListener('pointermove', e => { if (drag == null) return; const [X, Y] = canvasXY(e); dragTo(drag, X, Y); });
+  const end = () => { if (drag != null && S.coins[drag]) S.coins[drag].held = false; drag = null; };
+  cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => { preset(b.dataset.preset); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
+}
+
+cT = stage($('cvT'), 900, 500);
+cG = stage($('cvG'), 900, 250);
+wire(); syncUI();
+function draw() { drawTop(); drawGraph(); updateStatus(); }
+
+window.sim = { step, state: S, set, reset, preset, setTab, compute, coinInfo, addCoin, removeCoin, draw, PRESETS };
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  step(dt);
+  if (S.ramp) syncUI();
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

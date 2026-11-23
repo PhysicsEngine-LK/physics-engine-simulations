@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>දැනෙන බර: කන්ද, වළ සහ ගුවන් නියමුවා (Q365–367) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 14px; line-height: 1.6; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+  .tabs button { font-size: 16px; padding: 9px 18px; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid { background: #6c5ce7; color: #fff; }
+  .chk { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .chk input { width: 18px; height: 18px; accent-color: #6c5ce7; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: linear-gradient(#eaf4ff, #fff); border: 1px solid #dfe6e9; }
+  .graph { background: #fff; border: 1px solid #dfe6e9; }
+  .cvs + .cvs, .cvs + .cap { margin-top: 12px; }
+  .cap { font-weight: 800; font-size: 15px; margin: 12px 0 6px; color: #2c3e50; }
+  .status { margin-top: 14px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 12px 16px; border-radius: 6px; font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; gap: 10px 26px; justify-content: space-between; }
+  .status.limit { border-left-color: #f39c12; background: #fef5e7; }
+  .status.move { border-left-color: #e74c3c; background: #fdedec; }
+  .status small { display: block; font-size: 13px; color: #636e72; font-weight: 600; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .ans { padding: 2px 16px 14px; line-height: 1.75; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* derivation boxes: one step per line */
+  .dbox { background: #fbfaff; border: 1px solid #d6d2ff; border-left: 6px solid #6c5ce7; border-radius: 10px; padding: 12px 16px; margin: 12px 0; overflow-x: auto; }
+  .dbox .dh { font-weight: 800; font-size: 16px; color: #6c5ce7; margin-bottom: 6px; }
+  .dbox .l { padding: 5px 0 5px 6px; line-height: 1.6; font-size: 15px; }
+  .dbox .l.m { padding-left: 34px; font-family: 'Cambria', 'Times New Roman', serif; font-size: 19px; white-space: nowrap; }
+  .dbox .l.m .si { font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; font-size: 15px; }
+  .ans .dbox { margin: 6px 0 10px; }
+  .fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 4px; line-height: 1.25; }
+  .fr > span:first-child { border-bottom: 1.6px solid currentColor; padding: 0 4px 2px; }
+  .fr > span:last-child { padding: 2px 4px 0; }
+  .sq { white-space: nowrap; }
+  .sq > span { border-top: 1.6px solid currentColor; padding: 2px 3px 0; margin-left: 1px; display: inline-block; }
+  .tg { color: #6c5ce7; font-weight: 700; margin-left: 22px; font-family: 'Segoe UI', sans-serif; font-size: 15px; }
+  .res { display: inline-block; border: 2px solid #6c5ce7; border-radius: 8px; padding: 4px 10px; background: #fff; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls, .two { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } .status { font-size: 14px; } .dbox .l.m { font-size: 17px; padding-left: 14px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .side .status { margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 15px; }
+    .side .status > div:first-child { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">Q365–367 · වෘත්ත චලිතය</span></div>
+  <h1>කන්දක්, වළක් සහ ගුවන් නියමුවා — "දැනෙන බර"</h1>
+  <p class="sub">අපට "බර" ලෙස <b>දැනෙන්නේ</b> ඇත්තටම අප මත ආසනයෙන් / පොළොවෙන් ඇති <b>ප්‍රතික්‍රියාව R</b> යි — mg නොවේ! මගියා යට තරාදියක් තබා බලමු. කන්ද මුදුනේ (කේන්ද්‍රය <b>පහළින්</b>) R අඩු වේ; වළ පතුලේ (කේන්ද්‍රය <b>ඉහළින්</b>) R වැඩි වේ.</p>
+
+  <div class="tabs">
+    <button id="tabA" class="solid">⛰️ A. කන්ද සහ වළ</button>
+    <button id="tabB">✈️ B. ගුවන් නියමුවා</button>
+  </div>
+
+  <!-- ================= TAB A ================= -->
+  <section id="paneA">
+    <div class="layout">
+     <aside class="side">
+      <div class="controls">
+        <div><label>වේගය v = <span class="v" id="vAVal">10.0</span> m s⁻¹</label><input type="range" id="vAS" min="0" max="35" step="0.5" value="10"></div>
+        <div><label>අරය r = <span class="v" id="rAVal">40</span> m</label><input type="range" id="rAS" min="20" max="80" step="1" value="40"></div>
+        <div style="grid-column:1/-1"><label>රථයේ ස්කන්ධය m = <span class="v" id="mAVal">800</span> kg</label><input type="range" id="mAS" min="500" max="2000" step="50" value="800"></div>
+        <div class="btns">
+          <button class="solid" id="btnVmax">v = v<sub>max</sub> = √(gr)</button>
+          <button id="btnPauseA">⏸ නවත්වන්න</button>
+        </div>
+        <div class="btns">
+          <button id="btnTop">📍 කන්ද මුදුනට</button>
+          <button id="btnBot">📍 වළ පතුලට</button>
+          <label class="chk"><input type="checkbox" id="slowA"> 🐢 සෙමෙන්</label>
+        </div>
+        <div class="btns"><span class="note" style="margin:0">g = 10 m s⁻² · රියදුරා වේගය නියතව තබා ගනී</span></div>
+      </div>
+      <div class="status" id="statusA">
+        <div><small>රථය සිටින තැන</small><span id="stA">–</span></div>
+        <div><small>ප්‍රතික්‍රියාව R</small><span id="stR">–</span></div>
+        <div><small>බර mg</small><span id="stMg">–</span></div>
+        <div><small>දැනෙන බර R / mg</small><span id="stN">–</span></div>
+        <div><small>v<sub>max</sub> = √(gr)</small><span id="stVmax">–</span></div>
+      </div>
+     </aside>
+     <div class="main">
+      <div class="cvs"><canvas id="cvA" class="scene"></canvas></div>
+      <div class="cap">මාර්ගය දිගේ දැනෙන බර R / mg (තරාදි කියවීම)</div>
+      <div class="cvs"><canvas id="cvG" class="graph"></canvas></div>
+     </div>
+    </div>
+
+    <div class="two">
+      <div class="dbox">
+        <div class="dh">⛰️ කන්ද මුදුනේ — කේන්ද්‍රය පහළින්</div>
+        <div class="l">• පහළට (කේන්ද්‍රය දෙසට) F = ma:</div>
+        <div class="l m">mg − R = <span class="fr"><span>mv²</span><span>r</span></span> <span class="tg">—— (1)</span></div>
+        <div class="l m">R = mg − <span class="fr"><span>mv²</span><span>r</span></span></div>
+        <div class="l m"><span class="res">R = m<span style="font-size:22px">(</span>g − <span class="fr"><span>v²</span><span>r</span></span><span style="font-size:22px">)</span></span></div>
+        <div class="l">R &lt; mg → මගියාට <b>සැහැල්ලු</b> බවක් දැනේ.</div>
+        <div class="l">• ස්පර්ශව සිටීමට R ≥ 0. එබැවින් (1) න්:</div>
+        <div class="l m"><span class="fr"><span>mv²</span><span>r</span></span> ≤ mg</div>
+        <div class="l m">v² ≤ gr</div>
+        <div class="l m"><span class="res">v<sub>max</sub> = <span class="sq">√<span>gr</span></span></span></div>
+        <div class="note">v &gt; √(gr) නම් R = 0 වී රථය මොහොතකට මාර්ගයෙන් ඉහළට <b>විසි වේ</b> (වාතයේ සිටින විට තරාදිය 0 — බර රහිත බවක්!).</div>
+      </div>
+      <div class="dbox">
+        <div class="dh">🕳️ වළ පතුලේ — කේන්ද්‍රය ඉහළින්</div>
+        <div class="l">• ඉහළට (කේන්ද්‍රය දෙසට) F = ma:</div>
+        <div class="l m">R − mg = <span class="fr"><span>mv²</span><span>r</span></span> <span class="tg">—— (2)</span></div>
+        <div class="l m">R = mg + <span class="fr"><span>mv²</span><span>r</span></span></div>
+        <div class="l m"><span class="res">R = m<span style="font-size:22px">(</span>g + <span class="fr"><span>v²</span><span>r</span></span><span style="font-size:22px">)</span></span></div>
+        <div class="l">R &gt; mg → මගියාට <b>බර වැඩි වූ</b> බවක් දැනේ. R ට සීමාවක් නැති නිසා වළේ දී රථය මාර්ගයෙන් ඉවත් නොවේ.</div>
+        <div class="note">තැනිතලා මාර්ගයේ (r → ∞) R = mg. ආනත (කෙළින්) බෑවුමක R = mg cosθ.<br>සිමියුලේෂනයේ මාර්ගය සුමටව එකට යා කර ඇත — කන්ද මුදුන හා වළ පතුල අසල එය අරය r වූ වෘත්ත චාපයකි (තිත් ඉරි වෘත්ත). R ගණනය කරන්නේ එක් එක් ලක්ෂ්‍යයේ වක්‍රතාවයෙනි.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TAB B ================= -->
+  <section id="paneB" style="display:none">
+    <div class="layout">
+     <aside class="side">
+      <div class="controls">
+        <div><label>වේගය v = <span class="v" id="vBVal">100</span> m s⁻¹</label><input type="range" id="vBS" min="20" max="250" step="5" value="100"></div>
+        <div><label>චාපයේ අරය r = <span class="v" id="rBVal">400</span> m</label><input type="range" id="rBS" min="100" max="1000" step="10" value="400"></div>
+        <div style="grid-column:1/-1"><label>නියමුවාගේ ස්කන්ධය m = <span class="v" id="mBVal">70</span> kg</label><input type="range" id="mBS" min="50" max="120" step="1" value="70"></div>
+        <div class="btns">
+          <button class="solid" id="btnLow">📍 පහළම ලක්ෂ්‍යයට</button>
+          <button id="btnPauseB">⏸ නවත්වන්න</button>
+          <label class="chk"><input type="checkbox" id="slowB"> 🐢 සෙමෙන්</label>
+        </div>
+        <div class="btns"><span class="note" style="margin:0">g = 10 m s⁻² · වේගය නියතයි</span></div>
+      </div>
+      <div class="status" id="statusB">
+        <div><small>නියමුවා සිටින තැන</small><span id="stB">–</span></div>
+        <div><small>ආසනයෙන් බලය R</small><span id="stRB">–</span></div>
+        <div><small>බර mg</small><span id="stMgB">–</span></div>
+        <div><small>"g-බලය" n = R / mg</small><span id="stNB">–</span></div>
+        <div><small>පහළම ලක්ෂ්‍යයේ n = 1 + v²/(gr)</small><span id="stNLow">–</span></div>
+      </div>
+     </aside>
+     <div class="main">
+      <div class="cvs"><canvas id="cvB" class="scene"></canvas></div>
+     </div>
+    </div>
+
+    <div class="dbox">
+      <div class="dh">✈️ කිමිදීමෙන් ඉහළට ගන්නා විට — පහළම ලක්ෂ්‍යය (කේන්ද්‍රය ඉහළින්)</div>
+      <div class="l">• ඉහළට (කේන්ද්‍රය දෙසට) F = ma:</div>
+      <div class="l m">R − mg = <span class="fr"><span>mv²</span><span>r</span></span> <span class="tg">—— (1)</span></div>
+      <div class="l m">R = mg + <span class="fr"><span>mv²</span><span>r</span></span></div>
+      <div class="l">• බරේ ගුණාකාරයක් ලෙස ("g-බලය"):</div>
+      <div class="l m">n = <span class="fr"><span>R</span><span>mg</span></span></div>
+      <div class="l m"><span class="res">n = 1 + <span class="fr"><span>v²</span><span>gr</span></span></span></div>
+      <div class="note">🩸 <b>ක්ලාන්ත වීම (black-out):</b> රුධිරය ද කේන්ද්‍රය (ඉහළ) දෙසට ත්වරණය කිරීමට විශාල බලයක් අවශ්‍යයි. හදවතට එය සැපයිය නොහැකි වූ විට රුධිරය හිසෙන් <b>පාද දෙසට</b> ගලා යයි → මොළයට රුධිරය අඩු වී ක්ලාන්ත වේ. (සිමියුලේෂනයේ දෘෂ්ටිය අඳුරු වීම පෙන්වන්නේ ආසන්න අගයන් අනුවයි.)</div>
+    </div>
+  </section>
+
+  <h2>විසඳුම් (පන්තියේ ගැටලු)</h2>
+  <details>
+    <summary><span class="qtag">Q365</span>800 kg රථයක් අරය 40 m පාලමක මුදුන 10 m s⁻¹ න් — R සහ v<sub>max</sub></summary>
+    <div class="ans">
+      <div class="dbox">
+        <div class="dh">(i) මුදුනේ දී අභිලම්බ ප්‍රතික්‍රියාව</div>
+        <div class="l">කේන්ද්‍රය පහළින්. පහළට (කේන්ද්‍රය දෙසට):</div>
+        <div class="l m">mg − R = <span class="fr"><span>mv²</span><span>r</span></span> <span class="tg">—— (1)</span></div>
+        <div class="l m">R = mg − <span class="fr"><span>mv²</span><span>r</span></span></div>
+        <div class="l m">R = 800 × 10 − <span class="fr"><span>800 × 10²</span><span>40</span></span></div>
+        <div class="l m">R = 8000 − 2000</div>
+        <div class="l m"><span class="res">R = 6000 N</span> <span class="si">(බරට වඩා අඩු)</span></div>
+      </div>
+      <div class="dbox">
+        <div class="dh">(ii) ඉවත් නොවී යා හැකි උපරිම වේගය</div>
+        <div class="l">ස්පර්ශව සිටීමට R ≥ 0. එබැවින් (1) න්:</div>
+        <div class="l m"><span class="fr"><span>mv²</span><span>r</span></span> ≤ mg</div>
+        <div class="l m">v² ≤ rg</div>
+        <div class="l m">v<sub>max</sub> = <span class="sq">√<span>rg</span></span></div>
+        <div class="l m">v<sub>max</sub> = <span class="sq">√<span>40 × 10</span></span> = <span class="sq">√<span>400</span></span></div>
+        <div class="l m"><span class="res">v<sub>max</sub> = 20 m s⁻¹</span></div>
+        <div class="l">ඊට වඩා වේගයෙන් ගියහොත් රථය මොහොතකට පාලමෙන් ඉහළට <b>විසි වේ</b>.</div>
+      </div>
+      <div class="btns"><button data-preset="Q365">▶ සිමියුලේෂනයේ බලන්න (v = 10)</button><button data-preset="Q365b">▶ v = 20 m s⁻¹ (සීමාව)</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q366</span>එම රථයම අරය 40 m වළක පතුල 10 m s⁻¹ න් — R සහ "බර වැඩි වූ" හැඟීම</summary>
+    <div class="ans">
+      <div class="dbox">
+        <div class="l">කේන්ද්‍රය ඉහළින්. ඉහළට (කේන්ද්‍රය දෙසට):</div>
+        <div class="l m">R − mg = <span class="fr"><span>mv²</span><span>r</span></span> <span class="tg">—— (1)</span></div>
+        <div class="l m">R = mg + <span class="fr"><span>mv²</span><span>r</span></span></div>
+        <div class="l m">R = 8000 + 2000</div>
+        <div class="l m"><span class="res">R = 10000 N</span></div>
+      </div>
+      අපට දැනෙන "බර" යනු ආසනයෙන් ඇති ප්‍රතික්‍රියාව යි. වළේ දී එය mg ට වඩා <b>වැඩි</b> (කන්දේ දී <b>අඩු</b>) නිසා බර වැඩි වූ බවක් දැනේ.
+      <div class="btns" style="margin-top:6px"><button data-preset="Q366">▶ සිමියුලේෂනයේ බලන්න</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q367</span>70 kg ගුවන් නියමුවා, r = 400 m, v = 100 m s⁻¹ — ආසනයේ බලය සහ "g-බලය"</summary>
+    <div class="ans">
+      <div class="dbox">
+        <div class="dh">(i) ආසනය නියමුවා මත යොදන බලය</div>
+        <div class="l">කේන්ද්‍රය ඉහළින්:</div>
+        <div class="l m">R − mg = <span class="fr"><span>mv²</span><span>r</span></span> <span class="tg">—— (1)</span></div>
+        <div class="l m">R = mg + <span class="fr"><span>mv²</span><span>r</span></span></div>
+        <div class="l m">R = 70 × 10 + <span class="fr"><span>70 × 10000</span><span>400</span></span></div>
+        <div class="l m">R = 700 + 1750</div>
+        <div class="l m"><span class="res">R = 2450 N</span></div>
+      </div>
+      <div class="dbox">
+        <div class="dh">(ii) බරේ ගුණාකාරයක් ලෙස</div>
+        <div class="l m"><span class="fr"><span>R</span><span>mg</span></span> = <span class="fr"><span>2450</span><span>700</span></span></div>
+        <div class="l m"><span class="res"><span class="fr"><span>R</span><span>mg</span></span> = 3.5</span></div>
+        <div class="l">එනම් ඔහුට තම බර මෙන් 3.5 ගුණයක් ("3.5g") දැනේ.</div>
+      </div>
+      රුධිරය ද කේන්ද්‍රය (ඉහළ) දෙසට ත්වරණය කිරීමට විශාල බලයක් අවශ්‍ය වේ. හදවතට එය සැපයිය නොහැකි නිසා රුධිරය හිසෙන් පාදය දෙසට ගලා යයි; මොළයට රුධිරය අඩු වී ක්ලාන්ත වේ.
+      <div class="btns" style="margin-top:6px"><button data-preset="Q367">▶ සිමියුලේෂනයේ බලන්න</button></div>
+    </div>
+  </details>
+</div>
+
+<script>
+// ===================== physics core (no DOM) =====================
+const g = 10;
+const DEF = { tab: 'A', rA: 40, vA: 10, mA: 800, pausedA: false, slowA: false, rB: 400, vB: 100, mB: 70, pausedB: false, slowB: false };
+const S = Object.assign({}, DEF);
+const PASSENGER = 60;   // kg, passenger standing on the bathroom scale
+
+// ---- Road profile, built from curvature (lengths in units of r; K = κ·r, +ve = concave up = centre ABOVE) ----
+// flat → gentle concave-up ramp → hump (|κ| peaks at 1/r on the top) → straight slope → dip (κ = 1/r at the bottom) → ramp → flat.
+// Raised-cosine curvature windows make the hump TOP the first place where R → 0 (checked: min of cosθ + K on the hump is at the top).
+const ROAD = (function () {
+  const Lh = 3, a = 0.7, F = 0.6, th1 = Lh / 4, Lt = 2 * th1 / a, ds = 0.002;
+  const win = (s, c, w, pk) => Math.abs(s - c) < w / 2 ? pk * (1 + Math.cos(2 * Math.PI * (s - c) / w)) / 2 : 0;
+  function make(Lg) {
+    const c1 = F + Lt / 2, c2 = F + Lt + Lh / 2, J = F + Lt + Lh + Lg / 2, c3 = F + Lt + Lh + Lg + Lh / 2, c4 = F + Lt + 2 * Lh + Lg + Lt / 2;
+    const L = 2 * F + 2 * Lt + 2 * Lh + Lg;
+    const kf = s => win(s, c1, Lt, a) + win(s, c2, Lh, -1) + win(s, c3, Lh, 1) + win(s, c4, Lt, -a);
+    const N = Math.ceil(L / ds) + 1;
+    const X = new Float64Array(N), Y = new Float64Array(N), TH = new Float64Array(N), K = new Float64Array(N);
+    let th = 0, x = 0, y = 0;
+    K[0] = kf(0);
+    for (let i = 1; i < N; i++) {
+      const km = kf((i - 0.5) * ds), thm = th + km * ds / 2;
+      x += Math.cos(thm) * ds; y += Math.sin(thm) * ds; th += km * ds;
+      X[i] = x; Y[i] = y; TH[i] = th; K[i] = kf(i * ds);
+    }
+    const iJ = Math.round(J / ds);
+    return { X, Y, TH, K, N, ds, L: (N - 1) * ds, sTop: c2, sBot: c3, yJ: Y[iJ], Lh, Lg };
+  }
+  const p0 = make(0);
+  return make(2 * p0.yJ / Math.sin(th1));   // straight piece between hump and dip so the road ends at its start level
+})();
+// interpolated point on the road at arc length sm (metres) for radius r
+function roadAt(sm, r) {
+  const u = Math.max(0, sm / r / ROAD.ds), i = Math.min(Math.floor(u), ROAD.N - 2), f = Math.min(1, u - i);
+  const L = (A) => A[i] + (A[i + 1] - A[i]) * f;
+  return { x: L(ROAD.X) * r, y: L(ROAD.Y) * r, th: L(ROAD.TH), K: L(ROAD.K) };
+}
+const X_END = ROAD.X[ROAD.N - 1];
+// road height at horizontal position xm (flat y = 0 beyond both ends); also returns arc length
+function roadAtX(xm, r) {
+  const u = xm / r;
+  if (u <= 0) return { y: 0, s: u * r };
+  if (u >= X_END) return { y: 0, s: ROAD.L * r + (u - X_END) * r };
+  let lo = 0, hi = ROAD.N - 1;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (ROAD.X[mid] <= u) lo = mid; else hi = mid; }
+  const f = (u - ROAD.X[lo]) / (ROAD.X[hi] - ROAD.X[lo] || 1);
+  return { y: (ROAD.Y[lo] + (ROAD.Y[hi] - ROAD.Y[lo]) * f) * r, s: (lo + f) * ROAD.ds * r };
+}
+// felt weight on the road: R/mg = cosθ + v²κ/g  (κ = K/r)
+function nRoad(p, v, r) { return Math.cos(p.th) + v * v * p.K / (g * r); }
+function computeA() {
+  const r = S.rA, v = S.vA, m = S.mA, mg = m * g;
+  let n, where, p;
+  if (carA.air) { n = 0; where = 'air'; }
+  else {
+    p = roadAt(carA.s, r); n = nRoad(p, v, r);
+    const sU = carA.s / r;
+    if (Math.abs(sU - ROAD.sTop) < 0.12) where = 'top';
+    else if (Math.abs(sU - ROAD.sBot) < 0.12) where = 'bot';
+    else if (p.K < -0.02) where = 'hump';
+    else if (p.K > 0.02) where = 'sag';
+    else if (Math.abs(p.th) > 0.02) where = 'slope';
+    else where = 'flat';
+  }
+  return { n, R: n * mg, mg, where, vMax: Math.sqrt(g * r), Rtop: m * (g - v * v / r), Rbot: m * (g + v * v / r),
+           leaves: v * v > g * r * (1 + 1e-3) };
+}
+// animation is sped up by kA (same factor for gravity, so the hop is physically right)
+function timeScaleA() { return ROAD.L * S.rA / (7 * 0.5 * Math.sqrt(g * S.rA)); }
+
+const carA = { s: 0, air: false, x: 0, y: 0, vx: 0, vy: 0, tAir: 0, land: 0, launchT: 0 };
+function resetCarA(sU) { Object.assign(carA, { s: (sU || 0) * S.rA, air: false, tAir: 0, land: 0, launchT: 0 }); }
+function stepA(h) {
+  const r = S.rA, v = S.vA, Lm = ROAD.L * r;
+  carA.land = Math.max(0, carA.land - h / timeScaleA());
+  carA.launchT = Math.max(0, carA.launchT - h / timeScaleA());
+  if (!carA.air) {
+    carA.s += v * h;
+    if (carA.s >= Lm) carA.s -= Lm;
+    const p = roadAt(carA.s, r);
+    if (v > 0 && nRoad(p, v, r) < -1e-3) {   // R would have to be negative → contact lost
+      Object.assign(carA, { air: true, x: p.x, y: p.y, vx: v * Math.cos(p.th), vy: v * Math.sin(p.th), tAir: 0, launchT: 1.2 });
+    }
+  } else {
+    carA.vy -= g * h; carA.x += carA.vx * h; carA.y += carA.vy * h; carA.tAir += h;
+    const q = roadAtX(carA.x, r);
+    if (carA.tAir > 0.05 && carA.y <= q.y) {
+      carA.air = false; carA.land = 0.8;
+      carA.s = q.s >= Lm ? 0 : Math.max(q.s, 0);   // flew past the end → start the next lap
+    } else if (carA.tAir > 30) { resetCarA(0); }
+  }
+}
+
+// ---- Tab B: dive line → vertical arc (centre above lowest point) → climb line ----
+const BETA = 50 * Math.PI / 180, LS = 1.2;   // dive angle, straight length (× r)
+function pathLenB() { return (2 * LS + 2 * BETA) * S.rB; }
+// position (m, lowest point at origin, y up), heading, felt weight n
+function planeAt(s) {
+  const r = S.rB, v = S.vB, Ls = LS * r, arc = 2 * BETA * r;
+  const sb = Math.sin(BETA), cb = Math.cos(BETA);
+  if (s < Ls) {
+    const d = Ls - s;
+    return { x: -r * sb - d * cb, y: r * (1 - cb) + d * sb, head: -BETA, n: cb, seg: 'dive', phi: -BETA };
+  }
+  if (s < Ls + arc) {
+    const phi = -BETA + (s - Ls) / r;
+    return { x: r * Math.sin(phi), y: r * (1 - Math.cos(phi)), head: phi, n: Math.cos(phi) + v * v / (g * r), seg: 'arc', phi };
+  }
+  const d = Math.min(s - Ls - arc, Ls);
+  return { x: r * sb + d * cb, y: r * (1 - cb) + d * sb, head: BETA, n: cb, seg: 'climb', phi: BETA };
+}
+const plane = { s: 0 };
+function sLowB() { return LS * S.rB + BETA * S.rB; }
+function computeB() {
+  const p = planeAt(plane.s), m = S.mB, mg = m * g;
+  const nLow = 1 + S.vB * S.vB / (g * S.rB);
+  return { p, n: p.n, R: p.n * mg, mg, nLow, Rlow: nLow * mg, atLow: p.seg === 'arc' && Math.abs(p.phi) < 0.04 };
+}
+function timeScaleB() { const L = pathLenB(); return Math.max(L / (6 * 100), L / (14 * Math.max(S.vB, 1))); }
+function stepB(h) {
+  plane.s += S.vB * h;
+  const L = pathLenB();
+  if (plane.s >= L) plane.s -= L;
+}
+
+// dt = real seconds
+function step(dt) {
+  dt = Math.min(Math.max(dt, 0), 0.25);
+  if (S.tab === 'A' && !S.pausedA) {
+    let t = dt * timeScaleA() * (S.slowA ? 0.25 : 1);
+    while (t > 1e-9) { const h = Math.min(t, 0.01); stepA(h); t -= h; }
+  }
+  if (S.tab === 'B' && !S.pausedB) {
+    let t = dt * timeScaleB() * (S.slowB ? 0.25 : 1);
+    while (t > 1e-9) { const h = Math.min(t, 0.05); stepB(h); t -= h; }
+  }
+}
+
+// ===================== drawing =====================
+const $ = id => document.getElementById(id);
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    if (!w) return;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(14, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+// Draws text; "x_abc" is drawn with "abc" as a real subscript.
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Iskoola Pota','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/);
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
+}
+const fN = x => Math.round(x).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const f1 = x => x.toFixed(1), f2 = x => x.toFixed(2);
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+
+// side-view car; origin = midpoint between the wheels' contact points, local -y = up
+function carSide(c, x, y, ang, col) {
+  c.save(); c.translate(x, y); c.rotate(ang);
+  c.fillStyle = col; c.strokeStyle = '#4834d4'; c.lineWidth = 2.5;
+  c.beginPath(); c.moveTo(-38, -12); c.lineTo(-38, -26); c.lineTo(-22, -28); c.lineTo(-12, -44); c.lineTo(16, -44); c.lineTo(28, -28); c.lineTo(40, -25); c.lineTo(40, -12); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = '#dff3ff'; c.beginPath(); c.moveTo(-9, -40); c.lineTo(13, -40); c.lineTo(22, -29); c.lineTo(-17, -29); c.closePath(); c.fill();
+  // passenger head
+  c.fillStyle = '#e17055'; c.beginPath(); c.arc(2, -34, 5, 0, 7); c.fill();
+  c.fillStyle = '#ffeaa7'; c.fillRect(36, -24, 4, 5);
+  c.fillStyle = '#2d3436';
+  [-24, 25].forEach(wx => { c.beginPath(); c.arc(wx, -9, 9, 0, 7); c.fill(); });
+  c.fillStyle = '#b2bec3';
+  [-24, 25].forEach(wx => { c.beginPath(); c.arc(wx, -9, 3.5, 0, 7); c.fill(); });
+  c.restore();
+}
+
+let cA, cG, cB;
+// Tab A view mapping (metres → canvas px)
+function mapA() {
+  const r = S.rA, k = 860 / (X_END * r);
+  return { k, X: x => 20 + x * k, Y: y => 300 - y * k };
+}
+function drawA() {
+  const c = cA.ctx, W = 900, H = 470; c.clearRect(0, 0, W, H);
+  const r = S.rA, M = mapA(), A = computeA(), v = S.vA;
+  // ground + road
+  c.fillStyle = '#c8e6c9';
+  c.beginPath(); c.moveTo(0, H); c.lineTo(0, M.Y(0));
+  for (let i = 0; i < ROAD.N; i += 8) c.lineTo(M.X(ROAD.X[i] * r), M.Y(ROAD.Y[i] * r));
+  c.lineTo(M.X(X_END * r), M.Y(0)); c.lineTo(W, M.Y(0)); c.lineTo(W, H); c.closePath(); c.fill();
+  const roadPath = () => { c.beginPath(); c.moveTo(0, M.Y(0)); for (let i = 0; i < ROAD.N; i += 8) c.lineTo(M.X(ROAD.X[i] * r), M.Y(ROAD.Y[i] * r)); c.lineTo(M.X(X_END * r), M.Y(ROAD.Y[ROAD.N - 1] * r)); c.lineTo(W, M.Y(0)); };
+  c.strokeStyle = '#636e72'; c.lineWidth = 9; c.lineJoin = 'round'; roadPath(); c.stroke();
+  c.strokeStyle = '#ffeaa7'; c.lineWidth = 1.5; c.setLineDash([10, 10]); roadPath(); c.stroke(); c.setLineDash([]);
+  // osculating circles at the top (centre below) and bottom (centre above)
+  const pt = roadAt(ROAD.sTop * r, r), pb = roadAt(ROAD.sBot * r, r), Rp = r * M.k;
+  const Ot = [M.X(pt.x), M.Y(pt.y) + Rp], Ob = [M.X(pb.x), M.Y(pb.y) - Rp];
+  c.strokeStyle = 'rgba(108,92,231,.55)'; c.lineWidth = 1.5; c.setLineDash([5, 5]);
+  c.beginPath(); c.arc(Ot[0], Ot[1], Rp, Math.PI * 1.15, Math.PI * 1.85); c.stroke();
+  c.beginPath(); c.arc(Ob[0], Ob[1], Rp, Math.PI * 0.15, Math.PI * 0.85); c.stroke();
+  c.beginPath(); c.moveTo(Ot[0], Ot[1]); c.lineTo(Ot[0], M.Y(pt.y)); c.stroke();
+  c.beginPath(); c.moveTo(Ob[0], Ob[1]); c.lineTo(Ob[0], M.Y(pb.y)); c.stroke();
+  c.setLineDash([]);
+  c.fillStyle = '#6c5ce7';
+  [Ot, Ob].forEach(O => { c.beginPath(); c.arc(O[0], O[1], 4.5, 0, 7); c.fill(); });
+  text(c, 'O', Ot[0] + 9, Ot[1] + 4, '#6c5ce7', 15, 'left', 800);
+  text(c, 'r', Ot[0] - 8, (Ot[1] + M.Y(pt.y)) / 2 + 14, '#6c5ce7', 15, 'right', 800);
+  text(c, 'O', Ob[0] + 9, Ob[1] - 4, '#6c5ce7', 15, 'left', 800);
+  text(c, 'r', Ob[0] - 8, (Ob[1] + M.Y(pb.y)) / 2 - 10, '#6c5ce7', 15, 'right', 800);
+  text(c, 'කේන්ද්‍රය පහළින්', Ot[0], Ot[1] + 22, '#6c5ce7', 13, 'center', 700);
+  text(c, 'කේන්ද්‍රය ඉහළින්', Ob[0], Ob[1] - 22, '#6c5ce7', 13, 'center', 700);
+  text(c, `r = ${r} m`, Ot[0] - 70, M.Y(pt.y) - 70, '#6c5ce7', 15, 'center', 800);
+  // car
+  let X, Y, ang, nx, ny;
+  if (!carA.air) {
+    const p = roadAt(carA.s, r);
+    X = M.X(p.x); Y = M.Y(p.y); ang = -p.th; nx = -Math.sin(p.th); ny = -Math.cos(p.th);
+  } else {
+    X = M.X(carA.x); Y = M.Y(carA.y); ang = -clamp(Math.atan2(carA.vy, carA.vx), -0.9, 0.9); nx = 0; ny = -1;
+  }
+  const onScreen = X > -60 && X < W + 60;
+  if (onScreen) {
+    carSide(c, X + nx * 4, Y + ny * 4, ang, A.where === 'air' ? '#fab1a0' : '#a29bfe');
+    // forces: mg (down) and R (normal) — 55 px per mg
+    const G = [X + nx * 26, Y + ny * 26];
+    arrow(c, G[0], G[1], G[0], G[1] + 55, '#2d3436', 4);
+    text(c, 'mg', G[0] + 8, G[1] + 52, '#2d3436', 15, 'left', 800);
+    if (!carA.air && A.n > 0.02) {
+      const L = clamp(A.n, 0, 3.4) * 55, C0 = [X - nx * 2, Y - ny * 2];
+      arrow(c, C0[0] - nx * 0, C0[1], C0[0] + nx * L, C0[1] + ny * L, '#00b894', 5);
+      text(c, 'R', C0[0] + nx * L - 14, C0[1] + ny * L, '#00a383', 18, 'right', 800);
+    }
+    if (carA.air || carA.launchT > 0) text(c, 'R = 0 — රථය විසි වේ! 🚀', X, Y - 78, '#d63031', 18, 'center', 800);
+    else if (carA.land > 0) text(c, 'ගොඩබෑම! 💥', X, Y - 74, '#e17055', 18, 'center', 800);
+  }
+  // big readout
+  c.fillStyle = 'rgba(255,255,255,.88)'; c.strokeStyle = '#d6d2ff'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(12, 12, 300, 92, 10); c.fill(); c.stroke();
+  text(c, `R = ${fN(Math.max(A.R, 0))} N`, 26, 38, '#00a383', 22, 'left', 800);
+  text(c, `mg = ${fN(A.mg)} N`, 200, 38, '#2d3436', 15, 'left', 700);
+  text(c, `දැනෙන බර = ${f2(Math.max(A.n, 0))} × mg`, 26, 70, A.n > 1.02 ? '#d63031' : A.n < 0.98 ? '#0984e3' : '#2c3e50', 17, 'left', 800);
+  text(c, `v = ${f1(v)} m s⁻¹`, 26, 92, '#636e72', 13, 'left', 700);
+  text(c, `⏩ සජීවීකරණය ×${f1(timeScaleA() * (S.slowA ? 0.25 : 1))} වේගවත්`, 120, 92, '#95a5a6', 12, 'left', 600);
+  drawScale(c, A);
+  if (S.pausedA) text(c, '⏸', 330, 30, '#6c5ce7', 22, 'left', 800);
+}
+// passenger on a bathroom scale (inset, top right)
+function drawScale(c, A) {
+  const bx = 612, by = 10, bw = 278, bh = 200, n = Math.max(A.n, 0);
+  c.save();
+  c.fillStyle = '#fff'; c.strokeStyle = '#a29bfe'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(bx, by, bw, bh, 10); c.fill(); c.stroke();
+  text(c, 'රථය තුළ තරාදිය මත මගියා', bx + bw / 2, by + 16, '#2c3e50', 13, 'center', 800);
+  // person (squashes a little when n is large, stretches when small)
+  const sq = clamp(1 - (n - 1) * 0.06, 0.82, 1.08), px = bx + 62, base = by + 168;
+  c.fillStyle = '#e17055';
+  c.beginPath(); c.arc(px, base - 112 * sq, 11, 0, 7); c.fill();
+  c.strokeStyle = '#0984e3'; c.lineWidth = 10; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(px, base - 98 * sq); c.lineTo(px, base - 55 * sq); c.stroke();
+  c.lineWidth = 7; c.strokeStyle = '#2d3436';
+  c.beginPath(); c.moveTo(px, base - 55 * sq); c.lineTo(px - 9, base - 6); c.moveTo(px, base - 55 * sq); c.lineTo(px + 9, base - 6); c.stroke();
+  c.strokeStyle = '#0984e3'; c.lineWidth = 6;
+  c.beginPath(); c.moveTo(px, base - 90 * sq); c.lineTo(px - 18, base - 62 * sq); c.moveTo(px, base - 90 * sq); c.lineTo(px + 18, base - 62 * sq); c.stroke();
+  c.lineCap = 'butt';
+  // scale
+  c.fillStyle = '#dfe6e9'; c.strokeStyle = '#636e72'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(px - 36, base - 4, 72, 14, 4); c.fill(); c.stroke();
+  // dial
+  const dx = bx + 186, dy = by + 98, dr = 58, a0 = Math.PI * 0.8, a1 = Math.PI * 2.2, NMAX = 3;
+  const angOf = v => a0 + clamp(v, 0, NMAX) / NMAX * (a1 - a0);
+  c.fillStyle = '#f8f9fa'; c.beginPath(); c.arc(dx, dy, dr, 0, 7); c.fill(); c.stroke();
+  [[0, 0.98, '#74b9ff'], [0.98, 1.02, '#27ae60'], [1.02, NMAX, '#fab1a0']].forEach(([u, w, col]) => {
+    c.strokeStyle = col; c.lineWidth = 8; c.beginPath(); c.arc(dx, dy, dr - 8, angOf(u), angOf(w)); c.stroke();
+  });
+  for (let t = 0; t <= NMAX + 1e-9; t += 0.5) {
+    const a = angOf(t);
+    c.strokeStyle = '#2d3436'; c.lineWidth = 2; c.beginPath(); c.moveTo(dx + (dr - 14) * Math.cos(a), dy + (dr - 14) * Math.sin(a)); c.lineTo(dx + (dr - 2) * Math.cos(a), dy + (dr - 2) * Math.sin(a)); c.stroke();
+    if (Number.isInteger(t)) text(c, t, dx + (dr - 25) * Math.cos(a), dy + (dr - 25) * Math.sin(a), '#2d3436', 12, 'center', 800);
+  }
+  const an = angOf(n);
+  c.strokeStyle = '#d63031'; c.lineWidth = 3; c.beginPath(); c.moveTo(dx, dy); c.lineTo(dx + (dr - 10) * Math.cos(an), dy + (dr - 10) * Math.sin(an)); c.stroke();
+  c.fillStyle = '#d63031'; c.beginPath(); c.arc(dx, dy, 4, 0, 7); c.fill();
+  text(c, '× mg', dx, dy + 22, '#636e72', 11, 'center', 700);
+  text(c, `${f2(n)} mg`, dx, dy + 40, '#d63031', 14, 'center', 800);
+  text(c, `තරාදිය: ${Math.round(PASSENGER * n)} kg`, bx + bw / 2, by + bh - 12, n > 1.02 ? '#d63031' : n < 0.98 ? '#0984e3' : '#27ae60', 15, 'center', 800);
+  text(c, `(${PASSENGER} kg)`, px, by + 36, '#95a5a6', 11, 'center', 600);
+  c.restore();
+}
+// graph of R/mg along the road
+function drawG() {
+  const c = cG.ctx, W = 900, H = 200; c.clearRect(0, 0, W, H);
+  const r = S.rA, v = S.vA, M = mapA(), base = 172, NMAX = 3, ky = 140 / NMAX;
+  const Yn = n => base - clamp(n, 0, NMAX + 0.15) * ky;
+  for (let t = 0; t <= NMAX; t += 0.5) {
+    c.strokeStyle = t === 1 ? '#27ae60' : '#ecf0f1'; c.lineWidth = t === 1 ? 2 : 1;
+    if (t === 1) c.setLineDash([6, 5]);
+    c.beginPath(); c.moveTo(20, Yn(t)); c.lineTo(880, Yn(t)); c.stroke(); c.setLineDash([]);
+    if (Number.isInteger(t)) text(c, t, 14, Yn(t), '#95a5a6', 12, 'right', 600);
+  }
+  text(c, '= mg (තැනිතලාව)', 884, Yn(1) - 12, '#27ae60', 12, 'right', 700);
+  c.strokeStyle = '#2d3436'; c.lineWidth = 2; c.beginPath(); c.moveTo(20, base); c.lineTo(880, base); c.stroke();
+  // curve, red where the road would need R < 0
+  let prev = null;
+  for (let i = 0; i < ROAD.N; i += 6) {
+    const p = { th: ROAD.TH[i], K: ROAD.K[i] }, n = nRoad(p, v, r);
+    const X = M.X(ROAD.X[i] * r), Yv = Yn(n), neg = n < -1e-3;
+    if (prev) {
+      c.strokeStyle = neg || prev.neg ? '#d63031' : '#6c5ce7'; c.lineWidth = neg ? 5 : 3;
+      c.beginPath(); c.moveTo(prev.X, prev.Y); c.lineTo(X, Yv); c.stroke();
+    }
+    prev = { X, Y: Yv, neg };
+  }
+  const nTop = 1 - v * v / (g * r), nBot = 1 + v * v / (g * r);
+  const xt = M.X(roadAt(ROAD.sTop * r, r).x), xb = M.X(roadAt(ROAD.sBot * r, r).x);
+  text(c, nTop < 0 ? 'R = 0 → විසි වේ!' : `මුදුන: ${f2(nTop)}`, xt, nTop < 0 ? base - 14 : Yn(nTop) + 14 > base - 4 ? Yn(nTop) - 14 : Yn(nTop) + 14, nTop < 0 ? '#d63031' : '#0984e3', 13, 'center', 800);
+  text(c, `පතුල: ${f2(nBot)}${nBot > NMAX ? ' ▲' : ''}`, xb, Yn(nBot) - 13, '#d63031', 13, 'center', 800);
+  // car marker
+  const A = computeA();
+  const cx = carA.air ? M.X(carA.x) : M.X(roadAt(carA.s, r).x);
+  if (cx > 20 && cx < 880) {
+    c.strokeStyle = 'rgba(9,132,227,.5)'; c.lineWidth = 2; c.beginPath(); c.moveTo(cx, 14); c.lineTo(cx, base); c.stroke();
+    c.fillStyle = '#0984e3'; c.beginPath(); c.arc(cx, Yn(Math.max(A.n, 0)), 6, 0, 7); c.fill();
+  }
+  text(c, 'R / mg', 26, 12, '#2c3e50', 13, 'left', 800);
+  text(c, 'මාර්ගය දිගේ →', 880, 190, '#95a5a6', 12, 'right', 600);
+}
+
+// ---------- Tab B ----------
+function mapB() {
+  const r = S.rB, halfW = r * Math.sin(BETA) + LS * r * Math.cos(BETA), k = 540 / (2 * halfW);
+  return { k, X: x => 300 + x * k, Y: y => 420 - y * k };
+}
+function planeShape(c, x, y, ang, col) {
+  c.save(); c.translate(x, y); c.rotate(ang);
+  c.fillStyle = col; c.strokeStyle = '#2d3436'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(38, 0); c.quadraticCurveTo(30, -9, 10, -9); c.lineTo(-30, -7); c.lineTo(-40, -22); c.lineTo(-46, -22); c.lineTo(-42, -4); c.lineTo(-42, 4); c.lineTo(-30, 7); c.lineTo(10, 8); c.quadraticCurveTo(30, 8, 38, 0); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = '#74b9ff'; c.beginPath(); c.ellipse(14, -9, 10, 5, 0, Math.PI, 0); c.fill();
+  c.fillStyle = '#636e72'; c.beginPath(); c.moveTo(4, 2); c.lineTo(-14, 2); c.lineTo(-22, 14); c.lineTo(-14, 14); c.closePath(); c.fill();
+  c.restore();
+}
+function drawB() {
+  const c = cB.ctx, W = 900, H = 470; c.clearRect(0, 0, W, H);
+  const r = S.rB, M = mapB(), B = computeB(), Lp = pathLenB();
+  // hills
+  c.fillStyle = '#c8e6c9'; c.beginPath(); c.moveTo(0, H); c.lineTo(0, 452); c.quadraticCurveTo(150, 430, 300, 448); c.quadraticCurveTo(450, 462, 580, 440); c.lineTo(580, H); c.closePath(); c.fill();
+  // path
+  c.strokeStyle = '#a29bfe'; c.lineWidth = 3; c.setLineDash([9, 7]);
+  c.beginPath();
+  for (let i = 0; i <= 160; i++) { const p = planeAt(Lp * i / 160 * 0.99999); const X = M.X(p.x), Y = M.Y(p.y); i ? c.lineTo(X, Y) : c.moveTo(X, Y); }
+  c.stroke(); c.setLineDash([]);
+  // centre O and radius
+  const O = [M.X(0), M.Y(r)];
+  c.fillStyle = '#6c5ce7'; c.beginPath(); c.arc(O[0], O[1], 5, 0, 7); c.fill();
+  text(c, 'O', O[0] + 9, O[1] - 8, '#6c5ce7', 15, 'left', 800);
+  const P = B.p, PX = M.X(P.x), PY = M.Y(P.y);
+  if (P.seg === 'arc') {
+    c.strokeStyle = '#6c5ce7'; c.lineWidth = 1.5; c.setLineDash([5, 5]); c.beginPath(); c.moveTo(O[0], O[1]); c.lineTo(PX, PY); c.stroke(); c.setLineDash([]);
+  } else {
+    c.strokeStyle = 'rgba(108,92,231,.4)'; c.lineWidth = 1.5; c.setLineDash([5, 5]); c.beginPath(); c.moveTo(O[0], O[1]); c.lineTo(M.X(0), M.Y(0)); c.stroke(); c.setLineDash([]);
+  }
+  text(c, `r = ${r} m`, O[0] - 12, (O[1] + M.Y(0)) / 2, '#6c5ce7', 15, 'right', 800);
+  text(c, 'කිමිදීම ↘', M.X(planeAt(0.15 * LS * r).x) + 20, M.Y(planeAt(0.15 * LS * r).y) - 10, '#636e72', 14, 'left', 700);
+  text(c, '↗ ඉහළට', M.X(planeAt(Lp - 0.15 * LS * r).x) - 20, M.Y(planeAt(Lp - 0.15 * LS * r).y) - 10, '#636e72', 14, 'right', 700);
+  text(c, 'පහළම ලක්ෂ්‍යය', M.X(0) - 24, M.Y(0) + 28, '#6c5ce7', 13, 'right', 700);
+  // plane + forces on the pilot (55 px per mg, capped)
+  const head = -P.head, nx = -Math.sin(P.head), ny = -Math.cos(P.head);   // inward normal (towards O side), canvas coords
+  planeShape(c, PX, PY, head, B.n > 6 ? '#fab1a0' : '#dfe6e9');
+  arrow(c, PX, PY, PX, PY + 50, '#2d3436', 4);
+  text(c, 'mg', PX + 8, PY + 48, '#2d3436', 15, 'left', 800);
+  const Lr = clamp(B.n, 0, 3.6) * 50;
+  arrow(c, PX, PY, PX + nx * Lr, PY + ny * Lr, '#00b894', 5);
+  text(c, `R = ${f2(B.n)} mg${B.n > 3.6 ? ' ▲' : ''}`, PX + nx * Lr + 10, PY + ny * Lr - 8, '#00a383', 15, 'left', 800);
+  text(c, 'නියමුවා මත බල (ආසනයෙන් R, බර mg)', 20, 22, '#636e72', 13, 'left', 700);
+  text(c, `⏩ සජීවීකරණය ×${f1(timeScaleB() * (S.slowB ? 0.25 : 1))}`, 20, 44, '#95a5a6', 12, 'left', 600);
+  if (S.pausedB) text(c, '⏸', 20, 70, '#6c5ce7', 22, 'left', 800);
+  drawCockpit(c, B);
+}
+function drawCockpit(c, B) {
+  const bx = 596, by = 10, bw = 294, bh = 450, n = B.n;
+  c.save();
+  c.fillStyle = '#fff'; c.strokeStyle = '#a29bfe'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(bx, by, bw, bh, 10); c.fill(); c.stroke(); c.clip();
+  text(c, 'නියමුවාගේ "g-මීටරය"', bx + bw / 2, by + 18, '#2c3e50', 14, 'center', 800);
+  // g dial 0..8
+  const dx = bx + bw / 2, dy = by + 104, dr = 70, a0 = Math.PI * 0.8, a1 = Math.PI * 2.2, NMAX = 8;
+  const angOf = v => a0 + clamp(v, 0, NMAX) / NMAX * (a1 - a0);
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(dx, dy, dr, 0, 7); c.fill();
+  [[0, 4, '#00b894'], [4, 6, '#fdcb6e'], [6, NMAX, '#e17055']].forEach(([u, w, col]) => {
+    c.strokeStyle = col; c.lineWidth = 8; c.beginPath(); c.arc(dx, dy, dr - 9, angOf(u), angOf(w)); c.stroke();
+  });
+  for (let t = 0; t <= NMAX; t++) {
+    const a = angOf(t);
+    c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); c.moveTo(dx + (dr - 16) * Math.cos(a), dy + (dr - 16) * Math.sin(a)); c.lineTo(dx + (dr - 3) * Math.cos(a), dy + (dr - 3) * Math.sin(a)); c.stroke();
+    text(c, t, dx + (dr - 28) * Math.cos(a), dy + (dr - 28) * Math.sin(a), '#fff', 12, 'center', 800);
+  }
+  const an = angOf(n);
+  c.strokeStyle = '#ff7675'; c.lineWidth = 3; c.beginPath(); c.moveTo(dx, dy); c.lineTo(dx + (dr - 12) * Math.cos(an), dy + (dr - 12) * Math.sin(an)); c.stroke();
+  c.fillStyle = '#ff7675'; c.beginPath(); c.arc(dx, dy, 4, 0, 7); c.fill();
+  text(c, `${f2(n)} g`, dx, dy + 36, '#fff', 15, 'center', 800);
+  // seated pilot + blood
+  const px = bx + 92, hy = by + 232, blood = clamp(1 - (n - 1) / 5, 0, 1);
+  // seat
+  c.fillStyle = '#b2bec3'; c.beginPath(); c.roundRect(px - 34, hy + 6, 14, 118, 5); c.fill(); c.beginPath(); c.roundRect(px - 34, hy + 112, 88, 14, 5); c.fill();
+  // body
+  c.fillStyle = '#ffeaa7'; c.strokeStyle = '#2d3436'; c.lineWidth = 2;
+  c.beginPath(); c.arc(px, hy, 20, 0, 7); c.fill(); c.stroke();
+  c.beginPath(); c.roundRect(px - 16, hy + 22, 30, 90, 10); c.fill(); c.stroke();
+  c.beginPath(); c.roundRect(px + 8, hy + 96, 62, 18, 8); c.fill(); c.stroke();
+  c.beginPath(); c.roundRect(px + 56, hy + 96, 16, 70, 7); c.fill(); c.stroke();
+  // blood in the head (fades) and in the legs (fills)
+  c.fillStyle = `rgba(214,48,49,${0.15 + 0.6 * blood})`; c.beginPath(); c.arc(px, hy, 12, 0, 7); c.fill();
+  c.fillStyle = 'rgba(214,48,49,.55)';
+  const legFill = clamp((n - 1) / 5, 0, 1) * 60;
+  c.fillRect(px + 59, hy + 162 - legFill, 10, legFill);
+  text(c, 'මොළය', px - 26, hy - 12, '#636e72', 11, 'right', 700);
+  // arrows: acceleration up (towards O), blood flow down
+  arrow(c, px + 120, hy + 150, px + 120, hy + 70, '#6c5ce7', 4);
+  text(c, 'a = v²/r', px + 128, hy + 110, '#6c5ce7', 13, 'left', 800);
+  text(c, '(ඉහළට, O දෙසට)', px + 128, hy + 128, '#6c5ce7', 11, 'left', 700);
+  if (n > 1.5) { arrow(c, px + 38, hy - 10, px + 38, hy + 60, '#d63031', 3, [5, 4]); text(c, 'රුධිරය ↓', px + 44, hy - 8, '#d63031', 12, 'left', 800); }
+  // status text
+  let t1, col;
+  if (n < 1.5) { t1 = 'සාමාන්‍යයි ✅'; col = '#27ae60'; }
+  else if (n < 4) { t1 = 'බර වැඩි බවක් දැනේ 😬'; col = '#e67e22'; }
+  else if (n < 6) { t1 = 'දෘෂ්ටිය අඳුරු වේ (grey-out) ⚠️'; col = '#d35400'; }
+  else { t1 = 'ක්ලාන්ත වේ! (black-out) 😵'; col = '#d63031'; }
+  text(c, t1, bx + bw / 2, by + bh - 22, col, 15, 'center', 800);
+  text(c, 'මොළයට රුධිරය: ' + Math.round(blood * 100) + '%', bx + bw / 2, by + bh - 44, '#636e72', 13, 'center', 700);
+  // vision darkening (approximate thresholds)
+  const dark = clamp((n - 3.5) / 3, 0, 0.92);
+  if (dark > 0) {
+    const gr = c.createRadialGradient(bx + bw / 2, by + bh / 2, 40, bx + bw / 2, by + bh / 2, bh * 0.65);
+    gr.addColorStop(0, `rgba(0,0,0,${dark * 0.35})`); gr.addColorStop(1, `rgba(0,0,0,${dark})`);
+    c.fillStyle = gr; c.fillRect(bx, by, bw, bh);
+    if (n >= 6) text(c, 'ක්ලාන්ත වේ! 😵', bx + bw / 2, by + bh / 2 + 20, '#fff', 20, 'center', 800);
+  }
+  c.restore();
+}
+
+// ===================== UI =====================
+const WHERE = {
+  top: '⛰️ කන්ද මුදුන (කේන්ද්‍රය පහළින්)', bot: '🕳️ වළ පතුල (කේන්ද්‍රය ඉහළින්)', hump: 'කන්ද මත (කේන්ද්‍රය පහළින්)',
+  sag: 'වක්‍ර කොටස (කේන්ද්‍රය ඉහළින්)', slope: 'බෑවුම (R = mg cosθ)', flat: 'තැනිතලාව (R = mg)', air: '🚀 වාතයේ! (R = 0)',
+};
+function show(id, t) { const e = $(id); if (e) e.textContent = t; }
+function syncUI() {
+  const setv = (id, v) => { const e = $(id); if (e) e.value = v; };
+  setv('rAS', S.rA); setv('vAS', S.vA); setv('mAS', S.mA); setv('rBS', S.rB); setv('vBS', S.vB); setv('mBS', S.mB);
+  show('rAVal', S.rA); show('vAVal', f1(S.vA)); show('mAVal', S.mA); show('rBVal', S.rB); show('vBVal', S.vB); show('mBVal', S.mB);
+  $('slowA').checked = S.slowA; $('slowB').checked = S.slowB;
+  show('btnPauseA', S.pausedA ? '▶ ධාවනය' : '⏸ නවත්වන්න');
+  show('btnPauseB', S.pausedB ? '▶ ධාවනය' : '⏸ නවත්වන්න');
+}
+function updateStatus() {
+  if (S.tab === 'A') {
+    const A = computeA();
+    show('stA', WHERE[A.where]);
+    show('stR', `${fN(Math.max(A.R, 0))} N`); show('stMg', `${fN(A.mg)} N`);
+    show('stN', `${f2(Math.max(A.n, 0))} × mg`);
+    show('stVmax', `${f1(A.vMax)} m s⁻¹` + (A.leaves ? ' — ඉක්මවා ඇත!' : ''));
+    $('statusA').className = 'status' + (A.where === 'air' ? ' move' : A.leaves ? ' limit' : '');
+  } else {
+    const B = computeB();
+    show('stB', B.p.seg === 'dive' ? 'කිමිදීම (සරල රේඛාව)' : B.p.seg === 'climb' ? 'ඉහළට නගී (සරල රේඛාව)' : B.atLow ? '📍 පහළම ලක්ෂ්‍යය' : 'වෘත්ත චාපය මත');
+    show('stRB', `${fN(B.R)} N`); show('stMgB', `${fN(B.mg)} N`); show('stNB', `${f2(B.n)} g`);
+    show('stNLow', `${f2(B.nLow)} (R = ${fN(B.Rlow)} N)`);
+    $('statusB').className = 'status' + (B.n >= 6 ? ' move' : B.n >= 4 ? ' limit' : '');
+  }
+}
+function setTab(t) {
+  S.tab = t === 'B' ? 'B' : 'A';
+  $('paneA').style.display = S.tab === 'A' ? '' : 'none';
+  $('paneB').style.display = S.tab === 'B' ? '' : 'none';
+  $('tabA').className = S.tab === 'A' ? 'solid' : '';
+  $('tabB').className = S.tab === 'B' ? 'solid' : '';
+  return S.tab;
+}
+const ALIAS = { r: null, v: null, m: null, paused: null, slow: null };
+function set(p, val) {
+  if (p === 'tab') return setTab(val);
+  if (p in ALIAS) p = p + S.tab;
+  if (p === 'posA') { resetCarA(val === 'top' ? ROAD.sTop : val === 'bot' ? ROAD.sBot : +val / S.rA); return S; }
+  if (p === 'posB') { plane.s = val === 'low' ? sLowB() : +val; return S; }
+  if (!(p in S)) throw new Error('unknown param ' + p);
+  const old = S[p];
+  S[p] = typeof DEF[p] === 'boolean' ? !!val : +val;
+  if (p === 'rA' && old !== S[p]) { const f = carA.s / old; resetCarA(f); }
+  if (p === 'rB' && old !== S[p]) { plane.s *= S[p] / old; }
+  syncUI();
+  return S;
+}
+function reset() {
+  Object.assign(S, DEF); resetCarA(0); plane.s = 0; setTab('A'); syncUI(); return S;
+}
+function wire() {
+  const bind = (id, key, after) => $(id).addEventListener('input', e => { set(key, +e.target.value); if (after) after(); });
+  bind('rAS', 'rA'); bind('vAS', 'vA'); bind('mAS', 'mA'); bind('rBS', 'rB'); bind('vBS', 'vB'); bind('mBS', 'mB');
+  $('slowA').addEventListener('change', e => set('slowA', e.target.checked));
+  $('slowB').addEventListener('change', e => set('slowB', e.target.checked));
+  $('btnPauseA').addEventListener('click', () => set('pausedA', !S.pausedA));
+  $('btnPauseB').addEventListener('click', () => set('pausedB', !S.pausedB));
+  $('btnVmax').addEventListener('click', () => { set('vA', Math.round(Math.sqrt(g * S.rA) * 2) / 2); });
+  $('btnTop').addEventListener('click', () => { set('posA', 'top'); set('pausedA', true); });
+  $('btnBot').addEventListener('click', () => { set('posA', 'bot'); set('pausedA', true); });
+  $('btnLow').addEventListener('click', () => { set('posB', 'low'); set('pausedB', true); });
+  $('tabA').addEventListener('click', () => setTab('A'));
+  $('tabB').addEventListener('click', () => setTab('B'));
+  const presets = {
+    Q365: () => { setTab('A'); Object.assign(S, { rA: 40, vA: 10, mA: 800, pausedA: true }); resetCarA(ROAD.sTop); },
+    Q365b: () => { setTab('A'); Object.assign(S, { rA: 40, vA: 20, mA: 800, pausedA: false }); resetCarA(0); },
+    Q366: () => { setTab('A'); Object.assign(S, { rA: 40, vA: 10, mA: 800, pausedA: true }); resetCarA(ROAD.sBot); },
+    Q367: () => { setTab('B'); Object.assign(S, { rB: 400, vB: 100, mB: 70, pausedB: true }); plane.s = sLowB(); },
+  };
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => { presets[b.dataset.preset](); syncUI(); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
+}
+
+cA = stage($('cvA'), 900, 470);
+cG = stage($('cvG'), 900, 200);
+cB = stage($('cvB'), 900, 470);
+wire(); syncUI();
+
+window.sim = { step, state: S, set, reset, setTab, computeA, computeB, roadAt, roadAtX, nRoad, planeAt, ROAD, carA, plane,
+  draw() { if (S.tab === 'A') { drawA(); drawG(); } else drawB(); updateStatus(); } };
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  step(dt);
+  window.sim.draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
