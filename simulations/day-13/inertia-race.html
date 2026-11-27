@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>අවස්ථිති ඝූර්ණය — කැරකීමේ තරඟය (Q398–400) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 14px; line-height: 1.6; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid, button.on { background: #6c5ce7; color: #fff; }
+  button.go { background: #00b894; border-color: #00b894; color: #fff; font-size: 16px; padding: 8px 18px; }
+  .chk { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .chk input { width: 18px; height: 18px; accent-color: #6c5ce7; }
+  .hide { display: none !important; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: linear-gradient(#f0f7ff, #fff); border: 1px solid #dfe6e9; }
+  .status { margin-top: 14px; border-left: 6px solid #6c5ce7; background: #f1efff; padding: 12px 16px; border-radius: 6px; font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; gap: 10px 26px; justify-content: space-between; }
+  .status small { display: block; font-size: 13px; color: #636e72; font-weight: 600; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .dbox { background: #fbfaff; border: 1px solid #d6d2ff; border-left: 6px solid #6c5ce7; border-radius: 10px; padding: 12px 16px; margin: 12px 0; overflow-x: auto; }
+  .dbox .dh { font-weight: 800; font-size: 16px; color: #6c5ce7; margin: 6px 0; }
+  .dbox .l { padding: 5px 0 5px 6px; line-height: 1.6; font-size: 15px; }
+  .dbox .l.m { padding-left: 34px; font-family: 'Cambria', 'Times New Roman', serif; font-size: 19px; white-space: nowrap; }
+  .dbox .l.m .si { font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; font-size: 15px; }
+  .fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 4px; line-height: 1.25; }
+  .fr > span:first-child { border-bottom: 1.6px solid currentColor; padding: 0 4px 2px; }
+  .fr > span:last-child { padding: 2px 4px 0; }
+  .tg { color: #6c5ce7; font-weight: 700; margin-left: 22px; font-family: 'Segoe UI', sans-serif; font-size: 15px; }
+  .res { display: inline-block; border: 2px solid #6c5ce7; border-radius: 8px; padding: 4px 10px; background: #fff; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } .status { font-size: 14px; } .dbox .l.m { font-size: 17px; padding-left: 14px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .side .status { margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 15px; }
+    .side .status > div:first-child { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">Q398–400 · භ්‍රමණ චලිතය</span></div>
+  <h1>අවස්ථිති ඝූර්ණය — කැරකීමේ තරඟය</h1>
+  <p class="sub">වස්තු දෙකකට <b>එකම ව්‍යාවර්තය τ</b> යොදා, දෙකම නිශ්චලතාවයේ සිට එකවර කරකවමු. <b>α = τ/I</b> නිසා <b>I</b> විශාල වස්තුව පසුපසින් එයි. ස්කන්ධය සමාන වුවත් — ස්කන්ධය <b>අක්ෂයෙන් කොතරම් ඈතින්</b> තිබේද යන්න මත I වෙනස් වේ.</p>
+
+  <div class="layout">
+   <aside class="side">
+    <div class="controls">
+      <div class="btns" style="margin-top:0">
+        <button id="rA" class="on">A: වළල්ල සහ තැටිය</button>
+        <button id="rB">B: දණ්ඩ — මැද සහ කෙළවර</button>
+      </div>
+      <div><label>ව්‍යාවර්තය τ = <span class="v" id="tauVal">1.00</span> N m</label><input type="range" id="tauS" min="0.2" max="3" step="0.1" value="1"></div>
+      <div><label>ස්කන්ධය M = <span class="v" id="MVal">2.0</span> kg</label><input type="range" id="MS" min="0.5" max="5" step="0.1" value="2"></div>
+      <div class="onlyA"><label>අරය R = <span class="v" id="RVal">0.50</span> m</label><input type="range" id="RS" min="0.2" max="0.8" step="0.05" value="0.5"></div>
+      <div class="onlyB hide"><label>දිග L = <span class="v" id="LVal">1.0</span> m</label><input type="range" id="LS" min="0.4" max="1.5" step="0.1" value="1"></div>
+      <div class="btns">
+        <button class="go" id="btnGo">▶ ආරම්භ කරන්න</button>
+        <button id="btnReset">↺ නැවත</button>
+        <label class="chk"><input type="checkbox" id="fastChk"> ⏩ ×2</label>
+      </div>
+      <div class="btns">
+        <button data-preset="Q398">Q398</button>
+        <button data-preset="Q400">Q400</button>
+      </div>
+      <div class="btns"><span class="note" style="margin:0" id="ruleNote">ඉලක්කය ω = 20 rad s⁻¹ — එයට ළඟා වූ පසු ව්‍යාවර්තය ඉවත් කරයි (ω නියතව පවතී).</span></div>
+    </div>
+    <div class="status" id="status">
+      <div><small>තත්ත්වය</small><span id="stState">–</span></div>
+      <div><small id="lI0">I</small><span id="stI0">–</span></div>
+      <div><small id="lI1">I</small><span id="stI1">–</span></div>
+      <div><small id="lA0">α</small><span id="stA0">–</span></div>
+      <div><small id="lA1">α</small><span id="stA1">–</span></div>
+      <div><small id="lT0">t</small><span id="stT0">–</span></div>
+      <div><small id="lT1">t</small><span id="stT1">–</span></div>
+    </div>
+   </aside>
+   <div class="main">
+    <div class="cvs"><canvas id="cv" class="scene"></canvas></div>
+   </div>
+  </div>
+
+  <div class="dbox">
+    <div class="dh">I රඳා පවතින්නේ ස්කන්ධය අක්ෂයෙන් කොතරම් ඈතද යන්න මතයි</div>
+    <div class="l m">I = Σ m r²</div>
+    <div class="l">• වළල්ලේ මුළු ස්කන්ධයම R දුරින් — තැටියේ ස්කන්ධය කේන්ද්‍රයේ සිට දාරය දක්වා විසිරී ඇත:</div>
+    <div class="l m">I<sub>වළල්ල</sub> = MR² &nbsp;&nbsp; &gt; &nbsp;&nbsp; I<sub>තැටිය</sub> = ½MR²</div>
+    <div class="l">• දණ්ඩ කෙළවරින් කරකවන විට ස්කන්ධයෙන් වැඩි කොටසක් අක්ෂයෙන් ඈතයි:</div>
+    <div class="l m">I<sub>කෙළවර</sub> = <span class="fr"><span>ML²</span><span>3</span></span> = 4 × <span class="fr"><span>ML²</span><span>12</span></span> = 4 × I<sub>මැද</sub></div>
+    <div class="l">එකම τ සඳහා:</div>
+    <div class="l m"><span class="res">α = <span class="fr"><span>τ</span><span>I</span></span></span> <span class="si">&nbsp;— I දෙගුණ නම් α භාගයයි, ω ට ළඟා වීමට කාලය දෙගුණයි.</span></div>
+    <div class="note">Q399 අදහස: එකම M, R ඇති වස්තු අතර — ස්කන්ධය කේන්ද්‍රය අසල එකතු වූ තැටියට (D) I අවමයි, ඉක්මනින්ම කැරකෙයි; ස්කන්ධය දාරය දෙසට ගිය තරමට (C, පසුව A) I වැඩි වේ: I<sub>D</sub> &lt; I<sub>B</sub> &lt; I<sub>C</sub> &lt; I<sub>A</sub>. A/L ප්‍රශ්නවල I සූත්‍රය සාමාන්‍යයෙන් දී ඇත.</div>
+  </div>
+
+  <h2>විසඳුම් (පන්තියේ ගැටලු)</h2>
+  <details>
+    <summary><span class="qtag">Q398</span>M = 2 kg, R = 0.5 m වළල්ල සහ තැටිය, τ = 1 N m — I, α සහ 20 rad s⁻¹ ට කාලය</summary>
+    <div class="dbox" style="margin:4px 12px 12px">
+      <div class="dh">(i) I සහ α</div>
+      <div class="l">• වළල්ල:</div>
+      <div class="l m">I = MR² = 2 × 0.5²</div>
+      <div class="l m"><span class="res">I = 0.5 kg m²</span></div>
+      <div class="l m">α = <span class="fr"><span>τ</span><span>I</span></span> = <span class="fr"><span>1</span><span>0.5</span></span></div>
+      <div class="l m"><span class="res">α = 2 rad s⁻²</span></div>
+      <div class="l">• තැටිය:</div>
+      <div class="l m">I = ½MR² = ½ × 2 × 0.5²</div>
+      <div class="l m"><span class="res">I = 0.25 kg m²</span></div>
+      <div class="l m">α = <span class="fr"><span>τ</span><span>I</span></span> = <span class="fr"><span>1</span><span>0.25</span></span></div>
+      <div class="l m"><span class="res">α = 4 rad s⁻²</span></div>
+      <div class="dh">(ii) ω = 20 rad s⁻¹ ට ළඟා වීමට කාලය</div>
+      <div class="l m">ω = ω₀ + αt <span class="tg">—— (1)</span></div>
+      <div class="l m">t = <span class="fr"><span>ω − ω₀</span><span>α</span></span></div>
+      <div class="l">• වළල්ල:</div>
+      <div class="l m">t = <span class="fr"><span>20 − 0</span><span>2</span></span></div>
+      <div class="l m"><span class="res">t = 10 s</span></div>
+      <div class="l">• තැටිය:</div>
+      <div class="l m">t = <span class="fr"><span>20 − 0</span><span>4</span></span></div>
+      <div class="l m"><span class="res">t = 5 s</span></div>
+      <div class="dh">(iii) වෙනසට හේතුව</div>
+      <div class="l">වළල්ලේ මුළු ස්කන්ධයම අක්ෂයෙන් R දුරින් ඇත.</div>
+      <div class="l">තැටියේ ස්කන්ධය කේන්ද්‍රයේ සිට දාරය දක්වා විසිරී ඇති නිසා බොහෝ කොටස් R ට වඩා ළඟින් ඇත.</div>
+      <div class="l">I = Σmr² හි r² සාධකය නිසා වළල්ලේ I දෙගුණයක් වේ; එබැවින් α භාගයක් වේ.</div>
+      <div class="btns" style="margin-top:6px"><button data-preset="Q398">▶ සිමියුලේෂනයේ බලන්න</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q400</span>M = 0.6 kg, L = 1 m කූර — මැදින් සහ කෙළවරින්, τ = 0.2 N m</summary>
+    <div class="dbox" style="margin:4px 12px 12px">
+      <div class="dh">(a) එක් එක් අවස්ථාවේ I</div>
+      <div class="l">• මැද ලක්ෂ්‍යය හරහා:</div>
+      <div class="l m">I = <span class="fr"><span>ML²</span><span>12</span></span> = <span class="fr"><span>0.6 × 1²</span><span>12</span></span></div>
+      <div class="l m"><span class="res">I = 0.05 kg m²</span></div>
+      <div class="l">• එක් කෙළවරක් හරහා:</div>
+      <div class="l m">I = <span class="fr"><span>ML²</span><span>3</span></span> = <span class="fr"><span>0.6 × 1²</span><span>3</span></span></div>
+      <div class="l m"><span class="res">I = 0.2 kg m²</span></div>
+      <div class="dh">(b) τ = 0.2 N m විට α</div>
+      <div class="l m">α = <span class="fr"><span>τ</span><span>I</span></span> <span class="tg">—— (1)</span></div>
+      <div class="l">• මැදින්:</div>
+      <div class="l m">α = <span class="fr"><span>0.2</span><span>0.05</span></span></div>
+      <div class="l m"><span class="res">α = 4 rad s⁻²</span></div>
+      <div class="l">• කෙළවරින්:</div>
+      <div class="l m">α = <span class="fr"><span>0.2</span><span>0.2</span></span></div>
+      <div class="l m"><span class="res">α = 1 rad s⁻²</span></div>
+      <div class="l">කෙළවරින් කරකවන විට ස්කන්ධයෙන් වැඩි කොටසක් අක්ෂයෙන් ඈතින් ඇති නිසා I හතර ගුණයක් වේ.</div>
+      <div class="l">එකම ව්‍යාවර්තයට α හතරෙන් එකක් පමණි — එබැවින් දිගු දණ්ඩක් මැදින් අල්ලා කරකැවීම බොහෝ පහසුය.</div>
+      <div class="btns" style="margin-top:6px"><button data-preset="Q400">▶ සිමියුලේෂනයේ බලන්න</button></div>
+    </div>
+  </details>
+</div>
+
+<script>
+// ===================== physics core (no DOM) =====================
+const TARGET = { A: 20, B: 10 };            // rad/s — torque is removed when a body reaches this
+const DEFAULTS = { race: 'A', A: { tau: 1, M: 2, R: 0.5 }, B: { tau: 0.2, M: 0.6, L: 1 }, fast: false };
+const S = { race: 'A', A: { ...DEFAULTS.A }, B: { ...DEFAULTS.B }, fast: false, t: 0, running: false };
+
+// the two bodies of the current race (left, right)
+function bodies(race = S.race) {
+  if (race === 'A') {
+    const { M, R } = S.A;
+    return [
+      { key: 'ring', name: 'තුනී වළල්ල', f: 'I = MR²', I: M * R * R },
+      { key: 'disc', name: 'ඝන තැටිය', f: 'I = ½MR²', I: 0.5 * M * R * R },
+    ];
+  }
+  const { M, L } = S.B;
+  return [
+    { key: 'rodC', name: 'දණ්ඩ — මැදින්', f: 'I = ML²/12', I: M * L * L / 12 },
+    { key: 'rodE', name: 'දණ්ඩ — කෙළවරින්', f: 'I = ML²/3', I: M * L * L / 3 },
+  ];
+}
+function compute(race = S.race) {
+  const P = S[race], wT = TARGET[race];
+  const bs = bodies(race).map(b => Object.assign(b, { alpha: P.tau / b.I, tT: wT * b.I / P.tau }));
+  return { tau: P.tau, wT, bs, tEnd: Math.max(...bs.map(b => b.tT)) };
+}
+// ω and θ of a body at time t (torque on until ω reaches the target)
+function motion(b, t, wT) {
+  if (t <= b.tT) return { w: b.alpha * t, th: 0.5 * b.alpha * t * t, done: false };
+  return { w: wT, th: 0.5 * b.alpha * b.tT * b.tT + wT * (t - b.tT), done: true };
+}
+function step(dt) { if (S.running) S.t += dt; }
+function start() { if (S.t > 0 && finished()) S.t = 0; S.running = true; }
+function finished() { return S.t >= compute().tEnd; }
+function resetRun() { S.t = 0; S.running = false; }
+function reset() { Object.assign(S, { race: 'A', A: { ...DEFAULTS.A }, B: { ...DEFAULTS.B }, fast: false }); resetRun(); syncUI(); return S; }
+function set(p, val) {
+  if (p === 'race') S.race = val;
+  else if (['tau', 'M', 'R', 'L'].includes(p)) S[S.race][p] = +val;
+  else throw new Error('unknown param ' + p);
+  resetRun(); syncUI(); return S;
+}
+
+// ===================== drawing =====================
+const $ = id => document.getElementById(id);
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    if (!w) return;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (!(L >= 2)) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(14, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Iskoola Pota','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/);
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
+}
+const nf = (x, d = 2) => { const r = +x.toFixed(d); return String(r); };   // trims trailing zeros
+const COL = ['#6c5ce7', '#00b894'];
+const W = 900, H = 620;
+const KR = 180;      // px per metre for ring/disc radius (R ≤ 0.8 m)
+const KL = 106;      // px per metre for rod length (L ≤ 1.5 m)
+
+function torqueArc(c, x, y, r, on, tau) {
+  const a0 = -Math.PI * 0.95, a1 = -Math.PI * 0.35;
+  c.strokeStyle = on ? '#e17055' : '#b2bec3'; c.lineWidth = 4; c.lineCap = 'round';
+  c.beginPath(); c.arc(x, y, r, a0, a1); c.stroke();
+  const ex = x + r * Math.cos(a1), ey = y + r * Math.sin(a1), tx = -Math.sin(a1), ty = Math.cos(a1);
+  c.fillStyle = c.strokeStyle; c.beginPath(); c.moveTo(ex + tx * 12, ey + ty * 12);
+  c.lineTo(ex - ty * 8, ey + tx * 8); c.lineTo(ex + ty * 8, ey - tx * 8); c.closePath(); c.fill();
+  const lx = x + (r + 14) * Math.cos(-Math.PI * 0.65), ly = y + (r + 14) * Math.sin(-Math.PI * 0.65);
+  text(c, on ? `τ = ${nf(tau)} N m` : 'τ ඉවත් කළා', lx, ly - 4, on ? '#d35400' : '#95a5a6', 14, 'right', 800);
+}
+function drawBody(c, b, x, y, th, col) {
+  c.save(); c.translate(x, y);
+  if (b.key === 'ring' || b.key === 'disc') {
+    const r = S.A.R * KR;
+    if (b.key === 'ring') {
+      c.strokeStyle = col; c.lineWidth = 14; c.beginPath(); c.arc(0, 0, r - 7, 0, 7); c.stroke();
+      c.strokeStyle = 'rgba(0,0,0,.15)'; c.lineWidth = 1.5; c.setLineDash([4, 5]);
+      c.beginPath(); c.moveTo(0, 0); c.lineTo((r - 7) * Math.cos(th), (r - 7) * Math.sin(th)); c.stroke(); c.setLineDash([]);
+    } else {
+      const gr = c.createRadialGradient(0, 0, 4, 0, 0, r);
+      gr.addColorStop(0, col); gr.addColorStop(1, '#55efc4');
+      c.fillStyle = gr; c.strokeStyle = '#00a383'; c.lineWidth = 2;
+      c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill(); c.stroke();
+      c.strokeStyle = '#fff'; c.lineWidth = 4; c.beginPath(); c.moveTo(0, 0); c.lineTo((r - 8) * Math.cos(th), (r - 8) * Math.sin(th)); c.stroke();
+    }
+    c.fillStyle = '#fdcb6e'; c.strokeStyle = '#e17055'; c.lineWidth = 2;
+    c.beginPath(); c.arc((r - 7) * Math.cos(th), (r - 7) * Math.sin(th), 8, 0, 7); c.fill(); c.stroke();
+  } else {
+    const Lp = S.B.L * KL, end = b.key === 'rodE';
+    const x0 = end ? 0 : -Lp / 2, x1 = end ? Lp : Lp / 2;
+    c.strokeStyle = '#dfe6e9'; c.lineWidth = 1.5; c.setLineDash([5, 6]);
+    c.beginPath(); c.arc(0, 0, end ? Lp : Lp / 2, 0, 7); c.stroke(); c.setLineDash([]);
+    c.rotate(th);
+    c.fillStyle = col; c.strokeStyle = '#2d3436'; c.lineWidth = 1.5;
+    c.beginPath(); c.roundRect(x0, -7, x1 - x0, 14, 7); c.fill(); c.stroke();
+    c.fillStyle = '#fdcb6e'; c.strokeStyle = '#e17055'; c.lineWidth = 2;
+    c.beginPath(); c.arc(x1 - 9, 0, 7, 0, 7); c.fill(); c.stroke();
+    c.rotate(-th);
+  }
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(0, 0, 6, 0, 7); c.fill();
+  c.fillStyle = '#fff'; c.beginPath(); c.arc(0, 0, 2.5, 0, 7); c.fill();
+  c.restore();
+}
+
+let cS;
+function draw() {
+  const c = cS.ctx; c.clearRect(0, 0, W, H);
+  const C = compute(), t = S.t;
+  const done = t >= C.tEnd;
+  C.bs.forEach((b, i) => {
+    const px = 10 + i * 445, pw = 435, cx = px + pw / 2, cy = 190;
+    const m = motion(b, t, C.wT), col = COL[i];
+    c.fillStyle = '#fbfaff'; c.strokeStyle = m.done ? '#27ae60' : '#d6d2ff'; c.lineWidth = m.done ? 3 : 2;
+    c.beginPath(); c.roundRect(px, 10, pw, 370, 10); c.fill(); c.stroke();
+    text(c, b.name, px + 14, 30, col, 18, 'left', 800);
+    text(c, `${b.f} = ${nf(b.I, 4)} kg m²`, px + pw - 12, 30, '#2c3e50', 15, 'right', 800);
+    const rr = S.race === 'A' ? S.A.R * KR : (b.key === 'rodE' ? S.B.L * KL : S.B.L * KL / 2);
+    drawBody(c, b, cx, cy, m.th, col);
+    torqueArc(c, cx, cy, Math.min(rr + 18, 168), !m.done, C.tau);
+    text(c, `α = τ/I = ${nf(b.alpha)} rad s⁻²`, px + 14, 342, '#2c3e50', 15, 'left', 700);
+    text(c, `ω = ${m.w.toFixed(1)} rad s⁻¹`, px + 14, 366, col, 20, 'left', 800);
+    if (m.done) text(c, `✓ ${nf(b.tT)} s`, px + pw - 14, 360, '#27ae60', 24, 'right', 800);
+    else text(c, `ω = ${C.wT} ට: ${nf(b.tT)} s`, px + pw - 14, 360, '#95a5a6', 14, 'right', 700);
+  });
+  drawGraph(c, C, t);
+  if (!S.running && t === 0) text(c, '▶ “ආරම්භ කරන්න” ඔබන්න — දෙකම එකවර පටන් ගනී', W / 2, 520, 'rgba(108,92,231,.9)', 18, 'center', 800);
+  if (done) {
+    const [a, b] = C.bs, ratio = Math.max(a.I, b.I) / Math.min(a.I, b.I);
+    text(c, `I අනුපාතය ${nf(ratio)} : 1  ⇒  කාල අනුපාතය ${nf(ratio)} : 1`, 860, 560, '#6c5ce7', 15, 'right', 800);
+  }
+}
+function drawGraph(c, C, t) {
+  const gx = 70, gy = 416, gw = 800, gh = 170;
+  const tMax = Math.max(1, C.tEnd * 1.15), wMax = C.wT * 1.2;
+  const X = s => gx + s / tMax * gw, Y = w => gy + gh - w / wMax * gh;
+  c.strokeStyle = '#2d3436'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(gx, gy); c.lineTo(gx, gy + gh); c.lineTo(gx + gw, gy + gh); c.stroke();
+  c.strokeStyle = '#b2bec3'; c.lineWidth = 1.5; c.setLineDash([6, 5]);
+  c.beginPath(); c.moveTo(gx, Y(C.wT)); c.lineTo(gx + gw, Y(C.wT)); c.stroke(); c.setLineDash([]);
+  text(c, `${C.wT}`, gx - 8, Y(C.wT), '#636e72', 13, 'right', 700);
+  text(c, '0', gx - 8, gy + gh, '#636e72', 13, 'right', 700);
+  text(c, 'ω / rad s⁻¹', gx - 8, gy - 4, '#636e72', 13, 'left', 700);
+  text(c, 't / s', gx + gw, gy + gh + 18, '#636e72', 13, 'right', 700);
+  const stepT = tMax > 12 ? 2 : 1;
+  for (let s = stepT; s < tMax; s += stepT) {
+    c.strokeStyle = '#2d3436'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(X(s), gy + gh); c.lineTo(X(s), gy + gh + 5); c.stroke();
+    text(c, s, X(s), gy + gh + 16, '#636e72', 12, 'center', 600);
+  }
+  const tt = Math.min(t, tMax);
+  C.bs.forEach((b, i) => {
+    c.strokeStyle = COL[i]; c.lineWidth = 3.5; c.beginPath();
+    for (let k = 0; k <= 120; k++) { const s = tt * k / 120, w = motion(b, s, C.wT).w; k ? c.lineTo(X(s), Y(w)) : c.moveTo(X(s), Y(w)); }
+    c.stroke();
+    if (t >= b.tT) {
+      c.strokeStyle = COL[i]; c.lineWidth = 1.2; c.setLineDash([3, 4]);
+      c.beginPath(); c.moveTo(X(b.tT), Y(C.wT)); c.lineTo(X(b.tT), gy + gh); c.stroke(); c.setLineDash([]);
+      text(c, `${nf(b.tT)} s`, X(b.tT), gy + gh - 12, COL[i], 13, 'center', 800);
+    }
+    text(c, `■ ${b.name} (α = ${nf(b.alpha)} rad s⁻²)`, gx + gw - (1 - i) * 260, gy - 14, COL[i], 13, 'right', 800);
+  });
+}
+
+// ===================== UI =====================
+function show(id, t) { const e = $(id); if (e) e.textContent = t; }
+function syncUI() {
+  const A = S.race === 'A', P = S[S.race];
+  const tauS = $('tauS'), MS = $('MS');
+  if (A) { tauS.min = 0.2; tauS.max = 3; tauS.step = 0.1; MS.min = 0.5; MS.max = 5; }
+  else { tauS.min = 0.05; tauS.max = 1; tauS.step = 0.05; MS.min = 0.2; MS.max = 3; }
+  tauS.value = P.tau; MS.value = P.M; $('RS').value = S.A.R; $('LS').value = S.B.L;
+  show('tauVal', P.tau.toFixed(2)); show('MVal', P.M.toFixed(1)); show('RVal', S.A.R.toFixed(2)); show('LVal', S.B.L.toFixed(1));
+  document.querySelectorAll('.onlyA').forEach(e => e.classList.toggle('hide', !A));
+  document.querySelectorAll('.onlyB').forEach(e => e.classList.toggle('hide', A));
+  $('rA').classList.toggle('on', A); $('rB').classList.toggle('on', !A);
+  $('fastChk').checked = S.fast;
+  show('ruleNote', `ඉලක්කය ω = ${TARGET[S.race]} rad s⁻¹ — එයට ළඟා වූ පසු ව්‍යාවර්තය ඉවත් කරයි (ω නියතව පවතී).`);
+}
+function updateStatus() {
+  const C = compute(), done = S.t >= C.tEnd;
+  show('stState', S.t === 0 && !S.running ? 'සූදානම් — එකම τ, දෙකම නිශ්චලතාවයේ සිට' : done ? `අවසන් ✓ (t = ${nf(C.tEnd)} s)` : `තරඟය… t = ${S.t.toFixed(1)} s`);
+  C.bs.forEach((b, i) => {
+    show('lI' + i, `${b.name}: ${b.f}`); show('stI' + i, `${nf(b.I, 4)} kg m²`);
+    show('lA' + i, `α = τ/I (${b.name})`); show('stA' + i, `${nf(b.alpha)} rad s⁻²`);
+    show('lT' + i, `${C.wT} rad s⁻¹ ට කාලය`); show('stT' + i, `${nf(b.tT)} s`);
+  });
+  $('btnGo').textContent = S.running && !done ? '⏸ නවත්වන්න' : done ? '▶ නැවත තරඟය' : '▶ ආරම්භ කරන්න';
+}
+function wire() {
+  $('tauS').addEventListener('input', e => set('tau', e.target.value));
+  $('MS').addEventListener('input', e => set('M', e.target.value));
+  $('RS').addEventListener('input', e => set('R', e.target.value));
+  $('LS').addEventListener('input', e => set('L', e.target.value));
+  $('rA').addEventListener('click', () => set('race', 'A'));
+  $('rB').addEventListener('click', () => set('race', 'B'));
+  $('fastChk').addEventListener('change', e => { S.fast = e.target.checked; });
+  $('btnGo').addEventListener('click', () => { if (S.running && !finished()) S.running = false; else start(); });
+  $('btnReset').addEventListener('click', () => { resetRun(); syncUI(); });
+  const presets = {
+    Q398: () => { S.race = 'A'; S.A = { ...DEFAULTS.A }; },
+    Q400: () => { S.race = 'B'; S.B = { ...DEFAULTS.B }; },
+  };
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
+    presets[b.dataset.preset](); resetRun(); syncUI(); start();
+    if (b.closest('details')) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }));
+}
+
+cS = stage($('cv'), W, H);
+wire(); syncUI();
+
+window.sim = { step, state: S, set, reset, start, resetRun, compute, motion, bodies, draw };
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  step(dt * (S.fast ? 2 : 1));
+  // keep spinning after the finish so the constant ω stays visible; stop the clock 3 s after the last body finishes
+  if (S.running && S.t > compute().tEnd + 3) S.running = false;
+  draw(); updateStatus();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

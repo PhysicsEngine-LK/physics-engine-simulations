@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>කප්පියක් වටා ඔතා ඇති තන්තුව + එල්ලෙන ස්කන්ධය (Q392–394) - Physics Engine</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f4f6f9; color: #2c3e50; font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; margin: 0; padding: 20px 16px 40px; }
+  .wrap { max-width: 960px; margin: 0 auto; background: #fff; border: 2px solid #6c5ce7; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 22px; }
+  .back { display: inline-block; color: #6c5ce7; font-weight: 700; text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+  .qtags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qtag { background: #6c5ce7; color: #fff; font-weight: 800; border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+  h1 { font-size: 23px; margin: 4px 0 6px; }
+  .sub { color: #636e72; font-size: 15px; margin: 0 0 14px; line-height: 1.6; }
+  .controls { background: #e0e7ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; }
+  .controls label { font-weight: 700; font-size: 15px; }
+  .controls .v { color: #0984e3; font-size: 19px; }
+  input[type=range] { width: 100%; accent-color: #0984e3; margin: 8px 0 4px; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; margin-top: 4px; }
+  button { font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #6c5ce7; background: #fff; color: #6c5ce7; border-radius: 8px; padding: 7px 13px; cursor: pointer; }
+  button:hover { background: #f1efff; }
+  button.solid, button.on { background: #6c5ce7; color: #fff; }
+  .chk { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .chk input { width: 18px; height: 18px; accent-color: #6c5ce7; }
+  .chk.warn { background: #fff; border: 2px dashed #e17055; border-radius: 8px; padding: 5px 10px; color: #d35400; }
+  .hide { display: none !important; }
+  canvas { width: 100%; display: block; border-radius: 10px; }
+  .scene { background: linear-gradient(#f0f7ff, #fff); border: 1px solid #dfe6e9; }
+  .status { margin-top: 14px; border-left: 6px solid #27ae60; background: #eafaf1; padding: 12px 16px; border-radius: 6px; font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; gap: 10px 26px; justify-content: space-between; }
+  .status.limit { border-left-color: #f39c12; background: #fef5e7; }
+  .status small { display: block; font-size: 13px; color: #636e72; font-weight: 600; }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  details { border: 1px solid #d6d2ff; border-radius: 10px; margin-bottom: 10px; background: #fbfaff; }
+  summary { cursor: pointer; padding: 11px 14px; font-weight: 700; }
+  summary .qtag { margin-right: 8px; }
+  .note { font-size: 13px; color: #636e72; margin-top: 8px; line-height: 1.5; }
+  .cvs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .dbox { background: #fbfaff; border: 1px solid #d6d2ff; border-left: 6px solid #6c5ce7; border-radius: 10px; padding: 12px 16px; margin: 12px 0; overflow-x: auto; }
+  .dbox .dh { font-weight: 800; font-size: 16px; color: #6c5ce7; margin: 6px 0; }
+  .dbox .l { padding: 5px 0 5px 6px; line-height: 1.6; font-size: 15px; }
+  .dbox .l.m { padding-left: 34px; font-family: 'Cambria', 'Times New Roman', serif; font-size: 19px; white-space: nowrap; }
+  .dbox .l.m .si { font-family: 'Segoe UI', 'Iskoola Pota', 'Noto Sans Sinhala', sans-serif; font-size: 15px; }
+  .fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 4px; line-height: 1.25; }
+  .fr > span:first-child { border-bottom: 1.6px solid currentColor; padding: 0 4px 2px; }
+  .fr > span:last-child { padding: 2px 4px 0; }
+  .tg { color: #6c5ce7; font-weight: 700; margin-left: 22px; font-family: 'Segoe UI', sans-serif; font-size: 15px; }
+  .res { display: inline-block; border: 2px solid #6c5ce7; border-radius: 8px; padding: 4px 10px; background: #fff; }
+  .extra { background: #fdcb6e; color: #2d3436; }
+  @media (max-width: 720px) { .cvs canvas { min-width: 660px; } .controls { grid-template-columns: 1fr; } .wrap { padding: 14px; } h1 { font-size: 19px; } .status { font-size: 14px; } .dbox .l.m { font-size: 17px; padding-left: 14px; } }
+  .layout { display: block; }
+  @media (min-width: 1100px) {
+    .wrap { max-width: 1480px; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+    .side .controls { grid-template-columns: 1fr; margin-bottom: 12px; }
+    .side .status { margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 15px; }
+    .side .status > div:first-child { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← Simulations</a>
+  <div class="qtags"><span class="qtag">Q392–394 · භ්‍රමණ චලිතය</span></div>
+  <h1>කප්පියක් වටා ඔතා ඇති තන්තුව + එල්ලෙන ස්කන්ධය</h1>
+  <p class="sub">කප්පියට <b>ස්කන්ධයක් (I)</b> ඇති විට එය කැරකවීමටත් ව්‍යාවර්තයක් අවශ්‍යයි: <b>(T₁ − T₂)R = Iα</b>. ඒ නිසා කප්පියේ දෙපැත්තේ ආතති <b>සමාන නොවේ</b>. I ස්ලයිඩරය <b>0</b> දක්වා අඩු කර බලන්න — කප්පිය තවමත් කැරකෙයි, නමුත් T₁ = T₂ වේ!</p>
+
+  <div class="layout">
+   <aside class="side">
+    <div class="controls">
+      <div class="btns" style="margin-top:0">
+        <button id="mSingle" class="on">(a) එක් ස්කන්ධයක්</button>
+        <button id="mAtw">(b) ස්කන්ධ දෙකක්</button>
+      </div>
+      <div class="onlyS"><label>ස්කන්ධය m = <span class="v" id="mVal">1.0</span> kg</label><input type="range" id="mS" min="0.2" max="5" step="0.1" value="1"></div>
+      <div class="onlyA hide"><label>m₁ = <span class="v" id="m1Val">5.0</span> kg</label><input type="range" id="m1S" min="0.5" max="8" step="0.5" value="5"></div>
+      <div class="onlyA hide"><label>m₂ = <span class="v" id="m2Val">3.0</span> kg</label><input type="range" id="m2S" min="0.5" max="8" step="0.5" value="3"></div>
+      <div><label>කප්පියේ I = <span class="v" id="IVal">0.010</span> kg m²</label><input type="range" id="IS" min="0" max="0.2" step="0.005" value="0.01"></div>
+      <div><label>කප්පියේ අරය R = <span class="v" id="RVal">0.10</span> m</label><input type="range" id="RS" min="0.08" max="0.25" step="0.01" value="0.1"></div>
+      <div class="btns onlyA hide"><label class="chk warn"><input type="checkbox" id="slipChk"> 🧈 ඝර්ෂණය නැත්නම්? (තන්තුව ලිස්සයි)</label></div>
+      <div class="btns">
+        <button class="solid" id="btnRun">⏸ නවත්වන්න</button>
+        <button id="btnReset">↺ නැවත</button>
+        <label class="chk"><input type="checkbox" id="slowChk" checked> 🐢 මන්දගාමී (×¼)</label>
+      </div>
+      <div class="btns">
+        <button data-preset="Q392">Q392</button>
+        <button data-preset="Q393">Q393</button>
+        <button data-preset="Q394">Q394</button>
+        <button data-preset="I0">I = 0 (සැහැල්ලු කප්පිය)</button>
+      </div>
+      <div class="btns"><span class="note" style="margin:0">g = 10 m s⁻². කප්පියේ අක්ෂය සුමටයි. තන්තුව සැහැල්ලු, දිග නොවෙනස්.</span></div>
+    </div>
+    <div class="status" id="status">
+      <div><small>තත්ත්වය</small><span id="stState">–</span></div>
+      <div><small>ත්වරණය a</small><span id="stA">–</span></div>
+      <div><small>කෝණික ත්වරණය α = a/R</small><span id="stAl">–</span></div>
+      <div><small id="lT1">ආතතිය T</small><span id="stT1">–</span></div>
+      <div class="onlyA hide"><small>ආතතිය T₂</small><span id="stT2">–</span></div>
+      <div><small>I/R² (“අමතර ස්කන්ධය”)</small><span id="stIR">–</span></div>
+      <div><small>වේගය v | ω = v/R</small><span id="stV">–</span></div>
+    </div>
+   </aside>
+   <div class="main">
+    <div class="cvs"><canvas id="cv" class="scene"></canvas></div>
+   </div>
+  </div>
+
+  <div class="dbox">
+    <div class="dh">ස්කන්ධය ඇති කප්පිය — I/R² යනු “අමතර ස්කන්ධයක්” වැනිය</div>
+    <div class="l">තන්තුව කප්පිය මත නොලිස්සයි නම් දාරයේ වේගය = තන්තුවේ වේගය:</div>
+    <div class="l m">a = Rα <span class="tg">—— (1)</span></div>
+    <div class="l">• කප්පිය සඳහා (අක්ෂය සුමට නිසා අක්ෂයේ බලයට ව්‍යාවර්තයක් නැත):</div>
+    <div class="l m">(T₁ − T₂)R = Iα <span class="tg">—— (2)</span></div>
+    <div class="l">(1), (2) ට ආදේශයෙන්:</div>
+    <div class="l m">T₁ − T₂ = <span class="fr"><span>I</span><span>R²</span></span> a</div>
+    <div class="l">ස්කන්ධ දෙකේ සමීකරණ සමඟ එකතු කළ විට:</div>
+    <div class="l m"><span class="res">a = <span class="fr"><span>(m₁ − m₂)g</span><span>m₁ + m₂ + I/R²</span></span></span></div>
+    <div class="note">T₁ − T₂ වෙනස කප්පියේ දාරයට ලබා දෙන්නේ <b>තන්තුව සහ කප්පිය අතර ස්ථිතික ඝර්ෂණය</b>යි. I = 0 නම් T₁ = T₂ — නමුත් තන්තුව නොලිස්සන නිසා කප්පිය α = a/R ලෙස <b>තවමත් කැරකේ</b>; කැරකීමට ව්‍යාවර්තයක් අවශ්‍ය නොවේ. එක් ස්කන්ධයක් පමණක් නම් m₂ = 0, T₂ = 0.</div>
+  </div>
+
+  <h2>විසඳුම් (පන්තියේ ගැටලු)</h2>
+  <details>
+    <summary><span class="qtag">Q392</span>I = 0.01 kg m², R = 0.1 m, m = 1 kg — a, T, α සහ 2 s කට පසු v, s</summary>
+    <div class="dbox" style="margin:4px 12px 12px">
+      <div class="dh">(i) a, T සහ α</div>
+      <div class="l">• ස්කන්ධය සඳහා (↓):</div>
+      <div class="l m">mg − T = ma <span class="tg">—— (1)</span></div>
+      <div class="l">• කප්පිය සඳහා:</div>
+      <div class="l m">TR = Iα <span class="tg">—— (2)</span></div>
+      <div class="l">• තන්තුව නොලිස්සන නිසා:</div>
+      <div class="l m">a = Rα <span class="tg">—— (3)</span></div>
+      <div class="l">(2) සහ (3) න්:</div>
+      <div class="l m">T = <span class="fr"><span>I</span><span>R²</span></span> a</div>
+      <div class="l m"><span class="fr"><span>I</span><span>R²</span></span> = <span class="fr"><span>0.01</span><span>0.01</span></span> = 1 kg</div>
+      <div class="l m">T = 1 × a</div>
+      <div class="l">(1) ට ආදේශයෙන්:</div>
+      <div class="l m">1 × 10 − a = 1 × a</div>
+      <div class="l m">2a = 10</div>
+      <div class="l m"><span class="res">a = 5 m s⁻²</span></div>
+      <div class="l m"><span class="res">T = 5 N</span></div>
+      <div class="l m">α = <span class="fr"><span>a</span><span>R</span></span> = <span class="fr"><span>5</span><span>0.1</span></span></div>
+      <div class="l m"><span class="res">α = 50 rad s⁻²</span></div>
+      <div class="l">පරීක්ෂාව: TR = 5 × 0.1 = 0.5 N m සහ Iα = 0.01 × 50 = 0.5 N m ✓</div>
+      <div class="dh">(ii) 2 s කට පසු</div>
+      <div class="l m">v = u + at = 0 + 5 × 2</div>
+      <div class="l m"><span class="res">v = 10 m s⁻¹</span></div>
+      <div class="l m">s = ut + ½at² = ½ × 5 × 2²</div>
+      <div class="l m"><span class="res">s = 10 m</span> <span class="si">(ලිහුණු තන්තුවේ දිග)</span></div>
+      <div class="btns" style="margin-top:6px"><button data-preset="Q392">▶ සිමියුලේෂනයේ බලන්න</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q393</span>ළිඳේ බොලොක්කය: R = 0.2 m, I = 0.16 kg m², බාල්දිය 4 kg</summary>
+    <div class="dbox" style="margin:4px 12px 12px">
+      <div class="dh">(i) a සහ T</div>
+      <div class="l">• බාල්දිය සඳහා (↓):</div>
+      <div class="l m">mg − T = ma <span class="tg">—— (1)</span></div>
+      <div class="l">• බොලොක්කය සඳහා:</div>
+      <div class="l m">TR = Iα <span class="tg">—— (2)</span></div>
+      <div class="l">• කඹය නොලිස්සන නිසා:</div>
+      <div class="l m">a = Rα <span class="tg">—— (3)</span></div>
+      <div class="l">(2) සහ (3) න්:</div>
+      <div class="l m">T = <span class="fr"><span>I</span><span>R²</span></span> a = <span class="fr"><span>0.16</span><span>0.04</span></span> a = 4a</div>
+      <div class="l">(1) ට ආදේශයෙන්:</div>
+      <div class="l m">4 × 10 − 4a = 4a</div>
+      <div class="l m">8a = 40</div>
+      <div class="l m"><span class="res">a = 5 m s⁻²</span></div>
+      <div class="l m">T = 4 × 5</div>
+      <div class="l m"><span class="res">T = 20 N</span></div>
+      <div class="dh">(ii) 10 m වැටුණු විට</div>
+      <div class="l m">v² = u² + 2as = 0 + 2 × 5 × 10</div>
+      <div class="l m">v² = 100</div>
+      <div class="l m"><span class="res">v = 10 m s⁻¹</span></div>
+      <div class="l m">ω = <span class="fr"><span>v</span><span>R</span></span> = <span class="fr"><span>10</span><span>0.2</span></span></div>
+      <div class="l m"><span class="res">ω = 50 rad s⁻¹</span></div>
+      <div class="btns" style="margin-top:6px"><button data-preset="Q393">▶ සිමියුලේෂනයේ බලන්න</button></div>
+    </div>
+  </details>
+  <details>
+    <summary><span class="qtag">Q394</span>5 kg සහ 3 kg, I = 0.02 kg m², R = 0.1 m — a, T₁, T₂ සහ T₁ ≠ T₂ වන්නේ ඇයි?</summary>
+    <div class="dbox" style="margin:4px 12px 12px">
+      <div class="dh">(i) a, T₁ සහ T₂</div>
+      <div class="l">• 5 kg සඳහා (↓):</div>
+      <div class="l m">50 − T₁ = 5a <span class="tg">—— (1)</span></div>
+      <div class="l">• 3 kg සඳහා (↑):</div>
+      <div class="l m">T₂ − 30 = 3a <span class="tg">—— (2)</span></div>
+      <div class="l">• කප්පිය සඳහා (a = Rα):</div>
+      <div class="l m">(T₁ − T₂)R = I <span class="fr"><span>a</span><span>R</span></span></div>
+      <div class="l m">T₁ − T₂ = <span class="fr"><span>I</span><span>R²</span></span> a = <span class="fr"><span>0.02</span><span>0.01</span></span> a</div>
+      <div class="l m">T₁ − T₂ = 2a <span class="tg">—— (3)</span></div>
+      <div class="l">(1) + (2) + (3):</div>
+      <div class="l m">20 = 10a</div>
+      <div class="l m"><span class="res">a = 2 m s⁻²</span></div>
+      <div class="l m">T₁ = 50 − 5 × 2</div>
+      <div class="l m"><span class="res">T₁ = 40 N</span></div>
+      <div class="l m">T₂ = 30 + 3 × 2</div>
+      <div class="l m"><span class="res">T₂ = 36 N</span></div>
+      <div class="dh">(ii) T₁ ≠ T₂ වන්නේ ඇයි?</div>
+      <div class="l">කප්පියට කෝණික ත්වරණයක් දීමට සම්ප්‍රයුක්ත ව්‍යාවර්තයක් (T₁ − T₂)R = Iα අවශ්‍ය නිසා.</div>
+      <div class="l">අක්ෂය සුමට නිසා අක්ෂයේ බලයට ව්‍යාවර්තයක් නැත. T₁ − T₂ = 4 N වෙනස කප්පියේ දාරයට ලබා දෙන්නේ <b>තන්තුව සහ කප්පිය අතර ස්ථිතික ඝර්ෂණය</b>යි.</div>
+      <div class="l">ඝර්ෂණය නැත්නම් තන්තුව ලිස්සා යයි, කප්පිය නොකැරකේ, එවිට T₁ = T₂ වේ.</div>
+      <div class="dh">සැහැල්ලු කප්පියක් නම් (I = 0)</div>
+      <div class="l m">a = <span class="fr"><span>(m₁ − m₂)g</span><span>m₁ + m₂</span></span> = <span class="fr"><span>20</span><span>8</span></span></div>
+      <div class="l m"><span class="res">a = 2.5 m s⁻²</span></div>
+      <div class="l">කප්පිය තවමත් තන්තුව සමඟ කැරකේ:</div>
+      <div class="l m">α = <span class="fr"><span>a</span><span>R</span></span> = <span class="fr"><span>2.5</span><span>0.1</span></span> = 25 rad s⁻²</div>
+      <div class="l">නමුත් I = 0 නිසා:</div>
+      <div class="l m">(T₁ − T₂)R = Iα = 0</div>
+      <div class="l m"><span class="res">T₁ = T₂ = 5(10 − 2.5) = 37.5 N</span></div>
+      <div class="btns" style="margin-top:6px"><button data-preset="Q394">▶ සිමියුලේෂනයේ බලන්න</button><button data-preset="I0">▶ I = 0 නම්?</button><button data-preset="slip">▶ ඝර්ෂණය නැත්නම්?</button></div>
+    </div>
+  </details>
+</div>
+
+<script>
+// ===================== physics core (no DOM) =====================
+const g = 10;
+const SLOW = 0.25;
+const DEFAULTS = { mode: 'single', m: 1, m1: 5, m2: 3, I: 0.01, R: 0.1, slip: false };
+const S = Object.assign({}, DEFAULTS, { y: 0, v: 0, t: 0, done: false, hold: 0, running: true, slow: true });
+const TRAVEL = { single: 0.85, atwood: 0.4 };   // metres the masses move before the run restarts
+
+// a > 0 : single mass falls; Atwood: m1 (left) falls
+function compute(p = S) {
+  const IR2 = p.I / (p.R * p.R);
+  if (p.mode === 'single') {
+    const a = p.m * g / (p.m + IR2), T = p.m * (g - a);
+    return { IR2, a, alpha: a / p.R, T1: T, T2: 0, tau: T * p.R, slip: false };
+  }
+  if (p.slip) {                                   // frictionless contact: string slides, pulley stays still
+    const a = (p.m1 - p.m2) * g / (p.m1 + p.m2), T = 2 * p.m1 * p.m2 * g / (p.m1 + p.m2);
+    return { IR2, a, alpha: 0, T1: T, T2: T, tau: 0, slip: true };
+  }
+  const a = (p.m1 - p.m2) * g / (p.m1 + p.m2 + IR2);
+  const T1 = p.m1 * (g - a), T2 = p.m2 * (g + a);
+  return { IR2, a, alpha: a / p.R, T1, T2, tau: (T1 - T2) * p.R, slip: false };
+}
+function sub(h) {
+  const C = compute(), D = TRAVEL[S.mode];
+  if (!S.running || S.done) return;
+  S.t += h; S.y = 0.5 * C.a * S.t * S.t; S.v = C.a * S.t;
+  if (Math.abs(S.y) >= D) {
+    S.t = Math.sqrt(2 * D / Math.abs(C.a)); S.y = Math.sign(C.a) * D; S.v = C.a * S.t; S.done = true; S.hold = 0;
+  }
+}
+function step(dt) { while (dt > 1e-9) { const h = Math.min(dt, 0.005); sub(h); dt -= h; } }
+function restart() { S.y = 0; S.v = 0; S.t = 0; S.done = false; S.hold = 0; }
+function omega() { return compute().slip ? 0 : S.v / S.R; }
+function theta() { return compute().slip ? 0 : S.y / S.R; }   // pulley angle (rad), + = turned the way the falling mass pulls
+function reset() { Object.assign(S, DEFAULTS, { running: true }); restart(); syncUI(); return S; }
+function set(p, val) {
+  if (p === 'mode') S.mode = val;
+  else if (p === 'slip') S.slip = !!val;
+  else if (['m', 'm1', 'm2', 'I', 'R'].includes(p)) S[p] = +val;
+  else throw new Error('unknown param ' + p);
+  restart(); syncUI(); return S;
+}
+
+// ===================== drawing =====================
+const $ = id => document.getElementById(id);
+function stage(cv, W, H) {
+  const s = { cv, W, H, ctx: cv.getContext('2d') };
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth;
+    if (!w) return;
+    cv.style.height = (w * H / W) + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+    s.ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  };
+  new ResizeObserver(fit).observe(cv); fit();
+  return s;
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (!(L >= 2)) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), h = Math.min(14, L * 0.6);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - h * 0.8 * Math.cos(a), y2 - h * 0.8 * Math.sin(a)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42)); ctx.closePath(); ctx.fill();
+}
+function harrow(ctx, x1, y1, x2, y2, col, lw = 4, dash) { arrow(ctx, x1, y1, x2, y2, 'rgba(255,255,255,.85)', lw + 4, dash); arrow(ctx, x1, y1, x2, y2, col, lw, dash); }
+function text(ctx, t, x, y, col = '#2c3e50', size = 16, align = 'left', weight = 700) {
+  t = String(t);
+  const font = s => `${weight} ${s}px 'Segoe UI','Iskoola Pota','Noto Sans Sinhala',sans-serif`;
+  ctx.fillStyle = col; ctx.textBaseline = 'middle';
+  const parts = t.split(/_([A-Za-z0-9]+)/);
+  if (parts.length === 1) { ctx.font = font(size); ctx.textAlign = align; ctx.fillText(t, x, y); return; }
+  const ss = Math.round(size * 0.68);
+  let w = 0;
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); w += ctx.measureText(p).width; });
+  let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left';
+  parts.forEach((p, i) => { ctx.font = font(i % 2 ? ss : size); ctx.fillText(p, cx, i % 2 ? y + size * 0.3 : y); cx += ctx.measureText(p).width; });
+}
+const f1 = x => x.toFixed(1), f2 = x => x.toFixed(2);
+const fT = x => (Math.abs(x - Math.round(x)) < 0.005 ? Math.round(x).toString() : Math.abs(x * 10 - Math.round(x * 10)) < 0.05 ? x.toFixed(1) : x.toFixed(2));
+
+const W = 900, H = 620, SC = 400;          // SC: pixels per metre (same for pulley radius and travel)
+const CX = 270, CY = 100;
+const STR = '#8d6e63', KF = 1.0;           // string colour; force arrows: KF px per newton
+
+function drawPulley(c, x, y, rp, ang, I, light) {
+  const op = 0.18 + 0.72 * Math.min(1, I / 0.08);
+  c.save(); c.translate(x, y);
+  c.fillStyle = `rgba(108,92,231,${op})`; c.strokeStyle = '#4834d4'; c.lineWidth = 3;
+  if (I <= 1e-9) { c.setLineDash([6, 5]); c.fillStyle = 'rgba(255,255,255,.7)'; }
+  c.beginPath(); c.arc(0, 0, rp, 0, 7); c.fill(); c.stroke(); c.setLineDash([]);
+  c.rotate(ang);
+  c.strokeStyle = I <= 1e-9 ? '#a29bfe' : '#fff'; c.lineWidth = 3;
+  for (let k = 0; k < 3; k++) { const b = k * 2 * Math.PI / 3; c.beginPath(); c.moveTo(0, 0); c.lineTo((rp - 4) * Math.cos(b), (rp - 4) * Math.sin(b)); c.stroke(); }
+  c.fillStyle = '#fdcb6e'; c.strokeStyle = '#e17055'; c.lineWidth = 2;
+  c.beginPath(); c.arc((rp - 9) * Math.cos(-Math.PI / 2), (rp - 9) * Math.sin(-Math.PI / 2), 6, 0, 7); c.fill(); c.stroke();
+  c.restore();
+  c.fillStyle = '#2d3436'; c.beginPath(); c.arc(x, y, 5, 0, 7); c.fill();
+}
+function massBox(c, x, top, m, label, col, cap = 64) {
+  const s = Math.min(cap, 30 + 14 * Math.cbrt(m));
+  c.fillStyle = col; c.strokeStyle = '#2d3436'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(x - s / 2, top, s, s, 6); c.fill(); c.stroke();
+  text(c, label, x, top + s / 2 - 7, '#fff', 15, 'center', 800);
+  text(c, `${f1(m)} kg`, x, top + s / 2 + 10, '#fff', 12, 'center', 700);
+  return s;
+}
+// dots fixed on the string material, s measured from the mass end along a path
+function stringDots(c, pts) { c.fillStyle = '#5d4037'; pts.forEach(p => { c.beginPath(); c.arc(p[0], p[1], 3, 0, 7); c.fill(); }); }
+
+let cS;
+function draw() {
+  const c = cS.ctx; c.clearRect(0, 0, W, H);
+  const C = compute(), rp = S.R * SC, th = theta(), single = S.mode === 'single';
+  // ceiling + bracket
+  c.fillStyle = '#b2bec3'; c.fillRect(CX - 110, 0, 220, 16);
+  c.strokeStyle = '#636e72'; c.lineWidth = 2;
+  for (let x = CX - 106; x < CX + 110; x += 14) { c.beginPath(); c.moveTo(x, 16); c.lineTo(x + 10, 6); c.stroke(); }
+  c.strokeStyle = '#636e72'; c.lineWidth = 5;
+  c.beginPath(); c.moveTo(CX - 24, 16); c.lineTo(CX, CY); c.lineTo(CX + 24, 16); c.stroke();
+
+  const DOT = 26;
+  if (single) {
+    const x = CX + rp, top = CY + 60 + S.y * SC, Lv = top - CY;
+    // wound coil
+    c.strokeStyle = STR; c.lineWidth = 7; c.beginPath(); c.arc(CX, CY, rp + 2, 0, 7); c.stroke();
+    drawPulley(c, CX, CY, rp - 2, th, S.I);
+    c.strokeStyle = STR; c.lineWidth = 3; c.beginPath(); c.moveTo(x, CY); c.lineTo(x, top); c.stroke();
+    const dots = [];
+    for (let s = DOT / 2; s < Lv + 2 * Math.PI * rp; s += DOT) {
+      if (s <= Lv) dots.push([x, top - s]);
+      else { const a = -(s - Lv) / (rp + 2); dots.push([CX + (rp + 2) * Math.cos(a), CY + (rp + 2) * Math.sin(a)]); }
+    }
+    stringDots(c, dots);
+    const sz = massBox(c, x, top, S.m, 'm', '#0984e3');
+    forcesOnMass(c, x, top, sz, S.m, C.T1, 'T', C.a);
+  } else {
+    const xl = CX - rp, xr = CX + rp, base = CY + 230;
+    const topL = base + S.y * SC, topR = base - S.y * SC;
+    drawPulley(c, CX, CY, rp, -th, S.I);
+    c.strokeStyle = STR; c.lineWidth = 3; c.beginPath();
+    c.moveTo(xl, topL); c.lineTo(xl, CY); c.arc(CX, CY, rp, Math.PI, 2 * Math.PI); c.lineTo(xr, topR); c.stroke();
+    const L1 = topL - CY, Larc = Math.PI * rp, L2 = topR - CY, dots = [];
+    for (let s = DOT / 2; s < L1 + Larc + L2; s += DOT) {
+      if (s <= L1) dots.push([xl, topL - s]);
+      else if (s <= L1 + Larc) { const a = Math.PI + (s - L1) / rp; dots.push([CX + rp * Math.cos(a), CY + rp * Math.sin(a)]); }
+      else dots.push([xr, CY + (s - L1 - Larc)]);
+    }
+    stringDots(c, dots);
+    const cap = 2 * rp - 10;
+    const s1 = massBox(c, xl, topL, S.m1, 'm_1', '#0984e3', cap);
+    const s2 = massBox(c, xr, topR, S.m2, 'm_2', '#00b894', cap);
+    forcesOnMass(c, xl, topL, s1, S.m1, C.T1, 'T_1', C.a, 'left');
+    forcesOnMass(c, xr, topR, s2, S.m2, C.T2, 'T_2', -C.a, 'right');
+    if (C.slip) text(c, 'තන්තුව ලිස්සයි — කප්පිය නොකැරකේ', CX, CY - rp - 34 > 26 ? CY - rp - 34 : 30, '#d35400', 15, 'center', 800);
+  }
+  drawInset(c, C, th);
+}
+// T up (from the string end), mg down (from the box centre), a beside the box
+function forcesOnMass(c, x, top, sz, m, T, tName, a, side = 'right') {
+  const out = side === 'left' ? -1 : 1;
+  if (T * KF > 2) {
+    harrow(c, x, top, x, top - T * KF, '#d35400', 4);
+    text(c, `${tName} = ${fT(T)} N`, x + out * 12, top - Math.max(T * KF * 0.55, 36), '#d35400', 15, side === 'left' ? 'right' : 'left', 800);
+  }
+  const cy = top + sz / 2, bot = top + sz, mg = m * g;
+  harrow(c, x, bot, x, bot + mg * KF, '#2d3436', 3);
+  text(c, `mg = ${fT(mg)} N`, x + out * 10, bot + mg * KF - 6, '#2d3436', 13, side === 'left' ? 'right' : 'left', 700);
+  if (Math.abs(a) > 0.02) {
+    const ax = x + out * (sz / 2 + 18), L = Math.min(70, 12 + Math.abs(a) * 7);
+    arrow(c, ax, cy - Math.sign(a) * L / 2, ax, cy + Math.sign(a) * L / 2, '#e84393', 3);
+    text(c, 'a', ax + out * 10, cy, '#e84393', 15, 'center', 800);
+  }
+}
+// right-hand panel: forces on the pulley alone + the key equation
+function drawInset(c, C, th) {
+  const bx = 530, by = 14, bw = 356, bh = 300, px = bx + bw / 2, py = by + 132, r = 62;
+  const single = S.mode === 'single';
+  c.save();
+  c.fillStyle = '#fbfaff'; c.strokeStyle = '#a29bfe'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(bx, by, bw, bh, 10); c.fill(); c.stroke();
+  text(c, 'කප්පිය මත බල (වෙනම)', bx + 12, by + 18, '#6c5ce7', 15, 'left', 800);
+  drawPulley(c, px, py, r, single ? th : -th, S.I);
+  const k = 70 / Math.max(C.T1, C.T2, 1);
+  if (single) {
+    if (C.T1 * k > 2) { harrow(c, px + r, py, px + r, py + C.T1 * k, '#d35400', 4); text(c, `T = ${fT(C.T1)} N`, px + r + 8, py + C.T1 * k - 6, '#d35400', 14, 'left', 800); }
+  } else {
+    if (C.T1 * k > 2) { harrow(c, px - r, py, px - r, py + C.T1 * k, '#d35400', 4); text(c, `T_1 = ${fT(C.T1)} N`, px - r - 8, py + C.T1 * k - 6, '#d35400', 14, 'right', 800); }
+    if (C.T2 * k > 2) { harrow(c, px + r, py, px + r, py + C.T2 * k, '#d35400', 4); text(c, `T_2 = ${fT(C.T2)} N`, px + r + 8, py + C.T2 * k - 6, '#d35400', 14, 'left', 800); }
+  }
+  // axle reaction (no torque)
+  harrow(c, px, py, px, py - 46, '#2d3436', 3);
+  text(c, 'අක්ෂයේ බලය: සුමටයි — ව්‍යාවර්තයක් නැත', px, py + r + 32, '#636e72', 12, 'center', 700);
+  // resultant torque arc
+  const net = single ? C.tau : C.tau;
+  if (Math.abs(net) > 1e-6) {
+    const dir = single ? 1 : Math.sign(net) * -1;       // +1 clockwise on screen
+    const rr = r + 16, a0 = -Math.PI / 2 - 0.9, a1 = -Math.PI / 2 + 0.9;
+    c.strokeStyle = '#6c5ce7'; c.lineWidth = 3.5; c.beginPath(); c.arc(px, py, rr, a0, a1); c.stroke();
+    const ae = dir > 0 ? a1 : a0, ex = px + rr * Math.cos(ae), ey = py + rr * Math.sin(ae);
+    const tx = -Math.sin(ae) * dir, ty = Math.cos(ae) * dir;
+    c.fillStyle = '#6c5ce7'; c.beginPath(); c.moveTo(ex + tx * 11, ey + ty * 11);
+    c.lineTo(ex - ty * 7, ey + tx * 7); c.lineTo(ex + ty * 7, ey - tx * 7); c.closePath(); c.fill();
+  }
+  // lines of explanation
+  let y = by + bh - 46;
+  const L = (t, col = '#2c3e50', sz = 14, w = 800) => { text(c, t, bx + 12, y, col, sz, 'left', w); y += 20; };
+  if (single) {
+    if (S.I <= 1e-9) { L('I = 0 ⇒ T = 0, a = g (නිදහසේ වැටේ)', '#d35400'); L(`නමුත් කප්පිය කැරකේ: α = a/R = ${f1(C.alpha)} rad s⁻²`, '#6c5ce7'); }
+    else { L(`TR = Iα :  ${f2(C.tau)} = ${S.I.toFixed(3)} × ${f1(C.alpha)} ✓`, '#6c5ce7'); L('ආතතියේ ව්‍යාවර්තය කප්පිය කරකවයි', '#636e72', 13, 700); }
+  } else if (C.slip) {
+    L('ඝර්ෂණය නැත ⇒ දාරයට බලයක් නොලැබේ', '#d35400'); L(`T_1 = T_2 = ${fT(C.T1)} N, α = 0`, '#d35400');
+  } else if (S.I <= 1e-9) {
+    L(`I = 0 ⇒ T_1 = T_2 = ${fT(C.T1)} N`, '#d35400'); L(`නමුත් කප්පිය කැරකේ: α = a/R = ${f1(C.alpha)} rad s⁻²`, '#6c5ce7');
+  } else {
+    L(`(T_1 − T_2)R = Iα :  ${f2(C.tau)} = ${S.I.toFixed(3)} × ${f1(C.alpha)} ✓`, '#6c5ce7');
+    L('T_1 − T_2 දාරයට දෙන්නේ ස්ථිතික ඝර්ෂණය', '#636e72', 13, 700);
+  }
+  c.restore();
+  // big T1 − T2 badge
+  if (!single) {
+    const d = C.T1 - C.T2, eq = Math.abs(d) < 1e-6;
+    text(c, eq ? 'T_1 = T_2' : `T_1 − T_2 = ${fT(d)} N`, 886, 350, eq ? '#d35400' : '#6c5ce7', 26, 'right', 800);
+    text(c, eq ? (C.slip ? 'කප්පිය නොකැරකේ' : 'I = 0 — කැරකීමට ව්‍යාවර්තයක් අනවශ්‍යයි') : 'I ≠ 0 — කප්පිය කරකවීමට ව්‍යාවර්තයක් අවශ්‍යයි', 886, 380, '#636e72', 14, 'right', 700);
+  } else {
+    text(c, `T = ${fT(C.T1)} N  <  mg = ${fT(S.m * g)} N`, 886, 350, '#6c5ce7', 22, 'right', 800);
+    text(c, `I/R² = ${fT(C.IR2)} kg ලෙස “අමතර ස්කන්ධයක්” එක් වේ`, 886, 380, '#636e72', 14, 'right', 700);
+  }
+  // live readouts
+  const ys = 430;
+  text(c, `t = ${S.t.toFixed(2)} s`, 886, ys, '#2c3e50', 16, 'right', 800);
+  text(c, `v = ${f2(Math.abs(S.v))} m s⁻¹`, 886, ys + 26, '#2c3e50', 16, 'right', 800);
+  text(c, `ω = ${f1(Math.abs(omega()))} rad s⁻¹`, 886, ys + 52, '#6c5ce7', 16, 'right', 800);
+  text(c, `a = ${f2(Math.abs(C.a))} m s⁻²,  α = ${f1(Math.abs(C.alpha))} rad s⁻²`, 886, ys + 78, '#2c3e50', 15, 'right', 700);
+  if (S.slow) text(c, '(මන්දගාමී ×¼)', 886, ys + 104, '#95a5a6', 12, 'right', 600);
+  text(c, '● තන්තුවේ තිත් සහ කප්පියේ කහ ලකුණ එකට චලනය වේ = නොලිස්සයි', 14, H - 14, '#95a5a6', 12, 'left', 600);
+}
+
+// ===================== UI =====================
+function show(id, t) { const e = $(id); if (e) e.textContent = t; }
+function syncUI() {
+  const setv = (id, v) => { const e = $(id); if (e) e.value = v; };
+  setv('mS', S.m); setv('m1S', S.m1); setv('m2S', S.m2); setv('IS', S.I); setv('RS', S.R);
+  show('mVal', f1(S.m)); show('m1Val', f1(S.m1)); show('m2Val', f1(S.m2)); show('IVal', S.I.toFixed(3)); show('RVal', S.R.toFixed(2));
+  $('slipChk').checked = S.slip; $('slowChk').checked = S.slow;
+  const single = S.mode === 'single';
+  document.querySelectorAll('.onlyS').forEach(e => e.classList.toggle('hide', !single));
+  document.querySelectorAll('.onlyA').forEach(e => e.classList.toggle('hide', single));
+  $('mSingle').classList.toggle('on', single); $('mAtw').classList.toggle('on', !single);
+  $('btnRun').textContent = S.running ? '⏸ නවත්වන්න' : '▶ ධාවනය';
+  $('IS').disabled = $('RS').disabled = false;
+}
+function updateStatus() {
+  const C = compute(), single = S.mode === 'single';
+  let st;
+  if (single) st = S.I <= 1e-9 ? 'I = 0: T = 0, a = g' : 'TR = Iα — T < mg';
+  else if (C.slip) st = 'ලිස්සයි: T₁ = T₂, කප්පිය නොකැරකේ';
+  else if (Math.abs(C.a) < 1e-9) st = 'm₁ = m₂ — සමතුලිතයි';
+  else st = S.I <= 1e-9 ? 'I = 0: T₁ = T₂, කප්පිය කැරකේ' : 'T₁ ≠ T₂ (T₁ − T₂ = ' + fT(C.T1 - C.T2) + ' N)';
+  show('stState', st);
+  show('stA', `${f2(C.a)} m s⁻²`);
+  show('stAl', `${f1(C.alpha)} rad s⁻²`);
+  show('lT1', single ? 'ආතතිය T' : 'ආතතිය T₁'); show('stT1', `${fT(C.T1)} N`); show('stT2', `${fT(C.T2)} N`);
+  show('stIR', `${fT(C.IR2)} kg`);
+  show('stV', `${f2(Math.abs(S.v))} m s⁻¹ | ${f1(Math.abs(omega()))} rad s⁻¹`);
+  $('status').className = 'status' + ((!single && Math.abs(C.T1 - C.T2) > 1e-6) ? ' limit' : '');
+}
+function wire() {
+  const bind = (id, key) => $(id).addEventListener('input', e => { S[key] = +e.target.value; restart(); syncUI(); });
+  bind('mS', 'm'); bind('m1S', 'm1'); bind('m2S', 'm2'); bind('IS', 'I'); bind('RS', 'R');
+  $('mSingle').addEventListener('click', () => { S.mode = 'single'; restart(); syncUI(); });
+  $('mAtw').addEventListener('click', () => { S.mode = 'atwood'; restart(); syncUI(); });
+  $('slipChk').addEventListener('change', e => { S.slip = e.target.checked; restart(); syncUI(); });
+  $('slowChk').addEventListener('change', e => { S.slow = e.target.checked; });
+  $('btnRun').addEventListener('click', () => { S.running = !S.running; syncUI(); });
+  $('btnReset').addEventListener('click', () => { restart(); S.running = true; syncUI(); });
+  const presets = {
+    Q392: () => Object.assign(S, { mode: 'single', m: 1, I: 0.01, R: 0.1 }),
+    Q393: () => Object.assign(S, { mode: 'single', m: 4, I: 0.16, R: 0.2 }),
+    Q394: () => Object.assign(S, { mode: 'atwood', m1: 5, m2: 3, I: 0.02, R: 0.1, slip: false }),
+    I0: () => Object.assign(S, { mode: 'atwood', m1: 5, m2: 3, I: 0, R: 0.1, slip: false }),
+    slip: () => Object.assign(S, { mode: 'atwood', m1: 5, m2: 3, I: 0.02, R: 0.1, slip: true }),
+  };
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
+    presets[b.dataset.preset](); S.running = true; restart(); syncUI();
+    if (b.closest('details')) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }));
+}
+
+cS = stage($('cv'), W, H);
+wire(); syncUI();
+
+window.sim = { step, state: S, set, reset, restart, compute, omega, theta, draw };
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  if (S.running) {
+    if (S.done) { S.hold += dt; if (S.hold > 1.3) restart(); }
+    else step(dt * (S.slow ? SLOW : 1));
+  }
+  draw(); updateStatus();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
